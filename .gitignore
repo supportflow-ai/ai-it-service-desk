@@ -1,0 +1,95 @@
+# ==========================================
+# .NET
+# ==========================================
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+*.nupkg
+*.snupkg
+
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+build/
+bld/
+
+# NuGet
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+*.nuget.props
+*.nuget.targets
+project.lock.json
+
+# ==========================================
+# Node / Frontend
+# ==========================================
+node_modules/
+dist/
+.cache/
+*.tsbuildinfo
+
+# ==========================================
+# IDE
+# ==========================================
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# ==========================================
+# OS
+# ==========================================
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# ==========================================
+# Docker
+# ==========================================
+docker-compose.override.local.yml
+
+# ==========================================
+# Environment
+# ==========================================
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# ==========================================
+# Test results
+# ==========================================
+TestResults/
+coverage/
+*.trx
+
+# ==========================================
+# Logs
+# ==========================================
+logs/
+*.log
+
+# ==========================================
+# EF Core Migrations bundles
+# ==========================================
+efbundle
+efbundle.exe
+
+# ==========================================
+# Context pack (planning docs, not source)
+# ==========================================
+ai-it-service-desk-claude-context-pack/
