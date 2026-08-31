@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ConfigProvider } from 'antd';
 import type { ReactNode } from 'react';
 
 const queryClient = new QueryClient({
@@ -17,12 +18,15 @@ interface AppProvidersProps {
 
 /**
  * App-level providers wrapping the entire application.
- * Add more providers here as needed (Theme, Auth, etc.)
+ * ConfigProvider: Ant Design theme/locale configuration.
+ * QueryClientProvider: TanStack Query server-state management.
  */
 export function AppProviders({ children }: AppProvidersProps) {
   return (
-    <QueryClientProvider client={queryClient}>
-      {children}
-    </QueryClientProvider>
+    <ConfigProvider>
+      <QueryClientProvider client={queryClient}>
+        {children}
+      </QueryClientProvider>
+    </ConfigProvider>
   );
 }
