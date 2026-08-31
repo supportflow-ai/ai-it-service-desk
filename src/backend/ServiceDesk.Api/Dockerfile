@@ -3,7 +3,7 @@
 # ============================================
 
 # Stage 1: Restore & Build
-FROM mcr.microsoft.com/dotnet/sdk:10.0-preview AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 # Copy solution and project files first (layer caching)
@@ -21,7 +21,7 @@ COPY src/backend/ .
 RUN dotnet publish ServiceDesk.Api/ServiceDesk.Api.csproj -c Release -o /app/publish --no-restore
 
 # Stage 2: Runtime
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-preview AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 
 # Non-root user for security

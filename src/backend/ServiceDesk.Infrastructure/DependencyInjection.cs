@@ -7,6 +7,7 @@ using ServiceDesk.Application.AIAssistance.Interfaces;
 using ServiceDesk.Application.Common.Interfaces;
 using ServiceDesk.Infrastructure.AI;
 using ServiceDesk.Infrastructure.Clock;
+using ServiceDesk.Infrastructure.Identity;
 using ServiceDesk.Infrastructure.Options;
 using ServiceDesk.Infrastructure.Persistence;
 using ServiceDesk.Infrastructure.Storage;
@@ -60,6 +61,10 @@ public static class DependencyInjection
                 .Build());
 
         services.AddSingleton<IObjectStorageService, MinioObjectStorageService>();
+
+        // --- Current User ---
+        services.AddHttpContextAccessor();
+        services.AddScoped<ICurrentUser, CurrentUser>();
 
         // --- Clock ---
         services.AddSingleton<IClock, SystemClock>();

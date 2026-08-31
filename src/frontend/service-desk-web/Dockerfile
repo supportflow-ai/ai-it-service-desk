@@ -8,7 +8,7 @@ FROM node:22-alpine AS build
 WORKDIR /app
 
 COPY src/frontend/service-desk-web/package.json src/frontend/service-desk-web/package-lock.json* ./
-RUN npm install
+RUN npm ci
 
 COPY src/frontend/service-desk-web/ .
 RUN npm run build
