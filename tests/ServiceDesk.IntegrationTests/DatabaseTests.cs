@@ -10,6 +10,7 @@ namespace ServiceDesk.IntegrationTests;
 /// Tests that the database context can connect and run migrations
 /// against a real PostgreSQL instance via Testcontainers.
 /// </summary>
+[Trait("Category", "Integration")]
 public class DatabaseTests : IClassFixture<ServiceDeskWebApplicationFactory>
 {
     private readonly ServiceDeskWebApplicationFactory _factory;

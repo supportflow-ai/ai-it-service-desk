@@ -8,6 +8,7 @@ namespace ServiceDesk.IntegrationTests;
 /// Integration tests for the API health check and startup.
 /// Uses real PostgreSQL via Testcontainers.
 /// </summary>
+[Trait("Category", "Integration")]
 public class HealthCheckTests : IClassFixture<ServiceDeskWebApplicationFactory>
 {
     private readonly HttpClient _client;
