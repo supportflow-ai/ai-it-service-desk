@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Unauthorized } from '@/features/auth/components/Unauthorized';
+import { Login } from '@/features/auth/components/Login';
 
 function NotFound() {
   return (
@@ -37,7 +38,7 @@ export function AppRoutes() {
     <BrowserRouter>
       <Routes>
         {/* Public Routes */}
-        <Route path="/login" element={<div>Login Page (Coming Soon)</div>} />
+        <Route path="/login" element={<Login />} />
         <Route path="/403" element={<Unauthorized />} />
 
         {/* Protected Routes (Require Login) */}
