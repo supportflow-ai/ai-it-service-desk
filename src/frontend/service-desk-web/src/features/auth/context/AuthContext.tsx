@@ -32,6 +32,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     initAuth();
+
+    // Lắng nghe sự kiện 401 từ Axios interceptor để clear session tập trung
+    const handleUnauthorized = () => {
+      logout();
+    };
+    window.addEventListener('auth:unauthorized', handleUnauthorized);
+    
+    return () => {
+      window.removeEventListener('auth:unauthorized', handleUnauthorized);
+    };
   }, [initAuth]);
 
   const login = async (credentials: LoginCredentials) => {
