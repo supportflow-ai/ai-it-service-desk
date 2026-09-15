@@ -46,8 +46,11 @@ public static class DependencyInjection
                 options.Password.RequireNonAlphanumeric = false;
                 options.Password.RequiredLength = 8;
             })
+            .AddRoles<IdentityRole>()
             .AddEntityFrameworkStores<ApplicationDbContext>()
             .AddDefaultTokenProviders();
+
+        services.AddHostedService<IdentityDataSeeder>();
 
         // --- MinIO ---
         var minioOptions = configuration.GetSection(MinioOptions.SectionName).Get<MinioOptions>()
