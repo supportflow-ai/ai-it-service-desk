@@ -3,7 +3,10 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+using ServiceDesk.Api.Endpoints;
 using ServiceDesk.Application;
+using ServiceDesk.Domain.Identity;
 using ServiceDesk.Infrastructure;
 using ServiceDesk.Infrastructure.Options;
 
@@ -37,12 +40,18 @@ builder.Services.AddAuthentication(options =>
         ValidateIssuerSigningKey = true,
         ValidIssuer = jwtOptions.Issuer,
         ValidAudience = jwtOptions.Audience,
+        RoleClaimType = System.Security.Claims.ClaimTypes.Role,
         IssuerSigningKey = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(jwtOptions.SecretKey))
     };
 });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy(PolicyNames.RequireAdmin, p => p.RequireRole(RoleNames.Admin));
+    options.AddPolicy(PolicyNames.RequireAgent, p => p.RequireRole(RoleNames.Agent, RoleNames.Admin));
+    options.AddPolicy(PolicyNames.RequireRequester, p => p.RequireRole(RoleNames.Requester, RoleNames.Agent, RoleNames.Admin));
+});
 
 // --- Health checks ---
 builder.Services.AddHealthChecks()
@@ -61,6 +70,27 @@ builder.Services.AddSwaggerGen(options =>
         Title = "AI IT Service Desk API",
         Version = "v1",
         Description = "Internal IT Service Request Management System with AI Assistance"
+    });
+
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Enter JWT Bearer token"
+    });
+
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
+            },
+            Array.Empty<string>()
+        }
     });
 });
 
@@ -108,6 +138,9 @@ app.UseStatusCodePages();
 app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.MapAuthEndpoints();
+app.MapDiagnosticEndpoints();
 
 // --- Health check endpoint ---
 app.MapHealthChecks("/health", new HealthCheckOptions
