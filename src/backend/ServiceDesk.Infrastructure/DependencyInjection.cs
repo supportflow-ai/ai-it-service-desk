@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Minio;
 using ServiceDesk.Application.AIAssistance.Interfaces;
 using ServiceDesk.Application.Common.Interfaces;
+using ServiceDesk.Application.Identity.Interfaces;
 using ServiceDesk.Infrastructure.AI;
 using ServiceDesk.Infrastructure.Clock;
 using ServiceDesk.Infrastructure.Identity;
@@ -51,6 +52,8 @@ public static class DependencyInjection
             .AddDefaultTokenProviders();
 
         services.AddHostedService<IdentityDataSeeder>();
+        services.AddScoped<IAuthService, AuthService>();
+        services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
 
         // --- MinIO ---
         var minioOptions = configuration.GetSection(MinioOptions.SectionName).Get<MinioOptions>()
