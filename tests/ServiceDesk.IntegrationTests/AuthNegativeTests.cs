@@ -54,7 +54,31 @@ public class AuthNegativeTests : IClassFixture<ServiceDeskWebApplicationFactory>
     [Fact]
     public async Task AdminEndpoint_AsRequester_Returns403()
     {
-        var token = await RegisterAndGetToken("admin_req_", "Requester");
+        var token = await RegisterAndGetToken("admin_req_");
+
+        _client.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+        var response = await _client.GetAsync("/api/diag/admin-only");
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+
+        _client.DefaultRequestHeaders.Authorization = null;
+    }
+
+    [Fact]
+    public async Task Register_RequestingAdminRole_IsEnforcedAsRequester_CannotAccessAdmin()
+    {
+        var email = $"escalation_{Guid.NewGuid():N}@test.com";
+        var regResp = await _client.PostAsJsonAsync("/api/auth/register", new
+        {
+            email,
+            password = "Test@1234",
+            role = "Admin"
+        });
+
+        regResp.EnsureSuccessStatusCode();
+        var body = await regResp.Content.ReadFromJsonAsync<AuthResponse>();
+        var token = body!.Token!;
 
         _client.DefaultRequestHeaders.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
@@ -68,7 +92,15 @@ public class AuthNegativeTests : IClassFixture<ServiceDeskWebApplicationFactory>
     [Fact]
     public async Task AdminEndpoint_AsAgent_Returns403()
     {
-        var token = await RegisterAndGetToken("admin_agent_", "Agent");
+        var loginResp = await _client.PostAsJsonAsync("/api/auth/login", new
+        {
+            email = "agent@test.com",
+            password = "Test@1234"
+        });
+
+        loginResp.EnsureSuccessStatusCode();
+        var body = await loginResp.Content.ReadFromJsonAsync<AuthResponse>();
+        var token = body!.Token!;
 
         _client.DefaultRequestHeaders.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
@@ -82,7 +114,7 @@ public class AuthNegativeTests : IClassFixture<ServiceDeskWebApplicationFactory>
     [Fact]
     public async Task AgentEndpoint_AsRequester_Returns403()
     {
-        var token = await RegisterAndGetToken("agent_req_", "Requester");
+        var token = await RegisterAndGetToken("agent_req_");
 
         _client.DefaultRequestHeaders.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
@@ -93,14 +125,13 @@ public class AuthNegativeTests : IClassFixture<ServiceDeskWebApplicationFactory>
         _client.DefaultRequestHeaders.Authorization = null;
     }
 
-    private async Task<string> RegisterAndGetToken(string prefix, string role)
+    private async Task<string> RegisterAndGetToken(string prefix)
     {
         var email = $"{prefix}{Guid.NewGuid():N}@test.com";
         var response = await _client.PostAsJsonAsync("/api/auth/register", new
         {
             email,
-            password = "Test@1234",
-            role
+            password = "Test@1234"
         });
 
         response.EnsureSuccessStatusCode();

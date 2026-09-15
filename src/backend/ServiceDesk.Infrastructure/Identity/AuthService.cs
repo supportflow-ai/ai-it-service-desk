@@ -43,18 +43,18 @@ public sealed class AuthService : IAuthService
             return AuthResult.Failed(createResult.Errors.Select(e => e.Description));
         }
 
-        var role = !string.IsNullOrWhiteSpace(request.Role) && RoleNames.All.Contains(request.Role)
-            ? request.Role
-            : RoleNames.Requester;
+        var role = RoleNames.Requester;
 
         var addRoleResult = await _userManager.AddToRoleAsync(user, role);
         if (!addRoleResult.Succeeded)
         {
             _logger.LogError("Failed to assign role {Role} to user {Email}: {Errors}",
                 role, user.Email, string.Join(", ", addRoleResult.Errors.Select(e => e.Description)));
+            await _userManager.DeleteAsync(user);
+            return AuthResult.Failed(addRoleResult.Errors.Select(e => e.Description));
         }
 
-        var roles = new[] { role };
+        var roles = (await _userManager.GetRolesAsync(user)).ToList();
         var token = _jwtTokenGenerator.GenerateToken(user, roles);
 
         var userInfo = new UserInfo
