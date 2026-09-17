@@ -14,4 +14,6 @@ public interface ICurrentUser
     /// Whether the current request is authenticated.
     /// </summary>
     bool IsAuthenticated { get; }
+    IReadOnlyList<string> Roles { get; }
+    bool IsInRole(string role);
 }
