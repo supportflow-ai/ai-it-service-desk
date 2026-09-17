@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\backend\ServiceDesk.Application\ServiceDesk.Application.csproj" />
+    <ProjectReference Include="..\..\src\backend\ServiceDesk.Infrastructure\ServiceDesk.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>
