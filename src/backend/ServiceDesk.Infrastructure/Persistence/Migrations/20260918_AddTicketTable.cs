@@ -23,9 +23,12 @@ namespace ServiceDesk.Infrastructure.Persistence.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(nullable: false),
-                    ticket_number = table.Column<string>(maxLength: 20, nullable: false, 
+                    // Sequence format behavior: LPAD does not truncate when sequence > 9999.
+                    // Numbers >= 10000 return full number (e.g. IT-YYYY-10000) which fits in VARCHAR(30).
+                    ticket_number = table.Column<string>(maxLength: 30, nullable: false, 
                         defaultValueSql: "'IT-' || TO_CHAR(NOW(), 'YYYY') || '-' || LPAD(nextval('ticket_number_seq')::TEXT, 4, '0')"),
                     requester_id = table.Column<Guid>(nullable: false),
+                    requester_department_id = table.Column<Guid>(type: "uuid", nullable: true),
                     title = table.Column<string>(maxLength: 200, nullable: false),
                     description = table.Column<string>(nullable: false),
                     category_id = table.Column<string>(maxLength: 20, nullable: false),

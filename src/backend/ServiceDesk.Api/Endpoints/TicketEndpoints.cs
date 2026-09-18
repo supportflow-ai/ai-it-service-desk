@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using ServiceDesk.Application.Common.Interfaces;
 using ServiceDesk.Application.Ticketing;
 using ServiceDesk.Application.Ticketing.Commands;
@@ -18,23 +19,37 @@ public static class TicketEndpoints
 
         group.MapPost("/", async (
             [FromBody] CreateTicketCommand command,
+            HttpContext context,
             ITicketService ticketService,
             ICurrentUser currentUser,
+            IMemoryCache cache,
             CancellationToken ct) =>
         {
-            if (currentUser.UserId == null)
+            if (currentUser.UserId == null || !Guid.TryParse(currentUser.UserId, out var requesterId))
             {
                 return Results.Unauthorized();
             }
 
-            if (!Guid.TryParse(currentUser.UserId, out var requesterId))
+            string? idempotencyKey = context.Request.Headers["Idempotency-Key"].FirstOrDefault();
+            if (!string.IsNullOrWhiteSpace(idempotencyKey))
             {
-                return Results.Unauthorized();
+                string cacheKey = $"idempotency:ticket:{idempotencyKey.Trim()}";
+                if (cache.TryGetValue(cacheKey, out TicketDto? cachedTicket) && cachedTicket is not null)
+                {
+                    return Results.Created($"/api/tickets/{cachedTicket.Id}", cachedTicket);
+                }
             }
 
             try
             {
                 var ticket = await ticketService.CreateTicketAsync(command, requesterId, ct);
+
+                if (!string.IsNullOrWhiteSpace(idempotencyKey))
+                {
+                    string cacheKey = $"idempotency:ticket:{idempotencyKey.Trim()}";
+                    cache.Set(cacheKey, ticket, TimeSpan.FromMinutes(10));
+                }
+
                 return Results.Created($"/api/tickets/{ticket.Id}", ticket);
             }
             catch (ArgumentException ex)
@@ -46,6 +61,28 @@ public static class TicketEndpoints
         .RequireAuthorization(PolicyNames.RequireRequester)
         .Produces<TicketDto>(StatusCodes.Status201Created)
         .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status401Unauthorized);
+
+        group.MapGet("/{id:guid}", async (
+            Guid id,
+            ITicketService ticketService,
+            ICurrentUser currentUser,
+            CancellationToken ct) =>
+        {
+            if (currentUser.UserId == null || !Guid.TryParse(currentUser.UserId, out var requesterId))
+            {
+                return Results.Unauthorized();
+            }
+
+            var ticket = await ticketService.GetTicketByIdAsync(id, requesterId, ct);
+            return ticket is not null
+                ? Results.Ok(ticket)
+                : Results.NotFound();
+        })
+        .WithName("GetTicketById")
+        .RequireAuthorization(PolicyNames.RequireRequester)
+        .Produces<TicketDto>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status404NotFound)
         .Produces(StatusCodes.Status401Unauthorized);
 
         return app;

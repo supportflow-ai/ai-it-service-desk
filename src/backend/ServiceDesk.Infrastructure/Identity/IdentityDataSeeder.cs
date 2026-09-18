@@ -29,7 +29,14 @@ public sealed class IdentityDataSeeder : IHostedService
     {
         using var scope = _scopeFactory.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        await dbContext.Database.EnsureCreatedAsync(cancellationToken);
+        if (dbContext.Database.IsRelational())
+        {
+            await dbContext.Database.MigrateAsync(cancellationToken);
+        }
+        else
+        {
+            await dbContext.Database.EnsureCreatedAsync(cancellationToken);
+        }
 
         var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();

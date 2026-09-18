@@ -7,5 +7,6 @@ public record TicketDto(
     string Description,
     string CategoryId,
     int Status,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    Guid? RequesterDepartmentId = null
 );

@@ -3,8 +3,9 @@ namespace ServiceDesk.Domain.Ticketing;
 public class Ticket
 {
     public Guid Id { get; set; }
-    public string TicketNumber { get; set; } = string.Empty; // IT-YYYY-NNNN format
+    public string TicketNumber { get; set; } = null!; // IT-YYYY-NNNN format (DB sequence generated)
     public Guid RequesterId { get; set; }
+    public Guid? RequesterDepartmentId { get; set; } // Snapshot at submission time (FR-TKT-10)
     public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public string CategoryId { get; set; } = string.Empty;

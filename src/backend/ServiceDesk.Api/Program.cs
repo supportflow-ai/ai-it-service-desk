@@ -18,6 +18,7 @@ builder.Services.Configure<DatabaseOptions>(builder.Configuration.GetSection(Dat
 builder.Services.Configure<MinioOptions>(builder.Configuration.GetSection(MinioOptions.SectionName));
 
 // --- Layer registration ---
+builder.Services.AddMemoryCache();
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 

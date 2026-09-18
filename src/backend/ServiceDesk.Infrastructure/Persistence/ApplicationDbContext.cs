@@ -36,14 +36,12 @@ public class ApplicationDbContext : IdentityDbContext<IdentityUser>, IApplicatio
             entity.HasIndex(t => t.RequesterId);
             entity.HasIndex(t => t.Status);
 
-            entity.Property(t => t.TicketNumber)
-                .HasColumnName("ticket_number")
-                .HasMaxLength(20)
-                .IsRequired();
-
             entity.Property(t => t.RequesterId)
                 .HasColumnName("requester_id")
                 .IsRequired();
+
+            entity.Property(t => t.RequesterDepartmentId)
+                .HasColumnName("requester_department_id");
 
             entity.Property(t => t.Title)
                 .HasColumnName("title")
@@ -73,10 +71,28 @@ public class ApplicationDbContext : IdentityDbContext<IdentityUser>, IApplicatio
 
             if (Database.ProviderName != "Microsoft.EntityFrameworkCore.Sqlite")
             {
+                // Sequence format behavior: LPAD does not truncate when sequence > 9999.
+                // Numbers >= 10000 return full number (e.g. IT-YYYY-10000) which fits in VARCHAR(30).
+                entity.Property(t => t.TicketNumber)
+                    .HasColumnName("ticket_number")
+                    .HasMaxLength(30)
+                    .HasDefaultValueSql("'IT-' || TO_CHAR(NOW(), 'YYYY') || '-' || LPAD(nextval('ticket_number_seq')::TEXT, 4, '0')")
+                    .ValueGeneratedOnAdd()
+                    .IsRequired();
+
                 entity.Property<uint>("xmin")
                     .HasColumnType("xid")
                     .ValueGeneratedOnAddOrUpdate()
                     .IsConcurrencyToken();
+            }
+            else
+            {
+                entity.Property(t => t.TicketNumber)
+                    .HasColumnName("ticket_number")
+                    .HasMaxLength(30)
+                    .HasDefaultValueSql("''")
+                    .ValueGeneratedOnAdd()
+                    .IsRequired();
             }
         });
     }

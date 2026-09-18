@@ -5,6 +5,7 @@ using Moq;
 using ServiceDesk.Application.Common.Interfaces;
 using ServiceDesk.Application.Ticketing;
 using ServiceDesk.Application.Ticketing.Commands;
+using ServiceDesk.Domain.Identity;
 using ServiceDesk.Domain.Ticketing;
 using ServiceDesk.Infrastructure.Persistence;
 using Xunit;
@@ -147,6 +148,71 @@ public class TicketServiceTests : IDisposable
 
         result.Title.Should().Be("Whitespace title");
         result.Description.Should().Be("Whitespace description with sufficient length");
+    }
+
+    [Fact]
+    public async Task GetTicketByIdAsync_TicketExistsAndMatchesRequester_ReturnsTicketDto()
+    {
+        var command = new CreateTicketCommand(
+            Title: "Get ticket test",
+            Description: "Valid description for get ticket test",
+            CategoryId: TicketCategories.NET
+        );
+        var requesterId = Guid.NewGuid();
+        var created = await _service.CreateTicketAsync(command, requesterId);
+
+        var result = await _service.GetTicketByIdAsync(created.Id, requesterId);
+
+        result.Should().NotBeNull();
+        result!.Id.Should().Be(created.Id);
+        result.TicketNumber.Should().Be(created.TicketNumber);
+        result.Title.Should().Be("Get ticket test");
+        result.Description.Should().Be("Valid description for get ticket test");
+    }
+
+    [Fact]
+    public async Task GetTicketByIdAsync_TicketNotFound_ReturnsNull()
+    {
+        var result = await _service.GetTicketByIdAsync(Guid.NewGuid(), Guid.NewGuid());
+
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetTicketByIdAsync_TicketBelongsToDifferentRequester_ReturnsNull()
+    {
+        var command = new CreateTicketCommand(
+            Title: "Private ticket",
+            Description: "Valid description for private ticket",
+            CategoryId: TicketCategories.SW
+        );
+        var ownerId = Guid.NewGuid();
+        var created = await _service.CreateTicketAsync(command, ownerId);
+
+        var differentRequesterId = Guid.NewGuid();
+        var result = await _service.GetTicketByIdAsync(created.Id, differentRequesterId);
+
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetTicketByIdAsync_UserIsAdmin_ReturnsTicketEvenIfDifferentRequester()
+    {
+        var command = new CreateTicketCommand(
+            Title: "Admin view ticket",
+            Description: "Valid description for admin view ticket",
+            CategoryId: TicketCategories.HW
+        );
+        var ownerId = Guid.NewGuid();
+        var created = await _service.CreateTicketAsync(command, ownerId);
+
+        _currentUserMock.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(true);
+
+        var differentRequesterId = Guid.NewGuid();
+        var result = await _service.GetTicketByIdAsync(created.Id, differentRequesterId);
+
+        result.Should().NotBeNull();
+        result!.Id.Should().Be(created.Id);
     }
 
     public void Dispose()

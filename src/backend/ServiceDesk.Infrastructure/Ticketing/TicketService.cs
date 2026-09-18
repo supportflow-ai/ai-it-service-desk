@@ -2,6 +2,7 @@ using ServiceDesk.Application.Common.Interfaces;
 using ServiceDesk.Application.Ticketing.Commands;
 using ServiceDesk.Application.Ticketing.Dtos;
 using ServiceDesk.Application.Ticketing.Interfaces;
+using ServiceDesk.Domain.Identity;
 using ServiceDesk.Domain.Ticketing;
 using ServiceDesk.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -42,7 +43,9 @@ public class TicketService : ITicketService
         var ticket = new Ticket
         {
             Id = Guid.NewGuid(),
+            TicketNumber = null!,
             RequesterId = requesterId,
+            RequesterDepartmentId = null,
             Title = command.Title.Trim(),
             Description = command.Description.Trim(),
             CategoryId = command.CategoryId,
@@ -59,12 +62,38 @@ public class TicketService : ITicketService
 
         return new TicketDto(
             ticket.Id,
-            ticket.TicketNumber!,
+            ticket.TicketNumber,
             ticket.Title,
             ticket.Description,
             ticket.CategoryId,
             (int)ticket.Status,
-            ticket.CreatedAt
+            ticket.CreatedAt,
+            ticket.RequesterDepartmentId
+        );
+    }
+
+    public async Task<TicketDto?> GetTicketByIdAsync(Guid id, Guid requesterId, CancellationToken cancellationToken = default)
+    {
+        var query = _context.Tickets.AsNoTracking().Where(t => t.Id == id);
+
+        if (_currentUser?.IsInRole(RoleNames.Admin) != true && _currentUser?.IsInRole(RoleNames.Agent) != true)
+        {
+            query = query.Where(t => t.RequesterId == requesterId);
+        }
+
+        var ticket = await query.FirstOrDefaultAsync(cancellationToken);
+        if (ticket == null)
+            return null;
+
+        return new TicketDto(
+            ticket.Id,
+            ticket.TicketNumber,
+            ticket.Title,
+            ticket.Description,
+            ticket.CategoryId,
+            (int)ticket.Status,
+            ticket.CreatedAt,
+            ticket.RequesterDepartmentId
         );
     }
 }
