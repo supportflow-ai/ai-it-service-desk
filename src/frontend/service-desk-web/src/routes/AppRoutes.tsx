@@ -7,6 +7,7 @@ import { Register } from '@/features/auth/components/Register';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { CreateTicketPage } from '@/features/tickets/components/CreateTicketPage';
 import { TicketListPage } from '@/features/tickets/components/TicketListPage';
+import { TicketDetailPage } from '@/features/tickets/components/TicketDetailPage';
 
 const { Header, Content } = Layout;
 
@@ -64,6 +65,7 @@ export function AppRoutes() {
             {/* Role-Based Routes */}
             <Route element={<ProtectedRoute allowedRoles={['Requester']} />}>
               <Route path="/requester-dashboard/tickets" element={<TicketListPage />} />
+              <Route path="/requester-dashboard/tickets/:id" element={<TicketDetailPage />} />
               <Route path="/tickets/new" element={<CreateTicketPage />} />
             </Route>
 

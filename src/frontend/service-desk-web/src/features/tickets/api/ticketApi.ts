@@ -11,6 +11,14 @@ export const ticketApi = {
   },
 
   /**
+   * Lấy chi tiết ticket theo id của Requester hiện tại.
+   */
+  getTicketById: async (id: string): Promise<TicketDto> => {
+    const response = await apiClient.get<TicketDto>(`/tickets/${id}`);
+    return response.data;
+  },
+
+  /**
    * Tạo một yêu cầu (Ticket) mới.
    * Quá trình này sẽ tạo Draft và Submit luôn trong 1 bước cho MVP, 
    * hoặc làm theo 2 bước (Tạo Draft -> Submit) tuỳ backend.

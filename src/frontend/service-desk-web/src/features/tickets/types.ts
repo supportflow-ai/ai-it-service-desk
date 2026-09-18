@@ -13,8 +13,10 @@ export interface TicketDto {
   id: string;
   ticketNumber: string;
   title: string;
+  description?: string;
   categoryId: TicketCategory;
   status: TicketStatus;
   priority?: TicketPriority;
+  resolution?: string;
   createdAt: string;
 }

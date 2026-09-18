@@ -90,7 +90,7 @@ export function CreateTicketPage() {
           </Form.Item>
 
           <Form.Item style={{ marginTop: 32, marginBottom: 0, textAlign: 'right' }}>
-            <Button type="default" style={{ marginRight: 12 }}>
+            <Button type="default" style={{ marginRight: 12 }} onClick={() => navigate('/requester-dashboard/tickets')}>
               Hủy
             </Button>
             <Button type="primary" htmlType="submit" loading={loading}>
