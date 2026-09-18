@@ -141,6 +141,7 @@ app.UseAuthorization();
 
 app.MapAuthEndpoints();
 app.MapDiagnosticEndpoints();
+app.MapTicketEndpoints();
 
 // --- Health check endpoint ---
 app.MapHealthChecks("/health", new HealthCheckOptions
