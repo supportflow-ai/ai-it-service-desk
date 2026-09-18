@@ -1,10 +1,14 @@
 using System;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
+using ServiceDesk.Infrastructure.Persistence;
 
 #nullable disable
 
 namespace ServiceDesk.Infrastructure.Persistence.Migrations
 {
+    [DbContext(typeof(ApplicationDbContext))]
+    [Migration("20260918143000_AddTicketTable")]
     public partial class AddTicketTable : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
