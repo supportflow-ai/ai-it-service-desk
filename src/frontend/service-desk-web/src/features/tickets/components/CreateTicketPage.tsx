@@ -2,23 +2,29 @@ import { useState } from 'react';
 import { Form, Input, Select, Button, Card, Typography, message } from 'antd';
 import { CreateTicketPayload } from '../types';
 
+import { useNavigate } from 'react-router-dom';
+import { ticketApi } from '../api/ticketApi';
+
 const { Title, Paragraph } = Typography;
 const { TextArea } = Input;
 const { Option } = Select;
 
 export function CreateTicketPage() {
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const onFinish = async (values: CreateTicketPayload) => {
     setLoading(true);
     try {
-      // Tạm thời log ra để kiểm tra UI và Validation (TC-267).
-      // Việc gọi API thật sẽ được làm ở TC-268.
-      console.log('Form values:', values);
-      message.success('Validation thành công! (Dữ liệu chưa được gửi lên server)');
+      // TC-268: Gọi API tạo ticket
+      const result = await ticketApi.createTicket(values);
+      message.success(`Tạo ticket ${result.ticketNumber} thành công!`);
+      
+      // Chuyển hướng tới trang chi tiết ticket
+      navigate(`/requester-dashboard/tickets/${result.id}`);
     } catch (error) {
-      console.error('Validation failed:', error);
-      message.error('Có lỗi xảy ra!');
+      console.error('Failed to create ticket:', error);
+      message.error('Có lỗi xảy ra khi tạo ticket. Vui lòng thử lại!');
     } finally {
       setLoading(false);
     }

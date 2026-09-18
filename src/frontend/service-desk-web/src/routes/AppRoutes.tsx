@@ -6,6 +6,7 @@ import { Login } from '@/features/auth/components/Login';
 import { Register } from '@/features/auth/components/Register';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { CreateTicketPage } from '@/features/tickets/components/CreateTicketPage';
+import { TicketListPage } from '@/features/tickets/components/TicketListPage';
 
 const { Header, Content } = Layout;
 
@@ -46,15 +47,6 @@ function Home() {
   );
 }
 
-function DemoPage({ title }: { title: string }) {
-  return (
-    <div style={{ textAlign: 'center', padding: '4rem' }}>
-      <h1>{title}</h1>
-      <p>This is a protected page.</p>
-    </div>
-  );
-}
-
 export function AppRoutes() {
   return (
     <BrowserRouter>
@@ -71,7 +63,7 @@ export function AppRoutes() {
             
             {/* Role-Based Routes */}
             <Route element={<ProtectedRoute allowedRoles={['Requester']} />}>
-              <Route path="/requester-dashboard" element={<DemoPage title="Requester Dashboard" />} />
+              <Route path="/requester-dashboard/tickets" element={<TicketListPage />} />
               <Route path="/tickets/new" element={<CreateTicketPage />} />
             </Route>
 
