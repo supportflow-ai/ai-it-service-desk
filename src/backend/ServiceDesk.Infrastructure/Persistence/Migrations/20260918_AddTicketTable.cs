@@ -1,0 +1,69 @@
+using System;
+using Microsoft.EntityFrameworkCore.Migrations;
+
+#nullable disable
+
+namespace ServiceDesk.Infrastructure.Persistence.Migrations
+{
+    public partial class AddTicketTable : Migration
+    {
+        protected override void Up(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.CreateSequence(
+                name: "ticket_number_seq",
+                schema: "public");
+
+            migrationBuilder.CreateTable(
+                name: "tickets",
+                schema: "public",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(nullable: false),
+                    ticket_number = table.Column<string>(maxLength: 20, nullable: false, 
+                        defaultValueSql: "'IT-' || TO_CHAR(NOW(), 'YYYY') || '-' || LPAD(nextval('ticket_number_seq')::TEXT, 4, '0')"),
+                    requester_id = table.Column<Guid>(nullable: false),
+                    title = table.Column<string>(maxLength: 200, nullable: false),
+                    description = table.Column<string>(nullable: false),
+                    category_id = table.Column<string>(maxLength: 20, nullable: false),
+                    status = table.Column<int>(nullable: false),
+                    created_at = table.Column<DateTime>(nullable: false),
+                    updated_at = table.Column<DateTime>(nullable: false),
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_tickets", x => x.Id);
+                });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_tickets_ticket_number",
+                schema: "public",
+                table: "tickets",
+                column: "ticket_number",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_tickets_requester_id",
+                schema: "public",
+                table: "tickets",
+                column: "requester_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_tickets_status",
+                schema: "public",
+                table: "tickets",
+                column: "status");
+        }
+
+        protected override void Down(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.DropTable(
+                name: "tickets",
+                schema: "public");
+                
+            migrationBuilder.DropSequence(
+                name: "ticket_number_seq",
+                schema: "public");
+        }
+    }
+}
