@@ -5,6 +5,7 @@ import { Unauthorized } from '@/features/auth/components/Unauthorized';
 import { Login } from '@/features/auth/components/Login';
 import { Register } from '@/features/auth/components/Register';
 import { useAuth } from '@/features/auth/context/AuthContext';
+import { CreateTicketPage } from '@/features/tickets/components/CreateTicketPage';
 
 const { Header, Content } = Layout;
 
@@ -20,7 +21,7 @@ function MainLayout() {
           <Button type="primary" danger onClick={logout}>Đăng xuất</Button>
         </div>
       </Header>
-      <Content style={{ padding: '24px', background: '#fff' }}>
+      <Content style={{ padding: '24px', background: '#f5f5f5' }}>
         <Outlet />
       </Content>
     </Layout>
@@ -71,6 +72,7 @@ export function AppRoutes() {
             {/* Role-Based Routes */}
             <Route element={<ProtectedRoute allowedRoles={['Requester']} />}>
               <Route path="/requester-dashboard" element={<DemoPage title="Requester Dashboard" />} />
+              <Route path="/tickets/new" element={<CreateTicketPage />} />
             </Route>
 
             <Route element={<ProtectedRoute allowedRoles={['Agent']} />}>
