@@ -71,10 +71,13 @@ public class ApplicationDbContext : IdentityDbContext<IdentityUser>, IApplicatio
                 .HasColumnName("updated_at")
                 .IsRequired();
 
-            entity.Property<uint>("xmin")
-                .HasColumnType("xid")
-                .ValueGeneratedOnAddOrUpdate()
-                .IsConcurrencyToken();
+            if (Database.ProviderName != "Microsoft.EntityFrameworkCore.Sqlite")
+            {
+                entity.Property<uint>("xmin")
+                    .HasColumnType("xid")
+                    .ValueGeneratedOnAddOrUpdate()
+                    .IsConcurrencyToken();
+            }
         });
     }
 }
