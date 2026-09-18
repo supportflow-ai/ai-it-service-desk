@@ -25,7 +25,9 @@ export function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
   }
 
   // Nếu route yêu cầu phân quyền và user không có quyền hợp lệ
-  if (allowedRoles && user && !allowedRoles.includes(user.role)) {
+  const hasAllowedRole = user?.roles?.some(role => allowedRoles?.includes(role));
+  
+  if (allowedRoles && user && !hasAllowedRole) {
     return <Navigate to="/403" replace />;
   }
 

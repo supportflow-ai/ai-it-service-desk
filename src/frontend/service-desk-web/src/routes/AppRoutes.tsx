@@ -3,6 +3,7 @@ import { Button, Layout } from 'antd';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Unauthorized } from '@/features/auth/components/Unauthorized';
 import { Login } from '@/features/auth/components/Login';
+import { Register } from '@/features/auth/components/Register';
 import { useAuth } from '@/features/auth/context/AuthContext';
 
 const { Header, Content } = Layout;
@@ -15,7 +16,7 @@ function MainLayout() {
       <Header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', padding: '0 24px', borderBottom: '1px solid #f0f0f0' }}>
         <div style={{ fontWeight: 'bold', fontSize: '18px' }}>AI IT Service Desk</div>
         <div>
-          <span style={{ marginRight: 16 }}>Xin chào, {user?.name} ({user?.role})</span>
+          <span style={{ marginRight: 16 }}>Xin chào, {user?.fullName} ({user?.roles?.[0]})</span>
           <Button type="primary" danger onClick={logout}>Đăng xuất</Button>
         </div>
       </Header>
@@ -59,6 +60,7 @@ export function AppRoutes() {
       <Routes>
         {/* Public Routes */}
         <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
         <Route path="/403" element={<Unauthorized />} />
 
         {/* Protected Routes (Require Login) */}
