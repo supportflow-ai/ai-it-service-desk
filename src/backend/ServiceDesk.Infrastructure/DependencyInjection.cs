@@ -6,6 +6,8 @@ using Minio;
 using ServiceDesk.Application.AIAssistance.Interfaces;
 using ServiceDesk.Application.Common.Interfaces;
 using ServiceDesk.Application.Identity.Interfaces;
+using ServiceDesk.Application.Ticketing;
+using ServiceDesk.Application.Ticketing.Interfaces;
 using ServiceDesk.Infrastructure.AI;
 using ServiceDesk.Infrastructure.Clock;
 using ServiceDesk.Infrastructure.Identity;
@@ -53,6 +55,7 @@ public static class DependencyInjection
 
         services.AddHostedService<IdentityDataSeeder>();
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<ITicketService, TicketService>();
         services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
 
         // --- MinIO ---
