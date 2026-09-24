@@ -1,15 +1,16 @@
 import { useEffect, useState } from 'react';
-import { Table, Tag, Button, Typography, Space, Card } from 'antd';
+import { Table, Tag, Button, Typography, Space, Card, Empty, Alert } from 'antd';
 import { PlusOutlined, EyeOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { ticketApi } from '../api/ticketApi';
-import { TicketDto } from '../types';
+import { TicketDto, TicketStatus } from '../types';
 
 const { Title } = Typography;
 
 export function TicketListPage() {
   const [tickets, setTickets] = useState<TicketDto[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -17,8 +18,9 @@ export function TicketListPage() {
       try {
         const data = await ticketApi.getMyTickets();
         setTickets(data);
-      } catch (error) {
-        console.error('Failed to fetch tickets:', error);
+      } catch (err) {
+        console.error('Failed to fetch tickets:', err);
+        setError('Không thể tải danh sách ticket. Vui lòng thử lại sau.');
       } finally {
         setLoading(false);
       }
@@ -26,14 +28,29 @@ export function TicketListPage() {
     fetchTickets();
   }, []);
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: TicketStatus) => {
     switch (status) {
-      case 'Submitted': return 'blue';
-      case 'InProgress': return 'processing';
-      case 'Resolved': return 'success';
-      case 'Closed': return 'default';
-      case 'PendingUser': return 'warning';
+      case TicketStatus.Submitted: return 'blue';
+      case TicketStatus.InProgress: return 'processing';
+      case TicketStatus.Resolved: return 'success';
+      case TicketStatus.Closed: return 'default';
+      case TicketStatus.PendingUser: return 'warning';
       default: return 'default';
+    }
+  };
+
+  const getStatusText = (status: TicketStatus) => {
+    switch (status) {
+      case TicketStatus.Draft: return 'Bản nháp';
+      case TicketStatus.Submitted: return 'Đã gửi';
+      case TicketStatus.Triaged: return 'Đã phân loại';
+      case TicketStatus.Assigned: return 'Đã phân công';
+      case TicketStatus.InProgress: return 'Đang xử lý';
+      case TicketStatus.PendingUser: return 'Chờ phản hồi';
+      case TicketStatus.PendingExternal: return 'Chờ đối tác';
+      case TicketStatus.Resolved: return 'Đã giải quyết';
+      case TicketStatus.Closed: return 'Đã đóng';
+      default: return 'Không xác định';
     }
   };
 
@@ -61,7 +78,7 @@ export function TicketListPage() {
       title: 'Trạng thái',
       dataIndex: 'status',
       key: 'status',
-      render: (status: string) => <Tag color={getStatusColor(status)}>{status}</Tag>,
+      render: (status: TicketStatus) => <Tag color={getStatusColor(status)}>{getStatusText(status)}</Tag>,
     },
     {
       title: 'Ngày tạo',
@@ -73,9 +90,9 @@ export function TicketListPage() {
       title: 'Thao tác',
       key: 'action',
       render: (_: any, record: TicketDto) => (
-        <Button 
-          type="text" 
-          icon={<EyeOutlined />} 
+        <Button
+          type="text"
+          icon={<EyeOutlined />}
           onClick={() => navigate(`/requester-dashboard/tickets/${record.id}`)}
         >
           Xem
@@ -93,14 +110,18 @@ export function TicketListPage() {
             Tạo yêu cầu mới
           </Button>
         </div>
-
-        <Table 
-          columns={columns} 
-          dataSource={tickets} 
-          rowKey="id" 
-          loading={loading}
-          pagination={{ pageSize: 10 }}
-        />
+        {error && <Alert message={error} type="error" showIcon style={{ marginBottom: 16 }} />}
+        {!loading && tickets.length === 0 && !error ? (
+          <Empty description="Bạn chưa có ticket nào" />
+        ) : (
+          <Table
+            columns={columns}
+            dataSource={tickets}
+            rowKey="id"
+            loading={loading}
+            pagination={{ pageSize: 10 }}
+          />
+        )}
       </Card>
     </div>
   );

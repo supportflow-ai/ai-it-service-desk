@@ -1,5 +1,5 @@
-import { BrowserRouter, Routes, Route, Outlet } from 'react-router-dom';
-import { Button, Layout } from 'antd';
+import { BrowserRouter, Routes, Route, Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { Button, Layout, Menu } from 'antd';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Unauthorized } from '@/features/auth/components/Unauthorized';
 import { Login } from '@/features/auth/components/Login';
@@ -13,11 +13,36 @@ const { Header, Content } = Layout;
 
 function MainLayout() {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const menuItems = [];
+  if (user?.roles?.includes('Requester')) {
+    menuItems.push({ key: '/requester-dashboard/tickets', label: 'Yêu cầu của tôi' });
+  }
+  if (user?.roles?.includes('Agent')) {
+    menuItems.push({ key: '/agent-workspace', label: 'Không gian làm việc (Agent)' });
+  }
+  if (user?.roles?.includes('Admin')) {
+    menuItems.push({ key: '/admin-panel', label: 'Quản trị hệ thống' });
+  }
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
-      <Header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', padding: '0 24px', borderBottom: '1px solid #f0f0f0' }}>
-        <div style={{ fontWeight: 'bold', fontSize: '18px' }}>AI IT Service Desk</div>
+      <Header style={{ display: 'flex', alignItems: 'center', background: '#fff', padding: '0 24px', borderBottom: '1px solid #f0f0f0' }}>
+        <div 
+          style={{ fontWeight: 'bold', fontSize: '18px', marginRight: 40, cursor: 'pointer' }} 
+          onClick={() => navigate('/')}
+        >
+          AI IT Service Desk
+        </div>
+        <Menu 
+          mode="horizontal" 
+          selectedKeys={[location.pathname]} 
+          items={menuItems}
+          style={{ flex: 1, borderBottom: 'none' }}
+          onClick={({ key }) => navigate(key)}
+        />
         <div>
           <span style={{ marginRight: 16 }}>Xin chào, {user?.fullName} ({user?.roles?.[0]})</span>
           <Button type="primary" danger onClick={logout}>Đăng xuất</Button>

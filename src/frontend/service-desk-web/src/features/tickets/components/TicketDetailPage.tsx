@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Card, Descriptions, Tag, Button, Typography, Skeleton, Alert, Space, Divider } from 'antd';
 import { ArrowLeftOutlined } from '@ant-design/icons';
 import { ticketApi } from '../api/ticketApi';
-import { TicketDto } from '../types';
+import { TicketDto, TicketStatus } from '../types';
 
 const { Title, Text } = Typography;
 
@@ -32,14 +32,29 @@ export function TicketDetailPage() {
     fetchTicket();
   }, [id]);
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: TicketStatus) => {
     switch (status) {
-      case 'Submitted': return 'blue';
-      case 'InProgress': return 'processing';
-      case 'Resolved': return 'success';
-      case 'Closed': return 'default';
-      case 'PendingUser': return 'warning';
+      case TicketStatus.Submitted: return 'blue';
+      case TicketStatus.InProgress: return 'processing';
+      case TicketStatus.Resolved: return 'success';
+      case TicketStatus.Closed: return 'default';
+      case TicketStatus.PendingUser: return 'warning';
       default: return 'default';
+    }
+  };
+
+  const getStatusText = (status: TicketStatus) => {
+    switch (status) {
+      case TicketStatus.Draft: return 'Bản nháp';
+      case TicketStatus.Submitted: return 'Đã gửi';
+      case TicketStatus.Triaged: return 'Đã phân loại';
+      case TicketStatus.Assigned: return 'Đã phân công';
+      case TicketStatus.InProgress: return 'Đang xử lý';
+      case TicketStatus.PendingUser: return 'Chờ phản hồi';
+      case TicketStatus.PendingExternal: return 'Chờ đối tác';
+      case TicketStatus.Resolved: return 'Đã giải quyết';
+      case TicketStatus.Closed: return 'Đã đóng';
+      default: return 'Không xác định';
     }
   };
 
@@ -69,7 +84,7 @@ export function TicketDetailPage() {
                 <Title level={3} style={{ margin: 0 }}>{ticket.title}</Title>
               </Space>
               <Tag color={getStatusColor(ticket.status)} style={{ padding: '4px 12px', fontSize: 14 }}>
-                {ticket.status}
+                {getStatusText(ticket.status)}
               </Tag>
             </div>
 
