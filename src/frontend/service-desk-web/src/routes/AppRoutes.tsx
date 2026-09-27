@@ -8,6 +8,7 @@ import { useAuth } from '@/features/auth/context/AuthContext';
 import { CreateTicketPage } from '@/features/tickets/components/CreateTicketPage';
 import { TicketListPage } from '@/features/tickets/components/TicketListPage';
 import { TicketDetailPage } from '@/features/tickets/components/TicketDetailPage';
+import { AgentTicketWorkspace } from '@/features/tickets/components/AgentTicketWorkspace';
 
 const { Header, Content } = Layout;
 
@@ -73,6 +74,15 @@ function Home() {
   );
 }
 
+function DemoPage({ title }: { title: string }) {
+  return (
+    <div style={{ textAlign: 'center', padding: '4rem' }}>
+      <h1>{title}</h1>
+      <p>Tính năng này đang được phát triển...</p>
+    </div>
+  );
+}
+
 export function AppRoutes() {
   return (
     <BrowserRouter>
@@ -96,6 +106,7 @@ export function AppRoutes() {
 
             <Route element={<ProtectedRoute allowedRoles={['Agent']} />}>
               <Route path="/agent-workspace" element={<DemoPage title="Agent Workspace" />} />
+              <Route path="/agent-workspace/tickets/:id" element={<AgentTicketWorkspace />} />
             </Route>
 
             <Route element={<ProtectedRoute allowedRoles={['Admin']} />}>

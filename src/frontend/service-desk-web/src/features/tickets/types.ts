@@ -28,5 +28,20 @@ export interface TicketDto {
   status: TicketStatus;
   priority?: TicketPriority;
   resolution?: string;
+  requesterName?: string;
+  assignedAgentId?: string;
+  assignedAgentName?: string;
   createdAt: string;
+}
+
+export type TimelineEventType = 'comment' | 'note' | 'status_change' | 'assignment';
+
+export interface TicketTimelineEventDto {
+  id: string;
+  ticketId: string;
+  eventType: TimelineEventType;
+  actorName: string;
+  content: string;
+  createdAt: string;
+  isInternal?: boolean; // true for internal notes
 }
