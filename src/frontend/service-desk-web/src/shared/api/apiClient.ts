@@ -25,7 +25,15 @@ apiClient.interceptors.request.use((requestConfig) => {
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Future: handle 401 → redirect to login, etc.
+    // Xử lý tập trung lỗi 401 (Unauthorized / Expired Token)
+    if (error.response && error.response.status === 401) {
+      // Không bắn sự kiện đăng xuất nếu đang cố gắng gọi API đăng nhập
+      if (!error.config?.url?.includes('/auth/login')) {
+        localStorage.removeItem('token');
+        // Phát sự kiện để AuthContext lắng nghe và cập nhật state React
+        window.dispatchEvent(new Event('auth:unauthorized'));
+      }
+    }
     return Promise.reject(error);
   },
 );
