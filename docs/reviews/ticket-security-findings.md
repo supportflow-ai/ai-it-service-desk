@@ -273,4 +273,3 @@ Self-review PASS:46 rule rows,51 proposed test scenarios,14 findings; each rule 
 | ai-it-service-desk-ticket-domain / docs/ticket-domain-lifecycle | 6b124e73e9cb95350a505a24a548cb663ab1b7de | 3 untracked domain documents | 669616480AE2D509B49012874F8CF187551DA24F1A530B10A296BBEDF5C8781A / 90AACC62B8CC5CF6FCD83031AB7CB7566A9317D9B67A8098F1EF76B46E430CEC |
 
 Branch/status/HEAD/index entries/working diff/all tracked+untracked nonignored file hashes compare identical for all five roots. Local main/dev worktrees were not operated on. Shared remote refs fetched as explicitly requested; no rewrite of local branch history. New docs branch HEAD remains D; no audit commit made, no push/PR/merge. No deployed security remediation claimed.
-
