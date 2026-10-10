@@ -1,13 +1,10 @@
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Caching.Memory;
 using ServiceDesk.Application.Common.Interfaces;
-using ServiceDesk.Application.Ticketing;
 using ServiceDesk.Application.Ticketing.Commands;
 using ServiceDesk.Application.Ticketing.Dtos;
+using ServiceDesk.Application.Ticketing.Idempotency;
 using ServiceDesk.Application.Ticketing.Interfaces;
 using ServiceDesk.Domain.Identity;
-using ServiceDesk.Domain.Ticketing;
 
 namespace ServiceDesk.Api.Endpoints;
 
@@ -22,35 +19,34 @@ public static class TicketEndpoints
             HttpContext context,
             ITicketService ticketService,
             ICurrentUser currentUser,
-            IMemoryCache cache,
             CancellationToken ct) =>
         {
-            if (currentUser.UserId == null || !Guid.TryParse(currentUser.UserId, out var requesterId))
-            {
+            if (!currentUser.IsAuthenticated || !Guid.TryParse(currentUser.UserId, out var requesterId))
                 return Results.Unauthorized();
-            }
 
-            string? idempotencyKey = context.Request.Headers["Idempotency-Key"].FirstOrDefault();
-            if (!string.IsNullOrWhiteSpace(idempotencyKey))
-            {
-                string cacheKey = $"idempotency:ticket:{idempotencyKey.Trim()}";
-                if (cache.TryGetValue(cacheKey, out TicketDto? cachedTicket) && cachedTicket is not null)
-                {
-                    return Results.Created($"/api/tickets/{cachedTicket.Id}", cachedTicket);
-                }
-            }
+            var hasKey = context.Request.Headers.TryGetValue("Idempotency-Key", out var keyValues);
+            if (hasKey && (keyValues.Count != 1 || string.IsNullOrWhiteSpace(keyValues[0])))
+                return Results.BadRequest(new { error = "Supply a single non-empty Idempotency-Key." });
 
             try
             {
-                var ticket = await ticketService.CreateTicketAsync(command, requesterId, ct);
-
-                if (!string.IsNullOrWhiteSpace(idempotencyKey))
-                {
-                    string cacheKey = $"idempotency:ticket:{idempotencyKey.Trim()}";
-                    cache.Set(cacheKey, ticket, TimeSpan.FromMinutes(10));
-                }
-
+                var ticket = hasKey
+                    ? await ticketService.CreateTicketIdempotentlyAsync(command, requesterId, keyValues[0]!, ct)
+                    : await ticketService.CreateTicketAsync(command, requesterId, ct);
                 return Results.Created($"/api/tickets/{ticket.Id}", ticket);
+            }
+            catch (IdempotencyConflictException ex)
+            {
+                return Results.Conflict(new { error = ex.Message });
+            }
+            catch (IdempotencyInProgressException ex)
+            {
+                context.Response.Headers.RetryAfter = "1";
+                return Results.Json(new { error = ex.Message }, statusCode: StatusCodes.Status503ServiceUnavailable);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Results.Unauthorized();
             }
             catch (ArgumentException ex)
             {
@@ -61,7 +57,9 @@ public static class TicketEndpoints
         .RequireAuthorization(PolicyNames.RequireRequester)
         .Produces<TicketDto>(StatusCodes.Status201Created)
         .Produces(StatusCodes.Status400BadRequest)
-        .Produces(StatusCodes.Status401Unauthorized);
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status409Conflict)
+        .Produces(StatusCodes.Status503ServiceUnavailable);
 
         group.MapGet("/{id:guid}", async (
             Guid id,
@@ -70,14 +68,10 @@ public static class TicketEndpoints
             CancellationToken ct) =>
         {
             if (currentUser.UserId == null || !Guid.TryParse(currentUser.UserId, out var requesterId))
-            {
                 return Results.Unauthorized();
-            }
 
             var ticket = await ticketService.GetTicketByIdAsync(id, requesterId, ct);
-            return ticket is not null
-                ? Results.Ok(ticket)
-                : Results.NotFound();
+            return ticket is not null ? Results.Ok(ticket) : Results.NotFound();
         })
         .WithName("GetTicketById")
         .RequireAuthorization(PolicyNames.RequireRequester)
