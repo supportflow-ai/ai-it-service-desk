@@ -1,13 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Row, Col, Card, Typography, Tag, Select, Button, Timeline, Input, Space, Divider, Skeleton, Alert, message, Modal, Form } from 'antd';
+import { Row, Col, Card, Typography, Tag, Button, Timeline, Input, Space, Divider, Skeleton, Alert, message, Modal, Form } from 'antd';
 import { ArrowLeftOutlined, UserOutlined, MessageOutlined, FileTextOutlined, PaperClipOutlined, CheckCircleOutlined, PlayCircleOutlined, UserSwitchOutlined } from '@ant-design/icons';
 import { ticketApi } from '../api/ticketApi';
 import { TicketDto, TicketTimelineEventDto, TicketStatus } from '../types';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
-const { Option } = Select;
 
 export function AgentTicketWorkspace() {
   const { id } = useParams<{ id: string }>();
@@ -222,7 +221,7 @@ export function AgentTicketWorkspace() {
 
             {ticket.status === TicketStatus.InProgress && (
               <>
-                <Button type="primary" success block style={{ marginBottom: 12, backgroundColor: '#52c41a', borderColor: '#52c41a', color: 'white' }} onClick={() => setIsResolveModalVisible(true)} icon={<CheckCircleOutlined />}>
+                <Button type="primary" block style={{ marginBottom: 12, backgroundColor: '#52c41a', borderColor: '#52c41a', color: 'white' }} onClick={() => setIsResolveModalVisible(true)} icon={<CheckCircleOutlined />}>
                   Giải quyết (Resolve)
                 </Button>
                 <Button block style={{ marginBottom: 12 }} onClick={() => message.info('Tính năng đang phát triển')}>
