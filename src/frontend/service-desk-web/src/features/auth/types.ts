@@ -3,20 +3,20 @@ export type Role = 'Requester' | 'Agent' | 'Admin';
 export interface User {
   userId: string;
   email: string;
-  fullName: string;
+  fullName: string | null;
   roles: Role[];
   avatarUrl?: string;
 }
 
 export interface LoginCredentials {
   email: string;
-  password?: string;
+  password: string;
 }
 
 export interface RegisterCredentials {
   email: string;
   fullName: string;
-  password?: string;
+  password: string;
 }
 
 export interface AuthResponse {

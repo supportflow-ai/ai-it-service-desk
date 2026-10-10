@@ -1,0 +1,101 @@
+diff --git a/src/frontend/service-desk-web/src/features/auth/types.ts b/src/frontend/service-desk-web/src/features/auth/types.ts
+index d77744b..d422b2c 100644
+--- a/src/frontend/service-desk-web/src/features/auth/types.ts
++++ b/src/frontend/service-desk-web/src/features/auth/types.ts
+@@ -3,20 +3,20 @@ export type Role = 'Requester' | 'Agent' | 'Admin';
+ export interface User {
+   userId: string;
+   email: string;
+-  fullName: string;
++  fullName: string | null;
+   roles: Role[];
+   avatarUrl?: string;
+ }
+ 
+ export interface LoginCredentials {
+   email: string;
+-  password?: string;
++  password: string;
+ }
+ 
+ export interface RegisterCredentials {
+   email: string;
+   fullName: string;
+-  password?: string;
++  password: string;
+ }
+ 
+ export interface AuthResponse {
+diff --git a/tests/frontend/auth-contract.test.mjs b/tests/frontend/auth-contract.test.mjs
+new file mode 100644
+index 0000000..11514da
+--- /dev/null
++++ b/tests/frontend/auth-contract.test.mjs
+@@ -0,0 +1,15 @@
++import assert from 'node:assert/strict';
++import { spawnSync } from 'node:child_process';
++import { fileURLToPath } from 'node:url';
++import test from 'node:test';
++
++const compiler = fileURLToPath(new URL('../../src/frontend/service-desk-web/node_modules/typescript/bin/tsc', import.meta.url));
++const project = fileURLToPath(new URL('./contracts/tsconfig.json', import.meta.url));
++
++test('auth DTO contract requires passwords and accepts nullable backend fullName', () => {
++  const result = spawnSync(process.execPath, [compiler, '-p', project], {
++    encoding: 'utf8',
++    timeout: 60000,
++  });
++  assert.equal(result.status, 0, result.stdout + result.stderr + String(result.error ?? ''));
++});
+diff --git a/tests/frontend/contracts/tsconfig.json b/tests/frontend/contracts/tsconfig.json
+new file mode 100644
+index 0000000..7ed67e4
+--- /dev/null
++++ b/tests/frontend/contracts/tsconfig.json
+@@ -0,0 +1,12 @@
++{
++  "compilerOptions": {
++    "target": "ES2020",
++    "module": "ESNext",
++    "moduleResolution": "bundler",
++    "strict": true,
++    "noEmit": true,
++    "skipLibCheck": true,
++    "types": []
++  },
++  "include": ["auth-contracts.ts"]
++}
+diff --git a/tests/frontend/contracts/auth-contracts.ts b/tests/frontend/contracts/auth-contracts.ts
+new file mode 100644
+index 0000000..4c9a780
+--- /dev/null
++++ b/tests/frontend/contracts/auth-contracts.ts
+@@ -0,0 +1,28 @@
++import type {
++  AuthResponse,
++  LoginCredentials,
++  RegisterCredentials,
++  User,
++} from '../../../src/frontend/service-desk-web/src/features/auth/types';
++
++// Backend UserInfo.FullName is nullable for login and /auth/me.
++const restoredUser: User = {
++  userId: '00000000-0000-0000-0000-000000000001',
++  email: 'synthetic@example.invalid',
++  fullName: null,
++  roles: ['Requester'],
++};
++const registrationUser: User = { ...restoredUser, fullName: 'Synthetic User' };
++const response: AuthResponse = { token: 'synthetic-token', user: restoredUser };
++const login: LoginCredentials = { email: restoredUser.email, password: 'synthetic-password' };
++const register: RegisterCredentials = { ...login, fullName: 'Synthetic User' };
++
++// These inputs must remain rejected by TypeScript even if form validation is bypassed.
++// @ts-expect-error Password is required by the backend login request.
++const missingLoginPassword: LoginCredentials = { email: restoredUser.email };
++// @ts-expect-error Password is required by the backend register request.
++const missingRegisterPassword: RegisterCredentials = { email: restoredUser.email, fullName: 'Synthetic' };
++// @ts-expect-error Role must use the backend's existing controlled vocabulary.
++const inventedRole: User = { ...restoredUser, roles: ['Superuser'] };
++
++void [registrationUser, response, login, register, missingLoginPassword, missingRegisterPassword, inventedRole];

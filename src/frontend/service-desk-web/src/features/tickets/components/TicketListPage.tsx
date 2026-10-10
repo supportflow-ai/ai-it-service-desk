@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Table, Tag, Button, Typography, Space, Card, Empty, Alert } from 'antd';
+import { Table, Tag, Button, Typography, Card, Empty, Alert } from 'antd';
 import { PlusOutlined, EyeOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { ticketApi } from '../api/ticketApi';
@@ -89,7 +89,7 @@ export function TicketListPage() {
     {
       title: 'Thao tác',
       key: 'action',
-      render: (_: any, record: TicketDto) => (
+      render: (_: unknown, record: TicketDto) => (
         <Button
           type="text"
           icon={<EyeOutlined />}
