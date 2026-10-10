@@ -1,3 +1,6 @@
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -62,6 +65,15 @@ public sealed class TicketIdempotencyPostgresFixture : IAsyncLifetime
                 }));
             builder.ConfigureServices(services =>
             {
+
+                // Program captures JwtOptions before WebApplicationFactory's configuration callback.
+                // Override only fixture issuer/audience/key, retaining the real JWT handler and all validation flags.
+                services.PostConfigure<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme, options =>
+                {
+                    options.TokenValidationParameters.ValidIssuer = "ServiceDesk";
+                    options.TokenValidationParameters.ValidAudience = "ServiceDeskClient";
+                    options.TokenValidationParameters.IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Secret));
+                });
                 services.RemoveAll<DbContextOptions<ApplicationDbContext>>();
                 services.RemoveAll<IDbContextOptionsConfiguration<ApplicationDbContext>>();
                 services.AddDbContext<ApplicationDbContext>(options => options.UseNpgsql(connectionString));

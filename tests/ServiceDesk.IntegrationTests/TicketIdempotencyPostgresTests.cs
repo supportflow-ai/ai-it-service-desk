@@ -321,4 +321,37 @@ public sealed class TicketIdempotencyPostgresTests : IClassFixture<TicketIdempot
         await AssertCounts(owner, 1, 0);
         await AssertCounts(other, 0, 1);
     }
+
+    [Theory]
+    [InlineData("signature")]
+    [InlineData("issuer")]
+    [InlineData("audience")]
+    [InlineData("expired")]
+    public async Task T09_InvalidJwtCannotReplayAnExistingKey(string invalidPart)
+    {
+        var user = Guid.NewGuid(); var key = Guid.NewGuid().ToString();
+        using var firstHost = Client();
+        using var original = await Post(firstHost, user, key);
+        original.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var options = new JwtOptions
+        {
+            SecretKey = invalidPart == "signature" ? "different_test_secret_01234567890123456789" : TicketIdempotencyPostgresFixture.Secret,
+            Issuer = invalidPart == "issuer" ? "different-test-issuer" : "ServiceDesk",
+            Audience = invalidPart == "audience" ? "different-test-audience" : "ServiceDeskClient",
+            ExpiryMinutes = invalidPart == "expired" ? -60 : 60
+        };
+        var token = new JwtTokenGenerator(Options.Create(options)).GenerateToken(
+            new IdentityUser { Id = user.ToString(), Email = "requester@test.invalid" }, ["Requester"]);
+        using var secondHost = Client(second: true);
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/tickets");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        request.Headers.Add("Idempotency-Key", key);
+        request.Content = JsonContent.Create(Payload);
+
+        using var rejected = await secondHost.SendAsync(request);
+        rejected.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        (await rejected.Content.ReadAsStringAsync()).Should().NotContain(Payload.Description);
+        await AssertCounts(user, 1, 1);
+    }
 }

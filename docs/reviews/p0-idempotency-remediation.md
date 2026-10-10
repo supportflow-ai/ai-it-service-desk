@@ -290,3 +290,11 @@ User đã yêu cầu commit/push các nhánh và merge lần lượt vào dev. C
 - Đã thử khởi động Docker Desktop; engine trả HTTP500. wsl --status báo WSL2/Virtual Machine Platform/virtualization chưa khả dụng; không thay đổi Windows features/BIOS hoặc reboot.
 - Thêm .github/workflows/backend-security-regression.yml để chạy đúng build/unit/integration trên GitHub-hosted Ubuntu24.04 Docker runner. Actions pinned commit SHA, contents:read, không lấy production credentials. Workflow/model tests phải PASS trước merge hotfix.
 - Trạng thái CI tại lúc commit: PENDING; merge/release vẫn BLOCKED. Những dòng “không commit” trong báo cáo phía trên mô tả audit ban đầu, trước authorization mới.
+
+### Linux CI first run: confirmed blockers and fixture correction
+
+- CI [38070464842](https://github.com/supportflow-ai/ai-it-service-desk/actions/runs/38070464842): Docker/build/unit PASS; full integration FAIL41/41.
+- Existing Auth/Health/Database/Ticket tests fail PostgreSQL42P01: relation public.AspNetRoles does not exist. This confirms missing Identity migration/bootstrap at baseline; owner Anh Nguyen/Backend Core, QA Kiệt. Requires separate migration/data-compatibility review; not hidden with EnsureCreated or ignored tests.
+- Hotfix PostgreSQL requests fail401 before exercising persistence because Program captures JwtOptions before WebApplicationFactory's configuration override. Corrected fixture uses PostConfigure on the existing JwtBearer scheme only for test issuer/audience/key; production authentication and validation flags remain unchanged.
+- Added four negative real-host JWT replay cases: wrong signature/issuer/audience and expired token must401 without new writes or private replay. PostgreSQL hotfix cases now17; nonintegration remains45.
+- Fixture correction Release build/nonintegration45PASS locally. Full Linux CI rerun pending at this commit. No Identity schema/production Auth logic changed; hotfix merge remains blocked until all required gates PASS.
