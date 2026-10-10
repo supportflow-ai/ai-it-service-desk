@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Row, Col, Card, Typography, Tag, Button, Timeline, Input, Space, Divider, Skeleton, Alert, message, Modal, Form } from 'antd';
 import { ArrowLeftOutlined, UserOutlined, MessageOutlined, FileTextOutlined, PaperClipOutlined, CheckCircleOutlined, PlayCircleOutlined, UserSwitchOutlined } from '@ant-design/icons';
 import { ticketApi } from '../api/ticketApi';
+import { getHttpErrorStatus } from '@/shared/api/httpError';
 import { TicketDto, TicketTimelineEventDto, TicketStatus } from '../types';
 
 const { Title, Text } = Typography;
@@ -34,10 +35,10 @@ export function AgentTicketWorkspace() {
       ]);
       setTicket(ticketData);
       setEvents(timelineData);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to fetch workspace data:', err);
       // Fallback for demo when backend is not fully ready
-      if (err.response?.status === 404) {
+      if (getHttpErrorStatus(err) === 404) {
          setError('Không tìm thấy Ticket (404).');
       } else {
          setError('Lỗi kết nối tới máy chủ.');
@@ -53,15 +54,15 @@ export function AgentTicketWorkspace() {
   }, [id]);
 
   // Handle generic actions with query invalidation (refresh)
-  const handleAction = async (action: () => Promise<any>, successMsg: string) => {
+  const handleAction = async (action: () => Promise<unknown>, successMsg: string) => {
     try {
       setActionLoading(true);
       await action();
       message.success(successMsg);
       await fetchWorkspaceData(); // Query invalidation
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      if (err.response?.status === 409) {
+      if (getHttpErrorStatus(err) === 409) {
         message.error('Dữ liệu đã bị thay đổi bởi người khác (Xmin Conflict). Vui lòng tải lại trang.');
       } else {
         message.error('Thao tác thất bại. Vui lòng thử lại.');

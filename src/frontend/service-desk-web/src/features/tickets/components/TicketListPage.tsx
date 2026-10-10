@@ -89,7 +89,7 @@ export function TicketListPage() {
     {
       title: 'Thao tác',
       key: 'action',
-      render: (_: any, record: TicketDto) => (
+      render: (_: unknown, record: TicketDto) => (
         <Button
           type="text"
           icon={<EyeOutlined />}
