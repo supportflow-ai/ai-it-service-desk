@@ -1,0 +1,111 @@
+{
+  "jira": "TC-282",
+  "jira_url": "https://evolving-kg-drift.atlassian.net/browse/TC-282",
+  "assignee": "Đức Anh",
+  "assignee_account_id": "712020:b47b937b-87ae-4e89-af56-621dbbea98dc",
+  "jira_status": "Done",
+  "jira_checked_date": "2026-10-15",
+  "jira_updated_at": "2026-09-19T13:29:29.449+0700",
+  "sprint": {
+    "id": 6,
+    "name": "Sprint 1",
+    "state": "active",
+    "board_id": 35,
+    "goal": "",
+    "start_date": "2026-09-05T10:50:00.517Z",
+    "end_date": "2026-09-19T10:50:42.000Z"
+  },
+  "parent": "TC-203",
+  "branch": "docs/tc-282-definition-of-done",
+  "base_branch": "dev",
+  "base_sha": "249608e24b1bf4c64773f18bcb734fd529c1d554",
+  "reviewed_date": "2026-10-15",
+  "timezone": "Asia/Bangkok",
+  "scope": [
+    "Nguồn scaffold DoD và đề xuất DoR/DoD/review cho Sprint 1"
+  ],
+  "implementation_changes": false,
+  "historical_prs": [
+    {
+      "number": 6,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/pull/6",
+      "title": "docs: integrate architecture contracts and governance baseline",
+      "base": "dev",
+      "head": "frontend",
+      "head_sha": "063489b97c1f706cebeaeea1d3038f0e63a39fd7",
+      "merge_commit_sha": "164ae02e29c9498d08acbe11587389c470d79245",
+      "merged": true,
+      "draft": false,
+      "state": "closed"
+    }
+  ],
+  "dependency_prs": {},
+  "sources": [
+    {
+      "path": "tests/ServiceDesk.IntegrationTests/TicketEndpointTests.cs",
+      "commit_sha": "249608e24b1bf4c64773f18bcb734fd529c1d554",
+      "line": 269,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/blob/249608e24b1bf4c64773f18bcb734fd529c1d554/tests/ServiceDesk.IntegrationTests/TicketEndpointTests.cs#L269",
+      "evidence_type": "source_inspection"
+    },
+    {
+      "path": "Directory.Build.props",
+      "commit_sha": "249608e24b1bf4c64773f18bcb734fd529c1d554",
+      "line": 7,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/blob/249608e24b1bf4c64773f18bcb734fd529c1d554/Directory.Build.props#L7",
+      "evidence_type": "source_inspection"
+    },
+    {
+      "original_path": "ai-it-service-desk-claude-context-pack/docs/08-scaffold-scope-and-definition-of-done.md",
+      "snapshot": "source-scaffold-definition-of-done.md",
+      "sha256": "659c2c2dafd2a9b731759a80f825a8170ff6fd3cf47d713bbf4726647e8a2eed",
+      "evidence_type": "local_unversioned_source_snapshot",
+      "approval": "not_verified"
+    },
+    {
+      "original_path": "ai-it-service-desk-claude-context-pack/docs/06-testing-and-quality.md",
+      "snapshot": "source-testing-and-quality.md",
+      "sha256": "ffc04d3d388fc2496cb1d2113bbfdb56c45577d53a4bf162d7bd1aed84649bfc",
+      "evidence_type": "local_unversioned_source_snapshot",
+      "approval": "not_verified"
+    },
+    {
+      "path": "Jenkinsfile",
+      "commit_sha": "249608e24b1bf4c64773f18bcb734fd529c1d554",
+      "line": 35,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/blob/249608e24b1bf4c64773f18bcb734fd529c1d554/Jenkinsfile#L35",
+      "evidence_type": "source_inspection"
+    },
+    {
+      "path": "docs/architecture/08-sprint-acceptance-and-governance-record.md",
+      "commit_sha": "249608e24b1bf4c64773f18bcb734fd529c1d554",
+      "line": 12,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/blob/249608e24b1bf4c64773f18bcb734fd529c1d554/docs/architecture/08-sprint-acceptance-and-governance-record.md#L12",
+      "evidence_type": "source_inspection"
+    }
+  ],
+  "verification": {
+    "report": "verification.md",
+    "results": "verification-results.json",
+    "backend_solution": "FAIL",
+    "passed_non_integration_tests": 33,
+    "postgresql_integration": "NOT RUN",
+    "frontend_build": "PASS",
+    "frontend_lint": "PASS_WITH_WARNING",
+    "frontend_regression": "9/9 PASS"
+  },
+  "technical_conclusion": "ready_for_review",
+  "blockers": [
+    "Scaffold source chưa có upstream approval/version được xác minh",
+    "Sprint 1 DoR/DoD/review extension chờ team sign-off",
+    "Solution/integration gates chưa green; historical APPROVED labels không thay evidence"
+  ],
+  "acceptance": "pending_review",
+  "sign_off": {
+    "author_review": "prepared",
+    "human_reviewer_approval": "not_verified",
+    "merge": "not_performed",
+    "jira_change": "not_performed"
+  },
+  "historical_isolation": "Historical grouped PRs preserved; new issue-specific review branch does not retroactively establish isolation."
+}
