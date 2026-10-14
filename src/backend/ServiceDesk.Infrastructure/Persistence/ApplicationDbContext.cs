@@ -34,6 +34,8 @@ public class ApplicationDbContext : IdentityDbContext<IdentityUser>, IApplicatio
 
             entity.HasIndex(t => t.TicketNumber).IsUnique();
             entity.HasIndex(t => t.RequesterId);
+            entity.HasIndex(t => new { t.RequesterId, t.CreatedAt, t.Id })
+                .HasDatabaseName("IX_tickets_requester_id_created_at_id");
             entity.HasIndex(t => t.Status);
 
             entity.Property(t => t.RequesterId)

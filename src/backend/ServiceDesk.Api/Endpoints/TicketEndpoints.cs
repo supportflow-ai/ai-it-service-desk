@@ -63,6 +63,32 @@ public static class TicketEndpoints
         .Produces(StatusCodes.Status400BadRequest)
         .Produces(StatusCodes.Status401Unauthorized);
 
+        group.MapGet("/me", async (
+            ITicketService ticketService,
+            ICurrentUser currentUser,
+            CancellationToken ct,
+            int page = 1,
+            int pageSize = 10) =>
+        {
+            if (currentUser.UserId == null || !Guid.TryParse(currentUser.UserId, out var requesterId))
+            {
+                return Results.Unauthorized();
+            }
+
+            if (page < 1 || pageSize < 1 || pageSize > 100 || page > (int.MaxValue / pageSize) + 1)
+            {
+                return Results.BadRequest(new { error = "page must be at least 1 and pageSize must be between 1 and 100" });
+            }
+
+            var tickets = await ticketService.GetTicketsForRequesterAsync(requesterId, page, pageSize, ct);
+            return Results.Ok(tickets);
+        })
+        .WithName("GetMyTickets")
+        .RequireAuthorization(PolicyNames.RequireRequester)
+        .Produces<PagedTicketResult>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status401Unauthorized);
+
         group.MapGet("/{id:guid}", async (
             Guid id,
             ITicketService ticketService,

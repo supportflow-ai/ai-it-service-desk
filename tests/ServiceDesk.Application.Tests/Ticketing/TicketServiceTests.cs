@@ -215,6 +215,48 @@ public class TicketServiceTests : IDisposable
         result!.Id.Should().Be(created.Id);
     }
 
+    [Fact]
+    public async Task GetTicketsForRequesterAsync_ReturnsOnlyOwnedTicketsInStablePages()
+    {
+        var requesterId = Guid.NewGuid();
+        var otherRequesterId = Guid.NewGuid();
+        var createdAt = new DateTime(2026, 10, 14, 12, 0, 0, DateTimeKind.Utc);
+        var firstOwnedTicket = Ticket.Create(
+            requesterId,
+            "First owned ticket",
+            "Valid description for requester ticket.",
+            TicketCategories.NET,
+            createdAt);
+        var secondOwnedTicket = Ticket.Create(
+            requesterId,
+            "Second owned ticket",
+            "Valid description for requester ticket.",
+            TicketCategories.NET,
+            createdAt);
+        var otherRequesterTicket = Ticket.Create(
+            otherRequesterId,
+            "Other requester ticket",
+            "Valid description for another requester.",
+            TicketCategories.NET,
+            createdAt.AddMinutes(1));
+
+        _context.Tickets.AddRange(firstOwnedTicket, secondOwnedTicket, otherRequesterTicket);
+        await _context.SaveChangesAsync();
+
+        var firstPage = await _service.GetTicketsForRequesterAsync(requesterId, page: 1, pageSize: 1);
+        var secondPage = await _service.GetTicketsForRequesterAsync(requesterId, page: 2, pageSize: 1);
+
+        var expectedIds = new[] { firstOwnedTicket.Id, secondOwnedTicket.Id }
+            .OrderByDescending(id => id)
+            .ToArray();
+
+        firstPage.TotalCount.Should().Be(2);
+        firstPage.Items.Should().ContainSingle();
+        firstPage.Items[0].Id.Should().Be(expectedIds[0]);
+        secondPage.Items.Should().ContainSingle();
+        secondPage.Items[0].Id.Should().Be(expectedIds[1]);
+    }
+
     public void Dispose()
     {
         _context.Dispose();
