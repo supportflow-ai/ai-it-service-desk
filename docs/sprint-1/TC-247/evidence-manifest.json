@@ -1,0 +1,171 @@
+{
+  "jira": "TC-247",
+  "jira_url": "https://evolving-kg-drift.atlassian.net/browse/TC-247",
+  "assignee": "Đức Anh",
+  "assignee_account_id": "712020:b47b937b-87ae-4e89-af56-621dbbea98dc",
+  "jira_status": "Done",
+  "jira_checked_date": "2026-10-15",
+  "jira_updated_at": "2026-10-14T23:02:45.155+0700",
+  "sprint": {
+    "id": 6,
+    "name": "Sprint 1",
+    "state": "active",
+    "board_id": 35,
+    "goal": "",
+    "start_date": "2026-09-05T10:50:00.517Z",
+    "end_date": "2026-09-19T10:50:42.000Z"
+  },
+  "parent": "TC-196",
+  "branch": "docs/tc-247-api-permission-matrix",
+  "base_branch": "dev",
+  "base_sha": "249608e24b1bf4c64773f18bcb734fd529c1d554",
+  "reviewed_date": "2026-10-15",
+  "timezone": "Asia/Bangkok",
+  "scope": [
+    "RBAC/API permission matrix và negative scenarios"
+  ],
+  "implementation_changes": false,
+  "historical_prs": [
+    {
+      "number": 6,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/pull/6",
+      "title": "docs: integrate architecture contracts and governance baseline",
+      "base": "dev",
+      "head": "frontend",
+      "head_sha": "063489b97c1f706cebeaeea1d3038f0e63a39fd7",
+      "merge_commit_sha": "164ae02e29c9498d08acbe11587389c470d79245",
+      "merged": true,
+      "draft": false,
+      "state": "closed"
+    },
+    {
+      "number": 8,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/pull/8",
+      "title": "docs(TC-246,TC-247): integrate actor and RBAC contracts",
+      "base": "dev",
+      "head": "docs/tc-246-247-rbac",
+      "head_sha": "9f9d36e306871654c71d66b8df29e8717b59e0ee",
+      "merge_commit_sha": "1111a9ba401bd2cadd44fbcf760c044b4af76c75",
+      "merged": true,
+      "draft": false,
+      "state": "closed"
+    },
+    {
+      "number": 5,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/pull/5",
+      "title": "fix(security): isolate ticket idempotency with atomic PostgreSQL persistence",
+      "base": "dev",
+      "head": "fix/p0-idempotency-isolation",
+      "head_sha": "0ec26ebc778b8f202170882fa663caa541dbe566",
+      "merge_commit_sha": null,
+      "merged": false,
+      "draft": true,
+      "state": "open"
+    }
+  ],
+  "dependency_prs": {},
+  "sources": [
+    {
+      "path": "tests/ServiceDesk.IntegrationTests/TicketEndpointTests.cs",
+      "commit_sha": "249608e24b1bf4c64773f18bcb734fd529c1d554",
+      "line": 269,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/blob/249608e24b1bf4c64773f18bcb734fd529c1d554/tests/ServiceDesk.IntegrationTests/TicketEndpointTests.cs#L269",
+      "evidence_type": "source_inspection"
+    },
+    {
+      "path": "Directory.Build.props",
+      "commit_sha": "249608e24b1bf4c64773f18bcb734fd529c1d554",
+      "line": 7,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/blob/249608e24b1bf4c64773f18bcb734fd529c1d554/Directory.Build.props#L7",
+      "evidence_type": "source_inspection"
+    },
+    {
+      "path": "src/backend/ServiceDesk.Domain/Identity/RoleNames.cs",
+      "commit_sha": "249608e24b1bf4c64773f18bcb734fd529c1d554",
+      "line": 9,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/blob/249608e24b1bf4c64773f18bcb734fd529c1d554/src/backend/ServiceDesk.Domain/Identity/RoleNames.cs#L9",
+      "evidence_type": "source_inspection"
+    },
+    {
+      "path": "src/backend/ServiceDesk.Api/Program.cs",
+      "commit_sha": "249608e24b1bf4c64773f18bcb734fd529c1d554",
+      "line": 52,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/blob/249608e24b1bf4c64773f18bcb734fd529c1d554/src/backend/ServiceDesk.Api/Program.cs#L52",
+      "evidence_type": "source_inspection"
+    },
+    {
+      "path": "src/backend/ServiceDesk.Infrastructure/Identity/JwtTokenGenerator.cs",
+      "commit_sha": "249608e24b1bf4c64773f18bcb734fd529c1d554",
+      "line": 29,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/blob/249608e24b1bf4c64773f18bcb734fd529c1d554/src/backend/ServiceDesk.Infrastructure/Identity/JwtTokenGenerator.cs#L29",
+      "evidence_type": "source_inspection"
+    },
+    {
+      "path": "src/backend/ServiceDesk.Api/Endpoints/AuthEndpoints.cs",
+      "commit_sha": "249608e24b1bf4c64773f18bcb734fd529c1d554",
+      "line": 31,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/blob/249608e24b1bf4c64773f18bcb734fd529c1d554/src/backend/ServiceDesk.Api/Endpoints/AuthEndpoints.cs#L31",
+      "evidence_type": "source_inspection"
+    },
+    {
+      "path": "src/backend/ServiceDesk.Api/Endpoints/TicketEndpoints.cs",
+      "commit_sha": "249608e24b1bf4c64773f18bcb734fd529c1d554",
+      "line": 61,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/blob/249608e24b1bf4c64773f18bcb734fd529c1d554/src/backend/ServiceDesk.Api/Endpoints/TicketEndpoints.cs#L61",
+      "evidence_type": "source_inspection"
+    },
+    {
+      "path": "src/backend/ServiceDesk.Infrastructure/Ticketing/TicketService.cs",
+      "commit_sha": "249608e24b1bf4c64773f18bcb734fd529c1d554",
+      "line": 58,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/blob/249608e24b1bf4c64773f18bcb734fd529c1d554/src/backend/ServiceDesk.Infrastructure/Ticketing/TicketService.cs#L58",
+      "evidence_type": "source_inspection"
+    },
+    {
+      "path": "src/backend/ServiceDesk.Infrastructure/Ticketing/TicketService.cs",
+      "commit_sha": "249608e24b1bf4c64773f18bcb734fd529c1d554",
+      "line": 84,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/blob/249608e24b1bf4c64773f18bcb734fd529c1d554/src/backend/ServiceDesk.Infrastructure/Ticketing/TicketService.cs#L84",
+      "evidence_type": "source_inspection"
+    },
+    {
+      "path": "docs/architecture/02-rbac-permission-matrix.md",
+      "commit_sha": "249608e24b1bf4c64773f18bcb734fd529c1d554",
+      "line": 73,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/blob/249608e24b1bf4c64773f18bcb734fd529c1d554/docs/architecture/02-rbac-permission-matrix.md#L73",
+      "evidence_type": "source_inspection"
+    },
+    {
+      "path": "src/backend/ServiceDesk.Api/Endpoints/TicketEndpoints.cs",
+      "commit_sha": "249608e24b1bf4c64773f18bcb734fd529c1d554",
+      "line": 36,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/blob/249608e24b1bf4c64773f18bcb734fd529c1d554/src/backend/ServiceDesk.Api/Endpoints/TicketEndpoints.cs#L36",
+      "evidence_type": "source_inspection"
+    }
+  ],
+  "verification": {
+    "report": "verification.md",
+    "results": "verification-results.json",
+    "backend_solution": "FAIL",
+    "passed_non_integration_tests": 33,
+    "postgresql_integration": "NOT RUN",
+    "frontend_build": "PASS",
+    "frontend_lint": "PASS_WITH_WARNING",
+    "frontend_regression": "9/9 PASS"
+  },
+  "technical_conclusion": "ready_for_review",
+  "blockers": [
+    "Global idempotency cache có thể replay response giữa requester",
+    "Agent detail thiếu team/assignment scope",
+    "Mutation/KB/analytics API và target permissions chưa implement",
+    "Baseline solution gate FAIL; PostgreSQL authorization tests NOT RUN"
+  ],
+  "acceptance": "pending_review",
+  "sign_off": {
+    "author_review": "prepared",
+    "human_reviewer_approval": "not_verified",
+    "merge": "not_performed",
+    "jira_change": "not_performed"
+  },
+  "historical_isolation": "Historical grouped PRs preserved; new issue-specific review branch does not retroactively establish isolation."
+}
