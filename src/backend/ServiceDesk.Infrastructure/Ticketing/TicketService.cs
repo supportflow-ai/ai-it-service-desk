@@ -22,37 +22,12 @@ public class TicketService : ITicketService
 
     public async Task<TicketDto> CreateTicketAsync(CreateTicketCommand command, Guid requesterId, CancellationToken cancellationToken = default)
     {
-        // Title validation
-        if (string.IsNullOrWhiteSpace(command.Title))
-            throw new ArgumentException("Title is required");
-        
-        if (command.Title.Length > 100)
-            throw new ArgumentException("Title must not exceed 100 characters");
-
-        // Description validation
-        if (string.IsNullOrWhiteSpace(command.Description))
-            throw new ArgumentException("Description is required");
-        
-        if (command.Description.Trim().Length < 10)
-            throw new ArgumentException("Description must be at least 10 characters");
-
-        // CategoryId validation
-        if (!TicketCategories.All.Contains(command.CategoryId))
-            throw new ArgumentException("Invalid category");
-
-        var ticket = new Ticket
-        {
-            Id = Guid.NewGuid(),
-            TicketNumber = null!,
-            RequesterId = requesterId,
-            RequesterDepartmentId = null,
-            Title = command.Title.Trim(),
-            Description = command.Description.Trim(),
-            CategoryId = command.CategoryId,
-            Status = TicketStatus.Submitted,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
-        };
+        var ticket = Ticket.Create(
+            requesterId,
+            command.Title,
+            command.Description,
+            command.CategoryId,
+            DateTime.UtcNow);
 
         _context.Tickets.Add(ticket);
         await _context.SaveChangesAsync(cancellationToken);
