@@ -1,0 +1,757 @@
+{
+  "reviewed_date": "2026-10-15",
+  "timezone": "Asia/Bangkok",
+  "branch": "dev",
+  "commit_sha": "249608e24b1bf4c64773f18bcb734fd529c1d554",
+  "environment": {
+    "os": "Windows",
+    "dotnet_sdk": "10.0.300",
+    "node": "v24.13.1",
+    "npm": "11.8.0",
+    "frontend_dependencies": "npm ci --no-audit --no-fund; lockfile unchanged"
+  },
+  "backend": {
+    "command": "dotnet test src/backend/ServiceDesk.sln -c Release --filter \"Category!=Integration\" --logger \"trx;LogFilePrefix=baseline\" --results-directory ../evidence/dev",
+    "exit_code": 1,
+    "result": "FAIL",
+    "passed_non_integration_tests": 33,
+    "results": [
+      {
+        "artifact": "baseline_net10.0_20261015003148.trx",
+        "sha256": "54bf7e5390543925c005dc91dbfff737a5d29d5854b55c8a2f090855cedcdf69",
+        "total": 15,
+        "passed": 15,
+        "failed": 0,
+        "not_executed": 0,
+        "times": {
+          "creation": "2026-10-15T00:31:48.2222492+07:00",
+          "queuing": "2026-10-15T00:31:48.2222497+07:00",
+          "start": "2026-10-15T00:31:43.4234245+07:00",
+          "finish": "2026-10-15T00:31:48.2986856+07:00"
+        },
+        "tests": [
+          {
+            "name": "ServiceDesk.Domain.Tests.Ticketing.TicketTests.Create_RejectsInvalidOrCaseMismatchedCategory(categoryId: \"invalid\")",
+            "outcome": "Passed",
+            "duration": "00:00:00.0006489"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.Ticketing.TicketTests.Create_RejectsBlankOrShortDescription(description: \"\")",
+            "outcome": "Passed",
+            "duration": "00:00:00.0004362"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.Ticketing.TicketTests.Create_RejectsInvalidOrCaseMismatchedCategory(categoryId: \"vpn\")",
+            "outcome": "Passed",
+            "duration": "00:00:00.0008183"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.Ticketing.TicketTests.Create_RejectsBlankTitle(title: \"   \")",
+            "outcome": "Passed",
+            "duration": "00:00:00.8639339"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.RoleNamesTests.RoleNames_Contains_Admin_Agent_Requester",
+            "outcome": "Passed",
+            "duration": "00:00:00.0042783"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.Ticketing.TicketTests.Create_RejectsBlankTitle(title: \"\")",
+            "outcome": "Passed",
+            "duration": "00:00:00.0006413"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.Ticketing.TicketTests.Create_NormalizesInputAndInitializesRequesterTicket",
+            "outcome": "Passed",
+            "duration": "00:00:00.0053028"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.Ticketing.TicketTests.IsOwnedBy_ReturnsTrueOnlyForRequester",
+            "outcome": "Passed",
+            "duration": "00:00:00.0012967"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.Ticketing.TicketTests.Create_RejectsEmptyRequesterId",
+            "outcome": "Passed",
+            "duration": "00:00:00.0006416"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.Ticketing.TicketTests.Create_RejectsBlankOrShortDescription(description: \"   \")",
+            "outcome": "Passed",
+            "duration": "00:00:00.0001152"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.RoleNamesTests.PolicyNames_Are_Defined_Properly",
+            "outcome": "Passed",
+            "duration": "00:00:00.8559411"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.Ticketing.TicketTests.Create_RejectsBlankOrShortDescription(description: \"Too short\")",
+            "outcome": "Passed",
+            "duration": "00:00:00.0006543"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.Common.DomainDefaultsTests.NameMaxLength_ShouldBe256",
+            "outcome": "Passed",
+            "duration": "00:00:00.8551094"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.Ticketing.TicketTests.Create_RejectsTitleLongerThan100Characters",
+            "outcome": "Passed",
+            "duration": "00:00:00.0006343"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.Common.DomainDefaultsTests.DescriptionMaxLength_ShouldBe4000",
+            "outcome": "Passed",
+            "duration": "00:00:00.0001698"
+          }
+        ]
+      },
+      {
+        "artifact": "baseline_net10.0_20261015003152.trx",
+        "sha256": "0fc0bcf1bd2999aca89b0700b08b9b8a666273b3333f3903ec922e7ed5ee32cf",
+        "total": 6,
+        "passed": 6,
+        "failed": 0,
+        "not_executed": 0,
+        "times": {
+          "creation": "2026-10-15T00:31:52.9096819+07:00",
+          "queuing": "2026-10-15T00:31:52.9096824+07:00",
+          "start": "2026-10-15T00:31:49.7720418+07:00",
+          "finish": "2026-10-15T00:31:52.9172134+07:00"
+        },
+        "tests": [
+          {
+            "name": "ServiceDesk.ArchitectureTests.CleanArchitectureTests.Domain_ShouldNotReference_EFCore",
+            "outcome": "Passed",
+            "duration": "00:00:00.0013806"
+          },
+          {
+            "name": "ServiceDesk.ArchitectureTests.CleanArchitectureTests.Application_ShouldNotReference_Infrastructure",
+            "outcome": "Passed",
+            "duration": "00:00:00.0031258"
+          },
+          {
+            "name": "ServiceDesk.ArchitectureTests.CleanArchitectureTests.Domain_ShouldNotReference_Infrastructure",
+            "outcome": "Passed",
+            "duration": "00:00:00.0013503"
+          },
+          {
+            "name": "ServiceDesk.ArchitectureTests.CleanArchitectureTests.Domain_ShouldNotReference_AspNetCore",
+            "outcome": "Passed",
+            "duration": "00:00:00.0016120"
+          },
+          {
+            "name": "ServiceDesk.ArchitectureTests.CleanArchitectureTests.Application_ShouldNotReference_Api",
+            "outcome": "Passed",
+            "duration": "00:00:00.0145616"
+          },
+          {
+            "name": "ServiceDesk.ArchitectureTests.CleanArchitectureTests.Domain_ShouldNotReference_Application",
+            "outcome": "Passed",
+            "duration": "00:00:00.1468905"
+          }
+        ]
+      },
+      {
+        "artifact": "baseline_net10.0_20261015003158.trx",
+        "sha256": "385b42df9b276e1c898bd31fe28db2448fa1e5eddfbcfce5583ecea9b688f765",
+        "total": 12,
+        "passed": 12,
+        "failed": 0,
+        "not_executed": 0,
+        "times": {
+          "creation": "2026-10-15T00:31:52.3634813+07:00",
+          "queuing": "2026-10-15T00:31:52.3634818+07:00",
+          "start": "2026-10-15T00:31:46.8432250+07:00",
+          "finish": "2026-10-15T00:31:58.5651245+07:00"
+        },
+        "tests": [
+          {
+            "name": "ServiceDesk.Application.Tests.Ticketing.TicketServiceTests.CreateTicketAsync_TitleTooLong_ThrowsArgumentException",
+            "outcome": "Passed",
+            "duration": "00:00:00.0213959"
+          },
+          {
+            "name": "ServiceDesk.Application.Tests.Ticketing.TicketServiceTests.GetTicketByIdAsync_TicketExistsAndMatchesRequester_ReturnsTicketDto",
+            "outcome": "Passed",
+            "duration": "00:00:00.0196744"
+          },
+          {
+            "name": "ServiceDesk.Application.Tests.Ticketing.TicketServiceTests.CreateTicketAsync_DescriptionTooShort_ThrowsArgumentException",
+            "outcome": "Passed",
+            "duration": "00:00:00.0088530"
+          },
+          {
+            "name": "ServiceDesk.Application.Tests.Ticketing.TicketServiceTests.CreateTicketAsync_WhitespaceTitleAndDescription_Trimmed",
+            "outcome": "Passed",
+            "duration": "00:00:00.0184960"
+          },
+          {
+            "name": "ServiceDesk.Application.Tests.Ticketing.TicketServiceTests.GetTicketByIdAsync_UserIsAdmin_ReturnsTicketEvenIfDifferentRequester",
+            "outcome": "Passed",
+            "duration": "00:00:07.3405325"
+          },
+          {
+            "name": "ServiceDesk.Application.Tests.Ticketing.TicketServiceTests.GetTicketByIdAsync_TicketNotFound_ReturnsNull",
+            "outcome": "Passed",
+            "duration": "00:00:00.0512435"
+          },
+          {
+            "name": "ServiceDesk.Application.Tests.Ticketing.TicketServiceTests.CreateTicketAsync_ValidInput_ReturnsTicketDtoWithTicketNumber",
+            "outcome": "Passed",
+            "duration": "00:00:00.0102618"
+          },
+          {
+            "name": "ServiceDesk.Application.Tests.AIAssistance.TicketClassificationResultTests.Empty_ShouldReturnResultWithZeroConfidence",
+            "outcome": "Passed",
+            "duration": "00:00:00.9811748"
+          },
+          {
+            "name": "ServiceDesk.Application.Tests.Ticketing.TicketServiceTests.GetTicketsForRequesterAsync_ReturnsOnlyOwnedTicketsInStablePages",
+            "outcome": "Passed",
+            "duration": "00:00:00.0675985"
+          },
+          {
+            "name": "ServiceDesk.Application.Tests.Ticketing.TicketServiceTests.CreateTicketAsync_InvalidCategoryId_ThrowsArgumentException",
+            "outcome": "Passed",
+            "duration": "00:00:00.1129890"
+          },
+          {
+            "name": "ServiceDesk.Application.Tests.Ticketing.TicketServiceTests.GetTicketByIdAsync_TicketBelongsToDifferentRequester_ReturnsNull",
+            "outcome": "Passed",
+            "duration": "00:00:00.0081313"
+          },
+          {
+            "name": "ServiceDesk.Application.Tests.Ticketing.TicketServiceTests.CreateTicketAsync_EmptyTitle_ThrowsArgumentException",
+            "outcome": "Passed",
+            "duration": "00:00:00.0078210"
+          }
+        ]
+      }
+    ],
+    "diagnostic": {
+      "code": "CS8602",
+      "path": "tests/ServiceDesk.IntegrationTests/TicketEndpointTests.cs",
+      "line": 269,
+      "column": 76,
+      "message": "Dereference of a possibly null reference",
+      "warnings_as_errors": true
+    },
+    "interpretation": "The solution command builds IntegrationTests even when the filter excludes execution; 33 tests passed, but the overall gate failed."
+  },
+  "integration": {
+    "result": "NOT RUN",
+    "reason": "IntegrationTests has CS8602 compile error; Docker Desktop Linux engine also returned HTTP 500 from /v1.56/version. No PostgreSQL-backed test executed in this run.",
+    "docker_probe": "docker version --format {{.Server.Version}}",
+    "docker_exit_code": 1
+  },
+  "frontend": {
+    "results": [
+      {
+        "exit_code": 0,
+        "name": "frontend_build",
+        "command": "npm run build"
+      },
+      {
+        "exit_code": 0,
+        "name": "frontend_lint",
+        "command": "npm run lint"
+      },
+      {
+        "exit_code": 0,
+        "name": "frontend_regression",
+        "command": "node --test tests/frontend/auth-contract.test.mjs tests/frontend/http-error.test.mjs tests/frontend/production-typecheck.test.mjs"
+      }
+    ],
+    "regression": {
+      "passed": 9,
+      "failed": 0,
+      "skipped": 0
+    },
+    "warnings": [
+      "Vite bundle size over 500 kB",
+      "react-refresh/only-export-components in AuthContext.tsx:74"
+    ],
+    "interpretation": "Compile/lint/contract regression success does not prove auth/create/list/detail end-to-end or correct status decoding."
+  },
+  "main": {
+    "branch": "main",
+    "commit_sha": "e044f470d38cb9d00a4adca9e59de45abbde3ff5",
+    "result": "PASS",
+    "scope": "Existing tests whose FullyQualifiedName includes AIAssistance; not the full main solution or an integration run",
+    "commands": [
+      "dotnet test tests/ServiceDesk.Domain.Tests/ServiceDesk.Domain.Tests.csproj -c Release --filter \"FullyQualifiedName~AIAssistance\" --logger \"trx;LogFileName=ai-domain.trx\" --results-directory ../evidence/main",
+      "dotnet test tests/ServiceDesk.Application.Tests/ServiceDesk.Application.Tests.csproj -c Release --filter \"FullyQualifiedName~AIAssistance\" --logger \"trx;LogFileName=ai-application.trx\" --results-directory ../evidence/main"
+    ],
+    "results": [
+      {
+        "artifact": "ai-application.trx",
+        "sha256": "fda4991dc67c23ba9712b0f568b196daf1ece511a20044fd115d65b7416a2e2a",
+        "total": 13,
+        "passed": 13,
+        "failed": 0,
+        "not_executed": 0,
+        "times": {
+          "creation": "2026-10-15T00:33:08.5598864+07:00",
+          "queuing": "2026-10-15T00:33:08.5598872+07:00",
+          "start": "2026-10-15T00:33:04.4987400+07:00",
+          "finish": "2026-10-15T00:33:08.6451754+07:00"
+        },
+        "tests": [
+          {
+            "name": "ServiceDesk.Application.Tests.AIAssistance.TriageResultTests.RequiresManualTriage_NET_ShouldBeFalse",
+            "outcome": "Passed",
+            "duration": "00:00:00.0003026"
+          },
+          {
+            "name": "ServiceDesk.Application.Tests.AIAssistance.TriageResultTests.InvalidResponse_ShouldCarryValidationErrors",
+            "outcome": "Passed",
+            "duration": "00:00:00.0018657"
+          },
+          {
+            "name": "ServiceDesk.Application.Tests.AIAssistance.NoOpClassificationServiceTests.ClassifyAsync_ShouldPropagateCancellationToken",
+            "outcome": "Passed",
+            "duration": "00:00:00.5639378"
+          },
+          {
+            "name": "ServiceDesk.Application.Tests.AIAssistance.TriageResultTests.Timeout_ShouldHaveControlledState",
+            "outcome": "Passed",
+            "duration": "00:00:00.0001855"
+          },
+          {
+            "name": "ServiceDesk.Application.Tests.AIAssistance.TriageResultTests.ConfidenceBand_NullScore_ShouldReturnNull",
+            "outcome": "Passed",
+            "duration": "00:00:00.0002834"
+          },
+          {
+            "name": "ServiceDesk.Application.Tests.AIAssistance.TriageRequestTests.TriageRequest_ShouldCaptureTicketSnapshot",
+            "outcome": "Passed",
+            "duration": "00:00:00.5681490"
+          },
+          {
+            "name": "ServiceDesk.Application.Tests.AIAssistance.TriageResultTests.LegacyEmpty_ShouldReturnResultWithZeroConfidence",
+            "outcome": "Passed",
+            "duration": "00:00:00.5650105"
+          },
+          {
+            "name": "ServiceDesk.Application.Tests.AIAssistance.AgentTriageViewTests.FromTriageResult_ShouldIncludeAllFields",
+            "outcome": "Passed",
+            "duration": "00:00:00.5649342"
+          },
+          {
+            "name": "ServiceDesk.Application.Tests.AIAssistance.TriageResultTests.RequiresManualTriage_SEC_ShouldBeTrue",
+            "outcome": "Passed",
+            "duration": "00:00:00.0010506"
+          },
+          {
+            "name": "ServiceDesk.Application.Tests.AIAssistance.NoOpClassificationServiceTests.ClassifyAsync_ShouldReturnUnavailable_NotThrow",
+            "outcome": "Passed",
+            "duration": "00:00:00.0015857"
+          },
+          {
+            "name": "ServiceDesk.Application.Tests.AIAssistance.TriageResultTests.Unavailable_ShouldHaveControlledState",
+            "outcome": "Passed",
+            "duration": "00:00:00.0005777"
+          },
+          {
+            "name": "ServiceDesk.Application.Tests.AIAssistance.RequesterTriageViewTests.FromTriageResult_ShouldExcludeImpactUrgencyAndRawScores",
+            "outcome": "Passed",
+            "duration": "00:00:00.5649816"
+          },
+          {
+            "name": "ServiceDesk.Application.Tests.AIAssistance.TriageResultTests.Success_ShouldHaveCorrectOutcome",
+            "outcome": "Passed",
+            "duration": "00:00:00.0004226"
+          }
+        ]
+      },
+      {
+        "artifact": "ai-domain.trx",
+        "sha256": "f355f24e8ef915de6c5ceb4017c4bc190cc9b45118ad8947b248a6d6eff96639",
+        "total": 74,
+        "passed": 74,
+        "failed": 0,
+        "not_executed": 0,
+        "times": {
+          "creation": "2026-10-15T00:32:58.1757414+07:00",
+          "queuing": "2026-10-15T00:32:58.1757417+07:00",
+          "start": "2026-10-15T00:32:54.2283542+07:00",
+          "finish": "2026-10-15T00:32:58.2532020+07:00"
+        },
+        "tests": [
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.TriagePolicyTests.IsKnownCategory_ShouldValidateAgainstTaxonomy(code: \"HW\", expected: True)",
+            "outcome": "Passed",
+            "duration": "00:00:00.0000027"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.AISuggestionTests.Override_Pending_ShouldSetFinalValueToHumanValue",
+            "outcome": "Passed",
+            "duration": "00:00:00.0002890"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.TriagePolicyTests.IsKnownCategory_ShouldValidateAgainstTaxonomy(code: \"ACCESS\", expected: True)",
+            "outcome": "Passed",
+            "duration": "00:00:00.0000066"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.AISuggestionTests.Create_ValidInput_ShouldReturnPendingSuggestion",
+            "outcome": "Passed",
+            "duration": "00:00:00.0051046"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.ConfidencePolicyTests.Classify_ValidScore_ShouldReturnCorrectBand(score: 0.73999999999999999, expected: Medium)",
+            "outcome": "Passed",
+            "duration": "00:00:00.0000129"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.AISuggestionTests.Create_InvalidScore_Infinity_ShouldThrow",
+            "outcome": "Passed",
+            "duration": "00:00:00.0070378"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.ConfidencePolicyTests.Classify_ValidScore_ShouldReturnCorrectBand(score: 0.75, expected: High)",
+            "outcome": "Passed",
+            "duration": "00:00:00.0000211"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.TriagePolicyTests.IsKnownCategory_ShouldValidateAgainstTaxonomy(code: \"UNKNOWN\", expected: False)",
+            "outcome": "Passed",
+            "duration": "00:00:00.0000119"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.AIAnalysisTests.CreateSucceeded_NullInputHash_ShouldThrow",
+            "outcome": "Passed",
+            "duration": "00:00:00.0647929"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.TriagePolicyTests.IsKnownCategory_ShouldValidateAgainstTaxonomy(code: \"acc\", expected: True)",
+            "outcome": "Passed",
+            "duration": "00:00:00.0000027"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.ConfidencePolicyTests.Classify_ValidScore_ShouldReturnCorrectBand(score: 0, expected: Low)",
+            "outcome": "Passed",
+            "duration": "00:00:00.0023037"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.ConfidencePolicyTests.IsValidScore_ShouldValidateRange(score: -0.01, expected: False)",
+            "outcome": "Passed",
+            "duration": "00:00:00.0004209"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.ConfidencePolicyTests.IsValidScore_NaN_ShouldBeInvalid",
+            "outcome": "Passed",
+            "duration": "00:00:00.0002077"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.TriagePolicyTests.RequiresManualTriage_SEC_ShouldReturnTrue",
+            "outcome": "Passed",
+            "duration": "00:00:00.0013721"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.TriagePolicyTests.RequiresManualTriage_NonSEC_ShouldReturnFalse(category: SW)",
+            "outcome": "Passed",
+            "duration": "00:00:00.0002369"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.InputHashComputerTests.Compute_NullDescription_ShouldNotThrow",
+            "outcome": "Passed",
+            "duration": "00:00:00.0003108"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.ConfidencePolicyTests.IsValidScore_Infinity_ShouldBeInvalid",
+            "outcome": "Passed",
+            "duration": "00:00:00.0510011"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.InputHashComputerTests.Compute_SameInput_ShouldReturnSameHash",
+            "outcome": "Passed",
+            "duration": "00:00:00.0003244"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.TriagePolicyTests.ParseCategory_UnknownCode_ShouldReturnNull",
+            "outcome": "Passed",
+            "duration": "00:00:00.0010418"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.TriagePolicyTests.ParseImpact_InvalidValue_ShouldReturnNull",
+            "outcome": "Passed",
+            "duration": "00:00:00.0335300"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.TriagePolicyTests.IsKnownCategory_ShouldValidateAgainstTaxonomy(code: \"SEC\", expected: True)",
+            "outcome": "Passed",
+            "duration": "00:00:00.0000027"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.InputHashComputerTests.Compute_TrimsWhitespace_ShouldReturnSameHash",
+            "outcome": "Passed",
+            "duration": "00:00:00.0070643"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.TriagePolicyTests.IsKnownCategory_ShouldValidateAgainstTaxonomy(code: \"\", expected: False)",
+            "outcome": "Passed",
+            "duration": "00:00:00.0000019"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.AISuggestionTests.Override_EmptyFinalValue_ShouldThrow",
+            "outcome": "Passed",
+            "duration": "00:00:00.0007666"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.ConfidencePolicyTests.IsValidScore_ShouldValidateRange(score: 0.5, expected: True)",
+            "outcome": "Passed",
+            "duration": "00:00:00.0002416"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.ConfidencePolicyTests.Classify_Infinity_ShouldReturnNull",
+            "outcome": "Passed",
+            "duration": "00:00:00.0006489"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.TriagePolicyTests.IsKnownCategory_ShouldValidateAgainstTaxonomy(code: null, expected: False)",
+            "outcome": "Passed",
+            "duration": "00:00:00.0000048"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.AISuggestionTests.Accept_AlreadyAccepted_ShouldThrow",
+            "outcome": "Passed",
+            "duration": "00:00:00.0006240"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.TriagePolicyTests.IsKnownCategory_ShouldValidateAgainstTaxonomy(code: \"MAIL\", expected: True)",
+            "outcome": "Passed",
+            "duration": "00:00:00.0000019"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.AIAnalysisTests.AddSuggestion_OnFailed_ShouldThrow",
+            "outcome": "Passed",
+            "duration": "00:00:00.0008947"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.TriagePolicyTests.RequiresManualTriage_NonSEC_ShouldReturnFalse(category: NET)",
+            "outcome": "Passed",
+            "duration": "00:00:00.0023522"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.TriagePolicyTests.IsKnownCategory_ShouldValidateAgainstTaxonomy(code: \"OTHER\", expected: True)",
+            "outcome": "Passed",
+            "duration": "00:00:00.0009797"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.AISuggestionTests.MarkExpired_Pending_ShouldBecomeExpired",
+            "outcome": "Passed",
+            "duration": "00:00:00.0002034"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.ConfidencePolicyTests.Classify_ValidScore_ShouldReturnCorrectBand(score: 0.39000000000000001, expected: Low)",
+            "outcome": "Passed",
+            "duration": "00:00:00.0000185"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.TriagePolicyTests.IsKnownCategory_ShouldValidateAgainstTaxonomy(code: \"VPN\", expected: True)",
+            "outcome": "Passed",
+            "duration": "00:00:00.0000022"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.TriagePolicyTests.RequiresManualTriage_NonSEC_ShouldReturnFalse(category: ACC)",
+            "outcome": "Passed",
+            "duration": "00:00:00.0000031"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.AIAnalysisTests.CreateSucceeded_ShouldStoreTicketSnapshot",
+            "outcome": "Passed",
+            "duration": "00:00:00.0090039"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.TriagePolicyTests.ParseCategory_ValidCode_ShouldReturnEnum",
+            "outcome": "Passed",
+            "duration": "00:00:00.0009368"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.ConfidencePolicyTests.IsValidScore_ShouldValidateRange(score: 1.01, expected: False)",
+            "outcome": "Passed",
+            "duration": "00:00:00.0000167"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.TriagePolicyTests.RequiresManualTriage_NonSEC_ShouldReturnFalse(category: OTHER)",
+            "outcome": "Passed",
+            "duration": "00:00:00.0000106"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.ConfidencePolicyTests.Classify_ValidScore_ShouldReturnCorrectBand(score: 0.5, expected: Medium)",
+            "outcome": "Passed",
+            "duration": "00:00:00.0000104"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.AISuggestionTests.Create_InvalidScore_NaN_ShouldThrow",
+            "outcome": "Passed",
+            "duration": "00:00:00.0008395"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.AISuggestionTests.Create_InvalidScore_OutOfRange_ShouldThrow",
+            "outcome": "Passed",
+            "duration": "00:00:00.0006112"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.ConfidencePolicyTests.Classify_Null_ShouldReturnNull",
+            "outcome": "Passed",
+            "duration": "00:00:00.0001869"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.AISuggestionTests.Override_ExpiredSuggestion_ShouldThrow",
+            "outcome": "Passed",
+            "duration": "00:00:00.0005563"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.AISuggestionTests.Reject_Pending_ShouldSetNullFinalValue",
+            "outcome": "Passed",
+            "duration": "00:00:00.0002237"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.TriagePolicyTests.IsKnownCategory_ShouldValidateAgainstTaxonomy(code: \"NET\", expected: True)",
+            "outcome": "Passed",
+            "duration": "00:00:00.0003351"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.TriagePolicyTests.ParseImpact_ValidValue_ShouldReturnEnum",
+            "outcome": "Passed",
+            "duration": "00:00:00.0010055"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.ConfidencePolicyTests.IsValidScore_ShouldValidateRange(score: 0, expected: True)",
+            "outcome": "Passed",
+            "duration": "00:00:00.0000208"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.InputHashComputerTests.Compute_NullTitle_ShouldThrow",
+            "outcome": "Passed",
+            "duration": "00:00:00.0098212"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.TriagePolicyTests.IsKnownCategory_ShouldValidateAgainstTaxonomy(code: \"PRINT\", expected: True)",
+            "outcome": "Passed",
+            "duration": "00:00:00.0000036"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.ConfidencePolicyTests.Classify_ValidScore_ShouldReturnCorrectBand(score: 0.40000000000000002, expected: Medium)",
+            "outcome": "Passed",
+            "duration": "00:00:00.0004395"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.ConfidencePolicyTests.IsValidScore_ShouldValidateRange(score: 1, expected: True)",
+            "outcome": "Passed",
+            "duration": "00:00:00.0000103"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.TriagePolicyTests.IsKnownCategory_ShouldValidateAgainstTaxonomy(code: \"EQUIP\", expected: True)",
+            "outcome": "Passed",
+            "duration": "00:00:00.0000020"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.TriagePolicyTests.IsKnownCategory_ShouldValidateAgainstTaxonomy(code: \"DESKTOP_SUPPORT\", expected: False)",
+            "outcome": "Passed",
+            "duration": "00:00:00.0000019"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.AISuggestionTests.Create_NullScore_ShouldBeAllowed",
+            "outcome": "Passed",
+            "duration": "00:00:00.0004233"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.TriagePolicyTests.ParseUrgency_ValidValue_ShouldReturnEnum",
+            "outcome": "Passed",
+            "duration": "00:00:00.0027772"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.AISuggestionTests.Reject_AlreadyOverridden_ShouldThrow",
+            "outcome": "Passed",
+            "duration": "00:00:00.0648166"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.InputHashComputerTests.Compute_DifferentDescription_ShouldReturnDifferentHash",
+            "outcome": "Passed",
+            "duration": "00:00:00.0001699"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.TriagePolicyTests.IsKnownCategory_ShouldValidateAgainstTaxonomy(code: \"ACC\", expected: True)",
+            "outcome": "Passed",
+            "duration": "00:00:00.0000020"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.AIAnalysisTests.AddSuggestion_OnSucceeded_ShouldWork",
+            "outcome": "Passed",
+            "duration": "00:00:00.0007493"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.TriagePolicyTests.IsKnownCategory_ShouldValidateAgainstTaxonomy(code: \"SW\", expected: True)",
+            "outcome": "Passed",
+            "duration": "00:00:00.0000020"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.ConfidencePolicyTests.Classify_OutOfRange_ShouldReturnNull",
+            "outcome": "Passed",
+            "duration": "00:00:00.0003579"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.ConfidencePolicyTests.Classify_ValidScore_ShouldReturnCorrectBand(score: 1, expected: High)",
+            "outcome": "Passed",
+            "duration": "00:00:00.0000136"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.ConfidencePolicyTests.Classify_NaN_ShouldReturnNull",
+            "outcome": "Passed",
+            "duration": "00:00:00.0001965"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.InputHashComputerTests.Compute_DifferentTitle_ShouldReturnDifferentHash",
+            "outcome": "Passed",
+            "duration": "00:00:00.0508269"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.AISuggestionTests.Create_EmptySuggestedValue_ShouldThrow",
+            "outcome": "Passed",
+            "duration": "00:00:00.0006527"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.TriagePolicyTests.ParseUrgency_InvalidValue_ShouldReturnNull",
+            "outcome": "Passed",
+            "duration": "00:00:00.0005697"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.AIAnalysisTests.CreateFailed_ShouldStoreFailureReason",
+            "outcome": "Passed",
+            "duration": "00:00:00.0071077"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.AISuggestionTests.MarkExpired_AlreadyAccepted_ShouldRemainAccepted",
+            "outcome": "Passed",
+            "duration": "00:00:00.0001971"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.InputHashComputerTests.Compute_ShouldReturnHexString",
+            "outcome": "Passed",
+            "duration": "00:00:00.0017136"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.AISuggestionTests.Accept_ExpiredSuggestion_ShouldThrow",
+            "outcome": "Passed",
+            "duration": "00:00:00.0009495"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.AISuggestionTests.Accept_Pending_ShouldSetFinalValueToSuggestedValue",
+            "outcome": "Passed",
+            "duration": "00:00:00.0004035"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.AIAssistance.AISuggestionTests.Override_AlreadyRejected_ShouldThrow",
+            "outcome": "Passed",
+            "duration": "00:00:00.0004972"
+          }
+        ]
+      }
+    ]
+  }
+}
