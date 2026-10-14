@@ -1,0 +1,212 @@
+{
+  "jira": "TC-199",
+  "jira_url": "https://evolving-kg-drift.atlassian.net/browse/TC-199",
+  "assignee": "Đức Anh",
+  "assignee_account_id": "712020:b47b937b-87ae-4e89-af56-621dbbea98dc",
+  "jira_status": "In review",
+  "jira_checked_date": "2026-10-15",
+  "jira_updated_at": "2026-10-10T23:37:24.141+0700",
+  "sprint": {
+    "id": 6,
+    "name": "Sprint 1",
+    "state": "active",
+    "board_id": 35,
+    "goal": "",
+    "start_date": "2026-09-05T10:50:00.517Z",
+    "end_date": "2026-09-19T10:50:42.000Z"
+  },
+  "parent": "TC-179",
+  "branch": "audit/tc-199-ticket-contract-acceptance",
+  "base_branch": "dev",
+  "base_sha": "249608e24b1bf4c64773f18bcb734fd529c1d554",
+  "reviewed_date": "2026-10-15",
+  "timezone": "Asia/Bangkok",
+  "scope": [
+    "Closed-loop contract/domain/DB/API/frontend/tests acceptance"
+  ],
+  "implementation_changes": false,
+  "historical_prs": [
+    {
+      "number": 6,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/pull/6",
+      "title": "docs: integrate architecture contracts and governance baseline",
+      "base": "dev",
+      "head": "frontend",
+      "head_sha": "063489b97c1f706cebeaeea1d3038f0e63a39fd7",
+      "merge_commit_sha": "164ae02e29c9498d08acbe11587389c470d79245",
+      "merged": true,
+      "draft": false,
+      "state": "closed"
+    },
+    {
+      "number": 9,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/pull/9",
+      "title": "docs: integrate ticket domain and lifecycle specifications",
+      "base": "dev",
+      "head": "docs/ticket-domain-lifecycle",
+      "head_sha": "ba96669ddc6011fc952e711b384a131cc3020ea7",
+      "merge_commit_sha": "bee4e2dc07ecdbf44677db2905b945adb9f6d88d",
+      "merged": true,
+      "draft": false,
+      "state": "closed"
+    },
+    {
+      "number": 12,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/pull/12",
+      "title": "feat(ticket): add domain creation invariants (TC-262, TC-263)",
+      "base": "dev",
+      "head": "feature/tc-262-263-ticket-domain-invariants",
+      "head_sha": "0f08297a3c36413321524124edae769f990376f9",
+      "merge_commit_sha": "fe41eecf920d59010e0d89e72079ab84edb32488",
+      "merged": true,
+      "draft": false,
+      "state": "closed"
+    },
+    {
+      "number": 13,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/pull/13",
+      "title": " feat(ticket): add requester ticket list paging (TC-269, TC-270)",
+      "base": "dev",
+      "head": "feature/tc-269-270-requester-ticket-queries",
+      "head_sha": "b15424233a0312f9acada2221c28bf2bb67bdae8",
+      "merge_commit_sha": "249608e24b1bf4c64773f18bcb734fd529c1d554",
+      "merged": true,
+      "draft": false,
+      "state": "closed"
+    },
+    {
+      "number": 5,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/pull/5",
+      "title": "fix(security): isolate ticket idempotency with atomic PostgreSQL persistence",
+      "base": "dev",
+      "head": "fix/p0-idempotency-isolation",
+      "head_sha": "0ec26ebc778b8f202170882fa663caa541dbe566",
+      "merge_commit_sha": null,
+      "merged": false,
+      "draft": true,
+      "state": "open"
+    }
+  ],
+  "dependency_prs": {
+    "TC-260": {
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/pull/17",
+      "commit_sha": "9c6a3f60550f3989016d6dd1ef17f5bfc8365a4b",
+      "state": "draft_unmerged"
+    },
+    "TC-261": {
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/pull/18",
+      "commit_sha": "64341ce03a1b872d0ebc9c6299773e90cc7365d1",
+      "state": "draft_unmerged"
+    },
+    "TC-264": {
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/pull/19",
+      "commit_sha": "04e466682fb8b585a0be11edc23f1cae81d3dbb1",
+      "state": "draft_unmerged"
+    }
+  },
+  "sources": [
+    {
+      "path": "tests/ServiceDesk.IntegrationTests/TicketEndpointTests.cs",
+      "commit_sha": "249608e24b1bf4c64773f18bcb734fd529c1d554",
+      "line": 269,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/blob/249608e24b1bf4c64773f18bcb734fd529c1d554/tests/ServiceDesk.IntegrationTests/TicketEndpointTests.cs#L269",
+      "evidence_type": "source_inspection"
+    },
+    {
+      "path": "Directory.Build.props",
+      "commit_sha": "249608e24b1bf4c64773f18bcb734fd529c1d554",
+      "line": 7,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/blob/249608e24b1bf4c64773f18bcb734fd529c1d554/Directory.Build.props#L7",
+      "evidence_type": "source_inspection"
+    },
+    {
+      "path": "docs/architecture/03-ticket-domain-contract.md",
+      "commit_sha": "249608e24b1bf4c64773f18bcb734fd529c1d554",
+      "line": 138,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/blob/249608e24b1bf4c64773f18bcb734fd529c1d554/docs/architecture/03-ticket-domain-contract.md#L138",
+      "evidence_type": "source_inspection"
+    },
+    {
+      "path": "docs/architecture/04-ticket-lifecycle-policy.md",
+      "commit_sha": "249608e24b1bf4c64773f18bcb734fd529c1d554",
+      "line": 86,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/blob/249608e24b1bf4c64773f18bcb734fd529c1d554/docs/architecture/04-ticket-lifecycle-policy.md#L86",
+      "evidence_type": "source_inspection"
+    },
+    {
+      "path": "src/backend/ServiceDesk.Domain/Ticketing/Ticket.cs",
+      "commit_sha": "249608e24b1bf4c64773f18bcb734fd529c1d554",
+      "line": 21,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/blob/249608e24b1bf4c64773f18bcb734fd529c1d554/src/backend/ServiceDesk.Domain/Ticketing/Ticket.cs#L21",
+      "evidence_type": "source_inspection"
+    },
+    {
+      "path": "src/backend/ServiceDesk.Infrastructure/Persistence/ApplicationDbContext.cs",
+      "commit_sha": "249608e24b1bf4c64773f18bcb734fd529c1d554",
+      "line": 81,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/blob/249608e24b1bf4c64773f18bcb734fd529c1d554/src/backend/ServiceDesk.Infrastructure/Persistence/ApplicationDbContext.cs#L81",
+      "evidence_type": "source_inspection"
+    },
+    {
+      "path": "src/backend/ServiceDesk.Api/Endpoints/TicketEndpoints.cs",
+      "commit_sha": "249608e24b1bf4c64773f18bcb734fd529c1d554",
+      "line": 66,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/blob/249608e24b1bf4c64773f18bcb734fd529c1d554/src/backend/ServiceDesk.Api/Endpoints/TicketEndpoints.cs#L66",
+      "evidence_type": "source_inspection"
+    },
+    {
+      "path": "src/backend/ServiceDesk.Application/Ticketing/Dtos/PagedTicketResult.cs",
+      "commit_sha": "249608e24b1bf4c64773f18bcb734fd529c1d554",
+      "line": 3,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/blob/249608e24b1bf4c64773f18bcb734fd529c1d554/src/backend/ServiceDesk.Application/Ticketing/Dtos/PagedTicketResult.cs#L3",
+      "evidence_type": "source_inspection"
+    },
+    {
+      "path": "src/frontend/service-desk-web/src/features/tickets/types.ts",
+      "commit_sha": "249608e24b1bf4c64773f18bcb734fd529c1d554",
+      "line": 6,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/blob/249608e24b1bf4c64773f18bcb734fd529c1d554/src/frontend/service-desk-web/src/features/tickets/types.ts#L6",
+      "evidence_type": "source_inspection"
+    },
+    {
+      "path": "src/frontend/service-desk-web/src/features/tickets/api/ticketApi.ts",
+      "commit_sha": "249608e24b1bf4c64773f18bcb734fd529c1d554",
+      "line": 8,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/blob/249608e24b1bf4c64773f18bcb734fd529c1d554/src/frontend/service-desk-web/src/features/tickets/api/ticketApi.ts#L8",
+      "evidence_type": "source_inspection"
+    },
+    {
+      "path": "src/backend/ServiceDesk.Infrastructure/Identity/IdentityDataSeeder.cs",
+      "commit_sha": "249608e24b1bf4c64773f18bcb734fd529c1d554",
+      "line": 34,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/blob/249608e24b1bf4c64773f18bcb734fd529c1d554/src/backend/ServiceDesk.Infrastructure/Identity/IdentityDataSeeder.cs#L34",
+      "evidence_type": "source_inspection"
+    }
+  ],
+  "verification": {
+    "report": "verification.md",
+    "results": "verification-results.json",
+    "backend_solution": "FAIL",
+    "passed_non_integration_tests": 33,
+    "postgresql_integration": "NOT RUN",
+    "frontend_build": "PASS",
+    "frontend_lint": "PASS_WITH_WARNING",
+    "frontend_regression": "9/9 PASS"
+  },
+  "technical_conclusion": "acceptance_blocked",
+  "blockers": [
+    "Unresolved Draft/Submitted và enum contract decision",
+    "Frontend enum và paged-list wire mismatch",
+    "Global idempotency replay, broad Agent detail",
+    "Solution gate CS8602; PostgreSQL migration/visibility evidence missing",
+    "Human review chưa được xác minh"
+  ],
+  "acceptance": "pending_review",
+  "sign_off": {
+    "author_review": "prepared",
+    "human_reviewer_approval": "not_verified",
+    "merge": "not_performed",
+    "jira_change": "not_performed"
+  },
+  "historical_isolation": "Historical grouped PRs preserved; new issue-specific review branch does not retroactively establish isolation."
+}
