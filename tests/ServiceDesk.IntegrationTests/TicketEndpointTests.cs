@@ -219,6 +219,82 @@ public class TicketEndpointTests : IClassFixture<ServiceDeskWebApplicationFactor
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
+    [Fact]
+    public async Task GetMyTickets_ReturnsStablePagesForAuthenticatedRequester()
+    {
+        var ownerToken = await RegisterAndGetTokenAsync();
+        _client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", ownerToken);
+
+        for (var index = 0; index < 3; index++)
+        {
+            var response = await _client.PostAsJsonAsync("/api/tickets", new CreateTicketCommand(
+                $"Paged ticket {index}",
+                "Valid description for requester paging.",
+                TicketCategories.NET));
+            response.StatusCode.Should().Be(HttpStatusCode.Created);
+        }
+
+        var otherToken = await RegisterAndGetTokenAsync();
+        _client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", otherToken);
+        var otherCreateResponse = await _client.PostAsJsonAsync("/api/tickets", new CreateTicketCommand(
+            "Other requester ticket",
+            "Valid description for another requester.",
+            TicketCategories.NET));
+        otherCreateResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+        var otherTicket = await otherCreateResponse.Content.ReadFromJsonAsync<TicketDto>();
+
+        _client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", ownerToken);
+        var firstPageResponse = await _client.GetAsync("/api/tickets/me?page=1&pageSize=2");
+        var secondPageResponse = await _client.GetAsync("/api/tickets/me?page=2&pageSize=2");
+
+        firstPageResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        secondPageResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var firstPage = await firstPageResponse.Content.ReadFromJsonAsync<PagedTicketResult>();
+        var secondPage = await secondPageResponse.Content.ReadFromJsonAsync<PagedTicketResult>();
+
+        firstPage.Should().NotBeNull();
+        secondPage.Should().NotBeNull();
+        firstPage!.TotalCount.Should().Be(3);
+        firstPage.Items.Should().HaveCount(2);
+        secondPage!.Items.Should().ContainSingle();
+        secondPage.Items[0].Id.Should().NotBe(firstPage.Items[0].Id);
+        secondPage.Items[0].Id.Should().NotBe(firstPage.Items[1].Id);
+        firstPage.Items.Should().NotContain(ticket => ticket.Id == otherTicket!.Id);
+        secondPage.Items.Should().NotContain(ticket => ticket.Id == otherTicket!.Id);
+
+        var foreignDetailResponse = await _client.GetAsync($"/api/tickets/{otherTicket.Id}");
+        foreignDetailResponse.StatusCode.Should().Be(HttpStatusCode.NotFound);
+
+        _client.DefaultRequestHeaders.Authorization = null;
+    }
+
+    [Fact]
+    public async Task GetMyTickets_InvalidPaging_Returns400()
+    {
+        var token = await RegisterAndGetTokenAsync();
+        _client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", token);
+
+        var response = await _client.GetAsync("/api/tickets/me?page=0&pageSize=101");
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        _client.DefaultRequestHeaders.Authorization = null;
+    }
+
+    [Fact]
+    public async Task GetMyTickets_WithoutToken_Returns401()
+    {
+        _client.DefaultRequestHeaders.Authorization = null;
+
+        var response = await _client.GetAsync("/api/tickets/me");
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
     private async Task<string> RegisterAndGetTokenAsync()
     {
         var email = $"ticket_user_{Guid.NewGuid():N}@example.com";
@@ -235,4 +311,5 @@ public class TicketEndpointTests : IClassFixture<ServiceDeskWebApplicationFactor
     }
 
     private sealed record AuthResponse(string? Token, object? User);
+    private sealed record PagedTicketResult(IReadOnlyList<TicketDto> Items, int Page, int PageSize, int TotalCount);
 }

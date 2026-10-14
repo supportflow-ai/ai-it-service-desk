@@ -47,6 +47,36 @@ public class TicketService : ITicketService
         );
     }
 
+    public async Task<PagedTicketResult> GetTicketsForRequesterAsync(
+        Guid requesterId,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _context.Tickets
+            .AsNoTracking()
+            .Where(ticket => ticket.RequesterId == requesterId);
+
+        var totalCount = await query.CountAsync(cancellationToken);
+        var tickets = await query
+            .OrderByDescending(ticket => ticket.CreatedAt)
+            .ThenByDescending(ticket => ticket.Id)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(ticket => new TicketDto(
+                ticket.Id,
+                ticket.TicketNumber,
+                ticket.Title,
+                ticket.Description,
+                ticket.CategoryId,
+                (int)ticket.Status,
+                ticket.CreatedAt,
+                ticket.RequesterDepartmentId))
+            .ToListAsync(cancellationToken);
+
+        return new PagedTicketResult(tickets, page, pageSize, totalCount);
+    }
+
     public async Task<TicketDto?> GetTicketByIdAsync(Guid id, Guid requesterId, CancellationToken cancellationToken = default)
     {
         var query = _context.Tickets.AsNoTracking().Where(t => t.Id == id);
