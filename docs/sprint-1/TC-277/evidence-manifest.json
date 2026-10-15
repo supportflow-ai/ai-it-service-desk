@@ -1,0 +1,182 @@
+{
+  "jira": "TC-277",
+  "jira_url": "https://evolving-kg-drift.atlassian.net/browse/TC-277",
+  "assignee": "Đức Anh",
+  "assignee_account_id": "712020:b47b937b-87ae-4e89-af56-621dbbea98dc",
+  "jira_status": "Done",
+  "jira_checked_date": "2026-10-15",
+  "jira_updated_at": "2026-09-19T13:23:46.250+0700",
+  "sprint": {
+    "id": 6,
+    "name": "Sprint 1",
+    "state": "active",
+    "board_id": 35,
+    "goal": "",
+    "start_date": "2026-09-05T10:50:00.517Z",
+    "end_date": "2026-09-19T10:50:42.000Z"
+  },
+  "parent": "TC-202",
+  "branch": "audit/tc-277-ai-hitl-review",
+  "base_branch": "dev",
+  "base_sha": "249608e24b1bf4c64773f18bcb734fd529c1d554",
+  "reviewed_date": "2026-10-15",
+  "timezone": "Asia/Bangkok",
+  "scope": [
+    "AI advisory, human decision, fallback, privacy, stale protection và branch parity"
+  ],
+  "implementation_changes": false,
+  "historical_prs": [
+    {
+      "number": 1,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/pull/1",
+      "title": "feat: Implement AI Triage Contracts, Confidence Rules & HITL Boundary",
+      "base": "main",
+      "head": "feature/tc-275-276-277-ai-triage-contract",
+      "head_sha": "b529b2cdd138b273ad5f89efb18ccb9f5a399313",
+      "merge_commit_sha": "e044f470d38cb9d00a4adca9e59de45abbde3ff5",
+      "merged": true,
+      "draft": false,
+      "state": "closed"
+    },
+    {
+      "number": 6,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/pull/6",
+      "title": "docs: integrate architecture contracts and governance baseline",
+      "base": "dev",
+      "head": "frontend",
+      "head_sha": "063489b97c1f706cebeaeea1d3038f0e63a39fd7",
+      "merge_commit_sha": "164ae02e29c9498d08acbe11587389c470d79245",
+      "merged": true,
+      "draft": false,
+      "state": "closed"
+    }
+  ],
+  "dependency_prs": {},
+  "sources": [
+    {
+      "path": "tests/ServiceDesk.IntegrationTests/TicketEndpointTests.cs",
+      "commit_sha": "249608e24b1bf4c64773f18bcb734fd529c1d554",
+      "line": 269,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/blob/249608e24b1bf4c64773f18bcb734fd529c1d554/tests/ServiceDesk.IntegrationTests/TicketEndpointTests.cs#L269",
+      "evidence_type": "source_inspection"
+    },
+    {
+      "path": "Directory.Build.props",
+      "commit_sha": "249608e24b1bf4c64773f18bcb734fd529c1d554",
+      "line": 7,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/blob/249608e24b1bf4c64773f18bcb734fd529c1d554/Directory.Build.props#L7",
+      "evidence_type": "source_inspection"
+    },
+    {
+      "path": "src/backend/ServiceDesk.Application/AIAssistance/Models/TriageRequest.cs",
+      "commit_sha": "e044f470d38cb9d00a4adca9e59de45abbde3ff5",
+      "line": 9,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/blob/e044f470d38cb9d00a4adca9e59de45abbde3ff5/src/backend/ServiceDesk.Application/AIAssistance/Models/TriageRequest.cs#L9",
+      "evidence_type": "source_inspection"
+    },
+    {
+      "path": "src/backend/ServiceDesk.Application/AIAssistance/Interfaces/ITicketClassificationService.cs",
+      "commit_sha": "249608e24b1bf4c64773f18bcb734fd529c1d554",
+      "line": 13,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/blob/249608e24b1bf4c64773f18bcb734fd529c1d554/src/backend/ServiceDesk.Application/AIAssistance/Interfaces/ITicketClassificationService.cs#L13",
+      "evidence_type": "source_inspection"
+    },
+    {
+      "path": "src/backend/ServiceDesk.Domain/AIAssistance/SuggestionType.cs",
+      "commit_sha": "e044f470d38cb9d00a4adca9e59de45abbde3ff5",
+      "line": 7,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/blob/e044f470d38cb9d00a4adca9e59de45abbde3ff5/src/backend/ServiceDesk.Domain/AIAssistance/SuggestionType.cs#L7",
+      "evidence_type": "source_inspection"
+    },
+    {
+      "path": "src/backend/ServiceDesk.Domain/Ticketing/PriorityMatrix.cs",
+      "commit_sha": "e044f470d38cb9d00a4adca9e59de45abbde3ff5",
+      "line": 19,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/blob/e044f470d38cb9d00a4adca9e59de45abbde3ff5/src/backend/ServiceDesk.Domain/Ticketing/PriorityMatrix.cs#L19",
+      "evidence_type": "source_inspection"
+    },
+    {
+      "path": "src/backend/ServiceDesk.Domain/AIAssistance/AISuggestion.cs",
+      "commit_sha": "e044f470d38cb9d00a4adca9e59de45abbde3ff5",
+      "line": 82,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/blob/e044f470d38cb9d00a4adca9e59de45abbde3ff5/src/backend/ServiceDesk.Domain/AIAssistance/AISuggestion.cs#L82",
+      "evidence_type": "source_inspection"
+    },
+    {
+      "path": "src/backend/ServiceDesk.Domain/AIAssistance/AISuggestion.cs",
+      "commit_sha": "e044f470d38cb9d00a4adca9e59de45abbde3ff5",
+      "line": 142,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/blob/e044f470d38cb9d00a4adca9e59de45abbde3ff5/src/backend/ServiceDesk.Domain/AIAssistance/AISuggestion.cs#L142",
+      "evidence_type": "source_inspection"
+    },
+    {
+      "path": "src/backend/ServiceDesk.Application/AIAssistance/Models/TriageResult.cs",
+      "commit_sha": "e044f470d38cb9d00a4adca9e59de45abbde3ff5",
+      "line": 100,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/blob/e044f470d38cb9d00a4adca9e59de45abbde3ff5/src/backend/ServiceDesk.Application/AIAssistance/Models/TriageResult.cs#L100",
+      "evidence_type": "source_inspection"
+    },
+    {
+      "path": "src/backend/ServiceDesk.Application/AIAssistance/Models/TriageViewProjections.cs",
+      "commit_sha": "e044f470d38cb9d00a4adca9e59de45abbde3ff5",
+      "line": 19,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/blob/e044f470d38cb9d00a4adca9e59de45abbde3ff5/src/backend/ServiceDesk.Application/AIAssistance/Models/TriageViewProjections.cs#L19",
+      "evidence_type": "source_inspection"
+    },
+    {
+      "path": "src/backend/ServiceDesk.Domain/AIAssistance/TriagePolicy.cs",
+      "commit_sha": "e044f470d38cb9d00a4adca9e59de45abbde3ff5",
+      "line": 17,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/blob/e044f470d38cb9d00a4adca9e59de45abbde3ff5/src/backend/ServiceDesk.Domain/AIAssistance/TriagePolicy.cs#L17",
+      "evidence_type": "source_inspection"
+    },
+    {
+      "path": "src/backend/ServiceDesk.Domain/AIAssistance/AIAnalysis.cs",
+      "commit_sha": "e044f470d38cb9d00a4adca9e59de45abbde3ff5",
+      "line": 28,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/blob/e044f470d38cb9d00a4adca9e59de45abbde3ff5/src/backend/ServiceDesk.Domain/AIAssistance/AIAnalysis.cs#L28",
+      "evidence_type": "source_inspection"
+    },
+    {
+      "path": "src/backend/ServiceDesk.Domain/AIAssistance/AISuggestion.cs",
+      "commit_sha": "e044f470d38cb9d00a4adca9e59de45abbde3ff5",
+      "line": 128,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/blob/e044f470d38cb9d00a4adca9e59de45abbde3ff5/src/backend/ServiceDesk.Domain/AIAssistance/AISuggestion.cs#L128",
+      "evidence_type": "source_inspection"
+    },
+    {
+      "path": "src/backend/ServiceDesk.Domain/AIAssistance/TriagePolicy.cs",
+      "commit_sha": "e044f470d38cb9d00a4adca9e59de45abbde3ff5",
+      "line": 33,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/blob/e044f470d38cb9d00a4adca9e59de45abbde3ff5/src/backend/ServiceDesk.Domain/AIAssistance/TriagePolicy.cs#L33",
+      "evidence_type": "source_inspection"
+    }
+  ],
+  "verification": {
+    "report": "verification.md",
+    "results": "verification-results.json",
+    "backend_solution": "FAIL",
+    "passed_non_integration_tests": 33,
+    "postgresql_integration": "NOT RUN",
+    "frontend_build": "PASS",
+    "frontend_lint": "PASS_WITH_WARNING",
+    "frontend_regression": "9/9 PASS",
+    "main_ai_tests": "74 Domain + 13 Application PASS; main only"
+  },
+  "technical_conclusion": "ready_for_review",
+  "blockers": [
+    "AI contract/tests trên main chưa tích hợp dev",
+    "Suggestion methods không kiểm role/resource/stale snapshot khi Apply",
+    "InputHash/Revision là dữ liệu chuẩn bị, chưa có end-to-end stale fence",
+    "Enum.TryParse chưa chặn numeric enum input undefined",
+    "Main TicketStatus incompatible với persisted dev enum"
+  ],
+  "acceptance": "pending_review",
+  "sign_off": {
+    "author_review": "prepared",
+    "human_reviewer_approval": "not_verified",
+    "merge": "not_performed",
+    "jira_change": "not_performed"
+  },
+  "historical_isolation": "Historical grouped PRs preserved; new issue-specific review branch does not retroactively establish isolation."
+}
