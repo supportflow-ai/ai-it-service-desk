@@ -1,0 +1,306 @@
+{
+  "tc284": {
+    "data": {
+      "appliedContentFormat": "markdown",
+      "id": "10542",
+      "key": "TC-284",
+      "fields": {
+        "summary": "Chạy regression + security checklist",
+        "description": "Mục tiêu/phạm vi:  \nRerun auth negative và requester visibility cases.\n\nĐầu ra/evidence:  \nSprint 1 regression report\n\nRole thực hiện: DevOps / QA  \nParent outcome: Sprint chỉ được accept khi auth + create/list/detail chạy end-to-end và security baseline pass.\n\nBlocked by / input cần trước:  \nKhông có blocker trực tiếp\n\nHandoff / consumer:  \nAISD-S1-09-T03",
+        "status": {
+          "name": "In Progress",
+          "statusCategory": {
+            "name": "In Progress"
+          }
+        },
+        "assignee": {
+          "accountId": "712020:0d1defe8-3306-45df-b217-43f41a23faf4",
+          "displayName": "VÕ NGUYỄN ANH KIỆT"
+        },
+        "reporter": {
+          "accountId": "712020:b47b937b-87ae-4e89-af56-621dbbea98dc",
+          "displayName": "Đức Anh"
+        },
+        "priority": {
+          "name": "High"
+        },
+        "issuetype": {
+          "id": "10039",
+          "name": "Subtask"
+        },
+        "created": "2026-09-05T17:21:45.832+0700",
+        "updated": "2026-09-20T13:45:22.925+0700",
+        "labels": [
+          "doer-p05",
+          "e6",
+          "id-aisd-s1-09-t02",
+          "level-subtask",
+          "person-05-devops-qa",
+          "role-devops-qa",
+          "sprint-1",
+          "week-w2",
+          "work-sub-task"
+        ],
+        "parent": {
+          "id": "10439",
+          "key": "TC-204",
+          "fields": {
+            "summary": "Xác minh Sprint 1 vertical slice và ghi quality evidence"
+          }
+        },
+        "subtasks": [],
+        "comment": {
+          "total": 0
+        },
+        "issuelinks": [],
+        "customFields": {
+          "Sprint": {
+            "id": "customfield_10020",
+            "value": [
+              {
+                "id": 6,
+                "name": "Sprint 1",
+                "state": "active",
+                "boardId": 35,
+                "goal": "",
+                "startDate": "2026-09-05T10:50:00.517Z",
+                "endDate": "2026-09-19T10:50:42.000Z"
+              }
+            ]
+          },
+          "Rank": {
+            "id": "customfield_10019",
+            "value": "0|i002pb:"
+          },
+          "Development": {
+            "id": "customfield_10000",
+            "value": "{}"
+          }
+        }
+      }
+    }
+  },
+  "tc204": {
+    "data": {
+      "appliedContentFormat": "markdown",
+      "id": "10439",
+      "key": "TC-204",
+      "fields": {
+        "summary": "Xác minh Sprint 1 vertical slice và ghi quality evidence",
+        "description": "Business outcome:  \nSprint chỉ được accept khi auth + create/list/detail chạy end-to-end và security baseline pass.\n\nIn scope:  \nE2E scenario, regression checklist, test report, blocker triage, acceptance decision.\n\nOut of scope:  \nTính năng Sprint 2.\n\nOwner: DevOps / QA  \nContributors: Leader / Architect / PM; Backend Core; Frontend  \nReviewer: Leader / Architect / PM  \nQA owner: DevOps / QA\n\nDeliverable:  \nSprint 1 acceptance report.\n\nDemo scenario:  \nRequester login → create ticket → list → detail; wrong owner access bị chặn.\n\nUpstream work packages:  \nAISD-S1-02,AISD-S1-03,AISD-S1-05,AISD-S1-06,AISD-S1-08",
+        "status": {
+          "name": "In Progress",
+          "statusCategory": {
+            "name": "In Progress"
+          }
+        },
+        "assignee": {
+          "accountId": "712020:0d1defe8-3306-45df-b217-43f41a23faf4",
+          "displayName": "VÕ NGUYỄN ANH KIỆT"
+        },
+        "reporter": {
+          "accountId": "712020:b47b937b-87ae-4e89-af56-621dbbea98dc",
+          "displayName": "Đức Anh"
+        },
+        "priority": {
+          "name": "High"
+        },
+        "issuetype": {
+          "id": "10043",
+          "name": "Task"
+        },
+        "created": "2026-09-05T17:21:45.828+0700",
+        "updated": "2026-09-20T16:13:49.495+0700",
+        "labels": [
+          "e6",
+          "id-aisd-s1-09",
+          "level-parent",
+          "owner-p05",
+          "person-05-devops-qa",
+          "role-devops-qa",
+          "sprint-1",
+          "week-w2",
+          "work-task"
+        ],
+        "parent": {
+          "id": "10399",
+          "key": "TC-183",
+          "fields": {
+            "summary": "E6 Quality, Operations & Release"
+          }
+        },
+        "subtasks": [
+          {
+            "id": "10506",
+            "key": "TC-285",
+            "fields": {
+              "summary": "Acceptance review và quyết định carry-over",
+              "status": {
+                "name": "To Do"
+              }
+            }
+          },
+          {
+            "id": "10532",
+            "key": "TC-283",
+            "fields": {
+              "summary": "Chạy E2E Sprint 1 từ clean environment",
+              "status": {
+                "name": "In Progress"
+              }
+            }
+          },
+          {
+            "id": "10542",
+            "key": "TC-284",
+            "fields": {
+              "summary": "Chạy regression + security checklist",
+              "status": {
+                "name": "In Progress"
+              }
+            }
+          }
+        ],
+        "comment": {
+          "total": 1
+        },
+        "issuelinks": [],
+        "customFields": {
+          "Sprint": {
+            "id": "customfield_10020",
+            "value": [
+              {
+                "id": 6,
+                "name": "Sprint 1",
+                "state": "active",
+                "boardId": 35,
+                "goal": "",
+                "startDate": "2026-09-05T10:50:00.517Z",
+                "endDate": "2026-09-19T10:50:42.000Z"
+              }
+            ]
+          },
+          "Story point estimate": {
+            "id": "customfield_10016",
+            "value": 3
+          },
+          "Rank": {
+            "id": "customfield_10019",
+            "value": "0|i0023u:"
+          },
+          "Development": {
+            "id": "customfield_10000",
+            "value": "{}"
+          }
+        }
+      }
+    }
+  },
+  "tc283": {
+    "data": {
+      "appliedContentFormat": "markdown",
+      "id": "10532",
+      "key": "TC-283",
+      "fields": {
+        "summary": "Chạy E2E Sprint 1 từ clean environment",
+        "description": "Mục tiêu/phạm vi:  \nChạy auth/create/list/detail bằng seed users trên compose sạch.\n\nĐầu ra/evidence:  \nSprint 1 E2E run\n\nRole thực hiện: DevOps / QA  \nParent outcome: Sprint chỉ được accept khi auth + create/list/detail chạy end-to-end và security baseline pass.\n\nBlocked by / input cần trước:  \nAISD-S1-08-T04\n\nHandoff / consumer:  \nParent Story/Task + reviewer/QA acceptance",
+        "status": {
+          "name": "In Progress",
+          "statusCategory": {
+            "name": "In Progress"
+          }
+        },
+        "assignee": {
+          "accountId": "712020:0d1defe8-3306-45df-b217-43f41a23faf4",
+          "displayName": "VÕ NGUYỄN ANH KIỆT"
+        },
+        "reporter": {
+          "accountId": "712020:b47b937b-87ae-4e89-af56-621dbbea98dc",
+          "displayName": "Đức Anh"
+        },
+        "priority": {
+          "name": "High"
+        },
+        "issuetype": {
+          "id": "10039",
+          "name": "Subtask"
+        },
+        "created": "2026-09-05T17:21:45.832+0700",
+        "updated": "2026-09-20T13:45:18.152+0700",
+        "labels": [
+          "doer-p05",
+          "e6",
+          "id-aisd-s1-09-t01",
+          "level-subtask",
+          "person-05-devops-qa",
+          "role-devops-qa",
+          "sprint-1",
+          "week-w2",
+          "work-sub-task"
+        ],
+        "parent": {
+          "id": "10439",
+          "key": "TC-204",
+          "fields": {
+            "summary": "Xác minh Sprint 1 vertical slice và ghi quality evidence"
+          }
+        },
+        "subtasks": [],
+        "comment": {
+          "total": 0
+        },
+        "issuelinks": [],
+        "customFields": {
+          "Sprint": {
+            "id": "customfield_10020",
+            "value": [
+              {
+                "id": 6,
+                "name": "Sprint 1",
+                "state": "active",
+                "boardId": 35,
+                "goal": "",
+                "startDate": "2026-09-05T10:50:00.517Z",
+                "endDate": "2026-09-19T10:50:42.000Z"
+              }
+            ]
+          },
+          "Rank": {
+            "id": "customfield_10019",
+            "value": "0|i002n3:"
+          },
+          "Development": {
+            "id": "customfield_10000",
+            "value": "{}"
+          }
+        }
+      }
+    }
+  },
+  "comments": {
+    "data": {
+      "startAt": 0,
+      "maxResults": 20,
+      "total": 1,
+      "isLast": true,
+      "appliedContentFormat": "markdown",
+      "comments": [
+        {
+          "id": "10044",
+          "author": {
+            "accountId": "712020:0d1defe8-3306-45df-b217-43f41a23faf4",
+            "displayName": "VÕ NGUYỄN ANH KIỆT"
+          },
+          "body": "chờ https://evolving-kg-drift.atlassian.net/browse/TC-199",
+          "created": "2026-09-20T16:13:49.412+0700",
+          "updated": "2026-09-20T16:13:49.412+0700",
+          "updateAuthor": {
+            "accountId": "712020:0d1defe8-3306-45df-b217-43f41a23faf4",
+            "displayName": "VÕ NGUYỄN ANH KIỆT"
+          },
+          "jsdPublic": true
+        }
+      ]
+    }
+  }
+}

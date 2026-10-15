@@ -1,0 +1,172 @@
+{
+  "jira": "TC-285",
+  "jira_url": "https://evolving-kg-drift.atlassian.net/browse/TC-285",
+  "assignee": "Đức Anh",
+  "assignee_account_id": "712020:b47b937b-87ae-4e89-af56-621dbbea98dc",
+  "jira_status": "To Do",
+  "jira_checked_date": "2026-10-15",
+  "jira_updated_at": "2026-09-19T13:30:02.076+0700",
+  "sprint": {
+    "id": 6,
+    "name": "Sprint 1",
+    "state": "active",
+    "board_id": 35,
+    "goal": "",
+    "start_date": "2026-09-05T10:50:00.517Z",
+    "end_date": "2026-09-19T10:50:42.000Z"
+  },
+  "parent": "TC-204",
+  "branch": "docs/tc-285-sprint1-acceptance",
+  "base_branch": "dev",
+  "base_sha": "249608e24b1bf4c64773f18bcb734fd529c1d554",
+  "reviewed_date": "2026-10-15",
+  "timezone": "Asia/Bangkok",
+  "scope": [
+    "Sprint 1 acceptance assessment, defects, carry-over và retro inputs"
+  ],
+  "implementation_changes": false,
+  "historical_prs": [
+    {
+      "number": 6,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/pull/6",
+      "title": "docs: integrate architecture contracts and governance baseline",
+      "base": "dev",
+      "head": "frontend",
+      "head_sha": "063489b97c1f706cebeaeea1d3038f0e63a39fd7",
+      "merge_commit_sha": "164ae02e29c9498d08acbe11587389c470d79245",
+      "merged": true,
+      "draft": false,
+      "state": "closed"
+    },
+    {
+      "number": 5,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/pull/5",
+      "title": "fix(security): isolate ticket idempotency with atomic PostgreSQL persistence",
+      "base": "dev",
+      "head": "fix/p0-idempotency-isolation",
+      "head_sha": "0ec26ebc778b8f202170882fa663caa541dbe566",
+      "merge_commit_sha": null,
+      "merged": false,
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 12,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/pull/12",
+      "title": "feat(ticket): add domain creation invariants (TC-262, TC-263)",
+      "base": "dev",
+      "head": "feature/tc-262-263-ticket-domain-invariants",
+      "head_sha": "0f08297a3c36413321524124edae769f990376f9",
+      "merge_commit_sha": "fe41eecf920d59010e0d89e72079ab84edb32488",
+      "merged": true,
+      "draft": false,
+      "state": "closed"
+    },
+    {
+      "number": 13,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/pull/13",
+      "title": " feat(ticket): add requester ticket list paging (TC-269, TC-270)",
+      "base": "dev",
+      "head": "feature/tc-269-270-requester-ticket-queries",
+      "head_sha": "b15424233a0312f9acada2221c28bf2bb67bdae8",
+      "merge_commit_sha": "249608e24b1bf4c64773f18bcb734fd529c1d554",
+      "merged": true,
+      "draft": false,
+      "state": "closed"
+    }
+  ],
+  "dependency_prs": {
+    "TC-199": {
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/pull/20",
+      "commit_sha": "04132fc9479541c48f2ae172c974d06a2fd2e848",
+      "state": "draft_unmerged"
+    },
+    "TC-277": {
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/pull/21",
+      "commit_sha": "de028f417d4876284a96bf24de7bda0d1b6b7fca",
+      "state": "draft_unmerged"
+    },
+    "TC-282": {
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/pull/22",
+      "commit_sha": "6bce37eda94d9a6b85bdb7579c8b9dd454746f78",
+      "state": "draft_unmerged"
+    }
+  },
+  "sources": [
+    {
+      "path": "tests/ServiceDesk.IntegrationTests/TicketEndpointTests.cs",
+      "commit_sha": "249608e24b1bf4c64773f18bcb734fd529c1d554",
+      "line": 269,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/blob/249608e24b1bf4c64773f18bcb734fd529c1d554/tests/ServiceDesk.IntegrationTests/TicketEndpointTests.cs#L269",
+      "evidence_type": "source_inspection"
+    },
+    {
+      "path": "Directory.Build.props",
+      "commit_sha": "249608e24b1bf4c64773f18bcb734fd529c1d554",
+      "line": 7,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/blob/249608e24b1bf4c64773f18bcb734fd529c1d554/Directory.Build.props#L7",
+      "evidence_type": "source_inspection"
+    },
+    {
+      "path": "src/frontend/service-desk-web/src/features/tickets/api/ticketApi.ts",
+      "commit_sha": "249608e24b1bf4c64773f18bcb734fd529c1d554",
+      "line": 8,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/blob/249608e24b1bf4c64773f18bcb734fd529c1d554/src/frontend/service-desk-web/src/features/tickets/api/ticketApi.ts#L8",
+      "evidence_type": "source_inspection"
+    },
+    {
+      "path": "src/backend/ServiceDesk.Domain/Ticketing/TicketStatus.cs",
+      "commit_sha": "249608e24b1bf4c64773f18bcb734fd529c1d554",
+      "line": 3,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/blob/249608e24b1bf4c64773f18bcb734fd529c1d554/src/backend/ServiceDesk.Domain/Ticketing/TicketStatus.cs#L3",
+      "evidence_type": "source_inspection"
+    },
+    {
+      "path": "src/frontend/service-desk-web/src/features/tickets/types.ts",
+      "commit_sha": "249608e24b1bf4c64773f18bcb734fd529c1d554",
+      "line": 6,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/blob/249608e24b1bf4c64773f18bcb734fd529c1d554/src/frontend/service-desk-web/src/features/tickets/types.ts#L6",
+      "evidence_type": "source_inspection"
+    },
+    {
+      "path": "src/backend/ServiceDesk.Api/Endpoints/TicketEndpoints.cs",
+      "commit_sha": "249608e24b1bf4c64773f18bcb734fd529c1d554",
+      "line": 36,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/blob/249608e24b1bf4c64773f18bcb734fd529c1d554/src/backend/ServiceDesk.Api/Endpoints/TicketEndpoints.cs#L36",
+      "evidence_type": "source_inspection"
+    },
+    {
+      "path": "docs/architecture/08-sprint-acceptance-and-governance-record.md",
+      "commit_sha": "249608e24b1bf4c64773f18bcb734fd529c1d554",
+      "line": 12,
+      "url": "https://github.com/supportflow-ai/ai-it-service-desk/blob/249608e24b1bf4c64773f18bcb734fd529c1d554/docs/architecture/08-sprint-acceptance-and-governance-record.md#L12",
+      "evidence_type": "source_inspection"
+    }
+  ],
+  "verification": {
+    "report": "verification.md",
+    "results": "verification-results.json",
+    "backend_solution": "FAIL",
+    "passed_non_integration_tests": 33,
+    "postgresql_integration": "NOT RUN",
+    "frontend_build": "PASS",
+    "frontend_lint": "PASS_WITH_WARNING",
+    "frontend_regression": "9/9 PASS"
+  },
+  "technical_conclusion": "sprint_acceptance_blocked",
+  "blockers": [
+    "TC-283 E2E và TC-284 regression/security còn In Progress",
+    "TC-199 closed-loop acceptance blocked",
+    "Solution compile CS8602 và Docker HTTP500",
+    "Frontend paged-list/status contract mismatch",
+    "Idempotency/resource-scope/migration blockers chưa khép kín"
+  ],
+  "acceptance": "pending_review",
+  "sign_off": {
+    "author_review": "prepared",
+    "human_reviewer_approval": "not_verified",
+    "merge": "not_performed",
+    "jira_change": "not_performed"
+  },
+  "historical_isolation": "Historical grouped PRs preserved; new issue-specific review branch does not retroactively establish isolation."
+}
