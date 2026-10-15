@@ -19,7 +19,7 @@ COPY src/backend/ .
 RUN dotnet publish ServiceDesk.Worker/ServiceDesk.Worker.csproj -c Release -o /app/publish --no-restore
 
 # Stage 2: Runtime
-FROM mcr.microsoft.com/dotnet/runtime:10.0 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 
 RUN groupadd -r appuser && useradd -r -g appuser -s /bin/false appuser

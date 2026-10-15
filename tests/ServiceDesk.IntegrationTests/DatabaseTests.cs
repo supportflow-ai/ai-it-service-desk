@@ -26,11 +26,10 @@ public class DatabaseTests : IClassFixture<ServiceDeskWebApplicationFactory>
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-        // Ensure database is created with Identity schema
-        var created = await dbContext.Database.EnsureCreatedAsync();
-
-        // Verify connection works
         var canConnect = await dbContext.Database.CanConnectAsync();
         canConnect.Should().BeTrue("Should be able to connect to PostgreSQL Testcontainer");
+        (await dbContext.Database.GetPendingMigrationsAsync()).Should().BeEmpty();
+        (await dbContext.Roles.CountAsync()).Should().Be(3);
+        (await dbContext.Users.CountAsync()).Should().Be(3);
     }
 }

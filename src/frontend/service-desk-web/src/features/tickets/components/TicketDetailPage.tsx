@@ -54,6 +54,7 @@ export function TicketDetailPage() {
       case TicketStatus.PendingExternal: return 'Chờ đối tác';
       case TicketStatus.Resolved: return 'Đã giải quyết';
       case TicketStatus.Closed: return 'Đã đóng';
+      case TicketStatus.Cancelled: return 'Đã hủy';
       default: return 'Không xác định';
     }
   };

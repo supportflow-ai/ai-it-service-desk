@@ -1,7 +1,10 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Minio;
 using ServiceDesk.Application.Common.Interfaces;
 using ServiceDesk.Infrastructure.Persistence;
@@ -24,14 +27,23 @@ public class ServiceDeskWebApplicationFactory : WebApplicationFactory<ServiceDes
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        // Override the Database:ConnectionString config key so the NpgSql health check
+        // registered in Program.cs reads the Testcontainer endpoint, not the real DB config.
+        // Safe: ConfigureWebHost runs lazily during CreateClient(), which xUnit always calls
+        // after IAsyncLifetime.InitializeAsync() has finished starting the container.
+        builder.ConfigureAppConfiguration((_, config) =>
+        {
+            config.AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Database:ConnectionString"] = _postgres.GetConnectionString()
+            });
+        });
+
         builder.ConfigureServices(services =>
         {
             // Remove the existing DbContext registration
-            var dbDescriptor = services.SingleOrDefault(
-                d => d.ServiceType == typeof(DbContextOptions<ApplicationDbContext>));
-
-            if (dbDescriptor != null)
-                services.Remove(dbDescriptor);
+            services.RemoveAll<DbContextOptions<ApplicationDbContext>>();
+            services.RemoveAll<IDbContextOptionsConfiguration<ApplicationDbContext>>();
 
             // Add DbContext using the Testcontainer connection string
             services.AddDbContext<ApplicationDbContext>(options =>

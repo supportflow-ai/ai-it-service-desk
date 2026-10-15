@@ -3,13 +3,14 @@ export type TicketCategory = 'ACC' | 'NET' | 'VPN' | 'MAIL' | 'SW' | 'HW' | 'PRI
 export enum TicketStatus {
   Draft = 0,
   Submitted = 1,
-  Triaged = 2,
-  Assigned = 3,
-  InProgress = 4,
-  PendingUser = 5,
-  PendingExternal = 6,
-  Resolved = 7,
-  Closed = 8
+  InProgress = 2,
+  PendingUser = 3,
+  Resolved = 4,
+  Closed = 5,
+  Cancelled = 6,
+  Triaged = 7,
+  Assigned = 8,
+  PendingExternal = 9
 }
 export type TicketPriority = 'P1' | 'P2' | 'P3' | 'P4';
 
@@ -35,6 +36,13 @@ export interface TicketDto {
 }
 
 export type TimelineEventType = 'comment' | 'note' | 'status_change' | 'assignment';
+
+export interface PagedTicketResult {
+  items: TicketDto[];
+  page: number;
+  pageSize: number;
+  totalCount: number;
+}
 
 export interface TicketTimelineEventDto {
   id: string;
