@@ -1,0 +1,278 @@
+{
+  "reviewed_date": "2026-10-15",
+  "timezone": "Asia/Bangkok",
+  "branch": "dev",
+  "commit_sha": "249608e24b1bf4c64773f18bcb734fd529c1d554",
+  "environment": {
+    "os": "Windows",
+    "dotnet_sdk": "10.0.300",
+    "node": "v24.13.1",
+    "npm": "11.8.0",
+    "frontend_dependencies": "npm ci --no-audit --no-fund; lockfile unchanged"
+  },
+  "backend": {
+    "command": "dotnet test src/backend/ServiceDesk.sln -c Release --filter \"Category!=Integration\" --logger \"trx;LogFilePrefix=baseline\" --results-directory ../evidence/dev",
+    "exit_code": 1,
+    "result": "FAIL",
+    "passed_non_integration_tests": 33,
+    "results": [
+      {
+        "artifact": "baseline_net10.0_20261015003148.trx",
+        "sha256": "54bf7e5390543925c005dc91dbfff737a5d29d5854b55c8a2f090855cedcdf69",
+        "total": 15,
+        "passed": 15,
+        "failed": 0,
+        "not_executed": 0,
+        "times": {
+          "creation": "2026-10-15T00:31:48.2222492+07:00",
+          "queuing": "2026-10-15T00:31:48.2222497+07:00",
+          "start": "2026-10-15T00:31:43.4234245+07:00",
+          "finish": "2026-10-15T00:31:48.2986856+07:00"
+        },
+        "tests": [
+          {
+            "name": "ServiceDesk.Domain.Tests.Ticketing.TicketTests.Create_RejectsInvalidOrCaseMismatchedCategory(categoryId: \"invalid\")",
+            "outcome": "Passed",
+            "duration": "00:00:00.0006489"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.Ticketing.TicketTests.Create_RejectsBlankOrShortDescription(description: \"\")",
+            "outcome": "Passed",
+            "duration": "00:00:00.0004362"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.Ticketing.TicketTests.Create_RejectsInvalidOrCaseMismatchedCategory(categoryId: \"vpn\")",
+            "outcome": "Passed",
+            "duration": "00:00:00.0008183"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.Ticketing.TicketTests.Create_RejectsBlankTitle(title: \"   \")",
+            "outcome": "Passed",
+            "duration": "00:00:00.8639339"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.RoleNamesTests.RoleNames_Contains_Admin_Agent_Requester",
+            "outcome": "Passed",
+            "duration": "00:00:00.0042783"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.Ticketing.TicketTests.Create_RejectsBlankTitle(title: \"\")",
+            "outcome": "Passed",
+            "duration": "00:00:00.0006413"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.Ticketing.TicketTests.Create_NormalizesInputAndInitializesRequesterTicket",
+            "outcome": "Passed",
+            "duration": "00:00:00.0053028"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.Ticketing.TicketTests.IsOwnedBy_ReturnsTrueOnlyForRequester",
+            "outcome": "Passed",
+            "duration": "00:00:00.0012967"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.Ticketing.TicketTests.Create_RejectsEmptyRequesterId",
+            "outcome": "Passed",
+            "duration": "00:00:00.0006416"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.Ticketing.TicketTests.Create_RejectsBlankOrShortDescription(description: \"   \")",
+            "outcome": "Passed",
+            "duration": "00:00:00.0001152"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.RoleNamesTests.PolicyNames_Are_Defined_Properly",
+            "outcome": "Passed",
+            "duration": "00:00:00.8559411"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.Ticketing.TicketTests.Create_RejectsBlankOrShortDescription(description: \"Too short\")",
+            "outcome": "Passed",
+            "duration": "00:00:00.0006543"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.Common.DomainDefaultsTests.NameMaxLength_ShouldBe256",
+            "outcome": "Passed",
+            "duration": "00:00:00.8551094"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.Ticketing.TicketTests.Create_RejectsTitleLongerThan100Characters",
+            "outcome": "Passed",
+            "duration": "00:00:00.0006343"
+          },
+          {
+            "name": "ServiceDesk.Domain.Tests.Common.DomainDefaultsTests.DescriptionMaxLength_ShouldBe4000",
+            "outcome": "Passed",
+            "duration": "00:00:00.0001698"
+          }
+        ]
+      },
+      {
+        "artifact": "baseline_net10.0_20261015003152.trx",
+        "sha256": "0fc0bcf1bd2999aca89b0700b08b9b8a666273b3333f3903ec922e7ed5ee32cf",
+        "total": 6,
+        "passed": 6,
+        "failed": 0,
+        "not_executed": 0,
+        "times": {
+          "creation": "2026-10-15T00:31:52.9096819+07:00",
+          "queuing": "2026-10-15T00:31:52.9096824+07:00",
+          "start": "2026-10-15T00:31:49.7720418+07:00",
+          "finish": "2026-10-15T00:31:52.9172134+07:00"
+        },
+        "tests": [
+          {
+            "name": "ServiceDesk.ArchitectureTests.CleanArchitectureTests.Domain_ShouldNotReference_EFCore",
+            "outcome": "Passed",
+            "duration": "00:00:00.0013806"
+          },
+          {
+            "name": "ServiceDesk.ArchitectureTests.CleanArchitectureTests.Application_ShouldNotReference_Infrastructure",
+            "outcome": "Passed",
+            "duration": "00:00:00.0031258"
+          },
+          {
+            "name": "ServiceDesk.ArchitectureTests.CleanArchitectureTests.Domain_ShouldNotReference_Infrastructure",
+            "outcome": "Passed",
+            "duration": "00:00:00.0013503"
+          },
+          {
+            "name": "ServiceDesk.ArchitectureTests.CleanArchitectureTests.Domain_ShouldNotReference_AspNetCore",
+            "outcome": "Passed",
+            "duration": "00:00:00.0016120"
+          },
+          {
+            "name": "ServiceDesk.ArchitectureTests.CleanArchitectureTests.Application_ShouldNotReference_Api",
+            "outcome": "Passed",
+            "duration": "00:00:00.0145616"
+          },
+          {
+            "name": "ServiceDesk.ArchitectureTests.CleanArchitectureTests.Domain_ShouldNotReference_Application",
+            "outcome": "Passed",
+            "duration": "00:00:00.1468905"
+          }
+        ]
+      },
+      {
+        "artifact": "baseline_net10.0_20261015003158.trx",
+        "sha256": "385b42df9b276e1c898bd31fe28db2448fa1e5eddfbcfce5583ecea9b688f765",
+        "total": 12,
+        "passed": 12,
+        "failed": 0,
+        "not_executed": 0,
+        "times": {
+          "creation": "2026-10-15T00:31:52.3634813+07:00",
+          "queuing": "2026-10-15T00:31:52.3634818+07:00",
+          "start": "2026-10-15T00:31:46.8432250+07:00",
+          "finish": "2026-10-15T00:31:58.5651245+07:00"
+        },
+        "tests": [
+          {
+            "name": "ServiceDesk.Application.Tests.Ticketing.TicketServiceTests.CreateTicketAsync_TitleTooLong_ThrowsArgumentException",
+            "outcome": "Passed",
+            "duration": "00:00:00.0213959"
+          },
+          {
+            "name": "ServiceDesk.Application.Tests.Ticketing.TicketServiceTests.GetTicketByIdAsync_TicketExistsAndMatchesRequester_ReturnsTicketDto",
+            "outcome": "Passed",
+            "duration": "00:00:00.0196744"
+          },
+          {
+            "name": "ServiceDesk.Application.Tests.Ticketing.TicketServiceTests.CreateTicketAsync_DescriptionTooShort_ThrowsArgumentException",
+            "outcome": "Passed",
+            "duration": "00:00:00.0088530"
+          },
+          {
+            "name": "ServiceDesk.Application.Tests.Ticketing.TicketServiceTests.CreateTicketAsync_WhitespaceTitleAndDescription_Trimmed",
+            "outcome": "Passed",
+            "duration": "00:00:00.0184960"
+          },
+          {
+            "name": "ServiceDesk.Application.Tests.Ticketing.TicketServiceTests.GetTicketByIdAsync_UserIsAdmin_ReturnsTicketEvenIfDifferentRequester",
+            "outcome": "Passed",
+            "duration": "00:00:07.3405325"
+          },
+          {
+            "name": "ServiceDesk.Application.Tests.Ticketing.TicketServiceTests.GetTicketByIdAsync_TicketNotFound_ReturnsNull",
+            "outcome": "Passed",
+            "duration": "00:00:00.0512435"
+          },
+          {
+            "name": "ServiceDesk.Application.Tests.Ticketing.TicketServiceTests.CreateTicketAsync_ValidInput_ReturnsTicketDtoWithTicketNumber",
+            "outcome": "Passed",
+            "duration": "00:00:00.0102618"
+          },
+          {
+            "name": "ServiceDesk.Application.Tests.AIAssistance.TicketClassificationResultTests.Empty_ShouldReturnResultWithZeroConfidence",
+            "outcome": "Passed",
+            "duration": "00:00:00.9811748"
+          },
+          {
+            "name": "ServiceDesk.Application.Tests.Ticketing.TicketServiceTests.GetTicketsForRequesterAsync_ReturnsOnlyOwnedTicketsInStablePages",
+            "outcome": "Passed",
+            "duration": "00:00:00.0675985"
+          },
+          {
+            "name": "ServiceDesk.Application.Tests.Ticketing.TicketServiceTests.CreateTicketAsync_InvalidCategoryId_ThrowsArgumentException",
+            "outcome": "Passed",
+            "duration": "00:00:00.1129890"
+          },
+          {
+            "name": "ServiceDesk.Application.Tests.Ticketing.TicketServiceTests.GetTicketByIdAsync_TicketBelongsToDifferentRequester_ReturnsNull",
+            "outcome": "Passed",
+            "duration": "00:00:00.0081313"
+          },
+          {
+            "name": "ServiceDesk.Application.Tests.Ticketing.TicketServiceTests.CreateTicketAsync_EmptyTitle_ThrowsArgumentException",
+            "outcome": "Passed",
+            "duration": "00:00:00.0078210"
+          }
+        ]
+      }
+    ],
+    "diagnostic": {
+      "code": "CS8602",
+      "path": "tests/ServiceDesk.IntegrationTests/TicketEndpointTests.cs",
+      "line": 269,
+      "column": 76,
+      "message": "Dereference of a possibly null reference",
+      "warnings_as_errors": true
+    },
+    "interpretation": "The solution command builds IntegrationTests even when the filter excludes execution; 33 tests passed, but the overall gate failed."
+  },
+  "integration": {
+    "result": "NOT RUN",
+    "reason": "IntegrationTests has CS8602 compile error; Docker Desktop Linux engine also returned HTTP 500 from /v1.56/version. No PostgreSQL-backed test executed in this run.",
+    "docker_probe": "docker version --format {{.Server.Version}}",
+    "docker_exit_code": 1
+  },
+  "frontend": {
+    "results": [
+      {
+        "exit_code": 0,
+        "name": "frontend_build",
+        "command": "npm run build"
+      },
+      {
+        "exit_code": 0,
+        "name": "frontend_lint",
+        "command": "npm run lint"
+      },
+      {
+        "exit_code": 0,
+        "name": "frontend_regression",
+        "command": "node --test tests/frontend/auth-contract.test.mjs tests/frontend/http-error.test.mjs tests/frontend/production-typecheck.test.mjs"
+      }
+    ],
+    "regression": {
+      "passed": 9,
+      "failed": 0,
+      "skipped": 0
+    },
+    "warnings": [
+      "Vite bundle size over 500 kB",
+      "react-refresh/only-export-components in AuthContext.tsx:74"
+    ],
+    "interpretation": "Compile/lint/contract regression success does not prove auth/create/list/detail end-to-end or correct status decoding."
+  }
+}
