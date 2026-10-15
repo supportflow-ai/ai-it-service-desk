@@ -25,15 +25,20 @@ Other existing feature and documentation heads were already ancestors of dev.
   in the two-host security fixture.
 - Update both smoke scripts to the actual auth/create/list/detail contracts;
   wire frontend regressions and an isolated Docker gateway smoke job into CI.
+- Build MinIO from its upstream security release because the configured public
+  container registry rejects pulls. Include its upstream license in the image.
+  Use the ASP.NET runtime for Worker because Infrastructure requires that framework.
 
 ## Validation
 
 Local Release solution build passes with zero warnings/errors. Domain 100,
 Application 40 and Architecture 6 tests pass; frontend production build/lint pass
 (existing bundle-size/fast-refresh warnings) and all 11 frontend regressions pass.
-EF reports no pending model changes. Local Docker remains unavailable, so real
-PostgreSQL integration and full Docker smoke are verified by the pull request CI
-before the integration is merged into dev.
+EF reports no pending model changes. PR #24 CI confirms all 57 Integration-project
+tests pass against real PostgreSQL (including 8 endpoint unit tests). The security
+workflow also passes all tests. Local Docker remains unavailable; full stack smoke
+is verified in PR CI before merge. Initial stack smoke exposed an unavailable
+MinIO image registry; the source build above replaces that dependency.
 
 New regression coverage checks cross-language status values, the requester
 paging client, and ticket-only PostgreSQL upgrade plus rollback/reapply with

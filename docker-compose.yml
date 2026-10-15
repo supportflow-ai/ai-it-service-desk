@@ -118,7 +118,9 @@ services:
 
   # --- MinIO ---
   minio:
-    image: quay.io/minio/minio:latest
+    build:
+      context: .
+      dockerfile: deploy/minio/Dockerfile
     command: server /data --console-address ":9001"
     environment:
       - MINIO_ROOT_USER=${MINIO_ROOT_USER:-minioadmin}
