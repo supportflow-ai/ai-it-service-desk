@@ -29,20 +29,37 @@ public sealed class IdentityDataSeeder : IHostedService
     {
         using var scope = _scopeFactory.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        if (dbContext.Database.IsRelational())
+        var postgres = dbContext.Database.IsNpgsql();
+        if (postgres)
         {
-            await dbContext.Database.MigrateAsync(cancellationToken);
-        }
-        else
-        {
-            await dbContext.Database.EnsureCreatedAsync(cancellationToken);
+            await dbContext.Database.OpenConnectionAsync(cancellationToken);
+            // Serialize startup across API replicas and Worker, including role/user seeding.
+            await dbContext.Database.ExecuteSqlRawAsync("SELECT pg_advisory_lock(741812345)", cancellationToken);
         }
 
-        var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+        try
+        {
+            if (dbContext.Database.IsRelational())
+                await dbContext.Database.MigrateAsync(cancellationToken);
+            else
+                await dbContext.Database.EnsureCreatedAsync(cancellationToken);
 
-        await SeedRolesAsync(roleManager);
-        await SeedUsersAsync(userManager);
+            var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+            await SeedRolesAsync(roleManager);
+            await SeedUsersAsync(userManager);
+        }
+        finally
+        {
+            if (postgres)
+            {
+                try
+                {
+                    await dbContext.Database.ExecuteSqlRawAsync("SELECT pg_advisory_unlock(741812345)", CancellationToken.None);
+                }
+                finally { await dbContext.Database.CloseConnectionAsync(); }
+            }
+        }
     }
 
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;

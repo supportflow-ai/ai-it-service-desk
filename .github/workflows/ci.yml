@@ -98,3 +98,35 @@ jobs:
 
       - name: Run TypeScript & Vite Build
         run: npm run build
+
+      - name: Frontend contract regression
+        run: node --test ../../../tests/frontend/*.test.mjs
+
+  stack-smoke:
+    name: Docker stack and requester smoke
+    needs: [backend-ci, frontend-ci]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Build and start isolated stack
+        run: docker compose -p servicedesk-ci up --build -d --wait --wait-timeout 180
+      - name: Verify requester flow through gateway
+        run: |
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://localhost/health > /dev/null; then break; fi
+            sleep 2
+          done
+          curl --fail --silent http://localhost > /dev/null
+          bash deploy/smoke/smoke-test.sh
+      - name: Stack diagnostics
+        if: always()
+        run: |
+          docker compose -p servicedesk-ci ps -a
+          docker compose -p servicedesk-ci logs --no-color
+      - name: Remove isolated CI stack
+        if: always()
+        run: docker compose -p servicedesk-ci down -v

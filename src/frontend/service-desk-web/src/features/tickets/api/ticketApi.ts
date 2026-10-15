@@ -1,12 +1,12 @@
 import apiClient from '@/shared/api/apiClient';
-import { CreateTicketPayload, TicketDto, TicketTimelineEventDto } from '../types';
+import { CreateTicketPayload, PagedTicketResult, TicketDto, TicketTimelineEventDto } from '../types';
 
 export const ticketApi = {
   /**
    * Lấy danh sách ticket của Requester hiện tại (TC-271)
    */
-  getMyTickets: async (): Promise<TicketDto[]> => {
-    const response = await apiClient.get<TicketDto[]>('/tickets/me');
+  getMyTickets: async (page = 1, pageSize = 10): Promise<PagedTicketResult> => {
+    const response = await apiClient.get<PagedTicketResult>('/tickets/me', { params: { page, pageSize } });
     return response.data;
   },
 

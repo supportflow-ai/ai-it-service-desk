@@ -18,8 +18,8 @@ namespace ServiceDesk.IntegrationTests;
 
 /// <summary>
 /// Two independent real API hosts, one PostgreSQL database. No fake ticket/idempotency service.
-/// IdentityDataSeeder is excluded only here: the pre-existing migration has no Identity tables.
-/// JWT is still validated by the production API middleware; baseline Auth tests remain unchanged.
+/// Production migrations and IdentityDataSeeder run on both hosts.
+/// JWT is validated by the production API middleware with isolated fixture keys.
 /// </summary>
 public sealed class TicketIdempotencyPostgresFixture : IAsyncLifetime
 {
@@ -77,10 +77,6 @@ public sealed class TicketIdempotencyPostgresFixture : IAsyncLifetime
                 services.RemoveAll<DbContextOptions<ApplicationDbContext>>();
                 services.RemoveAll<IDbContextOptionsConfiguration<ApplicationDbContext>>();
                 services.AddDbContext<ApplicationDbContext>(options => options.UseNpgsql(connectionString));
-                foreach (var descriptor in services.Where(descriptor =>
-                    descriptor.ServiceType == typeof(IHostedService) &&
-                    descriptor.ImplementationType == typeof(IdentityDataSeeder)).ToArray())
-                    services.Remove(descriptor);
             });
         }
     }

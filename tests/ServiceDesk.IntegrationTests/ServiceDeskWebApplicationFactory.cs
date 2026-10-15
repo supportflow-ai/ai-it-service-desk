@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Minio;
 using ServiceDesk.Application.Common.Interfaces;
 using ServiceDesk.Infrastructure.Persistence;
@@ -40,11 +42,8 @@ public class ServiceDeskWebApplicationFactory : WebApplicationFactory<ServiceDes
         builder.ConfigureServices(services =>
         {
             // Remove the existing DbContext registration
-            var dbDescriptor = services.SingleOrDefault(
-                d => d.ServiceType == typeof(DbContextOptions<ApplicationDbContext>));
-
-            if (dbDescriptor != null)
-                services.Remove(dbDescriptor);
+            services.RemoveAll<DbContextOptions<ApplicationDbContext>>();
+            services.RemoveAll<IDbContextOptionsConfiguration<ApplicationDbContext>>();
 
             // Add DbContext using the Testcontainer connection string
             services.AddDbContext<ApplicationDbContext>(options =>

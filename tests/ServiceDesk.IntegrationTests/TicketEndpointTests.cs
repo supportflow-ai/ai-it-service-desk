@@ -244,6 +244,7 @@ public class TicketEndpointTests : IClassFixture<ServiceDeskWebApplicationFactor
             TicketCategories.NET));
         otherCreateResponse.StatusCode.Should().Be(HttpStatusCode.Created);
         var otherTicket = await otherCreateResponse.Content.ReadFromJsonAsync<TicketDto>();
+        otherTicket.Should().NotBeNull();
 
         _client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", ownerToken);
@@ -266,7 +267,7 @@ public class TicketEndpointTests : IClassFixture<ServiceDeskWebApplicationFactor
         firstPage.Items.Should().NotContain(ticket => ticket.Id == otherTicket!.Id);
         secondPage.Items.Should().NotContain(ticket => ticket.Id == otherTicket!.Id);
 
-        var foreignDetailResponse = await _client.GetAsync($"/api/tickets/{otherTicket.Id}");
+        var foreignDetailResponse = await _client.GetAsync($"/api/tickets/{otherTicket!.Id}");
         foreignDetailResponse.StatusCode.Should().Be(HttpStatusCode.NotFound);
 
         _client.DefaultRequestHeaders.Authorization = null;

@@ -19,7 +19,7 @@ export const aiAssistanceApi = {
    */
   analyzeTicket: async (request: TriageRequestDto): Promise<AgentTriageView> => {
     const response = await apiClient.post<AgentTriageView>(
-      '/api/ai/ticket-analysis',
+      '/ai/ticket-analysis',
       request,
     );
     return response.data;
@@ -31,7 +31,7 @@ export const aiAssistanceApi = {
    */
   analyzeTicketRequester: async (request: TriageRequestDto): Promise<RequesterTriageView> => {
     const response = await apiClient.post<RequesterTriageView>(
-      '/api/ai/ticket-analysis/requester',
+      '/ai/ticket-analysis/requester',
       request,
     );
     return response.data;
@@ -46,7 +46,7 @@ export const aiAssistanceApi = {
     request: SuggestionDecisionRequest,
   ): Promise<SuggestionDto> => {
     const response = await apiClient.post<SuggestionDto>(
-      `/api/ai/suggestions/${suggestionId}/decision`,
+      `/ai/suggestions/${suggestionId}/decision`,
       request,
     );
     return response.data;

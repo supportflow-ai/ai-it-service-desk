@@ -82,7 +82,7 @@ public sealed class TicketIdempotencyPostgresTests : IClassFixture<TicketIdempot
         await using (var context = _fixture.CreateContext())
         {
             var ticket = await context.Tickets.SingleAsync(ticket => ticket.RequesterId == user);
-            ticket.Title = "Changed after create";
+            context.Entry(ticket).Property(value => value.Title).CurrentValue = "Changed after create";
             await context.SaveChangesAsync();
         }
         using var replay = await Post(secondClient, user, key);

@@ -11,22 +11,32 @@ export function TicketListPage() {
   const [tickets, setTickets] = useState<TicketDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalCount, setTotalCount] = useState(0);
   const navigate = useNavigate();
 
   useEffect(() => {
+    let active = true;
     const fetchTickets = async () => {
+      setLoading(true);
+      setError(null);
       try {
-        const data = await ticketApi.getMyTickets();
-        setTickets(data);
+        const data = await ticketApi.getMyTickets(page, pageSize);
+        if (!active) return;
+        setTickets(data.items);
+        setTotalCount(data.totalCount);
       } catch (err) {
+        if (!active) return;
         console.error('Failed to fetch tickets:', err);
         setError('Không thể tải danh sách ticket. Vui lòng thử lại sau.');
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     };
     fetchTickets();
-  }, []);
+    return () => { active = false; };
+  }, [page, pageSize]);
 
   const getStatusColor = (status: TicketStatus) => {
     switch (status) {
@@ -50,6 +60,7 @@ export function TicketListPage() {
       case TicketStatus.PendingExternal: return 'Chờ đối tác';
       case TicketStatus.Resolved: return 'Đã giải quyết';
       case TicketStatus.Closed: return 'Đã đóng';
+      case TicketStatus.Cancelled: return 'Đã hủy';
       default: return 'Không xác định';
     }
   };
@@ -119,7 +130,15 @@ export function TicketListPage() {
             dataSource={tickets}
             rowKey="id"
             loading={loading}
-            pagination={{ pageSize: 10 }}
+            pagination={{
+              current: page,
+              pageSize,
+              total: totalCount,
+              onChange: (nextPage, nextPageSize) => {
+                setPage(nextPageSize === pageSize ? nextPage : 1);
+                setPageSize(nextPageSize);
+              },
+            }}
           />
         )}
       </Card>

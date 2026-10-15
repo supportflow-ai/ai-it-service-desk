@@ -117,7 +117,9 @@ pipeline {
             steps {
                 dir('src/frontend/service-desk-web') {
                     sh 'npm ci'
+                    sh 'npm run lint'
                     sh 'npm run build'
+                    sh 'node --test ../../../tests/frontend/*.test.mjs'
                 }
             }
         }
@@ -148,7 +150,11 @@ pipeline {
             steps {
                 sh '''
                     echo "Waiting for services to become ready..."
-                    sleep 20
+                    docker compose up -d --wait --wait-timeout 180
+                    for attempt in $(seq 1 60); do
+                        if curl --fail --silent http://localhost/health > /dev/null; then break; fi
+                        sleep 2
+                    done
                     HEALTH=$(curl --fail --silent http://localhost/health)
                     echo "$HEALTH"
                     echo "$HEALTH" | grep -q '"status":"Healthy"' || exit 1
@@ -170,6 +176,7 @@ pipeline {
                     curl --fail --silent --show-error http://localhost           && echo "Frontend: OK"
                     curl --fail --silent --show-error http://localhost/health    && echo "Health:   OK"
                     curl --fail --silent --show-error http://localhost/api       && echo "API Info: OK"
+                    bash deploy/smoke/smoke-test.sh
                     echo "All smoke checks passed."
                 '''
             }
