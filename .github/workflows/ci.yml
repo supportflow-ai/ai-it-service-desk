@@ -122,6 +122,7 @@ jobs:
           done
           curl --fail --silent http://localhost > /dev/null
           bash deploy/smoke/smoke-test.sh
+          test "$(docker compose -p servicedesk-ci ps --status running --services | wc -l)" -eq 7
       - name: Stack diagnostics
         if: always()
         run: |

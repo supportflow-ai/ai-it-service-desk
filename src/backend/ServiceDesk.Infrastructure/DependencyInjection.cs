@@ -41,6 +41,7 @@ public static class DependencyInjection
             provider.GetRequiredService<ApplicationDbContext>());
 
         // --- ASP.NET Core Identity ---
+        services.AddDataProtection();
         services.AddIdentityCore<IdentityUser>(options =>
             {
                 options.Password.RequireDigit = true;

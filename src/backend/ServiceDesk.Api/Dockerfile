@@ -25,12 +25,17 @@ FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 
 # Non-root user for security
-RUN groupadd -r appuser && useradd -r -g appuser -s /bin/false appuser
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd -r appuser && useradd -r -g appuser -s /bin/false appuser
 USER appuser
 
 COPY --from=build /app/publish .
 
 EXPOSE 8080
 ENV ASPNETCORE_HTTP_PORTS=8080
+
+HEALTHCHECK --interval=5s --timeout=3s --start-period=20s --retries=12 \
+    CMD curl --fail --silent http://localhost:8080/health || exit 1
 
 ENTRYPOINT ["dotnet", "ServiceDesk.Api.dll"]

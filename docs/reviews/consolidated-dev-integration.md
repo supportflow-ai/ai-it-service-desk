@@ -28,11 +28,14 @@ Other existing feature and documentation heads were already ancestors of dev.
 - Build MinIO from its upstream security release because the configured public
   container registry rejects pulls. Include its upstream license in the image.
   Use the ASP.NET runtime for Worker because Infrastructure requires that framework.
+- Register Data Protection explicitly for the generic Worker host and gate NGINX
+  on health checks of both API nodes; initial full-stack smoke caught these
+  deployment-only failures. Assert that all seven services remain running.
 
 ## Validation
 
 Local Release solution build passes with zero warnings/errors. Domain 100,
-Application 40 and Architecture 6 tests pass; frontend production build/lint pass
+Application 41 and Architecture 6 tests pass; frontend production build/lint pass
 (existing bundle-size/fast-refresh warnings) and all 11 frontend regressions pass.
 EF reports no pending model changes. PR #24 CI confirms all 57 Integration-project
 tests pass against real PostgreSQL (including 8 endpoint unit tests). The security
