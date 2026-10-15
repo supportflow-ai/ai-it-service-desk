@@ -2,6 +2,7 @@ using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using ServiceDesk.Api.Endpoints;
@@ -55,10 +56,13 @@ builder.Services.AddAuthorization(options =>
 });
 
 // --- Health checks ---
+// Use a factory delegate so the connection string is resolved lazily from IOptions<DatabaseOptions>
+// at health-check execution time — not captured from IConfiguration at startup.
+// This allows WebApplicationFactory to override Database:ConnectionString via ConfigureAppConfiguration
+// for integration tests without modifying service registrations.
 builder.Services.AddHealthChecks()
     .AddNpgSql(
-        builder.Configuration.GetSection(DatabaseOptions.SectionName).Get<DatabaseOptions>()?.ConnectionString
-            ?? string.Empty,
+        sp => sp.GetRequiredService<IOptions<DatabaseOptions>>().Value.ConnectionString,
         name: "postgresql",
         tags: ["db", "ready"]);
 

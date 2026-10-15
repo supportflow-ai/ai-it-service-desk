@@ -1,0 +1,100 @@
+name: CI Quality Gates
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+      - staging
+  pull_request:
+    branches:
+      - main
+      - dev
+      - staging
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend-ci:
+    name: Backend Build & Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK 10.0
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore src/backend/ServiceDesk.sln
+
+      - name: Build solution (Release)
+        run: dotnet build src/backend/ServiceDesk.sln -c Release --no-restore
+
+      - name: Run Domain Unit Tests
+        run: |
+          dotnet test tests/ServiceDesk.Domain.Tests/ServiceDesk.Domain.Tests.csproj \
+            -c Release --no-build \
+            --logger "trx;LogFileName=domain-tests.trx" \
+            --results-directory artifacts/test-results/unit
+
+      - name: Run Application Unit Tests
+        run: |
+          dotnet test tests/ServiceDesk.Application.Tests/ServiceDesk.Application.Tests.csproj \
+            -c Release --no-build \
+            --logger "trx;LogFileName=application-tests.trx" \
+            --results-directory artifacts/test-results/unit
+
+      - name: Run Architecture Tests
+        run: |
+          dotnet test tests/ServiceDesk.ArchitectureTests/ServiceDesk.ArchitectureTests.csproj \
+            -c Release --no-build \
+            --logger "trx;LogFileName=architecture-tests.trx" \
+            --results-directory artifacts/test-results/architecture
+
+      - name: Run Integration Tests (Testcontainers)
+        run: |
+          dotnet test tests/ServiceDesk.IntegrationTests/ServiceDesk.IntegrationTests.csproj \
+            -c Release --no-build \
+            --logger "trx;LogFileName=integration-tests.trx" \
+            --results-directory artifacts/test-results/integration
+
+      - name: Upload Test Results (TRX)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-results
+          path: artifacts/test-results/**/*.trx
+          if-no-files-found: warn
+
+  frontend-ci:
+    name: Frontend Lint & Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src/frontend/service-desk-web
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: src/frontend/service-desk-web/package-lock.json
+
+      - name: Install dependencies (clean install)
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Run TypeScript & Vite Build
+        run: npm run build
