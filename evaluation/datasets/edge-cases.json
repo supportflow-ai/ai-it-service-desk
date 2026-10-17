@@ -1,0 +1,338 @@
+[
+  {
+    "id": "EVAL-EDGE-001",
+    "ticket_type": "ambiguous",
+    "input": {
+      "title": "Máy hỏng rồi",
+      "description": "Máy em bị lỗi không dùng được, IT qua xem giúp gấp với ạ."
+    },
+    "gold_label": {
+      "category": "OTHER",
+      "impact": "Low",
+      "urgency": "High",
+      "expected_priority": "P3",
+      "requires_manual_triage": false,
+      "rationale": "Mô tả hoàn toàn mơ hồ, không rõ lỗi phần cứng, hệ điều hành hay mạng. AI phải gán OTHER hoặc yêu cầu bổ sung thông tin với độ tin cậy thấp."
+    }
+  },
+  {
+    "id": "EVAL-EDGE-002",
+    "ticket_type": "ambiguous",
+    "input": {
+      "title": "Cần hỗ trợ gấp",
+      "description": "Đang làm việc tự nhiên màn hình đen xì không bấm được gì cả."
+    },
+    "gold_label": {
+      "category": "HW",
+      "impact": "Low",
+      "urgency": "High",
+      "expected_priority": "P3",
+      "requires_manual_triage": false,
+      "rationale": "Triệu chứng màn hình đen có thể do cáp/màn hình hoặc nguồn máy tính, ưu tiên nhận diện là lỗi phần cứng cá nhân."
+    }
+  },
+  {
+    "id": "EVAL-EDGE-003",
+    "ticket_type": "edge_case",
+    "input": {
+      "title": "Không vào được mạng khi bật VPN ở quán cà phê",
+      "description": "Tôi ngồi làm việc ở The Coffee House, vào mạng đọc báo bình thường nhưng cứ bật phần mềm VPN công ty lên là toàn bộ kết nối Internet bị mất và không ping được máy chủ."
+    },
+    "gold_label": {
+      "category": "VPN",
+      "impact": "Low",
+      "urgency": "High",
+      "expected_priority": "P3",
+      "requires_manual_triage": false,
+      "rationale": "Tranh chấp giữa từ khóa 'mạng' (NET) và 'VPN'. Vì mạng gốc bình thường chỉ lỗi khi kích hoạt VPN (split-tunneling/gateway), danh mục chính xác phải là VPN."
+    }
+  },
+  {
+    "id": "EVAL-EDGE-004",
+    "ticket_type": "edge_case",
+    "input": {
+      "title": "Quên mật khẩu giải nén file backup trên máy tính",
+      "description": "Tôi có file archive backup dữ liệu cá nhân .zip lưu trong máy nhưng quên mất mật khẩu đặt tuần trước, IT có cách nào lấy lại giúp không?"
+    },
+    "gold_label": {
+      "category": "OTHER",
+      "impact": "Low",
+      "urgency": "Low",
+      "expected_priority": "P4",
+      "requires_manual_triage": false,
+      "rationale": "Dễ nhầm lẫn với ACC (quên mật khẩu). Tuy nhiên đây là mật khẩu file archive cá nhân, không phải tài khoản công ty."
+    }
+  },
+  {
+    "id": "EVAL-EDGE-005",
+    "ticket_type": "edge_case",
+    "input": {
+      "title": "Mất điện thoại chứa app xác thực 2 lớp vào mạng nội bộ công ty",
+      "description": "Hôm qua trên đường về tôi bị móc túi mất điện thoại iPhone có cài app xác thực đa yếu tố Microsoft Authenticator để vào hệ thống công ty."
+    },
+    "gold_label": {
+      "category": "SEC",
+      "impact": "High",
+      "urgency": "High",
+      "expected_priority": "P1",
+      "requires_manual_triage": true,
+      "rationale": "Mất thiết bị chứa credential/MFA tiềm ẩn rủi ro xâm nhập bảo mật nghiêm trọng. Bắt buộc kích hoạt quy trình Security và can thiệp thủ công."
+    }
+  },
+  {
+    "id": "EVAL-EDGE-006",
+    "ticket_type": "edge_case",
+    "input": {
+      "title": "Outlook không kết nối được máy chủ khi ở nhà nhưng đến công ty thì bình thường",
+      "description": "Ứng dụng Outlook trên laptop của tôi báo 'Disconnected' khi ngồi ở nhà, nhưng mang đến văn phòng cắm mạng thì gửi nhận bình thường mà không cần mở VPN."
+    },
+    "gold_label": {
+      "category": "VPN",
+      "impact": "Low",
+      "urgency": "Medium",
+      "expected_priority": "P4",
+      "requires_manual_triage": false,
+      "rationale": "Bản chất là máy chủ mail nội bộ yêu cầu kết nối VPN khi làm việc từ xa, không phải lỗi ứng dụng Outlook (MAIL)."
+    }
+  },
+  {
+    "id": "EVAL-EDGE-007",
+    "ticket_type": "edge_case",
+    "input": {
+      "title": "Cần mượn máy in màu di động cho sự kiện triển lãm của công ty",
+      "description": "Tuần tới công ty tham gia hội chợ công nghệ tại SECC, phòng Truyền thông muốn mượn 01 máy in màu nhỏ gọn kèm cáp kết nối để in ảnh thẻ cho khách tham quan."
+    },
+    "gold_label": {
+      "category": "EQUIP",
+      "impact": "Low",
+      "urgency": "Low",
+      "expected_priority": "P4",
+      "requires_manual_triage": false,
+      "rationale": "Có từ khóa 'máy in' (dễ nhầm PRINT) nhưng thực chất là yêu cầu mượn/cấp thiết bị phục vụ sự kiện."
+    }
+  },
+  {
+    "id": "EVAL-EDGE-008",
+    "ticket_type": "edge_case",
+    "input": {
+      "title": "Cấp quyền gửi email dưới danh nghĩa hòm thư chung contact@company.com",
+      "description": "Tôi phụ trách tiếp nhận phản hồi khách hàng, nhờ IT cấu hình quyền 'Send As' và 'Send on Behalf' hòm thư chung cho tài khoản của tôi trên Exchange."
+    },
+    "gold_label": {
+      "category": "ACCESS",
+      "impact": "Low",
+      "urgency": "Medium",
+      "expected_priority": "P4",
+      "requires_manual_triage": false,
+      "rationale": "Liên quan đến email nhưng bản chất là yêu cầu phân quyền ủy quyền hòm thư chung (Access Control)."
+    }
+  },
+  {
+    "id": "EVAL-EDGE-009",
+    "ticket_type": "ambiguous",
+    "input": {
+      "title": "Lỗi 403 Forbidden khi mở hệ thống CRM",
+      "description": "Tôi mở trình duyệt truy cập link CRM nội bộ thì trang báo lỗi '403 Forbidden - Access Denied', trước giờ vẫn vào bình thường."
+    },
+    "gold_label": {
+      "category": "ACCESS",
+      "impact": "Low",
+      "urgency": "High",
+      "expected_priority": "P3",
+      "requires_manual_triage": false,
+      "rationale": "Lỗi 403 đặc trưng của việc thiếu quyền truy cập hoặc tài khoản hết hạn phân quyền trên hệ thống."
+    }
+  },
+  {
+    "id": "EVAL-EDGE-010",
+    "ticket_type": "edge_case",
+    "input": {
+      "title": "Laptop làm việc phát ra mùi khét và pin bị phồng đội bàn phím",
+      "description": "Chiếc laptop Dell Precision của tôi đang sạc thì đáy máy nóng ran, bốc mùi khét nhẹ và phần pin phồng to làm cong nắp dưới và đội bàn phím lên."
+    },
+    "gold_label": {
+      "category": "HW",
+      "impact": "Low",
+      "urgency": "High",
+      "expected_priority": "P3",
+      "requires_manual_triage": false,
+      "rationale": "Nguy cơ cháy nổ pin phần cứng laptop khẩn cấp, hỏng thiết bị nghiêm trọng."
+    }
+  },
+  {
+    "id": "EVAL-EDGE-011",
+    "ticket_type": "ambiguous",
+    "input": {
+      "title": "Mạng bị chậm",
+      "description": "Mạng dạo này cứ quay vòng vòng xem cái gì cũng chậm."
+    },
+    "gold_label": {
+      "category": "NET",
+      "impact": "Low",
+      "urgency": "Low",
+      "expected_priority": "P4",
+      "requires_manual_triage": false,
+      "rationale": "Phản ánh tốc độ mạng cá nhân cảm tính, không rõ vị trí hay thời điểm, mức độ khẩn cấp thấp."
+    }
+  },
+  {
+    "id": "EVAL-EDGE-012",
+    "ticket_type": "edge_case",
+    "input": {
+      "title": "File Excel chứa số liệu khách hàng bị chia sẻ công khai qua link Google Drive lạ",
+      "description": "Tôi tình cờ phát hiện file danh sách tài khoản ngân hàng và CMND khách hàng đang bị đính kèm trong 1 link Drive công khai trên mạng xã hội."
+    },
+    "gold_label": {
+      "category": "SEC",
+      "impact": "High",
+      "urgency": "High",
+      "expected_priority": "P1",
+      "requires_manual_triage": true,
+      "rationale": "Sự cố lộ lọt dữ liệu nhạy cảm (Data Breach / Security Incident). Bắt buộc xử lý khẩn cấp và Human Triage."
+    }
+  },
+  {
+    "id": "EVAL-EDGE-013",
+    "ticket_type": "edge_case",
+    "input": {
+      "title": "Cần cài lại máy tính vì máy chạy quá nhiều ứng dụng rác",
+      "description": "Máy tính của tôi dùng 3 năm rồi chưa cài lại Win, giờ mở file khởi động mất 10 phút. Nhờ IT format cài lại bản Windows sạch sẽ."
+    },
+    "gold_label": {
+      "category": "SW",
+      "impact": "Low",
+      "urgency": "Low",
+      "expected_priority": "P4",
+      "requires_manual_triage": false,
+      "rationale": "Yêu cầu cài đặt lại hệ điều hành phần mềm, không phải hỏng linh kiện phần cứng."
+    }
+  },
+  {
+    "id": "EVAL-EDGE-014",
+    "ticket_type": "ambiguous",
+    "input": {
+      "title": "Help me please",
+      "description": "Tôi không làm được gì cả, xin hãy giúp tôi."
+    },
+    "gold_label": {
+      "category": "OTHER",
+      "impact": "Low",
+      "urgency": "Medium",
+      "expected_priority": "P4",
+      "requires_manual_triage": false,
+      "rationale": "Ticket hoàn toàn không có thông tin kỹ thuật, cần Agent liên hệ lại để làm rõ."
+    }
+  },
+  {
+    "id": "EVAL-EDGE-015",
+    "ticket_type": "edge_case",
+    "input": {
+      "title": "Máy in báo offline nhưng các máy khác trong phòng vẫn in được",
+      "description": "Máy tính của tôi kết nối vào máy in HP mạng thì hiện trạng thái 'Offline', trong khi đồng nghiệp ngồi cạnh vẫn in tài liệu bình thường."
+    },
+    "gold_label": {
+      "category": "PRINT",
+      "impact": "Low",
+      "urgency": "Medium",
+      "expected_priority": "P4",
+      "requires_manual_triage": false,
+      "rationale": "Lỗi kết nối spooler/driver máy in ở máy trạm cá nhân."
+    }
+  },
+  {
+    "id": "EVAL-EDGE-016",
+    "ticket_type": "edge_case",
+    "input": {
+      "title": "Bàn phím không gõ được tiếng Việt sau khi máy tự cập nhật",
+      "description": "Sáng nay bật máy lên thấy Windows vừa update xong, bộ gõ Unikey mở lên nhưng gõ chữ tiếng Việt bị biến thành ký tự lạ."
+    },
+    "gold_label": {
+      "category": "SW",
+      "impact": "Low",
+      "urgency": "Medium",
+      "expected_priority": "P4",
+      "requires_manual_triage": false,
+      "rationale": "Dễ nhầm lẫn HW do có từ 'bàn phím', nhưng nguyên nhân do phần mềm gõ tiếng Việt Unikey hoặc xung đột Windows update."
+    }
+  },
+  {
+    "id": "EVAL-EDGE-017",
+    "ticket_type": "edge_case",
+    "input": {
+      "title": "Mất thẻ từ ra vào văn phòng và phòng máy chủ Server Room",
+      "description": "Tôi làm rơi chiếc ví trong đó có thẻ từ nhân viên kiêm thẻ mở cửa phòng máy chủ trung tâm DC. Nhờ IT vô hiệu hóa quyền mở cửa của thẻ cũ ngay lập tức."
+    },
+    "gold_label": {
+      "category": "SEC",
+      "impact": "High",
+      "urgency": "High",
+      "expected_priority": "P1",
+      "requires_manual_triage": true,
+      "rationale": "Mất thẻ vật lý mở cửa phòng máy chủ tiềm ẩn nguy cơ an ninh vật lý nghiêm trọng. Bắt buộc Human Triage."
+    }
+  },
+  {
+    "id": "EVAL-EDGE-018",
+    "ticket_type": "edge_case",
+    "input": {
+      "title": "Bổ sung RAM cho laptop phục vụ chạy Docker và Kubernetes local",
+      "description": "Laptop hiện tại 16GB RAM thường xuyên bị OOM tràn bộ nhớ khi chạy docker-compose của dự án mới. Đề xuất nâng cấp thêm 16GB RAM nữa."
+    },
+    "gold_label": {
+      "category": "EQUIP",
+      "impact": "Low",
+      "urgency": "Low",
+      "expected_priority": "P4",
+      "requires_manual_triage": false,
+      "rationale": "Yêu cầu cấp thêm linh kiện nâng cấp phần cứng (không phải RAM bị hỏng)."
+    }
+  },
+  {
+    "id": "EVAL-EDGE-019",
+    "ticket_type": "ambiguous",
+    "input": {
+      "title": "Đường truyền cáp quang biển AAG bị đứt ảnh hưởng truy cập GitHub",
+      "description": "Báo chí đưa tin tuyến cáp quang AAG gặp sự cố, cả công ty truy cập các dịch vụ quốc tế AWS và GitHub rất chập chờn."
+    },
+    "gold_label": {
+      "category": "NET",
+      "impact": "High",
+      "urgency": "Medium",
+      "expected_priority": "P2",
+      "requires_manual_triage": false,
+      "rationale": "Sự cố đường truyền mạng quốc tế diện rộng tác động đến nhiều người."
+    }
+  },
+  {
+    "id": "EVAL-EDGE-020",
+    "ticket_type": "edge_case",
+    "input": {
+      "title": "Không gõ được mật khẩu trên bàn phím số phụ Numpad",
+      "description": "Tôi nhập mật khẩu tài khoản thì không gõ được các con số bên dãy bàn phím phụ bên phải, các phím chữ cái bình thường."
+    },
+    "gold_label": {
+      "category": "HW",
+      "impact": "Low",
+      "urgency": "Low",
+      "expected_priority": "P4",
+      "requires_manual_triage": false,
+      "rationale": "Sự cố cụm phím số phần cứng (hoặc phím NumLock) của bàn phím."
+    }
+  },
+  {
+    "id": "EVAL-EDGE-021",
+    "ticket_type": "ambiguous",
+    "input": {
+      "title": "Cần người hỗ trợ setup phòng họp Ban Giám đốc",
+      "description": "15h chiều nay có cuộc họp với đối tác Nhật Bản, nhờ IT có mặt lúc 14h30 để kiểm tra micro, máy chiếu và đường truyền họp Zoom."
+    },
+    "gold_label": {
+      "category": "OTHER",
+      "impact": "Medium",
+      "urgency": "High",
+      "expected_priority": "P2",
+      "requires_manual_triage": false,
+      "rationale": "Yêu cầu hỗ trợ vận hành sự kiện phòng họp tổng hợp."
+    }
+  }
+]
