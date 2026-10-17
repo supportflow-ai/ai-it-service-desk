@@ -1,0 +1,1516 @@
+{
+  "timestamp": "2026-10-17T10:01:17.625182Z",
+  "provider": "noop",
+  "total_cases": 43,
+  "standard_cases": 22,
+  "edge_cases": 21,
+  "total_duration_sec": 0.001,
+  "summary_metrics": {
+    "category_accuracy": 13.95,
+    "standard_category_accuracy": 9.09,
+    "edge_category_accuracy": 19.05,
+    "impact_accuracy": 72.09,
+    "urgency_accuracy": 23.26,
+    "priority_matrix_accuracy": 46.51,
+    "security_hitl_false_negatives": 5
+  },
+  "detailed_results": [
+    {
+      "id": "EVAL-STD-001",
+      "ticket_type": "standard",
+      "input": {
+        "title": "Quên mật khẩu tài khoản Windows và email Outlook",
+        "description": "Tôi vừa đi công tác về thì không nhớ mật khẩu đăng nhập máy tính nội bộ và tài khoản email Outlook. Đã thử 3 lần và sợ bị khóa tài khoản."
+      },
+      "gold": {
+        "category": "ACC",
+        "impact": "Low",
+        "urgency": "High",
+        "expected_priority": "P3",
+        "requires_manual_triage": false,
+        "rationale": "Sự cố quên mật khẩu tài khoản cá nhân, cần reset gấp để tiếp tục công việc."
+      },
+      "prediction": {
+        "status": "Unavailable",
+        "category": "OTHER",
+        "confidence": 0.0,
+        "confidence_band": "Low",
+        "impact": "Low",
+        "urgency": "Low",
+        "calculated_priority": "P4",
+        "requires_manual_triage": false,
+        "provider_name": "NoOpFallback"
+      },
+      "latency_ms": 0.01,
+      "metrics": {
+        "category_match": false,
+        "impact_match": true,
+        "urgency_match": false,
+        "priority_match": false,
+        "security_hitl_fail": false
+      }
+    },
+    {
+      "id": "EVAL-STD-002",
+      "ticket_type": "standard",
+      "input": {
+        "title": "Tài khoản SSO bị khóa sau nhiều lần nhập sai OTP",
+        "description": "Tôi đổi điện thoại nên app Microsoft Authenticator bị mất OTP, bấm sai nhiều lần khiến tài khoản SSO đăng nhập cổng dịch vụ nội bộ bị khóa hoàn toàn."
+      },
+      "gold": {
+        "category": "ACC",
+        "impact": "Low",
+        "urgency": "High",
+        "expected_priority": "P3",
+        "requires_manual_triage": false,
+        "rationale": "Tài khoản xác thực SSO cá nhân bị khóa do lỗi OTP."
+      },
+      "prediction": {
+        "status": "Unavailable",
+        "category": "OTHER",
+        "confidence": 0.0,
+        "confidence_band": "Low",
+        "impact": "Low",
+        "urgency": "Low",
+        "calculated_priority": "P4",
+        "requires_manual_triage": false,
+        "provider_name": "NoOpFallback"
+      },
+      "latency_ms": 0.0,
+      "metrics": {
+        "category_match": false,
+        "impact_match": true,
+        "urgency_match": false,
+        "priority_match": false,
+        "security_hitl_fail": false
+      }
+    },
+    {
+      "id": "EVAL-STD-003",
+      "ticket_type": "standard",
+      "input": {
+        "title": "Mất toàn bộ kết nối mạng LAN và Wi-Fi tại tầng 4 khu văn phòng",
+        "description": "Toàn bộ nhân sự làm việc tại tầng 4 (khoảng 60 người) đồng loạt bị ngắt kết nối mạng cáp LAN và sóng Wi-Fi từ 14h00 chiều nay, không ai truy cập được Internet hay tài nguyên công ty."
+      },
+      "gold": {
+        "category": "NET",
+        "impact": "High",
+        "urgency": "High",
+        "expected_priority": "P1",
+        "requires_manual_triage": false,
+        "rationale": "Sập mạng toàn bộ tầng văn phòng với quy mô lớn, ảnh hưởng diện rộng và khẩn cấp."
+      },
+      "prediction": {
+        "status": "Unavailable",
+        "category": "OTHER",
+        "confidence": 0.0,
+        "confidence_band": "Low",
+        "impact": "Low",
+        "urgency": "Low",
+        "calculated_priority": "P4",
+        "requires_manual_triage": false,
+        "provider_name": "NoOpFallback"
+      },
+      "latency_ms": 0.0,
+      "metrics": {
+        "category_match": false,
+        "impact_match": false,
+        "urgency_match": false,
+        "priority_match": false,
+        "security_hitl_fail": false
+      }
+    },
+    {
+      "id": "EVAL-STD-004",
+      "ticket_type": "standard",
+      "input": {
+        "title": "Cáp mạng cắm vào máy bàn không nhận địa chỉ IP",
+        "description": "Máy bàn của tôi tại vị trí B12 khi cắm dây mạng thì đèn cổng LAN nhấp nháy cam, Windows báo 'Unidentified network' và không nhận được địa chỉ IP từ DHCP."
+      },
+      "gold": {
+        "category": "NET",
+        "impact": "Low",
+        "urgency": "Medium",
+        "expected_priority": "P4",
+        "rationale": "Lỗi kết nối mạng cáp cục bộ ở 1 máy cá nhân."
+      },
+      "prediction": {
+        "status": "Unavailable",
+        "category": "OTHER",
+        "confidence": 0.0,
+        "confidence_band": "Low",
+        "impact": "Low",
+        "urgency": "Low",
+        "calculated_priority": "P4",
+        "requires_manual_triage": false,
+        "provider_name": "NoOpFallback"
+      },
+      "latency_ms": 0.0,
+      "metrics": {
+        "category_match": false,
+        "impact_match": true,
+        "urgency_match": false,
+        "priority_match": true,
+        "security_hitl_fail": false
+      }
+    },
+    {
+      "id": "EVAL-STD-005",
+      "ticket_type": "standard",
+      "input": {
+        "title": "Không thể kết nối VPN Cisco AnyConnect khi làm việc từ xa",
+        "description": "Hôm nay tôi làm việc ở nhà, khi mở Cisco AnyConnect để vào mạng nội bộ công ty thì phần mềm báo lỗi: 'Connection attempt has timed out. Please verify Internet connectivity'."
+      },
+      "gold": {
+        "category": "VPN",
+        "impact": "Low",
+        "urgency": "High",
+        "expected_priority": "P3",
+        "requires_manual_triage": false,
+        "rationale": "Lỗi kết nối VPN từ xa khiến cá nhân không thể truy cập môi trường làm việc."
+      },
+      "prediction": {
+        "status": "Unavailable",
+        "category": "OTHER",
+        "confidence": 0.0,
+        "confidence_band": "Low",
+        "impact": "Low",
+        "urgency": "Low",
+        "calculated_priority": "P4",
+        "requires_manual_triage": false,
+        "provider_name": "NoOpFallback"
+      },
+      "latency_ms": 0.0,
+      "metrics": {
+        "category_match": false,
+        "impact_match": true,
+        "urgency_match": false,
+        "priority_match": false,
+        "security_hitl_fail": false
+      }
+    },
+    {
+      "id": "EVAL-STD-006",
+      "ticket_type": "standard",
+      "input": {
+        "title": "VPN Gateway báo chứng chỉ số Certificate expired",
+        "description": "Tất cả thành viên nhóm On-call khi kết nối VPN vào hệ thống Production đều nhận được thông báo SSL Certificate expired trên cổng gateway vpn.company.com."
+      },
+      "gold": {
+        "category": "VPN",
+        "impact": "High",
+        "urgency": "High",
+        "expected_priority": "P1",
+        "requires_manual_triage": false,
+        "rationale": "Gateway VPN bị hết hạn chứng chỉ, chặn toàn bộ kỹ sư truy cập hệ thống Production."
+      },
+      "prediction": {
+        "status": "Unavailable",
+        "category": "OTHER",
+        "confidence": 0.0,
+        "confidence_band": "Low",
+        "impact": "Low",
+        "urgency": "Low",
+        "calculated_priority": "P4",
+        "requires_manual_triage": false,
+        "provider_name": "NoOpFallback"
+      },
+      "latency_ms": 0.0,
+      "metrics": {
+        "category_match": false,
+        "impact_match": false,
+        "urgency_match": false,
+        "priority_match": false,
+        "security_hitl_fail": false
+      }
+    },
+    {
+      "id": "EVAL-STD-007",
+      "ticket_type": "standard",
+      "input": {
+        "title": "Hòm thư Outlook bị đầy dung lượng, không thể nhận email khách hàng",
+        "description": "Hộp thư cá nhân của tôi đạt mức 50GB và hệ thống Exchange liên tục cảnh báo mailbox full. Khách hàng gửi email hợp đồng sang bị báo lỗi 'mailbox quota exceeded'."
+      },
+      "gold": {
+        "category": "MAIL",
+        "impact": "Low",
+        "urgency": "High",
+        "expected_priority": "P3",
+        "requires_manual_triage": false,
+        "rationale": "Hộp thư cá nhân bị tràn dung lượng gây gián đoạn trao đổi với khách hàng."
+      },
+      "prediction": {
+        "status": "Unavailable",
+        "category": "OTHER",
+        "confidence": 0.0,
+        "confidence_band": "Low",
+        "impact": "Low",
+        "urgency": "Low",
+        "calculated_priority": "P4",
+        "requires_manual_triage": false,
+        "provider_name": "NoOpFallback"
+      },
+      "latency_ms": 0.0,
+      "metrics": {
+        "category_match": false,
+        "impact_match": true,
+        "urgency_match": false,
+        "priority_match": false,
+        "security_hitl_fail": false
+      }
+    },
+    {
+      "id": "EVAL-STD-008",
+      "ticket_type": "standard",
+      "input": {
+        "title": "Ứng dụng Microsoft Teams không tải được tệp tin và tin nhắn nhóm",
+        "description": "Nhóm dự án Phoenix gồm 15 người gặp hiện tượng Microsoft Teams không hiển thị tin nhắn mới và không tải được tài liệu đính kèm từ sáng nay."
+      },
+      "gold": {
+        "category": "MAIL",
+        "impact": "Medium",
+        "urgency": "Medium",
+        "expected_priority": "P3",
+        "requires_manual_triage": false,
+        "rationale": "Ứng dụng giao tiếp tin nhắn nhóm gặp lỗi làm chậm tiến độ làm việc của team."
+      },
+      "prediction": {
+        "status": "Unavailable",
+        "category": "OTHER",
+        "confidence": 0.0,
+        "confidence_band": "Low",
+        "impact": "Low",
+        "urgency": "Low",
+        "calculated_priority": "P4",
+        "requires_manual_triage": false,
+        "provider_name": "NoOpFallback"
+      },
+      "latency_ms": 0.0,
+      "metrics": {
+        "category_match": false,
+        "impact_match": false,
+        "urgency_match": false,
+        "priority_match": false,
+        "security_hitl_fail": false
+      }
+    },
+    {
+      "id": "EVAL-STD-009",
+      "ticket_type": "standard",
+      "input": {
+        "title": "Yêu cầu cấp bản quyền và kích hoạt JetBrains Rider cho lập trình viên",
+        "description": "Tôi là nhân viên mới gia nhập team Backend .NET. Cần IT Desk cấp license key bản quyền JetBrains Rider để bắt đầu dự án."
+      },
+      "gold": {
+        "category": "SW",
+        "impact": "Low",
+        "urgency": "Medium",
+        "expected_priority": "P4",
+        "rationale": "Yêu cầu cấp phát bản quyền phần mềm lập trình cho cá nhân."
+      },
+      "prediction": {
+        "status": "Unavailable",
+        "category": "OTHER",
+        "confidence": 0.0,
+        "confidence_band": "Low",
+        "impact": "Low",
+        "urgency": "Low",
+        "calculated_priority": "P4",
+        "requires_manual_triage": false,
+        "provider_name": "NoOpFallback"
+      },
+      "latency_ms": 0.0,
+      "metrics": {
+        "category_match": false,
+        "impact_match": true,
+        "urgency_match": false,
+        "priority_match": true,
+        "security_hitl_fail": false
+      }
+    },
+    {
+      "id": "EVAL-STD-010",
+      "ticket_type": "standard",
+      "input": {
+        "title": "Phần mềm kế toán MISA bị treo và tự thoát khi in phiếu chi",
+        "description": "Phòng kế toán đang làm quyết toán tháng thì phần mềm MISA liên tục gặp lỗi 'Fatal Error' và tự động crash văng ra ngoài mỗi khi bấm nút in phiếu."
+      },
+      "gold": {
+        "category": "SW",
+        "impact": "Medium",
+        "urgency": "High",
+        "expected_priority": "P2",
+        "requires_manual_triage": false,
+        "rationale": "Lỗi phần mềm nghiệp vụ ảnh hưởng trực tiếp đến quy trình tài chính của phòng ban."
+      },
+      "prediction": {
+        "status": "Unavailable",
+        "category": "OTHER",
+        "confidence": 0.0,
+        "confidence_band": "Low",
+        "impact": "Low",
+        "urgency": "Low",
+        "calculated_priority": "P4",
+        "requires_manual_triage": false,
+        "provider_name": "NoOpFallback"
+      },
+      "latency_ms": 0.0,
+      "metrics": {
+        "category_match": false,
+        "impact_match": false,
+        "urgency_match": false,
+        "priority_match": false,
+        "security_hitl_fail": false
+      }
+    },
+    {
+      "id": "EVAL-STD-011",
+      "ticket_type": "standard",
+      "input": {
+        "title": "Bàn phím laptop ThinkPad bị liệt toàn bộ phím Enter và Space",
+        "description": "Laptop do công ty cấp hiệu Lenovo ThinkPad T14 bị kẹt cứng và liệt hẳn hai phím Enter và Space, không thể soạn thảo văn bản được nữa."
+      },
+      "gold": {
+        "category": "HW",
+        "impact": "Low",
+        "urgency": "High",
+        "expected_priority": "P3",
+        "requires_manual_triage": false,
+        "rationale": "Hỏng hóc phần cứng bàn phím laptop cá nhân."
+      },
+      "prediction": {
+        "status": "Unavailable",
+        "category": "OTHER",
+        "confidence": 0.0,
+        "confidence_band": "Low",
+        "impact": "Low",
+        "urgency": "Low",
+        "calculated_priority": "P4",
+        "requires_manual_triage": false,
+        "provider_name": "NoOpFallback"
+      },
+      "latency_ms": 0.0,
+      "metrics": {
+        "category_match": false,
+        "impact_match": true,
+        "urgency_match": false,
+        "priority_match": false,
+        "security_hitl_fail": false
+      }
+    },
+    {
+      "id": "EVAL-STD-012",
+      "ticket_type": "standard",
+      "input": {
+        "title": "Màn hình ngoài 27 inch Dell bị sọc tím và nhấp nháy liên tục",
+        "description": "Màn hình Dell UltraSharp tại bàn làm việc của tôi sáng nay xuất hiện các dải sọc màu tím dọc màn hình và nhấp nháy gây mỏi mắt, đã thử đổi cáp HDMI nhưng không hết."
+      },
+      "gold": {
+        "category": "HW",
+        "impact": "Low",
+        "urgency": "Medium",
+        "expected_priority": "P4",
+        "rationale": "Hỏng hóc linh kiện phần cứng hiển thị của cá nhân."
+      },
+      "prediction": {
+        "status": "Unavailable",
+        "category": "OTHER",
+        "confidence": 0.0,
+        "confidence_band": "Low",
+        "impact": "Low",
+        "urgency": "Low",
+        "calculated_priority": "P4",
+        "requires_manual_triage": false,
+        "provider_name": "NoOpFallback"
+      },
+      "latency_ms": 0.0,
+      "metrics": {
+        "category_match": false,
+        "impact_match": true,
+        "urgency_match": false,
+        "priority_match": true,
+        "security_hitl_fail": false
+      }
+    },
+    {
+      "id": "EVAL-STD-013",
+      "ticket_type": "standard",
+      "input": {
+        "title": "Máy in Canon tầng 3 bị kẹt giấy và phát tiếng kêu lách cách",
+        "description": "Máy in mạng Canon LBP2900 tại sảnh tầng 3 bị kẹt giấy bên trong lô cuốn, đèn báo đỏ nhấp nháy liên tục và mọi người không in tài liệu họp được."
+      },
+      "gold": {
+        "category": "PRINT",
+        "impact": "Medium",
+        "urgency": "High",
+        "expected_priority": "P2",
+        "requires_manual_triage": false,
+        "rationale": "Máy in chung của tầng văn phòng bị kẹt khiến nhiều người không in được tài liệu họp."
+      },
+      "prediction": {
+        "status": "Unavailable",
+        "category": "OTHER",
+        "confidence": 0.0,
+        "confidence_band": "Low",
+        "impact": "Low",
+        "urgency": "Low",
+        "calculated_priority": "P4",
+        "requires_manual_triage": false,
+        "provider_name": "NoOpFallback"
+      },
+      "latency_ms": 0.0,
+      "metrics": {
+        "category_match": false,
+        "impact_match": false,
+        "urgency_match": false,
+        "priority_match": false,
+        "security_hitl_fail": false
+      }
+    },
+    {
+      "id": "EVAL-STD-014",
+      "ticket_type": "standard",
+      "input": {
+        "title": "Máy scan phòng Hành chính không gửi file scan về thư mục mạng",
+        "description": "Khi đặt tài liệu lên máy scan đa năng Ricoh và bấm gửi về folder shared thì máy báo lỗi 'Transmission Failed: Check server destination'."
+      },
+      "gold": {
+        "category": "PRINT",
+        "impact": "Low",
+        "urgency": "Medium",
+        "expected_priority": "P4",
+        "rationale": "Sự cố thiết bị quét/scan văn bản."
+      },
+      "prediction": {
+        "status": "Unavailable",
+        "category": "OTHER",
+        "confidence": 0.0,
+        "confidence_band": "Low",
+        "impact": "Low",
+        "urgency": "Low",
+        "calculated_priority": "P4",
+        "requires_manual_triage": false,
+        "provider_name": "NoOpFallback"
+      },
+      "latency_ms": 0.0,
+      "metrics": {
+        "category_match": false,
+        "impact_match": true,
+        "urgency_match": false,
+        "priority_match": true,
+        "security_hitl_fail": false
+      }
+    },
+    {
+      "id": "EVAL-STD-015",
+      "ticket_type": "standard",
+      "input": {
+        "title": "Yêu cầu cấp quyền truy cập thư mục Kế toán trên ổ đĩa NAS nội bộ",
+        "description": "Tôi mới chuyển công tác sang phụ trách kiểm toán nội bộ. Cần cấp quyền Read/Write vào đường dẫn network share \\\\nas-corp\\Finance-Audit\\."
+      },
+      "gold": {
+        "category": "ACCESS",
+        "impact": "Low",
+        "urgency": "Medium",
+        "expected_priority": "P4",
+        "rationale": "Yêu cầu phân quyền truy cập dữ liệu thư mục mạng."
+      },
+      "prediction": {
+        "status": "Unavailable",
+        "category": "OTHER",
+        "confidence": 0.0,
+        "confidence_band": "Low",
+        "impact": "Low",
+        "urgency": "Low",
+        "calculated_priority": "P4",
+        "requires_manual_triage": false,
+        "provider_name": "NoOpFallback"
+      },
+      "latency_ms": 0.0,
+      "metrics": {
+        "category_match": false,
+        "impact_match": true,
+        "urgency_match": false,
+        "priority_match": true,
+        "security_hitl_fail": false
+      }
+    },
+    {
+      "id": "EVAL-STD-016",
+      "ticket_type": "standard",
+      "input": {
+        "title": "Thêm tài khoản vào nhóm phân quyền Git Repository của dự án Core Service",
+        "description": "Vui lòng thêm tài khoản GitHub Enterprise của tôi vào group 'core-backend-devs' để có quyền push code lên branch feature."
+      },
+      "gold": {
+        "category": "ACCESS",
+        "impact": "Low",
+        "urgency": "High",
+        "expected_priority": "P3",
+        "rationale": "Cấp quyền group truy cập mã nguồn dự án."
+      },
+      "prediction": {
+        "status": "Unavailable",
+        "category": "OTHER",
+        "confidence": 0.0,
+        "confidence_band": "Low",
+        "impact": "Low",
+        "urgency": "Low",
+        "calculated_priority": "P4",
+        "requires_manual_triage": false,
+        "provider_name": "NoOpFallback"
+      },
+      "latency_ms": 0.0,
+      "metrics": {
+        "category_match": false,
+        "impact_match": true,
+        "urgency_match": false,
+        "priority_match": false,
+        "security_hitl_fail": false
+      }
+    },
+    {
+      "id": "EVAL-STD-017",
+      "ticket_type": "standard",
+      "input": {
+        "title": "Đề xuất cấp mới 01 màn hình phụ 27 inch và chuột không dây cho nhân sự mới",
+        "description": "Phòng Marketing tuần tới tiếp nhận 01 bạn Designer mới, nhờ IT Desk chuẩn bị và bàn giao 01 màn hình Dell 27 inch và chuột không dây Logitech."
+      },
+      "gold": {
+        "category": "EQUIP",
+        "impact": "Low",
+        "urgency": "Low",
+        "expected_priority": "P4",
+        "rationale": "Đề xuất cấp phát trang thiết bị làm việc mới theo kế hoạch."
+      },
+      "prediction": {
+        "status": "Unavailable",
+        "category": "OTHER",
+        "confidence": 0.0,
+        "confidence_band": "Low",
+        "impact": "Low",
+        "urgency": "Low",
+        "calculated_priority": "P4",
+        "requires_manual_triage": false,
+        "provider_name": "NoOpFallback"
+      },
+      "latency_ms": 0.0,
+      "metrics": {
+        "category_match": false,
+        "impact_match": true,
+        "urgency_match": true,
+        "priority_match": true,
+        "security_hitl_fail": false
+      }
+    },
+    {
+      "id": "EVAL-STD-018",
+      "ticket_type": "standard",
+      "input": {
+        "title": "Đổi dây cáp chuyển đổi USB-C sang DisplayPort bị gãy đầu cắm",
+        "description": "Dây cáp hub chuyển đổi USB-C của tôi bị gãy đầu cắm trong quá trình di chuyển, xin đổi sợi cáp khác tại kho IT."
+      },
+      "gold": {
+        "category": "EQUIP",
+        "impact": "Low",
+        "urgency": "Low",
+        "expected_priority": "P4",
+        "rationale": "Yêu cầu cấp đổi phụ kiện ngoại vi."
+      },
+      "prediction": {
+        "status": "Unavailable",
+        "category": "OTHER",
+        "confidence": 0.0,
+        "confidence_band": "Low",
+        "impact": "Low",
+        "urgency": "Low",
+        "calculated_priority": "P4",
+        "requires_manual_triage": false,
+        "provider_name": "NoOpFallback"
+      },
+      "latency_ms": 0.0,
+      "metrics": {
+        "category_match": false,
+        "impact_match": true,
+        "urgency_match": true,
+        "priority_match": true,
+        "security_hitl_fail": false
+      }
+    },
+    {
+      "id": "EVAL-STD-019",
+      "ticket_type": "standard",
+      "input": {
+        "title": "Phát hiện email giả mạo Giám đốc tài chính yêu cầu chuyển tiền gấp",
+        "description": "Hộp thư kế toán trưởng nhận được email từ địa chỉ 'ceo-direct@company-internal.xyz' giả dạng CEO yêu cầu chuyển khoản khẩn cấp cho đối tác với file đính kèm dạng invoice.exe."
+      },
+      "gold": {
+        "category": "SEC",
+        "impact": "High",
+        "urgency": "High",
+        "expected_priority": "P1",
+        "requires_manual_triage": true,
+        "rationale": "Sự cố an ninh thông tin: email lừa đảo mạo danh (phishing) và phát tán mã độc thực thi. Bắt buộc Human Triage."
+      },
+      "prediction": {
+        "status": "Unavailable",
+        "category": "OTHER",
+        "confidence": 0.0,
+        "confidence_band": "Low",
+        "impact": "Low",
+        "urgency": "Low",
+        "calculated_priority": "P4",
+        "requires_manual_triage": false,
+        "provider_name": "NoOpFallback"
+      },
+      "latency_ms": 0.0,
+      "metrics": {
+        "category_match": false,
+        "impact_match": false,
+        "urgency_match": false,
+        "priority_match": false,
+        "security_hitl_fail": true
+      }
+    },
+    {
+      "id": "EVAL-STD-020",
+      "ticket_type": "standard",
+      "input": {
+        "title": "Màn hình máy tính hiển thị thông báo đòi tiền chuộc Ransomware mã hóa file",
+        "description": "Máy trạm của phòng Nhân sự sáng nay tự động khóa màn hình và hiện thông báo tất cả tài liệu .docx, .xlsx đã bị mã hóa đuôi .locked kèm yêu cầu trả tiền chuộc Bitcoin."
+      },
+      "gold": {
+        "category": "SEC",
+        "impact": "High",
+        "urgency": "High",
+        "expected_priority": "P1",
+        "requires_manual_triage": true,
+        "rationale": "Nhiễm mã độc tống tiền (Ransomware), nguy cơ lây lan diện rộng trong mạng nội bộ. Bắt buộc Human Triage khẩn cấp."
+      },
+      "prediction": {
+        "status": "Unavailable",
+        "category": "OTHER",
+        "confidence": 0.0,
+        "confidence_band": "Low",
+        "impact": "Low",
+        "urgency": "Low",
+        "calculated_priority": "P4",
+        "requires_manual_triage": false,
+        "provider_name": "NoOpFallback"
+      },
+      "latency_ms": 0.0,
+      "metrics": {
+        "category_match": false,
+        "impact_match": false,
+        "urgency_match": false,
+        "priority_match": false,
+        "security_hitl_fail": true
+      }
+    },
+    {
+      "id": "EVAL-STD-021",
+      "ticket_type": "standard",
+      "input": {
+        "title": "Xin tư vấn quy trình thanh lý thiết bị công nghệ cũ hết hạn khấu hao",
+        "description": "Phòng Hành chính muốn hỏi thủ tục và biểu mẫu bàn giao các thùng máy tính và thiết bị văn phòng đã hết thời hạn sử dụng 5 năm để phục vụ kiểm kê cuối năm."
+      },
+      "gold": {
+        "category": "OTHER",
+        "impact": "Low",
+        "urgency": "Low",
+        "expected_priority": "P4",
+        "requires_manual_triage": false,
+        "rationale": "Tư vấn thủ tục hành chính IT, không phải lỗi kỹ thuật."
+      },
+      "prediction": {
+        "status": "Unavailable",
+        "category": "OTHER",
+        "confidence": 0.0,
+        "confidence_band": "Low",
+        "impact": "Low",
+        "urgency": "Low",
+        "calculated_priority": "P4",
+        "requires_manual_triage": false,
+        "provider_name": "NoOpFallback"
+      },
+      "latency_ms": 0.0,
+      "metrics": {
+        "category_match": true,
+        "impact_match": true,
+        "urgency_match": true,
+        "priority_match": true,
+        "security_hitl_fail": false
+      }
+    },
+    {
+      "id": "EVAL-STD-022",
+      "ticket_type": "standard",
+      "input": {
+        "title": "Hỏi thông tin về kế hoạch bảo trì máy chủ lưu trữ tháng 11",
+        "description": "Dự án của chúng tôi cần biết lịch ngắt điện bảo trì server tháng tới để thông báo cho khách hàng nước ngoài trước 2 tuần."
+      },
+      "gold": {
+        "category": "OTHER",
+        "impact": "Low",
+        "urgency": "Low",
+        "expected_priority": "P4",
+        "requires_manual_triage": false,
+        "rationale": "Truy vấn thông tin hành chính, không thuộc sự cố kỹ thuật cụ thể."
+      },
+      "prediction": {
+        "status": "Unavailable",
+        "category": "OTHER",
+        "confidence": 0.0,
+        "confidence_band": "Low",
+        "impact": "Low",
+        "urgency": "Low",
+        "calculated_priority": "P4",
+        "requires_manual_triage": false,
+        "provider_name": "NoOpFallback"
+      },
+      "latency_ms": 0.0,
+      "metrics": {
+        "category_match": true,
+        "impact_match": true,
+        "urgency_match": true,
+        "priority_match": true,
+        "security_hitl_fail": false
+      }
+    },
+    {
+      "id": "EVAL-EDGE-001",
+      "ticket_type": "ambiguous",
+      "input": {
+        "title": "Máy hỏng rồi",
+        "description": "Máy em bị lỗi không dùng được, IT qua xem giúp gấp với ạ."
+      },
+      "gold": {
+        "category": "OTHER",
+        "impact": "Low",
+        "urgency": "High",
+        "expected_priority": "P3",
+        "requires_manual_triage": false,
+        "rationale": "Mô tả hoàn toàn mơ hồ, không rõ lỗi phần cứng, hệ điều hành hay mạng. AI phải gán OTHER hoặc yêu cầu bổ sung thông tin với độ tin cậy thấp."
+      },
+      "prediction": {
+        "status": "Unavailable",
+        "category": "OTHER",
+        "confidence": 0.0,
+        "confidence_band": "Low",
+        "impact": "Low",
+        "urgency": "Low",
+        "calculated_priority": "P4",
+        "requires_manual_triage": false,
+        "provider_name": "NoOpFallback"
+      },
+      "latency_ms": 0.0,
+      "metrics": {
+        "category_match": true,
+        "impact_match": true,
+        "urgency_match": false,
+        "priority_match": false,
+        "security_hitl_fail": false
+      }
+    },
+    {
+      "id": "EVAL-EDGE-002",
+      "ticket_type": "ambiguous",
+      "input": {
+        "title": "Cần hỗ trợ gấp",
+        "description": "Đang làm việc tự nhiên màn hình đen xì không bấm được gì cả."
+      },
+      "gold": {
+        "category": "HW",
+        "impact": "Low",
+        "urgency": "High",
+        "expected_priority": "P3",
+        "requires_manual_triage": false,
+        "rationale": "Triệu chứng màn hình đen có thể do cáp/màn hình hoặc nguồn máy tính, ưu tiên nhận diện là lỗi phần cứng cá nhân."
+      },
+      "prediction": {
+        "status": "Unavailable",
+        "category": "OTHER",
+        "confidence": 0.0,
+        "confidence_band": "Low",
+        "impact": "Low",
+        "urgency": "Low",
+        "calculated_priority": "P4",
+        "requires_manual_triage": false,
+        "provider_name": "NoOpFallback"
+      },
+      "latency_ms": 0.0,
+      "metrics": {
+        "category_match": false,
+        "impact_match": true,
+        "urgency_match": false,
+        "priority_match": false,
+        "security_hitl_fail": false
+      }
+    },
+    {
+      "id": "EVAL-EDGE-003",
+      "ticket_type": "edge_case",
+      "input": {
+        "title": "Không vào được mạng khi bật VPN ở quán cà phê",
+        "description": "Tôi ngồi làm việc ở The Coffee House, vào mạng đọc báo bình thường nhưng cứ bật phần mềm VPN công ty lên là toàn bộ kết nối Internet bị mất và không ping được máy chủ."
+      },
+      "gold": {
+        "category": "VPN",
+        "impact": "Low",
+        "urgency": "High",
+        "expected_priority": "P3",
+        "requires_manual_triage": false,
+        "rationale": "Tranh chấp giữa từ khóa 'mạng' (NET) và 'VPN'. Vì mạng gốc bình thường chỉ lỗi khi kích hoạt VPN (split-tunneling/gateway), danh mục chính xác phải là VPN."
+      },
+      "prediction": {
+        "status": "Unavailable",
+        "category": "OTHER",
+        "confidence": 0.0,
+        "confidence_band": "Low",
+        "impact": "Low",
+        "urgency": "Low",
+        "calculated_priority": "P4",
+        "requires_manual_triage": false,
+        "provider_name": "NoOpFallback"
+      },
+      "latency_ms": 0.0,
+      "metrics": {
+        "category_match": false,
+        "impact_match": true,
+        "urgency_match": false,
+        "priority_match": false,
+        "security_hitl_fail": false
+      }
+    },
+    {
+      "id": "EVAL-EDGE-004",
+      "ticket_type": "edge_case",
+      "input": {
+        "title": "Quên mật khẩu giải nén file backup trên máy tính",
+        "description": "Tôi có file archive backup dữ liệu cá nhân .zip lưu trong máy nhưng quên mất mật khẩu đặt tuần trước, IT có cách nào lấy lại giúp không?"
+      },
+      "gold": {
+        "category": "OTHER",
+        "impact": "Low",
+        "urgency": "Low",
+        "expected_priority": "P4",
+        "requires_manual_triage": false,
+        "rationale": "Dễ nhầm lẫn với ACC (quên mật khẩu). Tuy nhiên đây là mật khẩu file archive cá nhân, không phải tài khoản công ty."
+      },
+      "prediction": {
+        "status": "Unavailable",
+        "category": "OTHER",
+        "confidence": 0.0,
+        "confidence_band": "Low",
+        "impact": "Low",
+        "urgency": "Low",
+        "calculated_priority": "P4",
+        "requires_manual_triage": false,
+        "provider_name": "NoOpFallback"
+      },
+      "latency_ms": 0.0,
+      "metrics": {
+        "category_match": true,
+        "impact_match": true,
+        "urgency_match": true,
+        "priority_match": true,
+        "security_hitl_fail": false
+      }
+    },
+    {
+      "id": "EVAL-EDGE-005",
+      "ticket_type": "edge_case",
+      "input": {
+        "title": "Mất điện thoại chứa app xác thực 2 lớp vào mạng nội bộ công ty",
+        "description": "Hôm qua trên đường về tôi bị móc túi mất điện thoại iPhone có cài app xác thực đa yếu tố Microsoft Authenticator để vào hệ thống công ty."
+      },
+      "gold": {
+        "category": "SEC",
+        "impact": "High",
+        "urgency": "High",
+        "expected_priority": "P1",
+        "requires_manual_triage": true,
+        "rationale": "Mất thiết bị chứa credential/MFA tiềm ẩn rủi ro xâm nhập bảo mật nghiêm trọng. Bắt buộc kích hoạt quy trình Security và can thiệp thủ công."
+      },
+      "prediction": {
+        "status": "Unavailable",
+        "category": "OTHER",
+        "confidence": 0.0,
+        "confidence_band": "Low",
+        "impact": "Low",
+        "urgency": "Low",
+        "calculated_priority": "P4",
+        "requires_manual_triage": false,
+        "provider_name": "NoOpFallback"
+      },
+      "latency_ms": 0.0,
+      "metrics": {
+        "category_match": false,
+        "impact_match": false,
+        "urgency_match": false,
+        "priority_match": false,
+        "security_hitl_fail": true
+      }
+    },
+    {
+      "id": "EVAL-EDGE-006",
+      "ticket_type": "edge_case",
+      "input": {
+        "title": "Outlook không kết nối được máy chủ khi ở nhà nhưng đến công ty thì bình thường",
+        "description": "Ứng dụng Outlook trên laptop của tôi báo 'Disconnected' khi ngồi ở nhà, nhưng mang đến văn phòng cắm mạng thì gửi nhận bình thường mà không cần mở VPN."
+      },
+      "gold": {
+        "category": "VPN",
+        "impact": "Low",
+        "urgency": "Medium",
+        "expected_priority": "P4",
+        "requires_manual_triage": false,
+        "rationale": "Bản chất là máy chủ mail nội bộ yêu cầu kết nối VPN khi làm việc từ xa, không phải lỗi ứng dụng Outlook (MAIL)."
+      },
+      "prediction": {
+        "status": "Unavailable",
+        "category": "OTHER",
+        "confidence": 0.0,
+        "confidence_band": "Low",
+        "impact": "Low",
+        "urgency": "Low",
+        "calculated_priority": "P4",
+        "requires_manual_triage": false,
+        "provider_name": "NoOpFallback"
+      },
+      "latency_ms": 0.0,
+      "metrics": {
+        "category_match": false,
+        "impact_match": true,
+        "urgency_match": false,
+        "priority_match": true,
+        "security_hitl_fail": false
+      }
+    },
+    {
+      "id": "EVAL-EDGE-007",
+      "ticket_type": "edge_case",
+      "input": {
+        "title": "Cần mượn máy in màu di động cho sự kiện triển lãm của công ty",
+        "description": "Tuần tới công ty tham gia hội chợ công nghệ tại SECC, phòng Truyền thông muốn mượn 01 máy in màu nhỏ gọn kèm cáp kết nối để in ảnh thẻ cho khách tham quan."
+      },
+      "gold": {
+        "category": "EQUIP",
+        "impact": "Low",
+        "urgency": "Low",
+        "expected_priority": "P4",
+        "requires_manual_triage": false,
+        "rationale": "Có từ khóa 'máy in' (dễ nhầm PRINT) nhưng thực chất là yêu cầu mượn/cấp thiết bị phục vụ sự kiện."
+      },
+      "prediction": {
+        "status": "Unavailable",
+        "category": "OTHER",
+        "confidence": 0.0,
+        "confidence_band": "Low",
+        "impact": "Low",
+        "urgency": "Low",
+        "calculated_priority": "P4",
+        "requires_manual_triage": false,
+        "provider_name": "NoOpFallback"
+      },
+      "latency_ms": 0.0,
+      "metrics": {
+        "category_match": false,
+        "impact_match": true,
+        "urgency_match": true,
+        "priority_match": true,
+        "security_hitl_fail": false
+      }
+    },
+    {
+      "id": "EVAL-EDGE-008",
+      "ticket_type": "edge_case",
+      "input": {
+        "title": "Cấp quyền gửi email dưới danh nghĩa hòm thư chung contact@company.com",
+        "description": "Tôi phụ trách tiếp nhận phản hồi khách hàng, nhờ IT cấu hình quyền 'Send As' và 'Send on Behalf' hòm thư chung cho tài khoản của tôi trên Exchange."
+      },
+      "gold": {
+        "category": "ACCESS",
+        "impact": "Low",
+        "urgency": "Medium",
+        "expected_priority": "P4",
+        "requires_manual_triage": false,
+        "rationale": "Liên quan đến email nhưng bản chất là yêu cầu phân quyền ủy quyền hòm thư chung (Access Control)."
+      },
+      "prediction": {
+        "status": "Unavailable",
+        "category": "OTHER",
+        "confidence": 0.0,
+        "confidence_band": "Low",
+        "impact": "Low",
+        "urgency": "Low",
+        "calculated_priority": "P4",
+        "requires_manual_triage": false,
+        "provider_name": "NoOpFallback"
+      },
+      "latency_ms": 0.0,
+      "metrics": {
+        "category_match": false,
+        "impact_match": true,
+        "urgency_match": false,
+        "priority_match": true,
+        "security_hitl_fail": false
+      }
+    },
+    {
+      "id": "EVAL-EDGE-009",
+      "ticket_type": "ambiguous",
+      "input": {
+        "title": "Lỗi 403 Forbidden khi mở hệ thống CRM",
+        "description": "Tôi mở trình duyệt truy cập link CRM nội bộ thì trang báo lỗi '403 Forbidden - Access Denied', trước giờ vẫn vào bình thường."
+      },
+      "gold": {
+        "category": "ACCESS",
+        "impact": "Low",
+        "urgency": "High",
+        "expected_priority": "P3",
+        "requires_manual_triage": false,
+        "rationale": "Lỗi 403 đặc trưng của việc thiếu quyền truy cập hoặc tài khoản hết hạn phân quyền trên hệ thống."
+      },
+      "prediction": {
+        "status": "Unavailable",
+        "category": "OTHER",
+        "confidence": 0.0,
+        "confidence_band": "Low",
+        "impact": "Low",
+        "urgency": "Low",
+        "calculated_priority": "P4",
+        "requires_manual_triage": false,
+        "provider_name": "NoOpFallback"
+      },
+      "latency_ms": 0.0,
+      "metrics": {
+        "category_match": false,
+        "impact_match": true,
+        "urgency_match": false,
+        "priority_match": false,
+        "security_hitl_fail": false
+      }
+    },
+    {
+      "id": "EVAL-EDGE-010",
+      "ticket_type": "edge_case",
+      "input": {
+        "title": "Laptop làm việc phát ra mùi khét và pin bị phồng đội bàn phím",
+        "description": "Chiếc laptop Dell Precision của tôi đang sạc thì đáy máy nóng ran, bốc mùi khét nhẹ và phần pin phồng to làm cong nắp dưới và đội bàn phím lên."
+      },
+      "gold": {
+        "category": "HW",
+        "impact": "Low",
+        "urgency": "High",
+        "expected_priority": "P3",
+        "requires_manual_triage": false,
+        "rationale": "Nguy cơ cháy nổ pin phần cứng laptop khẩn cấp, hỏng thiết bị nghiêm trọng."
+      },
+      "prediction": {
+        "status": "Unavailable",
+        "category": "OTHER",
+        "confidence": 0.0,
+        "confidence_band": "Low",
+        "impact": "Low",
+        "urgency": "Low",
+        "calculated_priority": "P4",
+        "requires_manual_triage": false,
+        "provider_name": "NoOpFallback"
+      },
+      "latency_ms": 0.0,
+      "metrics": {
+        "category_match": false,
+        "impact_match": true,
+        "urgency_match": false,
+        "priority_match": false,
+        "security_hitl_fail": false
+      }
+    },
+    {
+      "id": "EVAL-EDGE-011",
+      "ticket_type": "ambiguous",
+      "input": {
+        "title": "Mạng bị chậm",
+        "description": "Mạng dạo này cứ quay vòng vòng xem cái gì cũng chậm."
+      },
+      "gold": {
+        "category": "NET",
+        "impact": "Low",
+        "urgency": "Low",
+        "expected_priority": "P4",
+        "requires_manual_triage": false,
+        "rationale": "Phản ánh tốc độ mạng cá nhân cảm tính, không rõ vị trí hay thời điểm, mức độ khẩn cấp thấp."
+      },
+      "prediction": {
+        "status": "Unavailable",
+        "category": "OTHER",
+        "confidence": 0.0,
+        "confidence_band": "Low",
+        "impact": "Low",
+        "urgency": "Low",
+        "calculated_priority": "P4",
+        "requires_manual_triage": false,
+        "provider_name": "NoOpFallback"
+      },
+      "latency_ms": 0.0,
+      "metrics": {
+        "category_match": false,
+        "impact_match": true,
+        "urgency_match": true,
+        "priority_match": true,
+        "security_hitl_fail": false
+      }
+    },
+    {
+      "id": "EVAL-EDGE-012",
+      "ticket_type": "edge_case",
+      "input": {
+        "title": "File Excel chứa số liệu khách hàng bị chia sẻ công khai qua link Google Drive lạ",
+        "description": "Tôi tình cờ phát hiện file danh sách tài khoản ngân hàng và CMND khách hàng đang bị đính kèm trong 1 link Drive công khai trên mạng xã hội."
+      },
+      "gold": {
+        "category": "SEC",
+        "impact": "High",
+        "urgency": "High",
+        "expected_priority": "P1",
+        "requires_manual_triage": true,
+        "rationale": "Sự cố lộ lọt dữ liệu nhạy cảm (Data Breach / Security Incident). Bắt buộc xử lý khẩn cấp và Human Triage."
+      },
+      "prediction": {
+        "status": "Unavailable",
+        "category": "OTHER",
+        "confidence": 0.0,
+        "confidence_band": "Low",
+        "impact": "Low",
+        "urgency": "Low",
+        "calculated_priority": "P4",
+        "requires_manual_triage": false,
+        "provider_name": "NoOpFallback"
+      },
+      "latency_ms": 0.0,
+      "metrics": {
+        "category_match": false,
+        "impact_match": false,
+        "urgency_match": false,
+        "priority_match": false,
+        "security_hitl_fail": true
+      }
+    },
+    {
+      "id": "EVAL-EDGE-013",
+      "ticket_type": "edge_case",
+      "input": {
+        "title": "Cần cài lại máy tính vì máy chạy quá nhiều ứng dụng rác",
+        "description": "Máy tính của tôi dùng 3 năm rồi chưa cài lại Win, giờ mở file khởi động mất 10 phút. Nhờ IT format cài lại bản Windows sạch sẽ."
+      },
+      "gold": {
+        "category": "SW",
+        "impact": "Low",
+        "urgency": "Low",
+        "expected_priority": "P4",
+        "requires_manual_triage": false,
+        "rationale": "Yêu cầu cài đặt lại hệ điều hành phần mềm, không phải hỏng linh kiện phần cứng."
+      },
+      "prediction": {
+        "status": "Unavailable",
+        "category": "OTHER",
+        "confidence": 0.0,
+        "confidence_band": "Low",
+        "impact": "Low",
+        "urgency": "Low",
+        "calculated_priority": "P4",
+        "requires_manual_triage": false,
+        "provider_name": "NoOpFallback"
+      },
+      "latency_ms": 0.0,
+      "metrics": {
+        "category_match": false,
+        "impact_match": true,
+        "urgency_match": true,
+        "priority_match": true,
+        "security_hitl_fail": false
+      }
+    },
+    {
+      "id": "EVAL-EDGE-014",
+      "ticket_type": "ambiguous",
+      "input": {
+        "title": "Help me please",
+        "description": "Tôi không làm được gì cả, xin hãy giúp tôi."
+      },
+      "gold": {
+        "category": "OTHER",
+        "impact": "Low",
+        "urgency": "Medium",
+        "expected_priority": "P4",
+        "requires_manual_triage": false,
+        "rationale": "Ticket hoàn toàn không có thông tin kỹ thuật, cần Agent liên hệ lại để làm rõ."
+      },
+      "prediction": {
+        "status": "Unavailable",
+        "category": "OTHER",
+        "confidence": 0.0,
+        "confidence_band": "Low",
+        "impact": "Low",
+        "urgency": "Low",
+        "calculated_priority": "P4",
+        "requires_manual_triage": false,
+        "provider_name": "NoOpFallback"
+      },
+      "latency_ms": 0.0,
+      "metrics": {
+        "category_match": true,
+        "impact_match": true,
+        "urgency_match": false,
+        "priority_match": true,
+        "security_hitl_fail": false
+      }
+    },
+    {
+      "id": "EVAL-EDGE-015",
+      "ticket_type": "edge_case",
+      "input": {
+        "title": "Máy in báo offline nhưng các máy khác trong phòng vẫn in được",
+        "description": "Máy tính của tôi kết nối vào máy in HP mạng thì hiện trạng thái 'Offline', trong khi đồng nghiệp ngồi cạnh vẫn in tài liệu bình thường."
+      },
+      "gold": {
+        "category": "PRINT",
+        "impact": "Low",
+        "urgency": "Medium",
+        "expected_priority": "P4",
+        "requires_manual_triage": false,
+        "rationale": "Lỗi kết nối spooler/driver máy in ở máy trạm cá nhân."
+      },
+      "prediction": {
+        "status": "Unavailable",
+        "category": "OTHER",
+        "confidence": 0.0,
+        "confidence_band": "Low",
+        "impact": "Low",
+        "urgency": "Low",
+        "calculated_priority": "P4",
+        "requires_manual_triage": false,
+        "provider_name": "NoOpFallback"
+      },
+      "latency_ms": 0.0,
+      "metrics": {
+        "category_match": false,
+        "impact_match": true,
+        "urgency_match": false,
+        "priority_match": true,
+        "security_hitl_fail": false
+      }
+    },
+    {
+      "id": "EVAL-EDGE-016",
+      "ticket_type": "edge_case",
+      "input": {
+        "title": "Bàn phím không gõ được tiếng Việt sau khi máy tự cập nhật",
+        "description": "Sáng nay bật máy lên thấy Windows vừa update xong, bộ gõ Unikey mở lên nhưng gõ chữ tiếng Việt bị biến thành ký tự lạ."
+      },
+      "gold": {
+        "category": "SW",
+        "impact": "Low",
+        "urgency": "Medium",
+        "expected_priority": "P4",
+        "requires_manual_triage": false,
+        "rationale": "Dễ nhầm lẫn HW do có từ 'bàn phím', nhưng nguyên nhân do phần mềm gõ tiếng Việt Unikey hoặc xung đột Windows update."
+      },
+      "prediction": {
+        "status": "Unavailable",
+        "category": "OTHER",
+        "confidence": 0.0,
+        "confidence_band": "Low",
+        "impact": "Low",
+        "urgency": "Low",
+        "calculated_priority": "P4",
+        "requires_manual_triage": false,
+        "provider_name": "NoOpFallback"
+      },
+      "latency_ms": 0.0,
+      "metrics": {
+        "category_match": false,
+        "impact_match": true,
+        "urgency_match": false,
+        "priority_match": true,
+        "security_hitl_fail": false
+      }
+    },
+    {
+      "id": "EVAL-EDGE-017",
+      "ticket_type": "edge_case",
+      "input": {
+        "title": "Mất thẻ từ ra vào văn phòng và phòng máy chủ Server Room",
+        "description": "Tôi làm rơi chiếc ví trong đó có thẻ từ nhân viên kiêm thẻ mở cửa phòng máy chủ trung tâm DC. Nhờ IT vô hiệu hóa quyền mở cửa của thẻ cũ ngay lập tức."
+      },
+      "gold": {
+        "category": "SEC",
+        "impact": "High",
+        "urgency": "High",
+        "expected_priority": "P1",
+        "requires_manual_triage": true,
+        "rationale": "Mất thẻ vật lý mở cửa phòng máy chủ tiềm ẩn nguy cơ an ninh vật lý nghiêm trọng. Bắt buộc Human Triage."
+      },
+      "prediction": {
+        "status": "Unavailable",
+        "category": "OTHER",
+        "confidence": 0.0,
+        "confidence_band": "Low",
+        "impact": "Low",
+        "urgency": "Low",
+        "calculated_priority": "P4",
+        "requires_manual_triage": false,
+        "provider_name": "NoOpFallback"
+      },
+      "latency_ms": 0.0,
+      "metrics": {
+        "category_match": false,
+        "impact_match": false,
+        "urgency_match": false,
+        "priority_match": false,
+        "security_hitl_fail": true
+      }
+    },
+    {
+      "id": "EVAL-EDGE-018",
+      "ticket_type": "edge_case",
+      "input": {
+        "title": "Bổ sung RAM cho laptop phục vụ chạy Docker và Kubernetes local",
+        "description": "Laptop hiện tại 16GB RAM thường xuyên bị OOM tràn bộ nhớ khi chạy docker-compose của dự án mới. Đề xuất nâng cấp thêm 16GB RAM nữa."
+      },
+      "gold": {
+        "category": "EQUIP",
+        "impact": "Low",
+        "urgency": "Low",
+        "expected_priority": "P4",
+        "requires_manual_triage": false,
+        "rationale": "Yêu cầu cấp thêm linh kiện nâng cấp phần cứng (không phải RAM bị hỏng)."
+      },
+      "prediction": {
+        "status": "Unavailable",
+        "category": "OTHER",
+        "confidence": 0.0,
+        "confidence_band": "Low",
+        "impact": "Low",
+        "urgency": "Low",
+        "calculated_priority": "P4",
+        "requires_manual_triage": false,
+        "provider_name": "NoOpFallback"
+      },
+      "latency_ms": 0.0,
+      "metrics": {
+        "category_match": false,
+        "impact_match": true,
+        "urgency_match": true,
+        "priority_match": true,
+        "security_hitl_fail": false
+      }
+    },
+    {
+      "id": "EVAL-EDGE-019",
+      "ticket_type": "ambiguous",
+      "input": {
+        "title": "Đường truyền cáp quang biển AAG bị đứt ảnh hưởng truy cập GitHub",
+        "description": "Báo chí đưa tin tuyến cáp quang AAG gặp sự cố, cả công ty truy cập các dịch vụ quốc tế AWS và GitHub rất chập chờn."
+      },
+      "gold": {
+        "category": "NET",
+        "impact": "High",
+        "urgency": "Medium",
+        "expected_priority": "P2",
+        "requires_manual_triage": false,
+        "rationale": "Sự cố đường truyền mạng quốc tế diện rộng tác động đến nhiều người."
+      },
+      "prediction": {
+        "status": "Unavailable",
+        "category": "OTHER",
+        "confidence": 0.0,
+        "confidence_band": "Low",
+        "impact": "Low",
+        "urgency": "Low",
+        "calculated_priority": "P4",
+        "requires_manual_triage": false,
+        "provider_name": "NoOpFallback"
+      },
+      "latency_ms": 0.0,
+      "metrics": {
+        "category_match": false,
+        "impact_match": false,
+        "urgency_match": false,
+        "priority_match": false,
+        "security_hitl_fail": false
+      }
+    },
+    {
+      "id": "EVAL-EDGE-020",
+      "ticket_type": "edge_case",
+      "input": {
+        "title": "Không gõ được mật khẩu trên bàn phím số phụ Numpad",
+        "description": "Tôi nhập mật khẩu tài khoản thì không gõ được các con số bên dãy bàn phím phụ bên phải, các phím chữ cái bình thường."
+      },
+      "gold": {
+        "category": "HW",
+        "impact": "Low",
+        "urgency": "Low",
+        "expected_priority": "P4",
+        "requires_manual_triage": false,
+        "rationale": "Sự cố cụm phím số phần cứng (hoặc phím NumLock) của bàn phím."
+      },
+      "prediction": {
+        "status": "Unavailable",
+        "category": "OTHER",
+        "confidence": 0.0,
+        "confidence_band": "Low",
+        "impact": "Low",
+        "urgency": "Low",
+        "calculated_priority": "P4",
+        "requires_manual_triage": false,
+        "provider_name": "NoOpFallback"
+      },
+      "latency_ms": 0.0,
+      "metrics": {
+        "category_match": false,
+        "impact_match": true,
+        "urgency_match": true,
+        "priority_match": true,
+        "security_hitl_fail": false
+      }
+    },
+    {
+      "id": "EVAL-EDGE-021",
+      "ticket_type": "ambiguous",
+      "input": {
+        "title": "Cần người hỗ trợ setup phòng họp Ban Giám đốc",
+        "description": "15h chiều nay có cuộc họp với đối tác Nhật Bản, nhờ IT có mặt lúc 14h30 để kiểm tra micro, máy chiếu và đường truyền họp Zoom."
+      },
+      "gold": {
+        "category": "OTHER",
+        "impact": "Medium",
+        "urgency": "High",
+        "expected_priority": "P2",
+        "requires_manual_triage": false,
+        "rationale": "Yêu cầu hỗ trợ vận hành sự kiện phòng họp tổng hợp."
+      },
+      "prediction": {
+        "status": "Unavailable",
+        "category": "OTHER",
+        "confidence": 0.0,
+        "confidence_band": "Low",
+        "impact": "Low",
+        "urgency": "Low",
+        "calculated_priority": "P4",
+        "requires_manual_triage": false,
+        "provider_name": "NoOpFallback"
+      },
+      "latency_ms": 0.0,
+      "metrics": {
+        "category_match": true,
+        "impact_match": false,
+        "urgency_match": false,
+        "priority_match": false,
+        "security_hitl_fail": false
+      }
+    }
+  ]
+}
