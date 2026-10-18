@@ -13,7 +13,7 @@ namespace ServiceDesk.Infrastructure.AI;
 /// - Does not return fake confidence scores.
 /// - Propagates (but does not use) CancellationToken.
 /// </summary>
-public sealed class NoOpTicketClassificationService : ITicketClassificationService
+internal sealed class NoOpTicketClassificationService : ITicketClassificationService
 {
     public Task<TriageResult> ClassifyAsync(
         TriageRequest request, CancellationToken cancellationToken = default)

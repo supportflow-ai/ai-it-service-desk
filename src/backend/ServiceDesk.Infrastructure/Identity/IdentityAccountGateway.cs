@@ -7,7 +7,7 @@ using ServiceDesk.Infrastructure.Persistence;
 
 namespace ServiceDesk.Infrastructure.Identity;
 
-public sealed class IdentityAccountGateway(UserManager<IdentityUser> users, ApplicationDbContext context) : IUserAccountGateway
+internal sealed class IdentityAccountGateway(UserManager<IdentityUser> users, ApplicationDbContext context) : IUserAccountGateway
 {
     public async Task<AccountCreation> CreateRequesterAsync(string email, string password, CancellationToken cancellationToken)
     {

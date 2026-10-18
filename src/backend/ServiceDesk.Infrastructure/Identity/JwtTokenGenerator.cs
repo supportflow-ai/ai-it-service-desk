@@ -10,7 +10,7 @@ using ServiceDesk.Infrastructure.Options;
 
 namespace ServiceDesk.Infrastructure.Identity;
 
-public sealed class JwtTokenGenerator : IAccessTokenIssuer
+internal sealed class JwtTokenGenerator : IAccessTokenIssuer
 {
     private readonly JwtOptions _options;
 

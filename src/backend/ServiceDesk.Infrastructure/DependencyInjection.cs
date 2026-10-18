@@ -66,6 +66,14 @@ public static class DependencyInjection
         return services;
     }
 
+    public static IServiceCollection AddBackendHealthChecks(this IServiceCollection services)
+    {
+        services.AddHealthChecks().AddNpgSql(
+            sp => sp.GetRequiredService<IOptions<DatabaseOptions>>().Value.ConnectionString,
+            name: "postgresql", tags: ["db", "ready"]);
+        return services;
+    }
+
     public static IServiceCollection AddAiAdapters(this IServiceCollection services)
     {
         services.AddSingleton<ITicketClassificationService, NoOpTicketClassificationService>();

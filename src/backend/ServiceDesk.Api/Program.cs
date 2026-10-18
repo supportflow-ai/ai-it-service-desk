@@ -58,11 +58,7 @@ builder.Services.AddAuthorization(options =>
 // at health-check execution time — not captured from IConfiguration at startup.
 // This allows WebApplicationFactory to override Database:ConnectionString via ConfigureAppConfiguration
 // for integration tests without modifying service registrations.
-builder.Services.AddHealthChecks()
-    .AddNpgSql(
-        sp => sp.GetRequiredService<IOptions<DatabaseOptions>>().Value.ConnectionString,
-        name: "postgresql",
-        tags: ["db", "ready"]);
+builder.Services.AddBackendHealthChecks();
 
 // --- API / Swagger ---
 builder.Services.AddEndpointsApiExplorer();

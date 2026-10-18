@@ -6,7 +6,7 @@ namespace ServiceDesk.Infrastructure.AI;
 /// No-op embedding service — returns empty vector.
 /// Placeholder until a real AI provider is integrated.
 /// </summary>
-public sealed class NoOpEmbeddingService : IEmbeddingService
+internal sealed class NoOpEmbeddingService : IEmbeddingService
 {
     public Task<float[]> GenerateEmbeddingAsync(
         string text, CancellationToken cancellationToken = default)

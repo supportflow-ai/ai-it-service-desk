@@ -10,7 +10,7 @@ using ServiceDesk.Infrastructure.Persistence;
 
 namespace ServiceDesk.Infrastructure.Ticketing;
 
-public sealed class PostgresTicketWriter(ApplicationDbContext context) : ITicketWriter
+internal sealed class PostgresTicketWriter(ApplicationDbContext context) : ITicketWriter
 {
     private readonly ApplicationDbContext _context = context;
     public static readonly TimeSpan IdempotencyLifetime = TimeSpan.FromMinutes(10);

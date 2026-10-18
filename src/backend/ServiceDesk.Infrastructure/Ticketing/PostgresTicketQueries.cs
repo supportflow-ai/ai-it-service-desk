@@ -6,7 +6,7 @@ using ServiceDesk.Infrastructure.Persistence;
 
 namespace ServiceDesk.Infrastructure.Ticketing;
 
-public sealed class PostgresTicketQueries(ApplicationDbContext context) : ITicketQueries
+internal sealed class PostgresTicketQueries(ApplicationDbContext context) : ITicketQueries
 {
     private readonly ApplicationDbContext _context = context;
     public async Task<PagedTicketResult> GetForRequesterAsync(

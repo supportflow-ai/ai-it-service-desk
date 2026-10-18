@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using ServiceDesk.Domain.Ticketing;
 using ServiceDesk.Infrastructure.Ticketing;
-namespace ServiceDesk.Infrastructure.Persistence.Configurations;
+namespace ServiceDesk.Infrastructure.Ticketing.Configurations;
 internal sealed class TicketConfiguration : IEntityTypeConfiguration<Ticket>
 {
     public void Configure(EntityTypeBuilder<Ticket> entity)
