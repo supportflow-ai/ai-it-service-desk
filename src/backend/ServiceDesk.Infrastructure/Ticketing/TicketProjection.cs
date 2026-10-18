@@ -1,4 +1,4 @@
-using ServiceDesk.Application.Ticketing.Dtos;
+using ServiceDesk.Application.Ticketing.Contracts;
 using ServiceDesk.Domain.Ticketing;
 namespace ServiceDesk.Infrastructure.Ticketing;
 internal static class TicketProjection

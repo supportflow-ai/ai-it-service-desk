@@ -2,9 +2,9 @@ using System.Data;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
-using ServiceDesk.Application.Ticketing.Dtos;
+using ServiceDesk.Application.Ticketing.Contracts;
 using ServiceDesk.Application.Ticketing.Idempotency;
-using ServiceDesk.Application.Ticketing.Interfaces;
+using ServiceDesk.Application.Ticketing.Ports;
 using ServiceDesk.Domain.Ticketing;
 using ServiceDesk.Infrastructure.Persistence;
 

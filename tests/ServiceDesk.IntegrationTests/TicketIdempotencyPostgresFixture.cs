@@ -11,7 +11,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using ServiceDesk.Infrastructure.Identity;
 using ServiceDesk.Infrastructure.Clock;
-using ServiceDesk.Application.Identity.Models;
+using ServiceDesk.Application.Identity.Contracts;
 using ServiceDesk.Api.Identity;
 using ServiceDesk.Infrastructure.Persistence;
 using Testcontainers.PostgreSql;

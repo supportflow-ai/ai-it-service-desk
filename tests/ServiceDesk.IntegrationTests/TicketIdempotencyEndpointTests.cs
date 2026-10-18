@@ -15,14 +15,14 @@ using Microsoft.IdentityModel.Tokens;
 using Moq;
 using ServiceDesk.Api.Endpoints;
 using ServiceDesk.Application.Common.Interfaces;
-using ServiceDesk.Application.Ticketing.Commands;
-using ServiceDesk.Application.Ticketing.Dtos;
+using ServiceDesk.Application.Ticketing.CreateTicket;
+using ServiceDesk.Application.Ticketing.Contracts;
 using ServiceDesk.Application.Ticketing.Idempotency;
-using ServiceDesk.Application.Ticketing.Interfaces;
+using ServiceDesk.Application.Ticketing.Ports;
 using ServiceDesk.Domain.Identity;
 using ServiceDesk.Infrastructure.Identity;
 using ServiceDesk.Infrastructure.Clock;
-using ServiceDesk.Application.Identity.Models;
+using ServiceDesk.Application.Identity.Contracts;
 using ServiceDesk.Api.Identity;
 using ServiceDesk.Infrastructure.Options;
 using Xunit;
@@ -36,13 +36,15 @@ public class TicketIdempotencyEndpointTests
     private const string Secret = "only_for_idempotency_unit_tests_01234567890123456789";
     private static readonly CreateTicketCommand Payload = new("Test ticket", "A valid ticket description", "NET");
 
-    private static async Task<WebApplication> CreateAppAsync(ITicketService service)
+    private static async Task<WebApplication> CreateAppAsync(ICreateTicket service)
     {
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseTestServer();
         builder.Services.AddHttpContextAccessor();
         builder.Services.AddScoped<ICurrentUser, CurrentUser>();
         builder.Services.AddSingleton(service);
+        builder.Services.AddSingleton(Mock.Of<ServiceDesk.Application.Ticketing.GetMyTickets.IGetMyTickets>());
+        builder.Services.AddSingleton(Mock.Of<ServiceDesk.Application.Ticketing.GetTicketDetail.IGetTicketDetail>());
         builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
         {
             options.TokenValidationParameters = new TokenValidationParameters
@@ -77,7 +79,7 @@ public class TicketIdempotencyEndpointTests
     [InlineData("expired")]
     public async Task T09_UnauthorizedCannotReachReplay(string mode)
     {
-        var service = new Mock<ITicketService>(MockBehavior.Strict);
+        var service = new Mock<ICreateTicket>(MockBehavior.Strict);
         await using var app = await CreateAppAsync(service.Object);
         using var client = app.GetTestClient();
         if (mode != "missing")
@@ -96,8 +98,8 @@ public class TicketIdempotencyEndpointTests
     {
         var requester = Guid.NewGuid();
         var dto = new TicketDto(Guid.NewGuid(), "IT-2026-0001", Payload.Title, Payload.Description, "NET", 1, DateTime.UtcNow);
-        var service = new Mock<ITicketService>(MockBehavior.Strict);
-        service.Setup(s => s.CreateTicketAsync(Payload, "key", It.IsAny<CancellationToken>()))
+        var service = new Mock<ICreateTicket>(MockBehavior.Strict);
+        service.Setup(s => s.ExecuteAsync(Payload, "key", It.IsAny<CancellationToken>()))
             .ReturnsAsync(dto);
         await using var app = await CreateAppAsync(service.Object);
         using var client = app.GetTestClient();
@@ -116,8 +118,8 @@ public class TicketIdempotencyEndpointTests
     public async Task PayloadConflictAndLockTimeout_HaveExplicitHttpContracts(bool inProgress)
     {
         var requester = Guid.NewGuid();
-        var service = new Mock<ITicketService>(MockBehavior.Strict);
-        service.Setup(s => s.CreateTicketAsync(Payload, "key", It.IsAny<CancellationToken>()))
+        var service = new Mock<ICreateTicket>(MockBehavior.Strict);
+        service.Setup(s => s.ExecuteAsync(Payload, "key", It.IsAny<CancellationToken>()))
             .ThrowsAsync(inProgress
                 ? new IdempotencyInProgressException(new Exception("test"))
                 : new IdempotencyConflictException());
@@ -134,7 +136,7 @@ public class TicketIdempotencyEndpointTests
     [Fact]
     public async Task RepeatedHeaderValues_AreRejectedBeforeService()
     {
-        var service = new Mock<ITicketService>(MockBehavior.Strict);
+        var service = new Mock<ICreateTicket>(MockBehavior.Strict);
         await using var app = await CreateAppAsync(service.Object);
         using var client = app.GetTestClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Token(Guid.NewGuid()));
@@ -149,7 +151,7 @@ public class TicketIdempotencyEndpointTests
     [Fact]
     public async Task AuthenticatedUserWithoutAllowedRole_CannotReachReplay()
     {
-        var service = new Mock<ITicketService>(MockBehavior.Strict);
+        var service = new Mock<ICreateTicket>(MockBehavior.Strict);
         await using var app = await CreateAppAsync(service.Object);
         using var client = app.GetTestClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Token(Guid.NewGuid(), "Observer"));

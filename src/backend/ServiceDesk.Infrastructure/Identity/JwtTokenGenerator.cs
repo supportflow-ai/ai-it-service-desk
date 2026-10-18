@@ -1,8 +1,8 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using ServiceDesk.Application.Identity.Interfaces;
-using ServiceDesk.Application.Identity.Models;
+using ServiceDesk.Application.Identity.Ports;
+using ServiceDesk.Application.Identity.Contracts;
 using ServiceDesk.Application.Common.Interfaces;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;

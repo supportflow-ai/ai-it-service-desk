@@ -1,6 +1,6 @@
 using Mono.Cecil;
 using Mono.Cecil.Cil;
-using ServiceDesk.Application.Ticketing;
+using ServiceDesk.Application.Ticketing.CreateTicket;
 using ServiceDesk.Domain.AIAssistance;
 using ServiceDesk.Infrastructure.Persistence;
 using Xunit;
@@ -13,7 +13,7 @@ public sealed class ModuleEncapsulationTests
     public void ModuleReferencesUseOnlyPublishedCrossModuleValueTypes()
     {
         var violations = new List<string>();
-        foreach (var assembly in new[] { typeof(AIAnalysis).Assembly, typeof(TicketService).Assembly, typeof(ApplicationDbContext).Assembly })
+        foreach (var assembly in new[] { typeof(AIAnalysis).Assembly, typeof(ICreateTicket).Assembly, typeof(ApplicationDbContext).Assembly })
         {
             using var definition = AssemblyDefinition.ReadAssembly(assembly.Location);
             foreach (var type in definition.MainModule.Types.SelectMany(Flatten))

@@ -1,10 +1,12 @@
 using Moq;
 using ServiceDesk.Application.Common.Interfaces;
-using ServiceDesk.Application.Ticketing;
-using ServiceDesk.Application.Ticketing.Commands;
-using ServiceDesk.Application.Ticketing.Dtos;
+using ServiceDesk.Application.Ticketing.GetMyTickets;
+using ServiceDesk.Application.Ticketing.GetTicketDetail;
+using ServiceDesk.Application.Ticketing.Authorization;
+using ServiceDesk.Application.Ticketing.CreateTicket;
+using ServiceDesk.Application.Ticketing.Contracts;
 using ServiceDesk.Application.Ticketing.Idempotency;
-using ServiceDesk.Application.Ticketing.Interfaces;
+using ServiceDesk.Application.Ticketing.Ports;
 using ServiceDesk.Domain.Identity;
 using ServiceDesk.Domain.Ticketing;
 using Xunit;
@@ -19,7 +21,9 @@ public sealed class TicketServiceTests
     private readonly Mock<IClock> _clock = new();
     private readonly Guid _actor = Guid.NewGuid();
     private readonly DateTimeOffset _now = new(2026, 10, 18, 1, 0, 0, TimeSpan.Zero);
-    private readonly TicketService _service;
+    private readonly CreateTicketUseCase _create;
+    private readonly GetMyTicketsUseCase _list;
+    private readonly GetTicketDetailUseCase _detail;
     private static readonly CreateTicketCommand Valid = new("  VPN issue  ", "  Cannot connect to the corporate VPN.  ", "VPN");
 
     public TicketServiceTests()
@@ -28,7 +32,9 @@ public sealed class TicketServiceTests
         _user.SetupGet(u => u.UserId).Returns(_actor.ToString());
         _user.SetupGet(u => u.Roles).Returns([RoleNames.Requester]);
         _clock.SetupGet(c => c.UtcNow).Returns(_now);
-        _service = new(_writer.Object, _queries.Object, _user.Object, _clock.Object);
+        _create = new(_writer.Object, _user.Object, _clock.Object);
+        _list = new(_queries.Object, _user.Object);
+        _detail = new(_queries.Object, _user.Object);
     }
 
     [Theory]
@@ -42,7 +48,7 @@ public sealed class TicketServiceTests
             .Callback<Ticket, CreateTicketFingerprint?, CancellationToken>((t, f, _) => { captured = t; fingerprint = f; })
             .ReturnsAsync((Ticket t, CreateTicketFingerprint? _, CancellationToken _) =>
                 new TicketDto(t.Id, "IT-2026-0001", t.Title, t.Description, t.CategoryId, (int)t.Status, t.CreatedAt, t.RequesterDepartmentId));
-        var result = await _service.CreateTicketAsync(Valid, key);
+        var result = await _create.ExecuteAsync(Valid, key);
         Assert.Equal(_actor, captured!.RequesterId);
         Assert.Equal(_now.UtcDateTime, captured.CreatedAt);
         Assert.Equal("VPN issue", result.Title);
@@ -63,19 +69,19 @@ public sealed class TicketServiceTests
     [InlineData("Valid", "Valid description", "INVALID")]
     public async Task InvalidDomainInput_DoesNotReachPersistence(string title, string description, string category)
     {
-        await Assert.ThrowsAsync<ArgumentException>(() => _service.CreateTicketAsync(new(title, description, category)));
+        await Assert.ThrowsAsync<ArgumentException>(() => _create.ExecuteAsync(new(title, description, category)));
         _writer.VerifyNoOtherCalls();
     }
 
     [Fact]
     public async Task TitleOver100Characters_IsRejectedBeforePersistence() =>
-        await Assert.ThrowsAsync<ArgumentException>(() => _service.CreateTicketAsync(Valid with { Title = new string('x', 101) }));
+        await Assert.ThrowsAsync<ArgumentException>(() => _create.ExecuteAsync(Valid with { Title = new string('x', 101) }));
 
     [Theory]
     [InlineData(0, 10)] [InlineData(1, 0)] [InlineData(1, 101)] [InlineData(int.MaxValue, 100)]
     public async Task InvalidPaging_IsRejected(int page, int pageSize)
     {
-        await Assert.ThrowsAsync<ArgumentException>(() => _service.GetMyTicketsAsync(page, pageSize));
+        await Assert.ThrowsAsync<ArgumentException>(() => _list.ExecuteAsync(new(page, pageSize)));
         _queries.VerifyNoOtherCalls();
     }
 
@@ -84,7 +90,7 @@ public sealed class TicketServiceTests
     {
         var result = new PagedTicketResult([], 2, 5, 12);
         _queries.Setup(q => q.GetForRequesterAsync(_actor, 2, 5, It.IsAny<CancellationToken>())).ReturnsAsync(result);
-        Assert.Same(result, await _service.GetMyTicketsAsync(2, 5));
+        Assert.Same(result, await _list.ExecuteAsync(new(2, 5)));
         _queries.VerifyAll();
     }
 
@@ -96,7 +102,7 @@ public sealed class TicketServiceTests
     {
         var result = new PagedTicketResult([], page, pageSize, 0);
         _queries.Setup(q => q.GetForRequesterAsync(_actor, page, pageSize, It.IsAny<CancellationToken>())).ReturnsAsync(result);
-        Assert.Same(result, await _service.GetMyTicketsAsync(page, pageSize));
+        Assert.Same(result, await _list.ExecuteAsync(new(page, pageSize)));
     }
 
     [Theory]
@@ -105,8 +111,8 @@ public sealed class TicketServiceTests
     {
         _user.Setup(u => u.IsInRole(role)).Returns(true);
         var id = Guid.NewGuid();
-        _queries.Setup(q => q.GetByIdAsync(id, broad ? null : _actor, It.IsAny<CancellationToken>())).ReturnsAsync((TicketDto?)null);
-        Assert.Null(await _service.GetTicketByIdAsync(id));
+        _queries.Setup(q => q.GetByIdAsync(id, broad ? (TicketReadScope)new TicketReadScope.AllTickets() : new TicketReadScope.OwnTickets(_actor), It.IsAny<CancellationToken>())).ReturnsAsync((TicketDto?)null);
+        Assert.Null(await _detail.ExecuteAsync(new(id)));
         _queries.VerifyAll();
     }
 
@@ -117,10 +123,10 @@ public sealed class TicketServiceTests
         _user.SetupGet(u => u.IsAuthenticated).Returns(mode != "anonymous");
         _user.SetupGet(u => u.UserId).Returns(mode switch { "missing" => null, "invalid" => "bad", "empty" => Guid.Empty.ToString(), _ => _actor.ToString() });
         if (mode == "no-role") _user.SetupGet(u => u.Roles).Returns([]);
-        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _service.CreateTicketAsync(Valid));
-        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _service.CreateTicketAsync(Valid, "key"));
-        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _service.GetMyTicketsAsync());
-        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _service.GetTicketByIdAsync(Guid.NewGuid()));
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _create.ExecuteAsync(Valid));
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _create.ExecuteAsync(Valid, "key"));
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _list.ExecuteAsync(new()));
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _detail.ExecuteAsync(new(Guid.NewGuid())));
         _writer.VerifyNoOtherCalls(); _queries.VerifyNoOtherCalls();
     }
 }

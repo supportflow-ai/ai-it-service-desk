@@ -1,4 +1,4 @@
-using ServiceDesk.Application.AIAssistance.Interfaces;
+using ServiceDesk.Application.AIAssistance.Ports;
 
 namespace ServiceDesk.Infrastructure.AI;
 

@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using ServiceDesk.Application.Identity.Interfaces;
+using ServiceDesk.Application.Identity.Ports;
 using ServiceDesk.Domain.Identity;
 using ServiceDesk.Infrastructure.Persistence;
 using Xunit;

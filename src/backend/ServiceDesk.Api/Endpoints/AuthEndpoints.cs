@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
-using ServiceDesk.Application.Identity.Interfaces;
-using ServiceDesk.Application.Identity.Models;
+using ServiceDesk.Application.Identity.RegisterUser;
+using ServiceDesk.Application.Identity.LoginUser;
+using ServiceDesk.Application.Identity.GetCurrentUser;
+using ServiceDesk.Application.Identity.Contracts;
 
 namespace ServiceDesk.Api.Endpoints;
 
@@ -12,10 +14,10 @@ public static class AuthEndpoints
 
         group.MapPost("/register", async (
             [FromBody] RegisterRequest request,
-            IAuthService authService,
+            IRegisterUser registerUser,
             CancellationToken ct) =>
         {
-            var result = await authService.RegisterAsync(request, ct);
+            var result = await registerUser.ExecuteAsync(request, ct);
             if (!result.Succeeded)
             {
                 return Results.BadRequest(new { errors = result.Errors });
@@ -32,10 +34,10 @@ public static class AuthEndpoints
 
         group.MapPost("/login", async (
             [FromBody] LoginRequest request,
-            IAuthService authService,
+            ILoginUser loginUser,
             CancellationToken ct) =>
         {
-            var result = await authService.LoginAsync(request, ct);
+            var result = await loginUser.ExecuteAsync(request, ct);
             if (!result.Succeeded)
             {
                 return Results.Unauthorized();
@@ -51,17 +53,10 @@ public static class AuthEndpoints
         .AllowAnonymous();
 
         group.MapGet("/me", async (
-            IAuthService authService,
-            System.Security.Claims.ClaimsPrincipal principal,
+            IGetCurrentUser getCurrentUser,
             CancellationToken ct) =>
         {
-            var userId = principal.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-            if (userId == null)
-            {
-                return Results.Unauthorized();
-            }
-
-            var user = await authService.GetCurrentUserAsync(userId, ct);
+            var user = await getCurrentUser.ExecuteAsync(ct);
             if (user == null)
             {
                 return Results.NotFound();
@@ -69,6 +64,7 @@ public static class AuthEndpoints
 
             return Results.Ok(user);
         })
+        .AddEndpointFilter<LegacyErrorFilter>()
         .WithName("GetCurrentUser")
         .RequireAuthorization();
 

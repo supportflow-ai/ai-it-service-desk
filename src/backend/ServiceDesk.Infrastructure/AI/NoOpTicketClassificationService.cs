@@ -1,5 +1,5 @@
-using ServiceDesk.Application.AIAssistance.Interfaces;
-using ServiceDesk.Application.AIAssistance.Models;
+using ServiceDesk.Application.AIAssistance.Ports;
+using ServiceDesk.Application.AIAssistance.Contracts;
 
 namespace ServiceDesk.Infrastructure.AI;
 

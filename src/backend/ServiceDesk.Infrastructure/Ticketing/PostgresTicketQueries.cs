@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using ServiceDesk.Application.Ticketing.Dtos;
-using ServiceDesk.Application.Ticketing.Interfaces;
+using ServiceDesk.Application.Ticketing.Contracts;
+using ServiceDesk.Application.Ticketing.Ports;
+using ServiceDesk.Application.Ticketing.Authorization;
 using ServiceDesk.Infrastructure.Persistence;
 
 namespace ServiceDesk.Infrastructure.Ticketing;
@@ -38,10 +39,15 @@ public sealed class PostgresTicketQueries(ApplicationDbContext context) : ITicke
         return new PagedTicketResult(tickets, page, pageSize, totalCount);
     }
 
-    public async Task<TicketDto?> GetByIdAsync(Guid id, Guid? ownerId, CancellationToken cancellationToken)
+    public async Task<TicketDto?> GetByIdAsync(Guid id, TicketReadScope scope, CancellationToken cancellationToken)
     {
         var query = _context.Tickets.AsNoTracking().Where(ticket => ticket.Id == id);
-        if (ownerId.HasValue) query = query.Where(ticket => ticket.RequesterId == ownerId.Value);
+        query = scope switch
+        {
+            TicketReadScope.OwnTickets own => query.Where(ticket => ticket.RequesterId == own.ActorId),
+            TicketReadScope.AllTickets => query,
+            _ => throw new ArgumentException("A valid ticket read scope is required.", nameof(scope))
+        };
         var ticket = await query.FirstOrDefaultAsync(cancellationToken);
         return ticket is null ? null : TicketProjection.ToDto(ticket);
     }

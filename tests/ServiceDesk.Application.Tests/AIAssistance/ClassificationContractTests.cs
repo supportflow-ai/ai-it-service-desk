@@ -1,7 +1,7 @@
 using System.Text.Json;
 using ServiceDesk.Application.AIAssistance.Contracts.V1;
-using ServiceDesk.Application.AIAssistance.Interfaces;
-using ServiceDesk.Application.AIAssistance.Models;
+using ServiceDesk.Application.AIAssistance.Ports;
+using ServiceDesk.Application.AIAssistance.Contracts;
 using ServiceDesk.Domain.AIAssistance;
 using Xunit;
 namespace ServiceDesk.Application.Tests.AIAssistance;

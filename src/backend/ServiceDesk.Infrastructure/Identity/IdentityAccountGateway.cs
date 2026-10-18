@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using ServiceDesk.Application.Identity.Interfaces;
-using ServiceDesk.Application.Identity.Models;
+using ServiceDesk.Application.Identity.Ports;
+using ServiceDesk.Application.Identity.Contracts;
 using ServiceDesk.Domain.Identity;
 using ServiceDesk.Infrastructure.Persistence;
 
@@ -33,12 +33,23 @@ public sealed class IdentityAccountGateway(UserManager<IdentityUser> users, Appl
         if (string.IsNullOrWhiteSpace(email) || string.IsNullOrEmpty(password)) return null;
         await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
         // Read committed + row lock: every replica observes the latest lockout state after waiting.
-        // UserManager and this query share the scoped context, so discard a previously tracked snapshot.
-        context.ChangeTracker.Clear();
+        // Read a fresh snapshot without replacing a user instance already held by this scope.
         var normalizedEmail = users.NormalizeEmail(email);
         var user = await context.Users.FromSqlInterpolated(
             $"SELECT * FROM public.\"AspNetUsers\" WHERE \"NormalizedEmail\" = {normalizedEmail} FOR UPDATE")
-            .SingleOrDefaultAsync(cancellationToken);
+            .AsNoTracking().SingleOrDefaultAsync(cancellationToken);
+        if (user is not null)
+        {
+            var tracked = context.ChangeTracker.Entries<IdentityUser>().SingleOrDefault(e => e.Entity.Id == user.Id);
+            if (tracked is not null)
+            {
+                tracked.CurrentValues.SetValues(user);
+                tracked.OriginalValues.SetValues(user);
+                tracked.State = EntityState.Unchanged;
+                user = tracked.Entity;
+            }
+            else context.Attach(user);
+        }
         if (user is null || await users.IsLockedOutAsync(user)) return null;
         if (!await users.CheckPasswordAsync(user, password))
         {

@@ -1,7 +1,7 @@
 using System.Reflection;
 using NetArchTest.Rules;
-using ServiceDesk.Application.Identity;
-using ServiceDesk.Application.Ticketing;
+using ServiceDesk.Application.Identity.RegisterUser;
+using ServiceDesk.Application.Ticketing.CreateTicket;
 using ServiceDesk.Domain.AIAssistance;
 using ServiceDesk.Infrastructure.Persistence;
 using Xunit;
@@ -13,8 +13,8 @@ public sealed class BoundaryTests
     public void ApplicationUseCasesBelongToApplicationAssembly()
     {
         var application = typeof(ServiceDesk.Application.DependencyInjection).Assembly;
-        Assert.Same(application, typeof(TicketService).Assembly);
-        Assert.Same(application, typeof(AuthService).Assembly);
+        Assert.Same(application, typeof(ICreateTicket).Assembly);
+        Assert.Same(application, typeof(IRegisterUser).Assembly);
         Assert.DoesNotContain(typeof(ApplicationDbContext).Assembly.GetTypes(),
             type => type.Namespace?.StartsWith("ServiceDesk.Application", StringComparison.Ordinal) == true);
     }
@@ -24,7 +24,7 @@ public sealed class BoundaryTests
     [InlineData("Microsoft.AspNetCore")] [InlineData("ServiceDesk.Infrastructure")]
     public void ApplicationCannotDependOnFrameworkAdapters(string forbidden)
     {
-        Assert.True(Types.InAssembly(typeof(TicketService).Assembly).ShouldNot().HaveDependencyOn(forbidden).GetResult().IsSuccessful);
+        Assert.True(Types.InAssembly(typeof(ICreateTicket).Assembly).ShouldNot().HaveDependencyOn(forbidden).GetResult().IsSuccessful);
     }
 
     [Fact]

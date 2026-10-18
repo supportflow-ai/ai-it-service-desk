@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using ServiceDesk.Application.Identity.Interfaces;
+using ServiceDesk.Application.Identity.Ports;
 using ServiceDesk.Infrastructure;
 using ServiceDesk.Infrastructure.Persistence;
 using Xunit;

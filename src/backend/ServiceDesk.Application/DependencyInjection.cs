@@ -1,8 +1,10 @@
 using Microsoft.Extensions.DependencyInjection;
-using ServiceDesk.Application.Identity;
-using ServiceDesk.Application.Identity.Interfaces;
-using ServiceDesk.Application.Ticketing;
-using ServiceDesk.Application.Ticketing.Interfaces;
+using ServiceDesk.Application.Identity.RegisterUser;
+using ServiceDesk.Application.Identity.LoginUser;
+using ServiceDesk.Application.Identity.GetCurrentUser;
+using ServiceDesk.Application.Ticketing.CreateTicket;
+using ServiceDesk.Application.Ticketing.GetMyTickets;
+using ServiceDesk.Application.Ticketing.GetTicketDetail;
 
 namespace ServiceDesk.Application;
 
@@ -19,13 +21,17 @@ public static class DependencyInjection
 
     public static IServiceCollection AddTicketingApplication(this IServiceCollection services)
     {
-        services.AddScoped<ITicketService, TicketService>();
+        services.AddScoped<ICreateTicket, CreateTicketUseCase>();
+        services.AddScoped<IGetMyTickets, GetMyTicketsUseCase>();
+        services.AddScoped<IGetTicketDetail, GetTicketDetailUseCase>();
         return services;
     }
 
     public static IServiceCollection AddIdentityApplication(this IServiceCollection services)
     {
-        services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IRegisterUser, RegisterUserUseCase>();
+        services.AddScoped<ILoginUser, LoginUserUseCase>();
+        services.AddScoped<IGetCurrentUser, GetCurrentUserUseCase>();
         return services;
     }
 }

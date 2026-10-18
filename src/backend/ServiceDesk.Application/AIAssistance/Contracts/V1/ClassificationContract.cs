@@ -1,6 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using ServiceDesk.Application.AIAssistance.Models;
+using ServiceDesk.Application.AIAssistance.Contracts;
 using ServiceDesk.Domain.AIAssistance;
 using ServiceDesk.Domain.Ticketing;
 

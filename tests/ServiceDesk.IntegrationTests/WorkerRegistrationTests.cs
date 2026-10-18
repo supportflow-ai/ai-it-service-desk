@@ -18,7 +18,7 @@ public sealed class WorkerRegistrationTests
         using var scope = host.Services.CreateScope();
         Assert.False(scope.ServiceProvider.GetRequiredService<ServiceDesk.Application.Common.Interfaces.ICurrentUser>().IsAuthenticated);
         Assert.Null(scope.ServiceProvider.GetService<Microsoft.AspNetCore.Http.IHttpContextAccessor>());
-        Assert.NotNull(scope.ServiceProvider.GetRequiredService<ServiceDesk.Application.Ticketing.Interfaces.ITicketService>());
+        Assert.NotNull(scope.ServiceProvider.GetRequiredService<ServiceDesk.Application.Ticketing.CreateTicket.ICreateTicket>());
         await host.StopAsync();
     }
 
