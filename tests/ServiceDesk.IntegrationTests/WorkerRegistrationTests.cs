@@ -9,6 +9,20 @@ namespace ServiceDesk.IntegrationTests;
 public sealed class WorkerRegistrationTests
 {
     [Fact]
+    public async Task ActualWorkerStartsInDevelopmentWithoutDatabaseOrHttpContext()
+    {
+        var builder = Host.CreateApplicationBuilder(new HostApplicationBuilderSettings { EnvironmentName = "Development" });
+        ServiceDesk.Worker.WorkerServices.AddWorkerServices(builder.Services, builder.Configuration);
+        using var host = builder.Build();
+        await host.StartAsync();
+        using var scope = host.Services.CreateScope();
+        Assert.False(scope.ServiceProvider.GetRequiredService<ServiceDesk.Application.Common.Interfaces.ICurrentUser>().IsAuthenticated);
+        Assert.Null(scope.ServiceProvider.GetService<Microsoft.AspNetCore.Http.IHttpContextAccessor>());
+        Assert.NotNull(scope.ServiceProvider.GetRequiredService<ServiceDesk.Application.Ticketing.Interfaces.ITicketService>());
+        await host.StopAsync();
+    }
+
+    [Fact]
     public void GenericHost_CanResolveIdentityWithoutWebHostDefaults()
     {
         var builder = Host.CreateApplicationBuilder();

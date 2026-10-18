@@ -1,12 +1,5 @@
-using ServiceDesk.Application;
-using ServiceDesk.Application.Common;
-using ServiceDesk.Application.Common.Interfaces;
-using ServiceDesk.Infrastructure;
+using ServiceDesk.Worker;
 var builder = Host.CreateApplicationBuilder(args);
-builder.Services.AddApplication();
-builder.Services.AddPersistence(builder.Configuration);
-builder.Services.AddClock();
-builder.Services.AddAiAdapters();
-builder.Services.AddScoped<ICurrentUser, AnonymousCurrentUser>();
+builder.Services.AddWorkerServices(builder.Configuration);
 var host = builder.Build();
 host.Run();

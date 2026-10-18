@@ -14,9 +14,18 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
-        services.AddScoped<ITicketService, TicketService>();
-        services.AddScoped<IAuthService, AuthService>();
+        return services.AddTicketingApplication().AddIdentityApplication();
+    }
 
+    public static IServiceCollection AddTicketingApplication(this IServiceCollection services)
+    {
+        services.AddScoped<ITicketService, TicketService>();
+        return services;
+    }
+
+    public static IServiceCollection AddIdentityApplication(this IServiceCollection services)
+    {
+        services.AddScoped<IAuthService, AuthService>();
         return services;
     }
 }

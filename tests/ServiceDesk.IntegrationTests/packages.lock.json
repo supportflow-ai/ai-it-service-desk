@@ -829,6 +829,13 @@
           "ServiceDesk.Application": "[1.0.0, )",
           "ServiceDesk.Domain": "[1.0.0, )"
         }
+      },
+      "servicedesk.worker": {
+        "type": "Project",
+        "dependencies": {
+          "ServiceDesk.Application": "[1.0.0, )",
+          "ServiceDesk.Infrastructure": "[1.0.0, )"
+        }
       }
     }
   }

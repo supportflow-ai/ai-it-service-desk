@@ -18,6 +18,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl \
 USER $APP_UID
 EXPOSE 8080
 ENV ASPNETCORE_HTTP_PORTS=8080
-HEALTHCHECK --interval=5s --timeout=3s --start-period=20s --retries=12 CMD curl --fail --silent http://localhost:8080/health/live || exit 1
+HEALTHCHECK --interval=5s --timeout=3s --start-period=20s --retries=12 CMD curl --fail --silent http://localhost:8080/health/ready || exit 1
 COPY --from=build /app/publish .
 ENTRYPOINT ["dotnet", "ServiceDesk.Api.dll"]

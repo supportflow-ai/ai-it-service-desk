@@ -17,10 +17,10 @@ public sealed class DatabaseMaintenanceTests(ServiceDeskWebApplicationFactory fa
         var maintenance = ActivatorUtilities.CreateInstance<DatabaseMaintenance>(scope.ServiceProvider);
         await maintenance.MigrateAsync(); await maintenance.MigrateAsync();
         await maintenance.SeedRolesAsync(); await maintenance.SeedRolesAsync();
-        await Assert.ThrowsAsync<InvalidOperationException>(() => maintenance.SeedDemoAsync("Production", true, "Test@1234"));
-        await Assert.ThrowsAsync<InvalidOperationException>(() => maintenance.SeedDemoAsync("Development", false, "Test@1234"));
-        await Assert.ThrowsAsync<InvalidOperationException>(() => maintenance.BootstrapAdminAsync("requester@test.com", "Test@1234"));
-        await Assert.ThrowsAsync<InvalidOperationException>(() => maintenance.CheckProductionAsync());
+        await Assert.ThrowsAsync<DatabaseMaintenanceException>(() => maintenance.SeedDemoAsync("Production", true, "Test@1234"));
+        await Assert.ThrowsAsync<DatabaseMaintenanceException>(() => maintenance.SeedDemoAsync("Development", false, "Test@1234"));
+        await Assert.ThrowsAsync<DatabaseMaintenanceException>(() => maintenance.BootstrapAdminAsync("requester@test.com", "Test@1234"));
+        await Assert.ThrowsAsync<DatabaseMaintenanceException>(() => maintenance.CheckProductionAsync());
         var users = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
         var requester = (await users.FindByEmailAsync("requester@test.com"))!;
         Assert.Equal(new[] { "Requester" }, await users.GetRolesAsync(requester));

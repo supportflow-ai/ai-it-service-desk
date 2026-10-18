@@ -38,6 +38,11 @@ try
     Console.WriteLine($"{args[0]} completed.");
     return 0;
 }
+catch (DatabaseMaintenanceException exception)
+{
+    Console.Error.WriteLine($"{args[0]} failed [{exception.Message}]. No credentials were logged.");
+    return 1;
+}
 catch (Exception exception)
 {
     Console.Error.WriteLine($"{args[0]} failed ({exception.GetType().Name}). Check database availability, role setup and securely supplied configuration; no credentials were logged.");

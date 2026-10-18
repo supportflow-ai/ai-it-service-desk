@@ -23,7 +23,7 @@ public sealed class DatabaseMaintenance(ApplicationDbContext context, RoleManage
     public Task SeedDemoAsync(string environment, bool enabled, string password, CancellationToken ct = default)
     {
         if (!enabled || environment is not ("Development" or "Test"))
-            throw new InvalidOperationException("Demo users require explicit opt-in in Development or Test.");
+            throw new DatabaseMaintenanceException("demo_seed_forbidden");
         return WithLockAsync(async () =>
         {
             var demoRoles = new[] { RoleNames.Admin, RoleNames.Agent, RoleNames.Requester };
@@ -43,9 +43,9 @@ public sealed class DatabaseMaintenance(ApplicationDbContext context, RoleManage
     public Task BootstrapAdminAsync(string email, string password, CancellationToken ct = default) => WithLockAsync(async () =>
     {
         if (string.IsNullOrWhiteSpace(email) || string.IsNullOrEmpty(password))
-            throw new InvalidOperationException("BootstrapAdmin email and password are required.");
+            throw new DatabaseMaintenanceException("bootstrap_configuration_required");
         if (await users.FindByEmailAsync(email) is not null)
-            throw new InvalidOperationException("Bootstrap refuses to modify an existing account.");
+            throw new DatabaseMaintenanceException("bootstrap_existing_account");
         await using var transaction = await context.Database.BeginTransactionAsync(ct);
         var user = new IdentityUser { UserName = email, Email = email, EmailConfirmed = true };
         Ensure(await users.CreateAsync(user, password));
@@ -60,7 +60,7 @@ public sealed class DatabaseMaintenance(ApplicationDbContext context, RoleManage
             ct.ThrowIfCancellationRequested();
             var user = await users.FindByEmailAsync(email);
             if (user is not null && await users.CheckPasswordAsync(user, "Test@1234"))
-                throw new InvalidOperationException("Production preflight failed: a demo account still uses the published sample password.");
+                throw new DatabaseMaintenanceException("demo_default_password_present");
         }
     }
 
@@ -87,6 +87,6 @@ public sealed class DatabaseMaintenance(ApplicationDbContext context, RoleManage
     private static void Ensure(IdentityResult result)
     {
         // Identity error codes contain no submitted credential or raw user input.
-        if (!result.Succeeded) throw new InvalidOperationException(string.Join(", ", result.Errors.Select(e => e.Code)));
+        if (!result.Succeeded) throw new DatabaseMaintenanceException("identity_write_failed");
     }
 }
