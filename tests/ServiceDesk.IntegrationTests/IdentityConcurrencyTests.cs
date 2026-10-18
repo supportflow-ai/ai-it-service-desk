@@ -121,4 +121,32 @@ public sealed class IdentityConcurrencyTests(TicketIdempotencyPostgresFixture fi
             return ValueTask.FromResult(result);
         }
     }
+
+    [Fact]
+    public async Task ConcurrentSuccessAndFailureHaveAValidSerialOrder()
+    {
+        var email = await RegisterAsync();
+        using var first = fixture.First!.CreateClient();
+        using var second = fixture.Second!.CreateClient();
+        using (var failed = await first.PostAsJsonAsync("/api/auth/login", new { email, password = "wrong" }))
+            Assert.Equal(HttpStatusCode.Unauthorized, failed.StatusCode);
+        var start = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        async Task<HttpResponseMessage> Login(HttpClient client, string password)
+        {
+            await start.Task;
+            return await client.PostAsJsonAsync("/api/auth/login", new { email, password });
+        }
+        var correct = Login(first, Password);
+        var incorrect = Login(second, "wrong");
+        start.SetResult();
+        using var successful = await correct;
+        using var unsuccessful = await incorrect;
+        Assert.Equal(HttpStatusCode.OK, successful.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, unsuccessful.StatusCode);
+        await using var db = fixture.CreateContext();
+        var user = await db.Users.SingleAsync(u => u.Email == email);
+        // The success either resets both failures or precedes the last failure.
+        Assert.InRange(user.AccessFailedCount, 0, 1);
+        Assert.True(user.LockoutEnd is null || user.LockoutEnd <= DateTimeOffset.UtcNow);
+    }
 }

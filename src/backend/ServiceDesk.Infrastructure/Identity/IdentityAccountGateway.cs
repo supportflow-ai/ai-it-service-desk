@@ -31,7 +31,8 @@ internal sealed class IdentityAccountGateway(UserManager<IdentityUser> users, Ap
     {
         cancellationToken.ThrowIfCancellationRequested();
         if (string.IsNullOrWhiteSpace(email) || string.IsNullOrEmpty(password)) return null;
-        await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+        await using var transaction = await context.Database.BeginTransactionAsync(
+            System.Data.IsolationLevel.ReadCommitted, cancellationToken);
         // Read committed + row lock: every replica observes the latest lockout state after waiting.
         // Read a fresh snapshot without replacing a user instance already held by this scope.
         var normalizedEmail = users.NormalizeEmail(email);

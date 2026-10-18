@@ -23,7 +23,11 @@ tests/                        # Domain, Application, Architecture, Integration
 contracts/                    # Baseline HTTP và AI classification v1
 ```
 
-Domain độc lập framework; Application phụ thuộc Domain. Infrastructure triển khai interface do Application sở hữu. API/Worker lắp ghép các module cần dùng. Endpoint không truy cập DbContext; Worker không sử dụng HttpContext hoặc danh tính người dùng ngầm định. Xem [ADR-011](docs/adr/ADR-011-backend-module-boundaries.md).
+Domain độc lập framework; Application phụ thuộc Domain. Infrastructure triển khai interface do Application sở hữu. API/Worker lắp ghép các module cần dùng. Endpoint không truy cập DbContext; Worker không sử dụng HttpContext hoặc danh tính người dùng ngầm định. Xem [ADR-011](docs/adr/ADR-011-backend-module-boundaries.md) và [ADR-014](docs/adr/ADR-014-feature-use-cases-and-published-contracts.md).
+
+Application tổ chức theo module và feature: Identity có RegisterUser/LoginUser/GetCurrentUser; Ticketing có CreateTicket/GetMyTickets/GetTicketDetail. Endpoint gọi contract của từng use case; implementation là internal. Published Contracts và adapter ports được kiểm tra riêng bằng architecture tests. [Tài liệu module và luồng xử lý](docs/architecture/backend-modules-and-use-cases.md) mô tả ownership, transaction và phạm vi quyền hiện tại.
+
+Requester chỉ đọc chi tiết ticket của mình; Agent/Admin hiện đọc chi tiết toàn hệ thống. Danh sách và tạo ticket luôn dùng actor hiện tại. Hệ thống chưa thực thi cách ly theo team hoặc assignment. Identity đọc trạng thái tài khoản dưới row lock PostgreSQL để giữ lockout nhất quán giữa các API replica.
 
 ## Build và test
 
@@ -37,6 +41,8 @@ dotnet test src/backend/ServiceDesk.sln -c Release --no-build --filter "Category
 ```
 
 Integration tests dùng PostgreSQL 17 Testcontainers và cần Docker đang hoạt động. Application unit tests không cần EF Core/Infrastructure/database.
+
+Các kiểm tra snapshot xác nhận đợt củng cố không cần migration mới. Xem [runbook kiểm chứng](docs/runbooks/backend-hardening-verification.md) để kiểm tra đúng commit và phân biệt test offline với PostgreSQL thật.
 
 ## CI bằng GitHub Actions
 

@@ -13,7 +13,7 @@ using Xunit;
 
 namespace ServiceDesk.Application.Tests.Ticketing;
 
-public sealed class TicketServiceTests
+public sealed class TicketUseCaseTests
 {
     private readonly Mock<ITicketWriter> _writer = new(MockBehavior.Strict);
     private readonly Mock<ITicketQueries> _queries = new(MockBehavior.Strict);
@@ -26,7 +26,7 @@ public sealed class TicketServiceTests
     private readonly GetTicketDetailUseCase _detail;
     private static readonly CreateTicketCommand Valid = new("  VPN issue  ", "  Cannot connect to the corporate VPN.  ", "VPN");
 
-    public TicketServiceTests()
+    public TicketUseCaseTests()
     {
         _user.SetupGet(u => u.IsAuthenticated).Returns(true);
         _user.SetupGet(u => u.UserId).Returns(_actor.ToString());

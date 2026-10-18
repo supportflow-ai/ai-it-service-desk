@@ -7,7 +7,7 @@ using ServiceDesk.Domain.Identity;
 using Xunit;
 namespace ServiceDesk.Application.Tests.Identity;
 
-public sealed class AuthServiceTests
+public sealed class IdentityUseCaseTests
 {
     private readonly Mock<IUserAccountGateway> _accounts = new(MockBehavior.Strict);
     private readonly Mock<IAccessTokenIssuer> _tokens = new(MockBehavior.Strict);

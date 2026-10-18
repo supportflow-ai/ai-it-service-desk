@@ -7,6 +7,13 @@ namespace ServiceDesk.Application.Tests.AIAssistance;
 
 public sealed class TriageResultInvariantTests
 {
+    [Fact]
+    public void FailuresRequireNonemptyControlledInformation()
+    {
+        Assert.ThrowsAny<ArgumentException>(() => TriageResult.Unavailable(null!));
+        Assert.ThrowsAny<ArgumentException>(() => TriageResult.Timeout(""));
+        Assert.ThrowsAny<ArgumentException>(() => TriageResult.InvalidResponse(" "));
+    }
     [Theory]
     [InlineData(-.1)]
     [InlineData(1.1)]

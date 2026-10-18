@@ -103,6 +103,7 @@ public sealed record TriageResult
     /// </summary>
     public static TriageResult Unavailable(string reason = "AI classification service is unavailable.")
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(reason);
         return new TriageResult
         {
             Outcome = TriageOutcome.Unavailable,
@@ -115,6 +116,7 @@ public sealed record TriageResult
     /// </summary>
     public static TriageResult Timeout(string reason = "AI classification timed out.")
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(reason);
         return new TriageResult
         {
             Outcome = TriageOutcome.Timeout,
@@ -127,6 +129,7 @@ public sealed record TriageResult
     /// </summary>
     public static TriageResult InvalidResponse(string reason, IReadOnlyList<string>? validationErrors = null)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(reason);
         return new TriageResult
         {
             Outcome = TriageOutcome.InvalidResponse,
