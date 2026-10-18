@@ -1,3 +1,9 @@
+> Current backend boundaries: [ADR-011](../adr/ADR-011-backend-module-boundaries.md),
+> [AI ADR-012](../adr/ADR-012-ai-contract-and-future-transport.md) and the
+> [rollout runbook](../runbooks/backend-refactor-rollout.md).
+> The lifecycle/SLA material below describes planned product capabilities. This refactor
+> preserves existing Submitted creation/API behavior and defers those state transitions.
+
 # Architecture Contracts & Technical Governance Index
 
 Chào mừng đến với thư mục **Architecture Contracts & Governance** của dự án **AI-Assisted Internal IT Service Desk** (`supportflow-ai/ai-it-service-desk`).
