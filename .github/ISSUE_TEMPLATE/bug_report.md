@@ -25,5 +25,7 @@ labels: bug
 
 ## Environment
 
-- Browser:
-- OS:
+- Điểm cuối API và phương thức HTTP:
+- Phiên bản .NET:
+- Hệ điều hành:
+- SHA backend:

@@ -4,7 +4,7 @@ namespace ServiceDesk.Domain.AIAssistance;
 /// Domain policy for confidence score interpretation.
 /// Raw model scores are mapped to <see cref="ConfidenceBand"/> for product display.
 ///
-/// Thresholds are centralized here — not scattered across frontend/backend.
+/// Các ngưỡng được tập trung tại đây để các thành phần sử dụng thống nhất.
 /// Values can be made configurable via IOptions in the future.
 ///
 /// IMPORTANT: These thresholds are NOT calibrated probabilities.

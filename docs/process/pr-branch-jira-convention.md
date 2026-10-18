@@ -47,7 +47,7 @@ Commit messages must follow **Conventional Commits** augmented with the Jira iss
 ### Examples:
 * `feat(auth): [TC-101] implement JWT bearer token issue and refresh endpoints`
 * `fix(persistence): [TC-142] resolve PostgreSQL health check connection string binding`
-* `chore(ci): [TC-203] add GitHub Actions workflow with backend and frontend quality gates`
+* `chore(ci): [TC-203] bổ sung kiểm tra tự động cho backend bằng GitHub Actions`
 * `test(ticketing): [TC-105] add unit tests for priority calculation matrix`
 
 ---
@@ -65,7 +65,7 @@ Example:
 Every PR must fill out the repository's `.github/pull_request_template.md`:
 1. **Jira Issue Link:** Direct URL or markdown link: `[TC-XXXX](https://jira.company.internal/browse/TC-XXXX)`.
 2. **Local ID:** An internal or pull-request identifier (e.g., `PR-#`, `DEV-01`, `LOCAL-TC203`) to maintain continuity across offline reviews.
-3. **Scope:** One or more components impacted (`Backend-Api`, `Backend-Worker`, `Domain`, `Frontend`, `DevOps/Infra`, `Docs`).
+3. **Phạm vi:** Liệt kê thành phần chịu ảnh hưởng: API, Worker, Domain, Application, Infrastructure, Database, kiểm thử, quy trình tự động hoặc tài liệu. Giao diện và cấu hình triển khai toàn hệ thống thuộc các kho riêng.
 4. **Summary & Changes:** Clear technical explanation of what was changed and why.
 5. **Test Evidence:** **MANDATORY.** A PR without actual test logs or CLI execution snippets will be immediately blocked and rejected by reviewers.
 
@@ -79,4 +79,4 @@ Every author must provide:
 1. **Command Executed:** Full command string executed locally (e.g., `dotnet test src/backend/ServiceDesk.sln -c Release`).
 2. **Execution Log Snippet:** Actual console output demonstrating that the test suites ran and passed (e.g., total tests, passed, failed, duration).
 3. **Artifact / TRX Attachment:** For integration and E2E tests, attach TRX reports or console logs to the PR comments.
-4. **Screenshot:** Required for any user-facing frontend UI change.
+4. **Thay đổi hợp đồng API:** Ghi rõ khả năng tương thích với ứng dụng gọi API và dẫn kết quả kiểm thử liên quan; không yêu cầu ảnh giao diện trong PR backend.

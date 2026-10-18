@@ -13,7 +13,7 @@ A Jira Issue / Backlog item MUST NOT be pulled into an active sprint or transiti
 * [ ] **Clear User Story & Business Objective:** Explains the persona, action, and expected business value.
 * [ ] **Unambiguous Acceptance Criteria (AC):** Written using Gherkin format (`Given-When-Then`) or clear testable statements.
 * [ ] **Defined Scope & Technical Boundaries:** Explicitly outlines what is in-scope and out-of-scope (no open-ended tasks).
-* [ ] **Identified Dependencies:** Database schemas, third-party APIs, frontend-backend contracts, or prerequisite tickets documented.
+* [ ] **Phụ thuộc đã xác định:** Ghi rõ lược đồ dữ liệu, API bên ngoài, hợp đồng HTTP và các công việc tiên quyết.
 * [ ] **Architecture Alignment:** Verified against ADRs (e.g., Clean Architecture layers, Domain Entity encapsulation).
 * [ ] **Test Strategy Defined:** Identifies required unit, architecture, integration, or smoke tests.
 * [ ] **Security & Data Privacy Evaluated:** Flags any impact on RBAC, credentials, PII, or data storage.
@@ -30,9 +30,8 @@ A task or Pull Request is considered `Done` ONLY when ALL of the following condi
   * 100% of Application unit tests pass (`dotnet test tests/ServiceDesk.Application.Tests`).
   * 100% of Architecture tests pass (`dotnet test tests/ServiceDesk.ArchitectureTests`).
   * 100% of Integration tests pass (`dotnet test tests/ServiceDesk.IntegrationTests`).
-* [ ] **Frontend Quality Passed:**
-  * Clean lint run without errors (`npm run lint`).
-  * Clean production build without type errors (`npm run build`).
+* [ ] **Hợp đồng API được bảo vệ:** Kiểm tra đường dẫn, dữ liệu JSON, phân quyền và phản hồi lỗi khi thay đổi hành vi API.
+* [ ] **Kiểm tra toàn hệ thống khi cần:** Dẫn kết quả kiểm tra từ kho hạ tầng, ghi rõ SHA backend được sử dụng; không yêu cầu mã giao diện trong kho này.
 * [ ] **CI Quality Gate Green:** GitHub Actions workflow completes with exit code `0`.
 * [ ] **No Secrets Committed:** Verified that no tokens, API keys, passwords, or connection strings are checked into Git.
 * [ ] **Test Evidence Attached:** Actual execution logs and commands pasted into the PR description.

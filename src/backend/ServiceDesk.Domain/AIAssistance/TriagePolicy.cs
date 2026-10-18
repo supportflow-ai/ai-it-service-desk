@@ -6,7 +6,7 @@ namespace ServiceDesk.Domain.AIAssistance;
 /// Domain policy for triage guardrails.
 /// Enforces business rules about what AI can and cannot do.
 ///
-/// These rules are enforced at the domain/application layer â€” not just frontend.
+/// Các quy tắc được thực thi tại tầng Domain/Application.
 /// </summary>
 public static class TriagePolicy
 {

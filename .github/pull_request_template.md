@@ -1,74 +1,57 @@
-## 1. Tracking & Metadata
+## 1. Thông tin theo dõi
 
-* **Jira Issue:** [TC-XXXX](https://jira.company.internal/browse/TC-XXXX)
-* **Local ID:** `TC-XXXX` / `PR-XXXX`
-* **Change Type:** [ ] Feature  [ ] Bugfix  [ ] Chore  [ ] Refactor  [ ] Hotfix
-* **Scope / Components Impacted:**
-  * [ ] Backend (API / Worker)
-  * [ ] Domain & Application Layer
-  * [ ] Infrastructure & Database
-  * [ ] Frontend Web App
-  * [ ] DevOps, CI/CD, Docker
+- Công việc Jira: `TC-XXXX`
+- Mã theo dõi: `TC-XXXX` / `PR-XXXX`
+- Loại thay đổi: [ ] Tính năng  [ ] Sửa lỗi  [ ] Bảo trì  [ ] Tái cấu trúc
+- Thành phần chịu ảnh hưởng:
+  - [ ] API / Worker / công cụ Database
+  - [ ] Domain / Application
+  - [ ] Infrastructure / PostgreSQL / MinIO
+  - [ ] Kiểm thử / GitHub Actions / Dockerfile backend
+  - [ ] Tài liệu
 
----
+## 2. Nội dung và lý do thay đổi
 
-## 2. Summary & Context
+<!-- Nêu vấn đề, hành vi sau thay đổi và tác động tới các thành phần liên quan. -->
 
-<!-- Provide a concise explanation: What does this PR change, and why is it needed? -->
+## 3. Bằng chứng kiểm thử
 
-### Key Changes
-* 
-* 
+<!-- Ghi lệnh thực sự đã chạy, kết quả và SHA được kiểm chứng. Không chỉ đánh dấu ô. -->
 
----
+### 3.1 Kiểm tra backend
 
-## 3. Test Evidence (MANDATORY)
-
-<!-- Checkboxes alone are NOT sufficient. Provide the command executed and console output snippet. -->
-
-### 3.1 Backend Verification
-* Command: `dotnet test src/backend/ServiceDesk.sln -c Release`
-* Results:
-```text
-Passed!  - Failed: 0, Passed: X, Skipped: 0, Total: X - ServiceDesk.Domain.Tests.dll
-Passed!  - Failed: 0, Passed: Y, Skipped: 0, Total: Y - ServiceDesk.Application.Tests.dll
-Passed!  - Failed: 0, Passed: Z, Skipped: 0, Total: Z - ServiceDesk.ArchitectureTests.dll
-Passed!  - Failed: 0, Passed: W, Skipped: 0, Total: W - ServiceDesk.IntegrationTests.dll
+```sh
+dotnet restore src/backend/ServiceDesk.sln --locked-mode
+dotnet build src/backend/ServiceDesk.sln -c Release --no-restore
+dotnet test src/backend/ServiceDesk.sln -c Release --no-build --filter "Category!=Integration"
+dotnet test src/backend/ServiceDesk.sln -c Release --no-build --filter "Category=Integration"
 ```
 
-### 3.2 Frontend Verification
-* Lint Command: `npm run lint` (inside `src/frontend/service-desk-web`)
-* Build Command: `npm run build`
-* Results:
-```text
-LINT_EXIT: 0
-BUILD_EXIT: 0
-```
+- SHA đã kiểm chứng:
+- Kết quả, số kiểm thử đạt/thất bại/bỏ qua:
+- Liên kết GitHub Actions hoặc tệp TRX:
+- Kiểm tra không chạy và lý do, nếu có:
 
-### 3.3 Smoke / Integration Verification (if applicable)
-* Script: `deploy/smoke/smoke-test.ps1` or `deploy/smoke/smoke-test.sh`
-* Evidence:
-```text
-<!-- Paste smoke test run log here -->
-```
+### 3.2 Kiểm tra bổ sung theo phạm vi
 
----
+- Hợp đồng HTTP / hợp đồng AI:
+- Migration và bảo toàn dữ liệu:
+- Build image API / Worker / Database:
+- Kiểm tra toàn hệ thống, nếu cần: dẫn kết quả từ kho
+  [supportflow-ai-infra](https://github.com/supportflow-ai/supportflow-ai-infra),
+  ghi rõ SHA backend được ghim. Các lệnh Compose và kiểm tra qua cổng chung nằm ở kho đó.
 
-## 4. Security & Compliance Checklist
+## 4. Kiểm tra bảo mật và dữ liệu
 
-* [ ] No credentials, JWT secrets, passwords, or certificates are committed.
-* [ ] Input validation applied to all public endpoints/inputs.
-* [ ] RBAC / Tenant isolation respected where applicable.
-* [ ] No PII or sensitive data exposed in logs.
+- [ ] Không đưa mật khẩu, token, khóa bí mật hoặc chứng chỉ thật vào Git.
+- [ ] Đầu vào và quyền truy cập được kiểm tra đúng phạm vi thay đổi.
+- [ ] Không ghi dữ liệu nhạy cảm vào nhật ký.
+- [ ] Hợp đồng API và dữ liệu cũ được giữ tương thích, hoặc thay đổi đã được nêu rõ.
 
----
+## 5. Điều kiện hoàn thành
 
-## 5. Definition of Done (DoD) Checklist
-
-* [ ] Jira Issue is linked and matches PR title.
-* [ ] Local ID and Scope are documented.
-* [ ] All unit, architecture, and integration tests pass.
-* [ ] Frontend lint and type-check build pass without warnings/errors.
-* [ ] Actual test evidence (commands + logs) is pasted above.
-* [ ] CI Quality Gate is green (exit code 0).
-* [ ] Reviewed and approved by at least 1 peer / QA engineer.
+- [ ] Công việc Jira, mã theo dõi và phạm vi được ghi rõ.
+- [ ] Các kiểm thử liên quan đạt; đã cung cấp bằng chứng thực tế.
+- [ ] GitHub Actions của backend thành công trên đúng SHA.
+- [ ] Tài liệu liên quan đã cập nhật bằng tiếng Việt.
+- [ ] Có ít nhất một người khác đánh giá và chấp thuận.

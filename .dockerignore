@@ -5,8 +5,6 @@
 **/.idea
 **/bin
 **/obj
-**/node_modules
-**/dist
 **/.env
 **/.env.local
 **/docker-compose*.yml

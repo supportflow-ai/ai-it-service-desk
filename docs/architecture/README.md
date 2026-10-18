@@ -45,11 +45,6 @@ $$\mathbf{Implementation\ Specification\ \&\ Architecture\ Contracts} \ \ > \ \ 
 3. **Data Protection:** Cài đặt bộ lọc truy vấn database chặn hoàn toàn `Internal Note` đối với Requester theo `ARCH-CONTRACT-05`.
 4. **File Storage:** Cấu hình MinIO bucket private và tích hợp sinh Presigned URL (15m TTL) theo `ARCH-CONTRACT-07`.
 
-### 3.2 Đối với Frontend Web Team
-1. **Enum Synchronization:** Khóa enum `TicketStatus` từ 0 đến 8 theo `ARCH-CONTRACT-03`.
-2. **Role-Aware UI:** Sử dụng ma trận phân quyền tại `ARCH-CONTRACT-01` để render có điều kiện các nút hành động (Lifecycle Action Bar) và chuyển tab (Public Comment vs Internal Note) theo `ARCH-CONTRACT-05`.
-3. **Upload Constraints:** Bổ sung validation phía client (max 10MB, định dạng file) khớp với `ARCH-CONTRACT-07`.
-
-### 3.3 Đối với QA & Security Team
+### 3.2 Đối với QA & Security Team
 1. Sử dụng trực tiếp các Negative Test Cases được định nghĩa chi tiết trong từng Contract làm Test Scenario cho đợt Regression Testing.
 2. Kiểm tra chặt chẽ điều kiện nghiệm thu tại `ARCH-CONTRACT-08` trước khi ký duyệt Acceptance cho Sprint 1 (`TC-285`) và Sprint 2 (`TC-326`).
