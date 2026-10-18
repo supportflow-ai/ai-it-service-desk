@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using ServiceDesk.Application.Identity.Interfaces;
 using ServiceDesk.Application.Identity.Models;
 using ServiceDesk.Domain.Identity;
@@ -30,17 +31,35 @@ public sealed class IdentityAccountGateway(UserManager<IdentityUser> users, Appl
     {
         cancellationToken.ThrowIfCancellationRequested();
         if (string.IsNullOrWhiteSpace(email) || string.IsNullOrEmpty(password)) return null;
-        var user = await users.FindByEmailAsync(email);
+        await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+        // Read committed + row lock: every replica observes the latest lockout state after waiting.
+        // UserManager and this query share the scoped context, so discard a previously tracked snapshot.
+        context.ChangeTracker.Clear();
+        var normalizedEmail = users.NormalizeEmail(email);
+        var user = await context.Users.FromSqlInterpolated(
+            $"SELECT * FROM public.\"AspNetUsers\" WHERE \"NormalizedEmail\" = {normalizedEmail} FOR UPDATE")
+            .SingleOrDefaultAsync(cancellationToken);
         if (user is null || await users.IsLockedOutAsync(user)) return null;
         if (!await users.CheckPasswordAsync(user, password))
         {
             var failed = await users.AccessFailedAsync(user);
-            if (!failed.Succeeded) context.ChangeTracker.Clear();
+            EnsureSecurityWrite(failed);
+            cancellationToken.ThrowIfCancellationRequested();
+            await transaction.CommitAsync(cancellationToken);
             return null;
         }
         var reset = await users.ResetAccessFailedCountAsync(user);
-        if (!reset.Succeeded || await users.IsLockedOutAsync(user)) return null;
-        return await ToUserAsync(user);
+        EnsureSecurityWrite(reset);
+        if (await users.IsLockedOutAsync(user)) return null;
+        var result = await ToUserAsync(user);
+        cancellationToken.ThrowIfCancellationRequested();
+        await transaction.CommitAsync(cancellationToken);
+        return result;
+    }
+
+    private static void EnsureSecurityWrite(IdentityResult result)
+    {
+        if (!result.Succeeded) throw new InvalidOperationException("identity_security_write_failed");
     }
 
     public async Task<UserInfo?> FindByIdAsync(string userId, CancellationToken cancellationToken)
