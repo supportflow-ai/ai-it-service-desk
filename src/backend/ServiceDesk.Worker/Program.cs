@@ -1,11 +1,12 @@
 using ServiceDesk.Application;
+using ServiceDesk.Application.Common;
+using ServiceDesk.Application.Common.Interfaces;
 using ServiceDesk.Infrastructure;
-
 var builder = Host.CreateApplicationBuilder(args);
-
-// --- Layer registration (same as API, minus HTTP-specific services) ---
 builder.Services.AddApplication();
-builder.Services.AddInfrastructure(builder.Configuration);
-
+builder.Services.AddPersistence(builder.Configuration);
+builder.Services.AddClock();
+builder.Services.AddAiAdapters();
+builder.Services.AddScoped<ICurrentUser, AnonymousCurrentUser>();
 var host = builder.Build();
 host.Run();

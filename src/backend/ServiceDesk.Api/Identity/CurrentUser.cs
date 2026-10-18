@@ -2,7 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using ServiceDesk.Application.Common.Interfaces;
 
-namespace ServiceDesk.Infrastructure.Identity;
+namespace ServiceDesk.Api.Identity;
 
 /// <summary>
 /// Reads the current user from the HTTP context claims.

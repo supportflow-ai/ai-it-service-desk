@@ -10,6 +10,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using ServiceDesk.Infrastructure.Identity;
+using ServiceDesk.Infrastructure.Clock;
+using ServiceDesk.Application.Identity.Models;
+using ServiceDesk.Api.Identity;
 using ServiceDesk.Infrastructure.Persistence;
 using Testcontainers.PostgreSql;
 using Xunit;
@@ -18,7 +21,7 @@ namespace ServiceDesk.IntegrationTests;
 
 /// <summary>
 /// Two independent real API hosts, one PostgreSQL database. No fake ticket/idempotency service.
-/// Production migrations and IdentityDataSeeder run on both hosts.
+/// Database is provisioned explicitly before starting either host.
 /// JWT is validated by the production API middleware with isolated fixture keys.
 /// </summary>
 public sealed class TicketIdempotencyPostgresFixture : IAsyncLifetime
@@ -38,7 +41,7 @@ public sealed class TicketIdempotencyPostgresFixture : IAsyncLifetime
     {
         await _postgres.StartAsync();
         await using var context = CreateContext();
-        await context.Database.MigrateAsync();
+        await TestDatabase.PrepareAsync(ConnectionString, demo: false);
         First = new Factory(ConnectionString);
         Second = new Factory(ConnectionString);
     }

@@ -12,6 +12,9 @@ using ServiceDesk.Application.Ticketing.Commands;
 using ServiceDesk.Application.Ticketing.Dtos;
 using ServiceDesk.Application.Ticketing.Idempotency;
 using ServiceDesk.Infrastructure.Identity;
+using ServiceDesk.Infrastructure.Clock;
+using ServiceDesk.Application.Identity.Models;
+using ServiceDesk.Api.Identity;
 using ServiceDesk.Infrastructure.Options;
 using Xunit;
 
@@ -29,7 +32,7 @@ public sealed class TicketIdempotencyPostgresTests : IClassFixture<TicketIdempot
     {
         SecretKey = TicketIdempotencyPostgresFixture.Secret, Issuer = "ServiceDesk",
         Audience = "ServiceDeskClient", ExpiryMinutes = 60
-    })).GenerateToken(new IdentityUser { Id = user.ToString(), Email = "requester@test.invalid" }, ["Requester"]);
+    }), new SystemClock()).GenerateToken(new UserInfo { UserId = user.ToString(), Email = "requester@test.invalid", Roles = ["Requester"] });
 
     private HttpClient Client(bool second = false) =>
         (second ? _fixture.Second! : _fixture.First!).CreateClient();
@@ -341,8 +344,8 @@ public sealed class TicketIdempotencyPostgresTests : IClassFixture<TicketIdempot
             Audience = invalidPart == "audience" ? "different-test-audience" : "ServiceDeskClient",
             ExpiryMinutes = invalidPart == "expired" ? -60 : 60
         };
-        var token = new JwtTokenGenerator(Options.Create(options)).GenerateToken(
-            new IdentityUser { Id = user.ToString(), Email = "requester@test.invalid" }, ["Requester"]);
+        var token = new JwtTokenGenerator(Options.Create(options), new SystemClock()).GenerateToken(
+            new UserInfo { UserId = user.ToString(), Email = "requester@test.invalid", Roles = ["Requester"] });
         using var secondHost = Client(second: true);
         using var request = new HttpRequestMessage(HttpMethod.Post, "/api/tickets");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);

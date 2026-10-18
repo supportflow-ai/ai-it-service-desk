@@ -4,7 +4,7 @@ using Microsoft.Extensions.Hosting;
 using ServiceDesk.Infrastructure;
 using Xunit;
 
-namespace ServiceDesk.Application.Tests;
+namespace ServiceDesk.IntegrationTests;
 
 public sealed class WorkerRegistrationTests
 {

@@ -6,13 +6,13 @@ namespace ServiceDesk.Domain.AIAssistance;
 /// Domain policy for triage guardrails.
 /// Enforces business rules about what AI can and cannot do.
 ///
-/// These rules are enforced at the domain/application layer — not just frontend.
+/// These rules are enforced at the domain/application layer â€” not just frontend.
 /// </summary>
 public static class TriagePolicy
 {
     /// <summary>
     /// Categories that always require manual human triage.
-    /// AI suggestions for these categories are informational only — never auto-applied.
+    /// AI suggestions for these categories are informational only â€” never auto-applied.
     /// </summary>
     private static readonly HashSet<TicketCategory> ManualTriageCategories = [TicketCategory.SEC];
 
@@ -30,7 +30,7 @@ public static class TriagePolicy
         if (string.IsNullOrWhiteSpace(categoryCode))
             return false;
 
-        return Enum.TryParse<TicketCategory>(categoryCode, ignoreCase: true, out _);
+        return Enum.GetNames<TicketCategory>().Contains(categoryCode.Trim(), StringComparer.OrdinalIgnoreCase);
     }
 
     /// <summary>
@@ -42,7 +42,7 @@ public static class TriagePolicy
         if (string.IsNullOrWhiteSpace(categoryCode))
             return null;
 
-        return Enum.TryParse<TicketCategory>(categoryCode, ignoreCase: true, out var result)
+        return Enum.GetNames<TicketCategory>().Contains(categoryCode.Trim(), StringComparer.OrdinalIgnoreCase) && Enum.TryParse<TicketCategory>(categoryCode, ignoreCase: true, out var result)
             ? result
             : null;
     }
@@ -55,7 +55,7 @@ public static class TriagePolicy
         if (string.IsNullOrWhiteSpace(value))
             return null;
 
-        return Enum.TryParse<Impact>(value, ignoreCase: true, out var result) ? result : null;
+        return Enum.GetNames<Impact>().Contains(value.Trim(), StringComparer.OrdinalIgnoreCase) && Enum.TryParse<Impact>(value, ignoreCase: true, out var result) ? result : null;
     }
 
     /// <summary>
@@ -66,7 +66,7 @@ public static class TriagePolicy
         if (string.IsNullOrWhiteSpace(value))
             return null;
 
-        return Enum.TryParse<Urgency>(value, ignoreCase: true, out var result) ? result : null;
+        return Enum.GetNames<Urgency>().Contains(value.Trim(), StringComparer.OrdinalIgnoreCase) && Enum.TryParse<Urgency>(value, ignoreCase: true, out var result) ? result : null;
     }
 
     /// <summary>

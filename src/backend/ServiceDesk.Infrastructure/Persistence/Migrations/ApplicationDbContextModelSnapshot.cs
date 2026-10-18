@@ -258,7 +258,7 @@ namespace ServiceDesk.Infrastructure.Persistence.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
                         .HasColumnName("ticket_number")
-                        .HasDefaultValueSql("'IT-' || TO_CHAR(NOW(), 'YYYY') || '-' || LPAD(nextval('ticket_number_seq')::TEXT, 4, '0')");
+                        .HasDefaultValueSql("public.next_ticket_number()");
 
                     b.Property<string>("Title")
                         .IsRequired()

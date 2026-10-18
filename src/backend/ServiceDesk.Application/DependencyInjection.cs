@@ -1,4 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
+using ServiceDesk.Application.Identity;
+using ServiceDesk.Application.Identity.Interfaces;
+using ServiceDesk.Application.Ticketing;
+using ServiceDesk.Application.Ticketing.Interfaces;
 
 namespace ServiceDesk.Application;
 
@@ -10,8 +14,8 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
-        // Application-level services will be registered here as they are created.
-        // Examples (future): MediatR handlers, validators, etc.
+        services.AddScoped<ITicketService, TicketService>();
+        services.AddScoped<IAuthService, AuthService>();
 
         return services;
     }

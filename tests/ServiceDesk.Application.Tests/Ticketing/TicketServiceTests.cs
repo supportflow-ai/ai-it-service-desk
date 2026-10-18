@@ -1,265 +1,115 @@
-using FluentAssertions;
-using Microsoft.Data.Sqlite;
-using Microsoft.EntityFrameworkCore;
 using Moq;
 using ServiceDesk.Application.Common.Interfaces;
 using ServiceDesk.Application.Ticketing;
 using ServiceDesk.Application.Ticketing.Commands;
+using ServiceDesk.Application.Ticketing.Dtos;
+using ServiceDesk.Application.Ticketing.Idempotency;
+using ServiceDesk.Application.Ticketing.Interfaces;
 using ServiceDesk.Domain.Identity;
 using ServiceDesk.Domain.Ticketing;
-using ServiceDesk.Infrastructure.Persistence;
 using Xunit;
 
 namespace ServiceDesk.Application.Tests.Ticketing;
 
-public class TicketServiceTests : IDisposable
+public sealed class TicketServiceTests
 {
-    private readonly SqliteConnection _connection;
-    private readonly ApplicationDbContext _context;
+    private readonly Mock<ITicketWriter> _writer = new(MockBehavior.Strict);
+    private readonly Mock<ITicketQueries> _queries = new(MockBehavior.Strict);
+    private readonly Mock<ICurrentUser> _user = new();
+    private readonly Mock<IClock> _clock = new();
+    private readonly Guid _actor = Guid.NewGuid();
+    private readonly DateTimeOffset _now = new(2026, 10, 18, 1, 0, 0, TimeSpan.Zero);
     private readonly TicketService _service;
-    private readonly Mock<ICurrentUser> _currentUserMock;
+    private static readonly CreateTicketCommand Valid = new("  VPN issue  ", "  Cannot connect to the corporate VPN.  ", "VPN");
 
     public TicketServiceTests()
     {
-        // Setup in-memory SQLite
-        _connection = new SqliteConnection("DataSource=:memory:");
-        _connection.Open();
+        _user.SetupGet(u => u.IsAuthenticated).Returns(true);
+        _user.SetupGet(u => u.UserId).Returns(_actor.ToString());
+        _user.SetupGet(u => u.Roles).Returns([RoleNames.Requester]);
+        _clock.SetupGet(c => c.UtcNow).Returns(_now);
+        _service = new(_writer.Object, _queries.Object, _user.Object, _clock.Object);
+    }
 
-        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
-            .UseSqlite(_connection)
-            .Options;
+    [Theory]
+    [InlineData(null)]
+    [InlineData("sample-key")]
+    public async Task Create_NormalizesDomainInputAndDelegatesOneAtomicOperation(string? key)
+    {
+        Ticket? captured = null;
+        CreateTicketFingerprint? fingerprint = null;
+        _writer.Setup(w => w.CreateAsync(It.IsAny<Ticket>(), It.IsAny<CreateTicketFingerprint?>(), It.IsAny<CancellationToken>()))
+            .Callback<Ticket, CreateTicketFingerprint?, CancellationToken>((t, f, _) => { captured = t; fingerprint = f; })
+            .ReturnsAsync((Ticket t, CreateTicketFingerprint? _, CancellationToken _) =>
+                new TicketDto(t.Id, "IT-2026-0001", t.Title, t.Description, t.CategoryId, (int)t.Status, t.CreatedAt, t.RequesterDepartmentId));
+        var result = await _service.CreateTicketAsync(Valid, key);
+        Assert.Equal(_actor, captured!.RequesterId);
+        Assert.Equal(_now.UtcDateTime, captured.CreatedAt);
+        Assert.Equal("VPN issue", result.Title);
+        Assert.Equal("Cannot connect to the corporate VPN.", result.Description);
+        Assert.Equal((int)TicketStatus.Submitted, result.Status);
+        Assert.NotEqual(Guid.Empty, result.Id);
+        Assert.Equal(key is not null, fingerprint is not null);
+        if (key is not null) Assert.Equal(CreateTicketFingerprint.Create(_actor, key, Valid), fingerprint);
+        _writer.VerifyAll();
+        _writer.VerifyNoOtherCalls();
+    }
 
-        _context = new ApplicationDbContext(options);
-        _context.Database.EnsureCreated();
-
-        // Configure TicketNumber generation trigger for SQLite
-        _context.Database.ExecuteSqlRaw(@"
-            CREATE TRIGGER IF NOT EXISTS trg_ticket_number
-            AFTER INSERT ON tickets
-            FOR EACH ROW
-            WHEN NEW.ticket_number = '' OR NEW.ticket_number IS NULL
-            BEGIN
-                UPDATE tickets
-                SET ticket_number = 'IT-' || strftime('%Y', 'now') || '-' || substr('0000' || NEW.rowid, -4)
-                WHERE Id = NEW.Id;
-            END;
-        ");
-
-        _currentUserMock = new Mock<ICurrentUser>();
-        _service = new TicketService(_context, _currentUserMock.Object);
+    [Theory]
+    [InlineData("", "Valid description", "NET")]
+    [InlineData("   ", "Valid description", "NET")]
+    [InlineData("Valid", "short", "NET")]
+    [InlineData("Valid", "", "NET")]
+    [InlineData("Valid", "Valid description", "INVALID")]
+    public async Task InvalidDomainInput_DoesNotReachPersistence(string title, string description, string category)
+    {
+        await Assert.ThrowsAsync<ArgumentException>(() => _service.CreateTicketAsync(new(title, description, category)));
+        _writer.VerifyNoOtherCalls();
     }
 
     [Fact]
-    public async Task CreateTicketAsync_ValidInput_ReturnsTicketDtoWithTicketNumber()
+    public async Task TitleOver100Characters_IsRejectedBeforePersistence() =>
+        await Assert.ThrowsAsync<ArgumentException>(() => _service.CreateTicketAsync(Valid with { Title = new string('x', 101) }));
+
+    [Theory]
+    [InlineData(0, 10)] [InlineData(1, 0)] [InlineData(1, 101)] [InlineData(int.MaxValue, 100)]
+    public async Task InvalidPaging_IsRejected(int page, int pageSize)
     {
-        var command = new CreateTicketCommand(
-            Title: "Test ticket",
-            Description: "Valid description with more than ten characters",
-            CategoryId: TicketCategories.ACC
-        );
-        var requesterId = Guid.NewGuid();
-
-        var result = await _service.CreateTicketAsync(command, requesterId);
-
-        result.Should().NotBeNull();
-        result.Id.Should().NotBeEmpty();
-        result.TicketNumber.Should().MatchRegex(@"^IT-\d{4}-\d{4}$");
-        result.Title.Should().Be("Test ticket");
-        result.Description.Should().Be("Valid description with more than ten characters");
-        result.CategoryId.Should().Be(TicketCategories.ACC);
-        result.Status.Should().Be((int)TicketStatus.Submitted);
+        await Assert.ThrowsAsync<ArgumentException>(() => _service.GetMyTicketsAsync(page, pageSize));
+        _queries.VerifyNoOtherCalls();
     }
 
     [Fact]
-    public async Task CreateTicketAsync_EmptyTitle_ThrowsArgumentException()
+    public async Task List_UsesAuthenticatedActorAndPreservesPagedResult()
     {
-        var command = new CreateTicketCommand(
-            Title: "",
-            Description: "Valid description",
-            CategoryId: TicketCategories.NET
-        );
-        var requesterId = Guid.NewGuid();
-
-        var act = async () => await _service.CreateTicketAsync(command, requesterId);
-
-        await act.Should().ThrowAsync<ArgumentException>()
-            .WithMessage("Title is required");
+        var result = new PagedTicketResult([], 2, 5, 12);
+        _queries.Setup(q => q.GetForRequesterAsync(_actor, 2, 5, It.IsAny<CancellationToken>())).ReturnsAsync(result);
+        Assert.Same(result, await _service.GetMyTicketsAsync(2, 5));
+        _queries.VerifyAll();
     }
 
-    [Fact]
-    public async Task CreateTicketAsync_TitleTooLong_ThrowsArgumentException()
+    [Theory]
+    [InlineData(RoleNames.Requester, false)] [InlineData(RoleNames.Agent, true)] [InlineData(RoleNames.Admin, true)]
+    public async Task Detail_RestrictsRequesterAndAllowsAgentAdmin(string role, bool broad)
     {
-        var command = new CreateTicketCommand(
-            Title: new string('a', 101),
-            Description: "Valid description",
-            CategoryId: TicketCategories.SW
-        );
-        var requesterId = Guid.NewGuid();
-
-        var act = async () => await _service.CreateTicketAsync(command, requesterId);
-
-        await act.Should().ThrowAsync<ArgumentException>()
-            .WithMessage("Title must not exceed 100 characters");
+        _user.Setup(u => u.IsInRole(role)).Returns(true);
+        var id = Guid.NewGuid();
+        _queries.Setup(q => q.GetByIdAsync(id, broad ? null : _actor, It.IsAny<CancellationToken>())).ReturnsAsync((TicketDto?)null);
+        Assert.Null(await _service.GetTicketByIdAsync(id));
+        _queries.VerifyAll();
     }
 
-    [Fact]
-    public async Task CreateTicketAsync_DescriptionTooShort_ThrowsArgumentException()
+    [Theory]
+    [InlineData("anonymous")] [InlineData("missing")] [InlineData("invalid")] [InlineData("empty")] [InlineData("no-role")]
+    public async Task InvalidActor_CannotReachAnyUseCase(string mode)
     {
-        var command = new CreateTicketCommand(
-            Title: "Valid title",
-            Description: "Too short",
-            CategoryId: TicketCategories.HW
-        );
-        var requesterId = Guid.NewGuid();
-
-        var act = async () => await _service.CreateTicketAsync(command, requesterId);
-
-        await act.Should().ThrowAsync<ArgumentException>()
-            .WithMessage("Description must be at least 10 characters");
-    }
-
-    [Fact]
-    public async Task CreateTicketAsync_InvalidCategoryId_ThrowsArgumentException()
-    {
-        var command = new CreateTicketCommand(
-            Title: "Valid title",
-            Description: "Valid description with enough characters",
-            CategoryId: "INVALID"
-        );
-        var requesterId = Guid.NewGuid();
-
-        var act = async () => await _service.CreateTicketAsync(command, requesterId);
-
-        await act.Should().ThrowAsync<ArgumentException>()
-            .WithMessage("Invalid category");
-    }
-
-    [Fact]
-    public async Task CreateTicketAsync_WhitespaceTitleAndDescription_Trimmed()
-    {
-        var command = new CreateTicketCommand(
-            Title: "  Whitespace title  ",
-            Description: "  Whitespace description with sufficient length  ",
-            CategoryId: TicketCategories.MAIL
-        );
-        var requesterId = Guid.NewGuid();
-
-        var result = await _service.CreateTicketAsync(command, requesterId);
-
-        result.Title.Should().Be("Whitespace title");
-        result.Description.Should().Be("Whitespace description with sufficient length");
-    }
-
-    [Fact]
-    public async Task GetTicketByIdAsync_TicketExistsAndMatchesRequester_ReturnsTicketDto()
-    {
-        var command = new CreateTicketCommand(
-            Title: "Get ticket test",
-            Description: "Valid description for get ticket test",
-            CategoryId: TicketCategories.NET
-        );
-        var requesterId = Guid.NewGuid();
-        var created = await _service.CreateTicketAsync(command, requesterId);
-
-        var result = await _service.GetTicketByIdAsync(created.Id, requesterId);
-
-        result.Should().NotBeNull();
-        result!.Id.Should().Be(created.Id);
-        result.TicketNumber.Should().Be(created.TicketNumber);
-        result.Title.Should().Be("Get ticket test");
-        result.Description.Should().Be("Valid description for get ticket test");
-    }
-
-    [Fact]
-    public async Task GetTicketByIdAsync_TicketNotFound_ReturnsNull()
-    {
-        var result = await _service.GetTicketByIdAsync(Guid.NewGuid(), Guid.NewGuid());
-
-        result.Should().BeNull();
-    }
-
-    [Fact]
-    public async Task GetTicketByIdAsync_TicketBelongsToDifferentRequester_ReturnsNull()
-    {
-        var command = new CreateTicketCommand(
-            Title: "Private ticket",
-            Description: "Valid description for private ticket",
-            CategoryId: TicketCategories.SW
-        );
-        var ownerId = Guid.NewGuid();
-        var created = await _service.CreateTicketAsync(command, ownerId);
-
-        var differentRequesterId = Guid.NewGuid();
-        var result = await _service.GetTicketByIdAsync(created.Id, differentRequesterId);
-
-        result.Should().BeNull();
-    }
-
-    [Fact]
-    public async Task GetTicketByIdAsync_UserIsAdmin_ReturnsTicketEvenIfDifferentRequester()
-    {
-        var command = new CreateTicketCommand(
-            Title: "Admin view ticket",
-            Description: "Valid description for admin view ticket",
-            CategoryId: TicketCategories.HW
-        );
-        var ownerId = Guid.NewGuid();
-        var created = await _service.CreateTicketAsync(command, ownerId);
-
-        _currentUserMock.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(true);
-
-        var differentRequesterId = Guid.NewGuid();
-        var result = await _service.GetTicketByIdAsync(created.Id, differentRequesterId);
-
-        result.Should().NotBeNull();
-        result!.Id.Should().Be(created.Id);
-    }
-
-    [Fact]
-    public async Task GetTicketsForRequesterAsync_ReturnsOnlyOwnedTicketsInStablePages()
-    {
-        var requesterId = Guid.NewGuid();
-        var otherRequesterId = Guid.NewGuid();
-        var createdAt = new DateTime(2026, 10, 14, 12, 0, 0, DateTimeKind.Utc);
-        var firstOwnedTicket = Ticket.Create(
-            requesterId,
-            "First owned ticket",
-            "Valid description for requester ticket.",
-            TicketCategories.NET,
-            createdAt);
-        var secondOwnedTicket = Ticket.Create(
-            requesterId,
-            "Second owned ticket",
-            "Valid description for requester ticket.",
-            TicketCategories.NET,
-            createdAt);
-        var otherRequesterTicket = Ticket.Create(
-            otherRequesterId,
-            "Other requester ticket",
-            "Valid description for another requester.",
-            TicketCategories.NET,
-            createdAt.AddMinutes(1));
-
-        _context.Tickets.AddRange(firstOwnedTicket, secondOwnedTicket, otherRequesterTicket);
-        await _context.SaveChangesAsync();
-
-        var firstPage = await _service.GetTicketsForRequesterAsync(requesterId, page: 1, pageSize: 1);
-        var secondPage = await _service.GetTicketsForRequesterAsync(requesterId, page: 2, pageSize: 1);
-
-        var expectedIds = new[] { firstOwnedTicket.Id, secondOwnedTicket.Id }
-            .OrderByDescending(id => id)
-            .ToArray();
-
-        firstPage.TotalCount.Should().Be(2);
-        firstPage.Items.Should().ContainSingle();
-        firstPage.Items[0].Id.Should().Be(expectedIds[0]);
-        secondPage.Items.Should().ContainSingle();
-        secondPage.Items[0].Id.Should().Be(expectedIds[1]);
-    }
-
-    public void Dispose()
-    {
-        _context.Dispose();
-        _connection.Dispose();
+        _user.SetupGet(u => u.IsAuthenticated).Returns(mode != "anonymous");
+        _user.SetupGet(u => u.UserId).Returns(mode switch { "missing" => null, "invalid" => "bad", "empty" => Guid.Empty.ToString(), _ => _actor.ToString() });
+        if (mode == "no-role") _user.SetupGet(u => u.Roles).Returns([]);
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _service.CreateTicketAsync(Valid));
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _service.CreateTicketAsync(Valid, "key"));
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _service.GetMyTicketsAsync());
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _service.GetTicketByIdAsync(Guid.NewGuid()));
+        _writer.VerifyNoOtherCalls(); _queries.VerifyNoOtherCalls();
     }
 }

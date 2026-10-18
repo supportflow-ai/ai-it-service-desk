@@ -93,3 +93,6 @@ efbundle.exe
 # Context pack (planning docs, not source)
 # ==========================================
 ai-it-service-desk-claude-context-pack/
+
+.venv/
+__pycache__/

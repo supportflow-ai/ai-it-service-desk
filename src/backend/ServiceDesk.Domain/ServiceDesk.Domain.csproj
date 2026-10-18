@@ -4,6 +4,6 @@
     <RootNamespace>ServiceDesk.Domain</RootNamespace>
   </PropertyGroup>
 
-  <!-- Domain has ZERO dependencies — no NuGet packages -->
+  <!-- Domain has ZERO dependencies â€” no NuGet packages -->
 
 </Project>

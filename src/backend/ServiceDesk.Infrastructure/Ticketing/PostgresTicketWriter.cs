@@ -2,87 +2,29 @@ using System.Data;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
-using ServiceDesk.Application.Common.Interfaces;
-using ServiceDesk.Application.Ticketing.Commands;
 using ServiceDesk.Application.Ticketing.Dtos;
 using ServiceDesk.Application.Ticketing.Idempotency;
 using ServiceDesk.Application.Ticketing.Interfaces;
-using ServiceDesk.Domain.Identity;
 using ServiceDesk.Domain.Ticketing;
 using ServiceDesk.Infrastructure.Persistence;
-using ServiceDesk.Infrastructure.Ticketing;
 
-namespace ServiceDesk.Application.Ticketing;
+namespace ServiceDesk.Infrastructure.Ticketing;
 
-public class TicketService : ITicketService
+public sealed class PostgresTicketWriter(ApplicationDbContext context) : ITicketWriter
 {
-    private readonly ApplicationDbContext _context;
-    private readonly ICurrentUser _currentUser;
+    private readonly ApplicationDbContext _context = context;
     public static readonly TimeSpan IdempotencyLifetime = TimeSpan.FromMinutes(10);
 
-    public TicketService(ApplicationDbContext context, ICurrentUser currentUser)
+    public async Task<TicketDto> CreateAsync(Ticket ticket, CreateTicketFingerprint? fingerprint, CancellationToken cancellationToken)
     {
-        _context = context;
-        _currentUser = currentUser;
-    }
-
-    public async Task<TicketDto> CreateTicketAsync(CreateTicketCommand command, Guid requesterId, CancellationToken cancellationToken = default)
-    {
-        var ticket = NewTicket(command, requesterId);
-        _context.Tickets.Add(ticket);
-        await _context.SaveChangesAsync(cancellationToken);
-        await _context.Entry(ticket).ReloadAsync(cancellationToken);
-        return ToDto(ticket);
-    }
-
-    public async Task<PagedTicketResult> GetTicketsForRequesterAsync(
-        Guid requesterId,
-        int page,
-        int pageSize,
-        CancellationToken cancellationToken = default)
-    {
-        var query = _context.Tickets
-            .AsNoTracking()
-            .Where(ticket => ticket.RequesterId == requesterId);
-
-        var totalCount = await query.CountAsync(cancellationToken);
-        var tickets = await query
-            .OrderByDescending(ticket => ticket.CreatedAt)
-            .ThenByDescending(ticket => ticket.Id)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .Select(ticket => new TicketDto(
-                ticket.Id,
-                ticket.TicketNumber,
-                ticket.Title,
-                ticket.Description,
-                ticket.CategoryId,
-                (int)ticket.Status,
-                ticket.CreatedAt,
-                ticket.RequesterDepartmentId))
-            .ToListAsync(cancellationToken);
-
-        return new PagedTicketResult(tickets, page, pageSize, totalCount);
-    }
-
-    public async Task<TicketDto> CreateTicketIdempotentlyAsync(
-        CreateTicketCommand command, Guid requesterId, string idempotencyKey, CancellationToken cancellationToken = default)
-    {
-        // Do not trust an arbitrary requester ID supplied by a caller of this use case.
-        if (!_currentUser.IsAuthenticated ||
-            !Guid.TryParse(_currentUser.UserId, out var authenticatedId) || authenticatedId != requesterId)
+        if (fingerprint is null)
         {
-            throw new UnauthorizedAccessException("Authenticated requester identity is required.");
+            _context.Tickets.Add(ticket);
+            await _context.SaveChangesAsync(cancellationToken);
+            await _context.Entry(ticket).ReloadAsync(cancellationToken);
+            return TicketProjection.ToDto(ticket);
         }
-
-        var createdTicket = NewTicket(command, requesterId);
-        var fingerprint = CreateTicketFingerprint.Create(requesterId, idempotencyKey, command);
-        if (!_context.Database.IsNpgsql())
-        {
-            // No process-local/cache fallback: every production writer must share the database lock.
-            throw new NotSupportedException("Persistent ticket idempotency requires PostgreSQL.");
-        }
-
+        var requesterId = ticket.RequesterId;
         await using var transaction = await _context.Database.BeginTransactionAsync(
             IsolationLevel.ReadCommitted, cancellationToken);
         try
@@ -117,10 +59,10 @@ public class TicketService : ITicketService
                 return response;
             }
 
-            _context.Tickets.Add(createdTicket);
+            _context.Tickets.Add(ticket);
             await _context.SaveChangesAsync(cancellationToken);
-            await _context.Entry(createdTicket).ReloadAsync(cancellationToken);
-            var createdResponse = ToDto(createdTicket);
+            await _context.Entry(ticket).ReloadAsync(cancellationToken);
+            var createdResponse = TicketProjection.ToDto(ticket);
 
             var completedAt = await DatabaseUtcNowAsync(cancellationToken);
             if (receipt is null)
@@ -138,7 +80,7 @@ public class TicketService : ITicketService
 
             // An expired key starts a new generation while holding the same scope lock.
             receipt.PayloadHash = fingerprint.PayloadHash;
-            receipt.TicketId = createdTicket.Id;
+            receipt.TicketId = ticket.Id;
             receipt.ResponseJson = JsonSerializer.Serialize(createdResponse);
             receipt.CreatedAt = completedAt;
             receipt.ExpiresAt = completedAt.Add(IdempotencyLifetime);
@@ -159,22 +101,5 @@ public class TicketService : ITicketService
         _context.Database.SqlQuery<DateTime>($"SELECT clock_timestamp() AS \"Value\"")
             .SingleAsync(cancellationToken);
 
-    private static Ticket NewTicket(CreateTicketCommand command, Guid requesterId)
-    {
-        ArgumentNullException.ThrowIfNull(command);
-        return Ticket.Create(requesterId, command.Title, command.Description, command.CategoryId, DateTime.UtcNow);
-    }
 
-    private static TicketDto ToDto(Ticket ticket) => new(
-        ticket.Id, ticket.TicketNumber, ticket.Title, ticket.Description, ticket.CategoryId,
-        (int)ticket.Status, ticket.CreatedAt, ticket.RequesterDepartmentId);
-
-    public async Task<TicketDto?> GetTicketByIdAsync(Guid id, Guid requesterId, CancellationToken cancellationToken = default)
-    {
-        var query = _context.Tickets.AsNoTracking().Where(ticket => ticket.Id == id);
-        if (_currentUser?.IsInRole(RoleNames.Admin) != true && _currentUser?.IsInRole(RoleNames.Agent) != true)
-            query = query.Where(ticket => ticket.RequesterId == requesterId);
-        var ticket = await query.FirstOrDefaultAsync(cancellationToken);
-        return ticket is null ? null : ToDto(ticket);
-    }
 }

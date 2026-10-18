@@ -21,6 +21,9 @@ using ServiceDesk.Application.Ticketing.Idempotency;
 using ServiceDesk.Application.Ticketing.Interfaces;
 using ServiceDesk.Domain.Identity;
 using ServiceDesk.Infrastructure.Identity;
+using ServiceDesk.Infrastructure.Clock;
+using ServiceDesk.Application.Identity.Models;
+using ServiceDesk.Api.Identity;
 using ServiceDesk.Infrastructure.Options;
 using Xunit;
 
@@ -66,7 +69,7 @@ public class TicketIdempotencyEndpointTests
         new JwtTokenGenerator(Options.Create(new JwtOptions
         {
             SecretKey = Secret, Issuer = "ServiceDesk", Audience = "ServiceDeskClient", ExpiryMinutes = minutes
-        })).GenerateToken(new IdentityUser { Id = requester.ToString(), Email = "test@example.com" }, [role]);
+        }), new SystemClock()).GenerateToken(new UserInfo { UserId = requester.ToString(), Email = "test@example.com", Roles = [role] });
 
     [Theory]
     [InlineData("missing")]
@@ -94,7 +97,7 @@ public class TicketIdempotencyEndpointTests
         var requester = Guid.NewGuid();
         var dto = new TicketDto(Guid.NewGuid(), "IT-2026-0001", Payload.Title, Payload.Description, "NET", 1, DateTime.UtcNow);
         var service = new Mock<ITicketService>(MockBehavior.Strict);
-        service.Setup(s => s.CreateTicketIdempotentlyAsync(Payload, requester, "key", It.IsAny<CancellationToken>()))
+        service.Setup(s => s.CreateTicketAsync(Payload, "key", It.IsAny<CancellationToken>()))
             .ReturnsAsync(dto);
         await using var app = await CreateAppAsync(service.Object);
         using var client = app.GetTestClient();
@@ -114,7 +117,7 @@ public class TicketIdempotencyEndpointTests
     {
         var requester = Guid.NewGuid();
         var service = new Mock<ITicketService>(MockBehavior.Strict);
-        service.Setup(s => s.CreateTicketIdempotentlyAsync(Payload, requester, "key", It.IsAny<CancellationToken>()))
+        service.Setup(s => s.CreateTicketAsync(Payload, "key", It.IsAny<CancellationToken>()))
             .ThrowsAsync(inProgress
                 ? new IdempotencyInProgressException(new Exception("test"))
                 : new IdempotencyConflictException());
