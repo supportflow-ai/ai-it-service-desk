@@ -1,6 +1,6 @@
 # Environment ownership after repository separation
 
-Whole-system Compose, gateway NGINX, Jenkins infrastructure and smoke tests are owned by
+Whole-system Compose, gateway NGINX and GitHub Actions smoke tests are owned by
 https://github.com/supportflow-ai/supportflow-ai-infra.
 
 Use that repository for local stack setup. Backend build/test commands are in the root

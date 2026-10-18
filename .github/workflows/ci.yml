@@ -7,7 +7,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: backend-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   backend:
@@ -21,12 +21,17 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: dotnet restore src/backend/ServiceDesk.sln --locked-mode
-      - run: dotnet build src/backend/ServiceDesk.sln -c Release --no-restore
-      - run: dotnet test src/backend/ServiceDesk.sln -c Release --no-build --filter "Category!=Integration" --logger "trx;LogFileName=unit.trx"
-      - run: dotnet test src/backend/ServiceDesk.sln -c Release --no-build --filter "Category=Integration" --logger "trx;LogFileName=integration.trx"
+      - name: Restore locked dependencies
+        run: dotnet restore src/backend/ServiceDesk.sln --locked-mode
+      - name: Build backend
+        run: dotnet build src/backend/ServiceDesk.sln -c Release --no-restore
+      - name: Unit, architecture and offline compatibility tests
+        run: dotnet test src/backend/ServiceDesk.sln -c Release --no-build --filter "Category!=Integration" --logger "trx;LogFileName=unit.trx"
+      - name: PostgreSQL integration tests
+        run: dotnet test src/backend/ServiceDesk.sln -c Release --no-build --filter "Category=Integration" --logger "trx;LogFileName=integration.trx"
       - run: python -m pip install -r contracts/requirements.txt
-      - run: python scripts/validate_ai_contract.py
+      - name: Validate AI contract and fixtures
+        run: python scripts/validate_ai_contract.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -36,6 +41,9 @@ jobs:
         with:
           name: ai-contract-v1-${{ github.sha }}
           path: contracts/ai/v1/
-      - run: docker build -f src/backend/ServiceDesk.Api/Dockerfile -t servicedesk-api:ci .
-      - run: docker build -f src/backend/ServiceDesk.Worker/Dockerfile -t servicedesk-worker:ci .
-      - run: docker build -f src/backend/ServiceDesk.Database/Dockerfile -t servicedesk-database:ci .
+      - name: Build API image
+        run: docker build -f src/backend/ServiceDesk.Api/Dockerfile -t servicedesk-api:ci .
+      - name: Build Worker image
+        run: docker build -f src/backend/ServiceDesk.Worker/Dockerfile -t servicedesk-worker:ci .
+      - name: Build database tool image
+        run: docker build -f src/backend/ServiceDesk.Database/Dockerfile -t servicedesk-database:ci .

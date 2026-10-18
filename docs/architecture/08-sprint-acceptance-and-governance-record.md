@@ -107,12 +107,12 @@ Bên cạnh các task Jira, Đức Anh với vai trò Leader/Architect chính th
 - **Hiện trạng:** Repo chỉ có `dev`, `main` và các nhánh feature/frontend; thiếu nhánh `staging` theo chuẩn kiến trúc `dev → staging → main`.
 - **Hành động khắc phục:**
   1. Tạo nhánh `staging` phân nhánh từ `dev` sau khi đợt close-out Sprint 1 hoàn tất.
-  2. Cấu hình pipeline CI/CD (Jenkinsfile) để deploy tự động lên môi trường Staging khi có commit vào `staging`.
+  2. GitHub Actions kiểm tra commit vào `staging`. Triển khai tự động được hoãn sang thay đổi riêng khi có môi trường và phê duyệt triển khai; xem ADR-013.
 
 ### Rủi ro 3: `dev` và `main` chưa được bật Branch Protection
 - **Hiện trạng:** Cả `dev` và `main` trên GitHub đang để `protected: false`, cho phép direct push và bypass review.
 - **Hành động khắc phục (Khóa Branch Protection Rules trên GitHub):**
   - Bật *Require a pull request before merging* (Tối thiểu 1 approval từ Tech Lead).
-  - Bật *Require status checks to pass before merging* (Jenkins CI Build & Tests bắt buộc xanh).
+  - Bật *Require status checks to pass before merging*: GitHub Actions job `backend` của Backend quality gates phải xanh. Repo frontend dùng `frontend`, infra dùng `smoke`; chọn checks sau khi workflow chạy thành công trên nhánh đích.
   - Bật *Do not allow bypassing the above settings* (Kể cả Admin cũng phải đi qua PR).
   - Cấm hoàn toàn `git push --force` trên `main`, `staging`, `dev`.

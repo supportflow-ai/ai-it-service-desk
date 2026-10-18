@@ -5,7 +5,7 @@
 - Backend: https://github.com/supportflow-ai/ai-it-service-desk
 - Frontend: https://github.com/supportflow-ai/ai-it-service-desk-web
 - AI contract consumer: https://github.com/supportflow-ai/ai-service
-- Compose/gateway/Jenkins/whole-system tests: https://github.com/supportflow-ai/supportflow-ai-infra
+- Compose/gateway/GitHub Actions whole-system tests: https://github.com/supportflow-ai/supportflow-ai-infra
 
 Keep existing database and object-storage contents. For an existing Compose project,
 record its project name and actual volume names before changing repositories. Configure

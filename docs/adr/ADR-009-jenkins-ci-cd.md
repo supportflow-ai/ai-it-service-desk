@@ -1,7 +1,9 @@
 # ADR-009: Jenkins CI/CD Foundation
 
 ## Status
-Accepted
+Superseded by [ADR-013: GitHub Actions](ADR-013-github-actions.md) on 2026-10-18.
+
+The context and decision below are retained as historical evidence. Jenkins is no longer the active CI/CD platform.
 
 ## Context
 Cần CI/CD pipeline tự động hóa build, test, Docker image build. Pipeline phải chặn deploy khi test fail, và phù hợp với yêu cầu học phần về CI/CD evidence.

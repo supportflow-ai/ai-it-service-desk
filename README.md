@@ -7,7 +7,7 @@ Backend .NET 10 của SupportFlow AI, tổ chức theo Clean Architecture và c�
 | Backend | https://github.com/supportflow-ai/ai-it-service-desk |
 | Frontend React | https://github.com/supportflow-ai/ai-it-service-desk-web |
 | AI contract và service tương lai | https://github.com/supportflow-ai/ai-service |
-| Compose, NGINX, Jenkins và smoke hệ thống | https://github.com/supportflow-ai/supportflow-ai-infra |
+| Compose, NGINX và smoke hệ thống qua GitHub Actions | https://github.com/supportflow-ai/supportflow-ai-infra |
 
 ## Kiến trúc
 
@@ -37,6 +37,12 @@ dotnet test src/backend/ServiceDesk.sln -c Release --no-build --filter "Category
 ```
 
 Integration tests dùng PostgreSQL 17 Testcontainers và cần Docker đang hoạt động. Application unit tests không cần EF Core/Infrastructure/database.
+
+## CI bằng GitHub Actions
+
+[Backend quality gates](.github/workflows/ci.yml) chạy khi mở/cập nhật PR, push vào main/dev/staging hoặc nhánh codex, và khi chạy thủ công trong tab Actions. Pipeline restore khóa phiên bản, build, unit/architecture/compatibility tests, integration PostgreSQL thật, kiểm tra AI contract và build ba image API/Worker/Database. Kết quả test TRX và AI contract được lưu thành workflow artifacts.
+
+Frontend tự lint/test/build image trong repo web. Repo infra ghim SHA backend/web và chạy Compose, migration, smoke qua gateway. Repo AI kiểm tra contract/checksum/fixtures. Các workflow chỉ cần quyền đọc mã nguồn, không cần Jenkins hoặc secrets registry; không push image hay tự deploy production. Xem [ADR-013](docs/adr/ADR-013-github-actions.md) và [hướng dẫn chuyển CI](docs/runbooks/github-actions.md).
 
 ## Chạy phát triển
 
