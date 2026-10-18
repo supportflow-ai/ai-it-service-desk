@@ -1,11 +1,12 @@
 using System.Text.Json;
-using ServiceDesk.Application.AIAssistance.Contracts.V1;
+using ServiceDesk.Infrastructure.AI.Contracts.V1;
 using ServiceDesk.Application.AIAssistance.Ports;
 using ServiceDesk.Application.AIAssistance.Contracts;
 using ServiceDesk.Domain.AIAssistance;
 using Xunit;
-namespace ServiceDesk.Application.Tests.AIAssistance;
+namespace ServiceDesk.IntegrationTests;
 
+[Trait("Category", "Unit")]
 public sealed class ClassificationContractTests
 {
     private static ClassificationRequest Request() => ClassificationContractMapper.ToRequest(new TriageRequest

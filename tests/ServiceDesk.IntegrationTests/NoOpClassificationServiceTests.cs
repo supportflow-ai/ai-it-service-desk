@@ -45,10 +45,8 @@ public class NoOpClassificationServiceTests
             Description = "Test"
         };
 
-        // Should not throw even with cancelled token (NoOp is immediate)
-        var result = await service.ClassifyAsync(request, cts.Token);
-
-        result.Should().NotBeNull();
+        cts.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => service.ClassifyAsync(request, cts.Token));
     }
 }
 

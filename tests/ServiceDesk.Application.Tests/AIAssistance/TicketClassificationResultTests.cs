@@ -85,18 +85,7 @@ public class TriageResultTests
         result.CategoryConfidence.Should().BeNull();
     }
 
-    // --- Legacy backward compatibility ---
 
-    [Fact]
-    public void LegacyEmpty_ShouldReturnResultWithZeroConfidence()
-    {
-        var result = TicketClassificationResult.Empty;
-
-        result.SuggestedCategory.Should().BeNull();
-        result.SuggestedImpact.Should().BeNull();
-        result.SuggestedUrgency.Should().BeNull();
-        result.Confidence.Should().Be(0);
-    }
 }
 
 public class TriageRequestTests

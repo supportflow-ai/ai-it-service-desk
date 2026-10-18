@@ -11,6 +11,7 @@ internal sealed class NoOpEmbeddingService : IEmbeddingService
     public Task<float[]> GenerateEmbeddingAsync(
         string text, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         return Task.FromResult(Array.Empty<float>());
     }
 }

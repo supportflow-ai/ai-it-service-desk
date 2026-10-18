@@ -11,37 +11,38 @@ namespace ServiceDesk.Application.AIAssistance.Contracts;
 /// - SuggestedCategory/Impact/Urgency use domain enums (typed, not free-text).
 /// - ModelScore is raw [0.0, 1.0], NOT a calibrated probability.
 /// - ConfidenceBand is a product label derived from ModelScore via ConfidencePolicy.
-/// - Priority is NEVER included — it is computed by deterministic PriorityMatrix.
+/// - Priority is NEVER included â€” it is computed by deterministic PriorityMatrix.
 /// - Outcome indicates success/failure/degraded state.
 /// </summary>
 public sealed record TriageResult
 {
+    private TriageResult() { }
     /// <summary>
     /// Overall outcome of the classification attempt.
     /// </summary>
-    public required TriageOutcome Outcome { get; init; }
+    public TriageOutcome Outcome { get; private init; }
 
     /// <summary>AI-suggested category, if classification succeeded.</summary>
-    public TicketCategory? SuggestedCategory { get; init; }
+    public TicketCategory? SuggestedCategory { get; private init; }
 
     /// <summary>AI-suggested impact level, if classification succeeded.</summary>
-    public Impact? SuggestedImpact { get; init; }
+    public Impact? SuggestedImpact { get; private init; }
 
     /// <summary>AI-suggested urgency level, if classification succeeded.</summary>
-    public Urgency? SuggestedUrgency { get; init; }
+    public Urgency? SuggestedUrgency { get; private init; }
 
     /// <summary>
     /// Raw model score for category suggestion, range [0.0, 1.0].
     /// Null if unavailable or classification failed.
-    /// NOT a calibrated probability — see <see cref="ConfidencePolicy"/>.
+    /// NOT a calibrated probability â€” see <see cref="ConfidencePolicy"/>.
     /// </summary>
-    public double? CategoryScore { get; init; }
+    public double? CategoryScore { get; private init; }
 
     /// <summary>Raw model score for impact suggestion.</summary>
-    public double? ImpactScore { get; init; }
+    public double? ImpactScore { get; private init; }
 
     /// <summary>Raw model score for urgency suggestion.</summary>
-    public double? UrgencyScore { get; init; }
+    public double? UrgencyScore { get; private init; }
 
     /// <summary>
     /// Product-facing confidence band for the category suggestion.
@@ -63,12 +64,12 @@ public sealed record TriageResult
     /// Controlled failure information when Outcome is not Success.
     /// Must not leak raw provider exceptions.
     /// </summary>
-    public string? FailureReason { get; init; }
+    public string? FailureReason { get; private init; }
 
     /// <summary>
     /// Validation errors from output validation (unknown category, invalid score, etc.).
     /// </summary>
-    public IReadOnlyList<string> ValidationErrors { get; init; } = [];
+    public IReadOnlyList<string> ValidationErrors { get; private init; } = [];
 
     /// <summary>
     /// Factory for a successful classification result.
@@ -81,6 +82,9 @@ public sealed record TriageResult
         double? impactScore = null,
         double? urgencyScore = null)
     {
+        ValidateSuggestion(category, categoryScore);
+        ValidateSuggestion(impact, impactScore);
+        ValidateSuggestion(urgency, urgencyScore);
         return new TriageResult
         {
             Outcome = TriageOutcome.Success,
@@ -127,8 +131,16 @@ public sealed record TriageResult
         {
             Outcome = TriageOutcome.InvalidResponse,
             FailureReason = reason,
-            ValidationErrors = validationErrors ?? []
+            ValidationErrors = Array.AsReadOnly(validationErrors?.ToArray() ?? [])
         };
+    }
+
+    private static void ValidateSuggestion<T>(T? value, double? score) where T : struct, Enum
+    {
+        if (value.HasValue && !Enum.IsDefined(value.Value))
+            throw new ArgumentOutOfRangeException(nameof(value));
+        if (score.HasValue && (!value.HasValue || !ConfidencePolicy.IsValidScore(score.Value)))
+            throw new ArgumentException("A finite score in [0,1] requires its corresponding suggestion.", nameof(score));
     }
 }
 
@@ -140,13 +152,13 @@ public enum TriageOutcome
     /// <summary>Classification completed successfully.</summary>
     Success,
 
-    /// <summary>AI provider is not available — core workflow continues without AI.</summary>
+    /// <summary>AI provider is not available â€” core workflow continues without AI.</summary>
     Unavailable,
 
-    /// <summary>AI provider timed out — core workflow continues without AI.</summary>
+    /// <summary>AI provider timed out â€” core workflow continues without AI.</summary>
     Timeout,
 
-    /// <summary>AI returned invalid/unparseable output — treated as degraded.</summary>
+    /// <summary>AI returned invalid/unparseable output â€” treated as degraded.</summary>
     InvalidResponse,
 
     /// <summary>Output validation failed (unknown category, invalid score, etc.).</summary>

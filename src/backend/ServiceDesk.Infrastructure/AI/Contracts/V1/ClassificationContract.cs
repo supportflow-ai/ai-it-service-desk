@@ -4,19 +4,19 @@ using ServiceDesk.Application.AIAssistance.Contracts;
 using ServiceDesk.Domain.AIAssistance;
 using ServiceDesk.Domain.Ticketing;
 
-namespace ServiceDesk.Application.AIAssistance.Contracts.V1;
+namespace ServiceDesk.Infrastructure.AI.Contracts.V1;
 
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
-public sealed record ClassificationRequest(Guid RequestId, Guid TicketId, long TicketRevision, string InputHash, string Title, string Description);
+internal sealed record ClassificationRequest(Guid RequestId, Guid TicketId, long TicketRevision, string InputHash, string Title, string Description);
 
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
-public sealed record ClassificationSuggestion(string Field, string Value, double? Score);
+internal sealed record ClassificationSuggestion(string Field, string Value, double? Score);
 
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
-public sealed record ClassificationResponse(Guid RequestId, Guid TicketId, long TicketRevision, string InputHash,
+internal sealed record ClassificationResponse(Guid RequestId, Guid TicketId, long TicketRevision, string InputHash,
     IReadOnlyList<ClassificationSuggestion> Suggestions);
 
-public static class ClassificationContractMapper
+internal static class ClassificationContractMapper
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
     {
@@ -56,19 +56,29 @@ public static class ClassificationContractMapper
                 (suggestion.Score.HasValue && !ConfidencePolicy.IsValidScore(suggestion.Score.Value))) return Invalid();
             switch (suggestion.Field)
             {
-                case "category" when IsName<TicketCategory>(suggestion.Value):
-                    category = Enum.Parse<TicketCategory>(suggestion.Value); categoryScore = suggestion.Score; break;
-                case "impact" when IsName<Impact>(suggestion.Value):
-                    impact = Enum.Parse<Impact>(suggestion.Value); impactScore = suggestion.Score; break;
-                case "urgency" when IsName<Urgency>(suggestion.Value):
-                    urgency = Enum.Parse<Urgency>(suggestion.Value); urgencyScore = suggestion.Score; break;
+                case "category" when suggestion.Value is not null && Categories.TryGetValue(suggestion.Value, out var c):
+                    category = c; categoryScore = suggestion.Score; break;
+                case "impact" when suggestion.Value is not null && Impacts.TryGetValue(suggestion.Value, out var i):
+                    impact = i; impactScore = suggestion.Score; break;
+                case "urgency" when suggestion.Value is not null && Urgencies.TryGetValue(suggestion.Value, out var u):
+                    urgency = u; urgencyScore = suggestion.Score; break;
                 default: return Invalid();
             }
         }
         return TriageResult.Success(category, impact, urgency, categoryScore, impactScore, urgencyScore);
     }
 
-    private static bool IsName<T>(string? value) where T : struct, Enum =>
-        value is not null && Enum.GetNames<T>().Contains(value, StringComparer.Ordinal);
+    // Versioned allowlists: adding a domain enum never silently expands the v1 protocol.
+    private static readonly IReadOnlyDictionary<string, TicketCategory> Categories = new Dictionary<string, TicketCategory>(StringComparer.Ordinal)
+    {
+        ["ACC"] = TicketCategory.ACC, ["NET"] = TicketCategory.NET, ["VPN"] = TicketCategory.VPN,
+        ["MAIL"] = TicketCategory.MAIL, ["SW"] = TicketCategory.SW, ["HW"] = TicketCategory.HW,
+        ["PRINT"] = TicketCategory.PRINT, ["ACCESS"] = TicketCategory.ACCESS, ["EQUIP"] = TicketCategory.EQUIP,
+        ["SEC"] = TicketCategory.SEC, ["OTHER"] = TicketCategory.OTHER
+    };
+    private static readonly IReadOnlyDictionary<string, Impact> Impacts = new Dictionary<string, Impact>(StringComparer.Ordinal)
+    { ["Low"] = Impact.Low, ["Medium"] = Impact.Medium, ["High"] = Impact.High };
+    private static readonly IReadOnlyDictionary<string, Urgency> Urgencies = new Dictionary<string, Urgency>(StringComparer.Ordinal)
+    { ["Low"] = Urgency.Low, ["Medium"] = Urgency.Medium, ["High"] = Urgency.High };
     private static TriageResult Invalid() => TriageResult.InvalidResponse("ai_response_invalid");
 }

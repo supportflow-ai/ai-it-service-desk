@@ -13,6 +13,8 @@ public sealed class ModuleRuleNegativeTests
     [InlineData("ServiceDesk.Api.Identity", "Helper", "Microsoft.EntityFrameworkCore", "DbContext")]
     [InlineData("ServiceDesk.Application.Identity", "Helper", "ServiceDesk.Infrastructure.Ticketing", "PostgresTicketWriter")]
     [InlineData("ServiceDesk.Application.Unregistered", "Feature", "System", "String")]
+    [InlineData("ServiceDesk.Application.AIAssistance", "Helper", "ServiceDesk.Application.Ticketing.Contracts", "TicketDto")]
+    [InlineData("ServiceDesk.Application.AIAssistance", "Helper", "ServiceDesk.Domain.Identity", "RoleNames")]
     public void ForbiddenOrUnclassifiedTypesAreDetected(string sourceNamespace, string sourceName, string targetNamespace, string targetName)
     {
         using var module = ModuleDefinition.CreateModule("ServiceDesk.Api", ModuleKind.Dll);

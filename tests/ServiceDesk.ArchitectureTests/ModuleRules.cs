@@ -93,6 +93,9 @@ internal static class ModuleRules
                          (name == "ServiceDesk.Infrastructure.Persistence.ApplicationDbContext" &&
                           RootName(type).StartsWith("ServiceDesk.Infrastructure.", StringComparison.Ordinal))
                 };
+                if (source == "AIAssistance" && other is "Ticketing" or "Identity")
+                    allowed = name is "ServiceDesk.Domain.Ticketing.TicketCategory" or
+                        "ServiceDesk.Domain.Ticketing.Impact" or "ServiceDesk.Domain.Ticketing.Urgency";
                 // Composition is not an escape hatch for arbitrary API/Worker database access.
                 if (source == "Composition" && (type.Module.Assembly.Name.Name is "ServiceDesk.Api" or "ServiceDesk.Worker") &&
                     name.StartsWith("ServiceDesk.Infrastructure.", StringComparison.Ordinal))
