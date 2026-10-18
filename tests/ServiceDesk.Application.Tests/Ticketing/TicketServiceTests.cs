@@ -89,6 +89,17 @@ public sealed class TicketServiceTests
     }
 
     [Theory]
+    [InlineData(1, 1)]
+    [InlineData(int.MaxValue, 1)]
+    [InlineData(21474837, 100)]
+    public async Task PagingBoundary_DoesNotOverflowForValidSingleItemPages(int page, int pageSize)
+    {
+        var result = new PagedTicketResult([], page, pageSize, 0);
+        _queries.Setup(q => q.GetForRequesterAsync(_actor, page, pageSize, It.IsAny<CancellationToken>())).ReturnsAsync(result);
+        Assert.Same(result, await _service.GetMyTicketsAsync(page, pageSize));
+    }
+
+    [Theory]
     [InlineData(RoleNames.Requester, false)] [InlineData(RoleNames.Agent, true)] [InlineData(RoleNames.Admin, true)]
     public async Task Detail_RestrictsRequesterAndAllowsAgentAdmin(string role, bool broad)
     {

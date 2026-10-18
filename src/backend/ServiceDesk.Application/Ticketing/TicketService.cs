@@ -22,7 +22,7 @@ public sealed class TicketService(ITicketWriter writer, ITicketQueries queries, 
     public Task<PagedTicketResult> GetMyTicketsAsync(int page = 1, int pageSize = 10, CancellationToken cancellationToken = default)
     {
         var requester = RequireRequester();
-        if (page < 1 || pageSize < 1 || pageSize > 100 || page > (int.MaxValue / pageSize) + 1)
+        if (page < 1 || pageSize < 1 || pageSize > 100 || ((long)page - 1) * pageSize > int.MaxValue)
             throw new ArgumentException("page must be at least 1 and pageSize must be between 1 and 100");
         return queries.GetForRequesterAsync(requester, page, pageSize, cancellationToken);
     }
