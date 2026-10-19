@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Minio;
 using ServiceDesk.Application.Common.Interfaces;
+using ServiceDesk.Infrastructure.Identity;
 using ServiceDesk.Infrastructure.Persistence;
 using Testcontainers.PostgreSql;
 using Xunit;
@@ -25,6 +27,11 @@ public class ServiceDeskWebApplicationFactory : WebApplicationFactory<ServiceDes
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseSetting("Database:ConnectionString", _postgres.GetConnectionString());
+        builder.UseSetting("Jwt:SecretKey", "development_secret_key_minimum_32_characters_long");
+        builder.UseSetting("Jwt:Issuer", "ServiceDesk");
+        builder.UseSetting("Jwt:Audience", "ServiceDeskClient");
+        builder.UseSetting("ADMIN_EMAIL", "admin@servicedesk.local");
+        builder.UseSetting("ADMIN_PASSWORD", "AdminPass123!");
 
         builder.ConfigureServices(services =>
         {

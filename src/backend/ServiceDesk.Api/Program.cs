@@ -2,11 +2,14 @@ using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using ServiceDesk.Api.Endpoints;
 using ServiceDesk.Application;
 using ServiceDesk.Infrastructure;
 using ServiceDesk.Infrastructure.Identity;
 using ServiceDesk.Infrastructure.Options;
+using ServiceDesk.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -62,6 +65,31 @@ builder.Services.AddSwaggerGen(options =>
         Title = "AI IT Service Desk API",
         Version = "v1",
         Description = "Internal IT Service Request Management System with AI Assistance"
+    });
+
+    options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    {
+        Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
+        Name = "Authorization",
+        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+        Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT"
+    });
+
+    options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    {
+        {
+            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            {
+                Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                {
+                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
     });
 });
 
@@ -141,6 +169,17 @@ app.MapGet("/api", () => Results.Ok(new
 }))
 .WithTags("System")
 .WithName("GetApiInfo");
+
+// --- Auth & Admin Endpoints ---
+app.MapAuthEndpoints();
+
+// --- Migrate Database in Development ---
+if (app.Environment.IsDevelopment())
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    await db.Database.MigrateAsync();
+}
 
 // --- Seed Identity Roles and Admin ---
 await IdentitySeeder.SeedAsync(app.Services, app.Configuration, app.Lifetime.ApplicationStopping);
