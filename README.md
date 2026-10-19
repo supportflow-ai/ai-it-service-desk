@@ -181,6 +181,8 @@ Ensure the following tools are installed on your workstation:
 
 ### Option 1: Full Stack via Docker Compose (Recommended)
 
+> **Note on Environment Image Availability:** Full-stack Docker Compose deployment is currently blocked if pulling `minio/minio:latest` fails due to registry availability. Do not edit `docker-compose.yml` unless approved to update the container registry path. Local development can run via Option 2 or Docker Testcontainers.
+
 Run the entire system (Frontend, 2x API nodes, Worker, NGINX, PostgreSQL + pgvector, MinIO) in one command:
 
 ```bash
@@ -246,6 +248,34 @@ When running the full stack via Docker Compose:
 | **MinIO Console** | `minio` | `9001` $\rightarrow$ `9001` | [http://localhost:9001](http://localhost:9001) | `minioadmin` / `minioadmin` |
 | **MinIO S3 API** | `minio` | `9000` $\rightarrow$ `9000` | [http://localhost:9000](http://localhost:9000) | S3 API endpoint |
 | **PostgreSQL DB** | `postgres` | `5432` $\rightarrow$ `5432` | `localhost:5432` | User: `servicedesk`, DB: `servicedesk` |
+
+### Core API Endpoints (Auth & Ticketing MVP)
+
+#### Environment Configuration (Optional Admin Seeding)
+```env
+ADMIN_EMAIL=admin@example.test
+ADMIN_PASSWORD=ValidAdminPass1
+```
+
+#### Authentication Endpoints
+- `POST /auth/register` (Anonymous) — Self-register as Requester; returns JWT and user profile.
+- `POST /auth/login` (Anonymous) — Log in with email and password; returns JWT and user profile.
+- `GET /auth/me` (Authenticated) — Retrieve current user profile and assigned roles.
+- `PUT /admin/users/{id}/role` (Admin only) — Promote or change user role (`Requester`, `Agent`, `Admin`).
+
+#### Ticketing Lifecycle Endpoints
+- `POST /tickets` (Authenticated) — Create a new ticket in `Submitted` status with calculated priority (`Impact × Urgency`).
+- `GET /tickets/me` (Authenticated) — List tickets. Requesters see only their own tickets. Agents and Admins see workspace tickets with optional filters (`status`, `assigneeId`, `requesterId`, `page`, `pageSize`).
+- `GET /tickets/{id}` (Owner, Agent, Admin) — Get detailed ticket information.
+- `PATCH /tickets/{id}` (Owner Requester) — Update `Submitted` ticket title, description, category, impact, urgency.
+- `POST /tickets/{id}/claim` (Agent) — Claim an unassigned `Submitted` ticket (transitions to `InProgress`).
+- `POST /tickets/{id}/assign` (Admin) — Assign ticket to an Agent or Admin.
+- `POST /tickets/{id}/resolve` (Assigned Agent, Admin) — Mark `InProgress` ticket as `Resolved`.
+- `POST /tickets/{id}/reopen` (Owner Requester, Admin) — Reopen `Resolved` ticket back to `InProgress`.
+- `POST /tickets/{id}/close` (Owner Requester, Admin) — Close `Resolved` ticket (terminal state).
+- `POST /tickets/{id}/cancel` (Owner Requester, Admin) — Cancel `Submitted` ticket (terminal state).
+- `POST /tickets/{id}/comments` (Owner, Agent, Admin) — Add public comment to non-terminal ticket.
+- `GET /tickets/{id}/comments` (Owner, Agent, Admin) — List comments for ticket in chronological order.
 
 ---
 

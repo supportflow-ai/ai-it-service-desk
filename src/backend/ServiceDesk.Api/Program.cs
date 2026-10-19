@@ -51,8 +51,7 @@ builder.Services.AddAuthorization();
 // --- Health checks ---
 builder.Services.AddHealthChecks()
     .AddNpgSql(
-        builder.Configuration.GetSection(DatabaseOptions.SectionName).Get<DatabaseOptions>()?.ConnectionString
-            ?? string.Empty,
+        sp => sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<DatabaseOptions>>().Value.ConnectionString,
         name: "postgresql",
         tags: ["db", "ready"]);
 
