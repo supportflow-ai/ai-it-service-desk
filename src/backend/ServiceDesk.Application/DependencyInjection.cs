@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using ServiceDesk.Application.Auth;
 
 namespace ServiceDesk.Application;
 
@@ -10,8 +11,7 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
-        // Application-level services will be registered here as they are created.
-        // Examples (future): MediatR handlers, validators, etc.
+        services.AddScoped<AuthHandlers>();
 
         return services;
     }

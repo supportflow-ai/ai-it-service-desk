@@ -22,4 +22,12 @@ public sealed class CurrentUser : ICurrentUser
 
     public bool IsAuthenticated =>
         _httpContextAccessor.HttpContext?.User?.Identity?.IsAuthenticated ?? false;
+
+    public IReadOnlyList<string> Roles =>
+        _httpContextAccessor.HttpContext?.User?.FindAll(ClaimTypes.Role)
+            .Select(c => c.Value)
+            .ToList() ?? [];
+
+    public bool IsInRole(string role) =>
+        _httpContextAccessor.HttpContext?.User?.IsInRole(role) ?? false;
 }

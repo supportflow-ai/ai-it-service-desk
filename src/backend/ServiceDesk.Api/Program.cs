@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.IdentityModel.Tokens;
 using ServiceDesk.Application;
 using ServiceDesk.Infrastructure;
+using ServiceDesk.Infrastructure.Identity;
 using ServiceDesk.Infrastructure.Options;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -140,6 +141,9 @@ app.MapGet("/api", () => Results.Ok(new
 }))
 .WithTags("System")
 .WithName("GetApiInfo");
+
+// --- Seed Identity Roles and Admin ---
+await IdentitySeeder.SeedAsync(app.Services, app.Configuration, app.Lifetime.ApplicationStopping);
 
 app.Run();
 
