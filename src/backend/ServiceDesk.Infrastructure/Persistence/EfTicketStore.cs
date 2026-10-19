@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using ServiceDesk.Application.Common.Exceptions;
 using ServiceDesk.Application.Common.Interfaces;
 using ServiceDesk.Domain.Ticketing;
 
@@ -39,6 +40,15 @@ public sealed class EfTicketStore(ApplicationDbContext db) : ITicketStore
         return new PagedTickets(items, totalCount);
     }
 
-    public Task SaveChangesAsync(CancellationToken cancellationToken)
-        => db.SaveChangesAsync(cancellationToken);
+    public async Task SaveChangesAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            throw new ConflictException("Ticket changed by another request.", ex);
+        }
+    }
 }
