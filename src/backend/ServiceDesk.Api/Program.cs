@@ -173,6 +173,9 @@ app.MapGet("/api", () => Results.Ok(new
 // --- Auth & Admin Endpoints ---
 app.MapAuthEndpoints();
 
+// --- Ticket Endpoints ---
+app.MapTicketEndpoints();
+
 // --- Migrate Database in Development ---
 if (app.Environment.IsDevelopment())
 {

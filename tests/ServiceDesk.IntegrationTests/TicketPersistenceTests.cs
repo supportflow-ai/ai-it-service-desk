@@ -34,4 +34,20 @@ public class TicketPersistenceTests : IClassFixture<ServiceDeskWebApplicationFac
         saved!.Priority.Should().Be(Priority.P1);
         (await store.GetCommentsAsync(ticket.Id, CancellationToken.None)).Should().ContainSingle();
     }
+
+    [Fact]
+    public async Task AddCommentToExistingTicket_Succeeds()
+    {
+        await using var scope1 = _factory.Services.CreateAsyncScope();
+        var store1 = scope1.ServiceProvider.GetRequiredService<ITicketStore>();
+        var ticket = Ticket.Create("req-1", "Test", "Desc", "Cat", Impact.Low, Urgency.Low, DateTimeOffset.UtcNow);
+        await store1.AddAsync(ticket, CancellationToken.None);
+        await store1.SaveChangesAsync(CancellationToken.None);
+
+        await using var scope2 = _factory.Services.CreateAsyncScope();
+        var store2 = scope2.ServiceProvider.GetRequiredService<ITicketStore>();
+        var loaded = await store2.GetByIdAsync(ticket.Id, CancellationToken.None);
+        loaded!.AddComment("req-1", "A new comment", DateTimeOffset.UtcNow);
+        await store2.SaveChangesAsync(CancellationToken.None);
+    }
 }
