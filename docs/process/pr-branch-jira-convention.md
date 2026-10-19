@@ -1,82 +1,41 @@
-# PR, Branch, and Jira Linkage Convention
+# Quy ước nhánh, commit, PR và Jira
 
-**Standard:** Enterprise DevOps & QA Process  
-**Applicability:** All contributors, developers, and QA engineers working on `ai-it-service-desk`  
-**Status:** Approved & Enforced  
+Trạng thái: hướng dẫn hiện hành cho backend, cập nhật 2026-10-19. Áp dụng cùng [AGENTS.md](../../AGENTS.md) và [DoR/DoD](definition-of-ready-done.md). Chỉ dẫn trực tiếp của người dùng trong nhiệm vụ được ưu tiên khi có ngoại lệ rõ ràng; không sửa lịch sử Git để áp quy ước mới.
 
----
+## Nhánh
 
-## 1. Branch Naming Convention
+Mẫu thông thường: `<type>/TC-<id>-<mô-tả-ngắn-không-dấu>`. Loại nhánh: `feature`, `feat`, `bugfix`, `fix`, `chore`, `refactor`, `hotfix`, `docs`, `test`; công việc bằng Codex dùng tiền tố `codex/`. Nhánh phát hành dùng `release/<phiên-bản>` theo nhiệm vụ phát hành riêng.
 
-All branches created in the repository MUST follow the structured format:
+`TC-<id>` phải là mã Jira có thật. Không tự bịa mã hoặc suy ra quyền tạo công việc Jira. Nếu người dùng yêu cầu tiếp tục một nhánh cụ thể, giữ nhánh đó kể cả tên không khớp mẫu. Nhánh hiện tại `codex/backend-clean-architecture` thuộc trường hợp này. Ngoại lệ tên nhánh không tự miễn mã Jira của commit/PR.
 
-```text
-<type>/<jira-key>-<short-description>
-```
+[Workflow](../../.github/workflows/ci.yml) kiểm tra mọi PR; push chỉ kích hoạt trên main/dev/staging và `codex/**`. Nhánh feature khác chưa mở PR không tự có kiểm tra push. Không tự mở rộng trigger, push hoặc tạo PR nếu chưa được giao.
 
-### 1.1 Types
-* `feature/` or `feat/`: New feature implementation (e.g., `feature/TC-101-jwt-authentication`)
-* `bugfix/` or `fix/`: Defect fix against dev/staging/main (e.g., `bugfix/TC-142-fix-cors-origin`)
-* `chore/`: Maintenance, build, dependencies, or DevOps scaffolding (e.g., `chore/TC-203-quality-gate-integration-environment`)
-* `refactor/`: Code restructuring without functional change (e.g., `refactor/TC-115-clean-domain-events`)
-* `hotfix/`: Critical production patch branched directly off `main` (e.g., `hotfix/TC-999-db-connection-leak`)
-* `release/`: Release staging candidate (e.g., `release/v1.0.0`)
+## Commit và ngôn ngữ
 
-### 1.2 Format Rules
-1. `<jira-key>` is mandatory: Must match the project Jira key format `TC-[0-9]+`.
-2. `<short-description>`: 2–5 lowercase words separated by hyphens (`-`), no underscores or special characters.
-3. Examples of valid branch names:
-   * `feature/TC-105-ticket-crud-api`
-   * `fix/TC-188-token-expiration-parsing`
-   * `chore/TC-203-quality-gate-integration-environment`
-
----
-
-## 2. Commit Message Convention
-
-Commit messages must follow **Conventional Commits** augmented with the Jira issue prefix:
+Tài liệu mới, mô tả commit và PR dùng tiếng Việt có dấu. Giữ định danh/câu lệnh kỹ thuật, tránh xen tiếng Anh khi có cách nói tiếng Việt rõ ràng.
 
 ```text
-<type>(<scope>): [TC-<id>] <description>
-
-[optional body]
-
-[optional footer(s)]
+<type>(<scope>): [TC-<id>] <mô tả tiếng Việt>
 ```
 
-### Examples:
-* `feat(auth): [TC-101] implement JWT bearer token issue and refresh endpoints`
-* `fix(persistence): [TC-142] resolve PostgreSQL health check connection string binding`
-* `chore(ci): [TC-203] bổ sung kiểm tra tự động cho backend bằng GitHub Actions`
-* `test(ticketing): [TC-105] add unit tests for priority calculation matrix`
+Ví dụ về cấu trúc, phải thay mã bằng công việc thực tế:
 
----
-
-## 3. Pull Request (PR) Convention
-
-### 3.1 PR Title Format
 ```text
-[TC-<id>] <type>(<scope>): <summary>
+docs(context): [TC-<id>] thống nhất nguồn tài liệu backend
+fix(ticketing): [TC-<id>] chặn truy cập phiếu ngoài phạm vi
+test(identity): [TC-<id>] kiểm tra khóa tài khoản khi đăng nhập đồng thời
 ```
-Example:
-* `[TC-203] chore(devops): standardize PR/branch conventions, CI quality gates, and smoke hooks`
 
-### 3.2 PR Mandatory Metadata
-Every PR must fill out the repository's `.github/pull_request_template.md`:
-1. **Jira Issue Link:** Direct URL or markdown link: `[TC-XXXX](https://jira.company.internal/browse/TC-XXXX)`.
-2. **Local ID:** An internal or pull-request identifier (e.g., `PR-#`, `DEV-01`, `LOCAL-TC203`) to maintain continuity across offline reviews.
-3. **Phạm vi:** Liệt kê thành phần chịu ảnh hưởng: API, Worker, Domain, Application, Infrastructure, Database, kiểm thử, quy trình tự động hoặc tài liệu. Giao diện và cấu hình triển khai toàn hệ thống thuộc các kho riêng.
-4. **Summary & Changes:** Clear technical explanation of what was changed and why.
-5. **Test Evidence:** **MANDATORY.** A PR without actual test logs or CLI execution snippets will be immediately blocked and rejected by reviewers.
+Thiếu mã Jira bắt buộc và chưa có ngoại lệ được người dùng cho phép: hoàn tất phần chỉnh sửa/kiểm tra độc lập, hỏi trước khi commit. Không tạo commit rỗng để giả lập truy vết. Kiểm tra nhánh/HEAD/thay đổi trước khi đưa tệp vào commit; chỉ chọn đúng phạm vi. Không tự commit cho nhiệm vụ chỉ review/lập kế hoạch; không tự push, hợp nhất hoặc triển khai.
 
----
+## PR và bằng chứng
 
-## 4. Test Evidence Rules
+Tiêu đề: `[TC-<id>] <type>(<scope>): <mô tả tiếng Việt>`. Theo [mẫu PR](../../.github/pull_request_template.md), ghi:
 
-Checkboxes alone (e.g. `[x] Tests pass`) are **NOT** sufficient evidence for PR approval.
+- Mã Jira thực tế và URL lấy từ công việc tương ứng; không chép tên miền giả hoặc URL ví dụ.
+- Mã truy vết `TC-<id>` hoặc `PR-<số>`; nếu có ngoại lệ Jira đã được cho phép, ghi căn cứ ngoại lệ.
+- Vấn đề, hành vi sau thay đổi, phạm vi API/Worker/Database/nghiệp vụ/kiểm thử/tài liệu.
+- SHA và thay đổi chưa commit tại lúc kiểm tra; lệnh thực chạy, số test, kết quả, TRX hoặc CI, phần chưa chạy và lý do.
+- Tương thích API/dữ liệu và cách rollback khi có tác động; smoke hệ thống dẫn tới repo infra với đúng SHA backend.
 
-Every author must provide:
-1. **Command Executed:** Full command string executed locally (e.g., `dotnet test src/backend/ServiceDesk.sln -c Release`).
-2. **Execution Log Snippet:** Actual console output demonstrating that the test suites ran and passed (e.g., total tests, passed, failed, duration).
-3. **Artifact / TRX Attachment:** For integration and E2E tests, attach TRX reports or console logs to the PR comments.
-4. **Thay đổi hợp đồng API:** Ghi rõ khả năng tương thích với ứng dụng gọi API và dẫn kết quả kiểm thử liên quan; không yêu cầu ảnh giao diện trong PR backend.
+Không chỉ đánh dấu ô “đạt”. Kiểm tra cho tài liệu có thể là liên kết/cấu hình/validator; không bắt buộc dựng database để có nhật ký test không liên quan. CI của PR vẫn phải đạt các kiểm tra bắt buộc theo cấu hình hiện tại. Không tuyên bố branch protection, approval hoặc trạng thái Jira đã thay đổi khi chưa có bằng chứng.

@@ -1,66 +1,45 @@
-# Backend hardening verification
+# Kiểm chứng backend
 
-Source baseline: 9dd0746450dca4348d6d0fa8a09cfc2a48860020.
-Implementation remains on codex/backend-clean-architecture, PR #26 targeting dev.
-Read the successful Actions run's head SHA to identify the exact verified revision;
-baseline CI does not certify later commits.
+Trạng thái: quy trình hiện hành, cập nhật 2026-10-19. Đợt củng cố bắt đầu từ `9dd0746450dca4348d6d0fa8a09cfc2a48860020`, trên nhánh `codex/backend-clean-architecture`, PR #26 đích dev tại thời điểm lập hồ sơ. Đây không phải xác nhận trạng thái PR hôm nay.
 
-## Required checks
+## Chọn kiểm tra theo phạm vi
 
-Run from the repository root:
+Thay đổi chỉ tài liệu theo [DoR/DoD](../process/definition-of-ready-done.md); kiểm tra [bản đồ nguồn](../README.md) bằng validator tài liệu. Với thay đổi chức năng, từ gốc repo chạy:
 
 ```sh
 dotnet restore src/backend/ServiceDesk.sln --locked-mode
 dotnet build src/backend/ServiceDesk.sln -c Release --no-restore
 dotnet test src/backend/ServiceDesk.sln -c Release --no-build --filter "Category!=Integration"
 dotnet test src/backend/ServiceDesk.sln -c Release --no-build --filter "Category=Integration"
-python -m pip install -r contracts/requirements.txt
-python scripts/validate_ai_contract.py
 ```
 
-The PostgreSQL tests require working Docker and create disposable PostgreSQL 17
-containers. Do not replace them with SQLite or EF InMemory. Offline tests include
-HTTP contract, mapper, model snapshot and scope rejection tests; their success does
-not prove database transaction behavior. If local Docker fails, the exact final
-commit must pass PostgreSQL tests on the Linux CI runner.
+Chỉ dùng `--no-build` sau build thành công cùng mã/cấu hình. Kiểm tra số test thực chạy lớn hơn 0 khi lọc; exit code thành công với không test không là bằng chứng đạt. PostgreSQL dùng Testcontainers với Docker local/runner được giao, không thay bằng SQLite/EF InMemory. Nếu không chạy được tại local, ghi rõ và chờ CI đúng commit; không dùng kết quả cũ làm nghiệm thu.
 
-CI also builds API, Worker and Database images using their existing Dockerfiles.
-Test TRX files and the AI contract directory are uploaded as workflow artifacts.
-Pipeline scope remains validation, not registry publishing or production deployment.
+Validator hợp đồng AI dùng interpreter trong venv theo [hướng dẫn môi trường](environment-runbook.md#python-venv-và-hợp-đồng-ai), không cài package vào Python global trên máy phát triển. Kiểm tra tệp ngữ cảnh dùng thư viện chuẩn:
 
-## Evidence to inspect
+```sh
+python scripts/validate_project_docs.py
+python -m unittest discover -s scripts/tests -p "test_project_docs.py"
+```
 
-- IdentityConcurrencyTests: five simultaneous wrong passwords across two real hosts,
-  server error on failed security write, cancellation rollback/lock release,
-  independent accounts and mixed correct/incorrect login serialization.
-- IdentityPersistenceTests: persisted 15-minute lockout, expiration/reset and atomic
-  account/role creation, including reuse of a scope already tracking the user.
-- TicketAccessScopeTests: Requester cross-owner 404, Agent/Admin broad detail access
-  and own-only lists through production endpoints and real PostgreSQL.
-- PersistenceContractTests: current EF model matches the released migration snapshot;
-  null read scope is rejected before any database call.
-- Architecture tests: all six assemblies classified, internal use cases, explicit
-  published contracts, common/API/helper/generic bypass fixtures and AI data minimization.
-- Domain/adapter tests: suggestion ownership/enum/value/terminal state, hash ambiguity
-  regression/golden vector, result invariants, v1 correlation/unknown-field validation,
-  cancellation of NoOp/Fake and preserved requester-safe projections.
-- Existing API baseline, migration/data-preservation and two-host idempotency tests.
+Linux/macOS có thể dùng `python3` đúng phiên bản theo workflow. CI còn kiểm tra AI contract/fixtures và build ba image API/Worker/Database; TRX và AI contract là artifacts. Không phát hành image hoặc tự triển khai production.
 
-## Compatibility and rollout
+## Bằng chứng cần đối chiếu khi thay đổi chức năng
 
-No new migration is intended. Never edit released migrations or regenerate the HTTP
-baseline to hide a failed check. Existing status integers, create Submitted behavior,
-response-only FullName, self-registration, receipt replay and error/header contracts
-remain protected.
+- `IdentityConcurrencyTests`: đăng nhập sai qua hai host, rollback khi lỗi ghi/cancellation, tài khoản độc lập và đúng/sai xen kẽ.
+- `IdentityPersistenceTests`: lockout 15 phút, hết hạn/reset, tạo tài khoản và role nguyên tử, scope đã theo dõi user.
+- `TicketAccessScopeTests`: Requester đọc chéo trả 404; Agent/Admin giữ quyền hiện tại; danh sách theo actor.
+- `PersistenceContractTests`: model khớp snapshot và scope null bị từ chối.
+- ArchitectureTests: phân loại tầng/module, Published Contracts và các mẫu helper/generic/API cố tình vượt ranh giới.
+- Domain/adapter: parent/enum/value/terminal state, hash, bất biến kết quả AI, correlation, trường lạ và cancellation NoOp/Fake.
+- Baseline API, migration bảo toàn dữ liệu và idempotency hai host: replay gốc, khác payload, expiry, timeout, rollback.
 
-Before merge, verify the latest PR head has a successful backend job, required review,
-and no model drift. This change does not merge or deploy automatically. Roll back with
-the previous application image; there is no schema Down operation for this hardening.
+Có test trong mã không chứng minh test đã chạy. Các test offline cũng không chứng minh transaction/lock hoạt động trên PostgreSQL.
 
-Whole-system smoke remains owned by the infra repository, whose source pins are not
-changed in this backend-only increment. Do not claim its previous smoke run validates
-this new backend SHA. A coordinated release must update the infra source pin and pass
-its gateway smoke gate in a separate infra change.
+## Tương thích, bàn giao và rollback
 
-Deferred increments: team/assignment/Lead, profile/department snapshot, ticket lifecycle,
-SLA/audit, live AI, Worker jobs, receipt cleanup, telemetry and JWT privilege freshness.
+[Hợp đồng hiện hành](../architecture/current-backend-contract.md) xác định hành vi được giữ: JSON/status số, tạo Submitted, đăng ký Requester, FullName chỉ phản hồi, receipt và lỗi/header. Không sửa migration đã phát hành hoặc xuất lại baseline HTTP để che khác biệt. Refactor không chủ đích đổi schema phải kiểm tra model drift; cách làm ở [runbook môi trường](environment-runbook.md#phát-hiện-lệch-mapping-khi-refactor).
+
+Ghi SHA, thay đổi chưa commit, lệnh và số test/kết quả thực tế. Trước merge cần CI tại head mới và review phù hợp. Smoke infra cần ghim đúng SHA backend/web trong thay đổi infra riêng; smoke cũ không kiểm chứng backend mới.
+
+Đợt củng cố không có migration mới nên rollback bằng image ứng dụng trước đó, không chạy Down trên dữ liệu thật. Với bản triển khai cũ hơn còn seed tự động, tuân [runbook rollout](backend-refactor-rollout.md). Các chính sách nghiệp vụ chưa chốt theo [bảng quyết định](../architecture/pending-business-decisions.md).

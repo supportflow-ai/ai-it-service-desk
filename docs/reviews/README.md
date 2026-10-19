@@ -15,3 +15,5 @@ Nguồn tham chiếu hiện tại:
 - [Hợp đồng HTTP được bảo vệ bằng kiểm thử](../../contracts/backend/openapi-baseline.json).
 - [Kho giao diện độc lập](https://github.com/supportflow-ai/ai-it-service-desk-web).
 - [Kho hạ tầng và kiểm tra toàn hệ thống](https://github.com/supportflow-ai/supportflow-ai-infra).
+
+Đợt đồng bộ ngữ cảnh: [báo cáo trước chỉnh sửa](project-context-audit.md) và [kết quả xử lý](project-context-remediation.md). Báo cáo trước chỉnh sửa giữ nguyên phát hiện và số dòng tại mốc đã ghi; dùng kết quả xử lý để biết phần đã được cập nhật.

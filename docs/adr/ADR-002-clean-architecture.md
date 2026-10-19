@@ -1,5 +1,7 @@
 # ADR-002: Clean Architecture
 
+> Bổ sung phạm vi ngày 2026-10-19: Clean Architecture vẫn áp dụng. Bốn project dưới đây mô tả bốn tầng ban đầu; Worker và Database là host/công cụ bổ sung. Application được dùng DI abstractions. Cấu trúc sáu project, feature folders và Published Contracts theo ADR-011/014. Xem [ADR-014](ADR-014-feature-use-cases-and-published-contracts.md) và [bản đồ tài liệu](../README.md).
+
 ## Status
 Accepted
 

@@ -1,3 +1,9 @@
+> **Tài liệu lịch sử — không dùng làm chỉ dẫn triển khai hiện hành.**
+> Phạm vi bản gốc: hợp đồng ngày 2026-09-29. Chú thích bổ sung ngày 2026-10-19; không sửa nội dung hay ký duyệt lại bản gốc.
+> Nguồn hiện hành: [hợp đồng backend](current-backend-contract.md), [quy tắc bảo mật](security-design-rules.md), [quyết định còn mở](pending-business-decisions.md).
+> Đính chính vị trí policy: nghiệp vụ quyền Ticketing thuộc Application/Ticketing/Authorization, không thuộc Common hoặc Infrastructure/Identity. Ví dụ có Lead/team/assignment phía dưới chưa phải mã đang triển khai; xem DEC-02.
+
+<!-- original-record -->
 # TC-246 & TC-247: Actor Matrix, RBAC Scope & API Permission Specification
 
 - **Document ID:** `ARCH-CONTRACT-01`

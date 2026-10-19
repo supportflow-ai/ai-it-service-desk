@@ -2,6 +2,12 @@
 
 The source workflows are `.github/workflows/ci.yml` in the backend, web, AI and infra repositories. Jenkins is superseded by ADR-013.
 
+## Kiểm tra tài liệu trong backend
+
+Job `backend` kiểm tra nguồn/liên kết bằng `scripts/validate_project_docs.py` và chạy các tình huống hồi quy của công cụ trước bước .NET. Công cụ dùng Python đã thiết lập trên runner, không cần database hoặc package bổ sung. Tài liệu mới phải có phân loại trong `docs/context-sources.json` hoặc thuộc nhóm thư mục được khai báo; liên kết tới tệp local bị ignore không được coi là nguồn công bố hợp lệ.
+
+Các bước .NET, PostgreSQL, hợp đồng AI và build ba image vẫn giữ nguyên. Thêm kiểm tra tài liệu không thay trigger, quyền workflow, phát hành image hoặc deploy.
+
 ## Validate a change
 
 1. Push a development branch and open a PR. Check the Actions tab and PR checks.

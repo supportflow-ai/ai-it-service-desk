@@ -1,3 +1,9 @@
+> **Tài liệu lịch sử — không dùng làm chỉ dẫn triển khai hiện hành.**
+> Phạm vi bản gốc: hợp đồng ngày 2026-09-29. Chú thích bổ sung ngày 2026-10-19; không sửa nội dung hay ký duyệt lại bản gốc.
+> Nguồn hiện hành: [hợp đồng backend](current-backend-contract.md), [quy tắc bảo mật](security-design-rules.md), [quyết định còn mở](pending-business-decisions.md).
+> Phương thức tải, TTL, quota, MIME và quyền xóa phía dưới chưa được chọn cho lần triển khai mới. Theo DEC-06–07; không coi 512 byte đầu là bảo đảm an toàn tệp hoặc SUM dung lượng riêng lẻ là bảo vệ quota khi đồng thời.
+
+<!-- original-record -->
 # TC-308: Attachment Security Limits & Object Storage Policy Specification
 
 - **Document ID:** `ARCH-CONTRACT-07`

@@ -9,6 +9,8 @@ Backend .NET 10 của SupportFlow AI, tổ chức theo Clean Architecture và c�
 | AI contract và service tương lai | https://github.com/supportflow-ai/ai-service |
 | Compose, NGINX và smoke hệ thống qua GitHub Actions | https://github.com/supportflow-ai/supportflow-ai-infra |
 
+Bắt đầu tại [bản đồ tài liệu](docs/README.md) và [hợp đồng backend hiện hành](docs/architecture/current-backend-contract.md). Các hợp đồng lịch sử và đề xuất chưa duyệt được phân loại riêng.
+
 ## Kiến trúc
 
 ```text
@@ -31,7 +33,7 @@ Requester chỉ đọc chi tiết ticket của mình; Agent/Admin hiện đọc 
 
 ## Build và test
 
-Cần SDK đúng phiên bản trong `global.json` (10.0.300). Dependency được ghim bằng phiên bản cụ thể và NuGet lockfile.
+Cần SDK đúng phiên bản trong [global.json](global.json). Dependency được ghim bằng phiên bản cụ thể và NuGet lockfile.
 
 ```sh
 dotnet restore src/backend/ServiceDesk.sln --locked-mode
@@ -52,16 +54,7 @@ Frontend tự lint/test/build image trong repo web. Repo infra ghim SHA backend/
 
 ## Chạy phát triển
 
-Khởi động PostgreSQL/MinIO bằng repo infra hoặc cung cấp dịch vụ tương đương. Thiết lập trong terminal PowerShell, sử dụng credential local của bạn:
-
-```powershell
-$env:DOTNET_ENVIRONMENT = 'Development'
-$env:Database__ConnectionString = 'Host=localhost;Port=5432;Database=servicedesk;Username=servicedesk;Password=YOUR_LOCAL_PASSWORD'
-$env:ASPNETCORE_URLS = 'http://localhost:5000'
-dotnet run --project src/backend/ServiceDesk.Database -- migrate
-dotnet run --project src/backend/ServiceDesk.Database -- seed-roles
-dotnet run --project src/backend/ServiceDesk.Api --no-launch-profile
-```
+Thực hiện theo [hướng dẫn môi trường](docs/runbooks/environment-runbook.md): cấu hình an toàn, xác minh đúng database local, chạy công cụ Database và khởi động API/Worker. Đây là nguồn lệnh local duy nhất; không chạy migration chỉ để thử tài liệu.
 
 API/Worker không tự migrate hoặc seed khi startup. Muốn tạo demo user phải chạy riêng `seed-demo` với môi trường Development/Test, `SeedDemo__Enabled=true` và `SeedDemo__Password` được cung cấp rõ ràng.
 
@@ -85,13 +78,10 @@ Gateway và cách ghép hệ thống nằm trong repo infra. `/health/live` ki�
 
 Backend mặc định dùng NoOp, chưa kết nối model hoặc AI service. Contract chuẩn là `contracts/ai/v1/openapi.yaml`; repo AI ghim commit/checksum của bản phát hành. Backend sở hữu authorization, priority, confidence và mọi quyết định nghiệp vụ/Human-in-the-Loop. AI chỉ trả suggestions; mapper từ chối enum, score, correlation sai và trường lạ.
 
-```sh
-python -m pip install -r contracts/requirements.txt
-python scripts/validate_ai_contract.py
-```
+Chạy validator bằng Python venv theo [hướng dẫn hợp đồng AI](docs/runbooks/environment-runbook.md#python-venv-và-hợp-đồng-ai).
 
 Xem [ADR-012](docs/adr/ADR-012-ai-contract-and-future-transport.md) cho thiết kế xác thực, timeout/retry/circuit breaker của adapter tương lai. Chưa triển khai SLA, vòng đời ticket đầy đủ, receipt cleanup hoặc live AI trong đợt refactor này.
 
 ## Tương thích và lịch sử
 
-Giữ API hiện tại, status enum, scope/replay idempotency và dữ liệu đã lưu. Migration bổ sung sửa độ rộng mã ticket sau 9.999; không reset sequence hoặc đổi số cũ. Không rewrite lịch sử Git. Tài liệu sprint/audit cũ được giữ làm bằng chứng lịch sử; kiến trúc triển khai hiện tại được mô tả bởi ADR-011/012 và runbook trên.
+Giữ API hiện tại, status enum, scope/replay idempotency và dữ liệu đã lưu. Migration bổ sung sửa độ rộng mã ticket sau 9.999; không reset sequence hoặc đổi số cũ. Không rewrite lịch sử Git. Tài liệu sprint/audit cũ được giữ làm bằng chứng lịch sử; kiến trúc triển khai hiện tại được mô tả bởi ADR-011–014, hợp đồng hiện hành và runbook trên.

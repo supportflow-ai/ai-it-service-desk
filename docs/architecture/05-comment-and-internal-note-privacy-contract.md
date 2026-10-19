@@ -1,3 +1,9 @@
+> **Tài liệu lịch sử — không dùng làm chỉ dẫn triển khai hiện hành.**
+> Phạm vi bản gốc: hợp đồng ngày 2026-09-29. Chú thích bổ sung ngày 2026-10-19; không sửa nội dung hay ký duyệt lại bản gốc.
+> Nguồn hiện hành: [hợp đồng backend](current-backend-contract.md), [quy tắc bảo mật](security-design-rules.md), [quyết định còn mở](pending-business-decisions.md).
+> Không triển khai tự chuyển PendingUser sang InProgress từ đoạn mẫu cũ. Cách phản hồi và chuyển trạng thái phải được quyết định ở DEC-03; bảo vệ nội dung riêng tư theo quy tắc bảo mật hiện hành.
+
+<!-- original-record -->
 # TC-303: Comment & Internal Note Privacy and Visibility Contract
 
 - **Document ID:** `ARCH-CONTRACT-05`

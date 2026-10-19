@@ -1,3 +1,9 @@
+> **Tài liệu lịch sử — không dùng làm chỉ dẫn triển khai hiện hành.**
+> Phạm vi bản gốc: hợp đồng ngày 2026-09-29. Chú thích bổ sung ngày 2026-10-19; không sửa nội dung hay ký duyệt lại bản gốc.
+> Nguồn hiện hành: [hợp đồng backend](current-backend-contract.md), [quy tắc bảo mật](security-design-rules.md), [quyết định còn mở](pending-business-decisions.md).
+> Kết luận nghiệm thu dưới đây chỉ là bản ghi lịch sử, không xác nhận HEAD hoặc trạng thái Jira hôm nay. Hồ sơ TC-285 có đánh giá khác tại SHA/ngày khác; đối chiếu DEC-08 và hồ sơ Sprint 1. Không làm theo lệnh merge/push hoặc thay enum trong bản gốc từ nhiệm vụ chỉnh tài liệu.
+
+<!-- original-record -->
 # TC-199, TC-285, TC-326: Sprint Acceptance, Evidence Audit & Governance Record
 
 - **Document ID:** `ARCH-CONTRACT-08`

@@ -1,3 +1,9 @@
+> **Tài liệu lịch sử — không dùng làm chỉ dẫn triển khai hiện hành.**
+> Phạm vi bản gốc: hợp đồng ngày 2026-09-29. Chú thích bổ sung ngày 2026-10-19; không sửa nội dung hay ký duyệt lại bản gốc.
+> Nguồn hiện hành: [hợp đồng backend](current-backend-contract.md), [quy tắc bảo mật](security-design-rules.md), [quyết định còn mở](pending-business-decisions.md).
+> Không thực hiện yêu cầu đổi POST sang Draft, category GUID, mã TK hoặc giới hạn title từ bản gốc. Hợp đồng hiện hành giữ Submitted, category chuỗi, mã IT và title 100; thay đổi sản phẩm theo DEC-01.
+
+<!-- original-record -->
 # TC-260: Ticket Domain Fields, Initial Status & Ownership Specification
 
 - **Document ID:** `ARCH-CONTRACT-02`

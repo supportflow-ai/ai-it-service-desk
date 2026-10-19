@@ -1,3 +1,9 @@
+> **Tài liệu lịch sử — không dùng làm chỉ dẫn triển khai hiện hành.**
+> Phạm vi bản gốc: hợp đồng ngày 2026-09-29. Chú thích bổ sung ngày 2026-10-19; không sửa nội dung hay ký duyệt lại bản gốc.
+> Nguồn hiện hành: [hợp đồng backend](current-backend-contract.md), [quy tắc bảo mật](security-design-rules.md), [quyết định còn mở](pending-business-decisions.md).
+> Các transition, cửa sổ reopen 168 giờ và auto-close 72 giờ là nguồn lịch sử; chưa cấp phép endpoint/job. Các xung đột reply/resume, resolve và reopen theo DEC-03–05.
+
+<!-- original-record -->
 # TC-299: Ticket State Transition Matrix & Reopen Policy Specification
 
 - **Document ID:** `ARCH-CONTRACT-04`

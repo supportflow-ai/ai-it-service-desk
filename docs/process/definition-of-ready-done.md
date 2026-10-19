@@ -1,69 +1,41 @@
-# Definition of Ready (DoR), Definition of Done (DoD), and Review Rules
+# Điều kiện bắt đầu, hoàn thành và đánh giá công việc
 
-**Repository:** `Enterprise-Grade AI-Assisted Internal IT Service Request & Knowledge Management Platform`  
-**Governance:** Engineering, DevOps, and QA Standards  
-**Status:** Approved & Mandatory  
+Trạng thái: hướng dẫn hiện hành cho backend, cập nhật 2026-10-19. Quy ước nhánh/Jira/ngôn ngữ theo [tài liệu Git](pr-branch-jira-convention.md); phạm vi nguồn theo [bản đồ tài liệu](../README.md).
 
----
+## Điều kiện bắt đầu (DoR)
 
-## 1. Definition of Ready (DoR)
+Công việc cần có mục tiêu, người phụ trách, phạm vi và tiêu chí kiểm chứng rõ. Xác định hợp đồng/phiên bản áp dụng, phụ thuộc, tác động bảo mật/dữ liệu và phương án kiểm thử. Lựa chọn nghiệp vụ còn mở phải có người quyết định; không tự chọn trong lúc sửa lỗi kỹ thuật.
 
-A Jira Issue / Backlog item MUST NOT be pulled into an active sprint or transitioned to `In Progress` unless ALL of the following criteria are satisfied:
+Nhiệm vụ review/tài liệu có thể bắt đầu khi đã có nguồn và câu hỏi đủ rõ; không đợi toàn bộ chức năng tương lai được triển khai. Trợ lý không tự chuyển trạng thái Jira hoặc giao việc cho người khác.
 
-* [ ] **Clear User Story & Business Objective:** Explains the persona, action, and expected business value.
-* [ ] **Unambiguous Acceptance Criteria (AC):** Written using Gherkin format (`Given-When-Then`) or clear testable statements.
-* [ ] **Defined Scope & Technical Boundaries:** Explicitly outlines what is in-scope and out-of-scope (no open-ended tasks).
-* [ ] **Phụ thuộc đã xác định:** Ghi rõ lược đồ dữ liệu, API bên ngoài, hợp đồng HTTP và các công việc tiên quyết.
-* [ ] **Architecture Alignment:** Verified against ADRs (e.g., Clean Architecture layers, Domain Entity encapsulation).
-* [ ] **Test Strategy Defined:** Identifies required unit, architecture, integration, or smoke tests.
-* [ ] **Security & Data Privacy Evaluated:** Flags any impact on RBAC, credentials, PII, or data storage.
+## Điều kiện hoàn thành (DoD)
 
----
+- Hoàn tất phần được giao; mô tả rõ giới hạn, hợp đồng và rủi ro còn lại.
+- Các kiểm tra phù hợp với thay đổi đạt, có bằng chứng theo đúng SHA; phần chưa chạy phải nêu lý do và không được báo đạt thay.
+- Không có bí mật trong mã/tài liệu/nhật ký; lỗi nghiêm trọng ngoài phạm vi được báo rõ.
+- Tài liệu chịu ảnh hưởng được cập nhật bằng tiếng Việt; baseline không bị sửa để che regression.
+- Khi bàn giao PR để merge: CI bắt buộc đạt trên head mới, có ít nhất một người khác đánh giá/chấp thuận, các yêu cầu sửa đã được xử lý. PR hạ tầng/Docker/CI/migration cần thêm xác nhận QA hoặc DevOps phù hợp.
+- Hồ sơ Jira/PR có truy vết theo quy ước; cập nhật hệ thống bên ngoài chỉ khi được giao. Bàn giao chỉnh sửa local không đồng nghĩa PR đã được nghiệm thu hoặc đã merge.
 
-## 2. Definition of Done (DoD)
+## Kiểm tra theo loại thay đổi
 
-A task or Pull Request is considered `Done` ONLY when ALL of the following conditions are met:
+Chạy hợp các dòng bị ảnh hưởng. Lệnh chi tiết ở [AGENTS.md](../../AGENTS.md), [môi trường](../runbooks/environment-runbook.md) và [kiểm chứng backend](../runbooks/backend-hardening-verification.md).
 
-* [ ] **Code Complete:** Feature/bugfix implemented according to acceptance criteria without temporary debug hacks or commented-out code.
-* [ ] **Automated Tests Passing:**
-  * 100% of Domain unit tests pass (`dotnet test tests/ServiceDesk.Domain.Tests`).
-  * 100% of Application unit tests pass (`dotnet test tests/ServiceDesk.Application.Tests`).
-  * 100% of Architecture tests pass (`dotnet test tests/ServiceDesk.ArchitectureTests`).
-  * 100% of Integration tests pass (`dotnet test tests/ServiceDesk.IntegrationTests`).
-* [ ] **Hợp đồng API được bảo vệ:** Kiểm tra đường dẫn, dữ liệu JSON, phân quyền và phản hồi lỗi khi thay đổi hành vi API.
-* [ ] **Kiểm tra toàn hệ thống khi cần:** Dẫn kết quả kiểm tra từ kho hạ tầng, ghi rõ SHA backend được sử dụng; không yêu cầu mã giao diện trong kho này.
-* [ ] **CI Quality Gate Green:** GitHub Actions workflow completes with exit code `0`.
-* [ ] **No Secrets Committed:** Verified that no tokens, API keys, passwords, or connection strings are checked into Git.
-* [ ] **Test Evidence Attached:** Actual execution logs and commands pasted into the PR description.
-* [ ] **Peer & QA Review Approved:** Minimum required approvals obtained; all review comments marked resolved.
-* [ ] **Documentation Updated:** Runbooks, Swagger documentation, ADRs, or README updated where appropriate.
-* [ ] **Jira Issue Updated:** Jira issue status synced and linked to the PR.
+| Thay đổi | Kiểm tra |
+| --- | --- |
+| Chỉ tài liệu | Validator tài liệu, liên kết và cấu hình/lệnh tham chiếu; không bắt buộc chạy lại toàn bộ .NET/PostgreSQL/image tại local |
+| Công cụ kiểm tra tài liệu | Các tình huống lỗi của validator và chạy trên tài liệu repo; nếu sửa workflow, kiểm tra cấu trúc và lệnh mới |
+| Nghiệp vụ/quyền | Unit/use case và hồi quy HTTP liên quan, gồm trường hợp từ chối |
+| Endpoint/DTO/response | OpenAPI và hành vi JSON/status/header/caller |
+| Ranh giới tầng/module | ArchitectureTests |
+| Persistence/migration/transaction/đồng thời | PostgreSQL thật; không thay bằng SQLite hoặc EF InMemory |
+| Contract/mapper/fixture AI | Validator AI và unit/adapter tương ứng, không cần AI thật |
+| Dockerfile/dependency/cấu hình chạy | Locked restore, build, test liên quan và image chịu ảnh hưởng |
 
----
+Workflow vẫn chạy đầy đủ các bước đã cấu hình khi PR kích hoạt, kể cả PR chỉ tài liệu. Ma trận này tránh ép chạy local không liên quan; không cho phép bỏ qua CI bắt buộc. Thay đổi chức năng phải đối chiếu đủ tiêu chí nghiệm thu và workflow. Smoke toàn hệ thống thuộc infra, phải dùng đúng SHA; kết quả cũ không chứng nhận phiên bản mới.
 
-## 3. Pull Request Review Rules
+## Đánh giá và nghiệm thu
 
-To ensure high engineering velocity while preventing regressions, the following merge rules are strictly enforced:
+Reviewer kiểm phạm vi, tương thích, quyền/dữ liệu, kiểm thử thực chạy và giới hạn. Không tự phê duyệt PR của mình. Không hạ cảnh báo, bỏ assertion hoặc sửa baseline để làm CI xanh. Trạng thái Done/APPROVED trong một bản ghi cũ không thay phê duyệt và bằng chứng hiện tại.
 
-### 3.1 Approvals Required
-1. **At least ONE peer review approval** from a senior engineer or code owner.
-2. **At least ONE QA / DevOps sign-off** for any PR impacting infrastructure, Docker, CI pipelines, or core database migrations.
-3. **No Self-Approval:** Authors are prohibited from approving their own PRs.
-
-### 3.2 Reviewer Verification Checklist
-Reviewers must verify before approving:
-1. **Jira & Local ID Linkage:** PR title and metadata contain valid `[TC-XXXX]` and Local ID.
-2. **Real Test Evidence:** Verify that console output or TRX artifact exists in the PR. Reject PRs with only empty checkboxes.
-3. **Fail-Fast Compliance:** Ensure error paths are not bypassed using `catch {}`, `|| true`, or ignore directives.
-4. **Zero Regression:** Existing test coverage is maintained; new behavior is backed by new test cases.
-5. **No Lingering Comments:** All discussion threads must be marked `Resolved` prior to merge.
-
----
-
-## 4. Jira & Local ID Linking Rules
-
-1. **Jira Key Format:** Must match `TC-[0-9]+` (e.g., `TC-203`).
-2. **Branch Mapping:** Branch name MUST begin with `<type>/TC-<id>-<slug>`.
-3. **Commit Mapping:** Commit message must include `[TC-<id>]`.
-4. **PR Mapping:** PR title must begin with `[TC-<id>]`.
-5. **Local ID Format:** Use `TC-<id>` or `PR-<number>` in the PR template header to enable offline traceability during audits.
+Quy định trong tài liệu không chứng minh GitHub đã bật branch protection. Chỉ thay quy tắc bảo vệ repo, hợp nhất PR hoặc triển khai khi có nhiệm vụ riêng.
