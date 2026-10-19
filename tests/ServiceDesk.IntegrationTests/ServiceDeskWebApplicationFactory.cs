@@ -24,6 +24,8 @@ public class ServiceDeskWebApplicationFactory : WebApplicationFactory<ServiceDes
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        builder.UseSetting("Database:ConnectionString", _postgres.GetConnectionString());
+
         builder.ConfigureServices(services =>
         {
             // Remove the existing DbContext registration
@@ -60,6 +62,10 @@ public class ServiceDeskWebApplicationFactory : WebApplicationFactory<ServiceDes
     public async Task InitializeAsync()
     {
         await _postgres.StartAsync();
+
+        await using var scope = Services.CreateAsyncScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        await dbContext.Database.MigrateAsync();
     }
 
     public new async Task DisposeAsync()

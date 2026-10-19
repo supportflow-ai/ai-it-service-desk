@@ -36,6 +36,7 @@ public static class DependencyInjection
 
         services.AddScoped<IApplicationDbContext>(provider =>
             provider.GetRequiredService<ApplicationDbContext>());
+        services.AddScoped<ITicketStore, EfTicketStore>();
 
         // --- ASP.NET Core Identity ---
         services.AddIdentityCore<IdentityUser>(options =>

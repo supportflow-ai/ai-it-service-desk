@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using ServiceDesk.Application.Common.Interfaces;
+using ServiceDesk.Domain.Ticketing;
 
 namespace ServiceDesk.Infrastructure.Persistence;
 
@@ -17,14 +18,13 @@ public class ApplicationDbContext : IdentityDbContext<IdentityUser>, IApplicatio
     {
     }
 
+    public DbSet<Ticket> Tickets => Set<Ticket>();
+    public DbSet<TicketComment> TicketComments => Set<TicketComment>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
-
-        // Schema prefix for Identity tables to keep them organized
         builder.HasDefaultSchema("public");
-
-        // Future: configure domain entity mappings per module here
-        // builder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
+        builder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
     }
 }
