@@ -23,8 +23,16 @@ public sealed class TicketComment
             TicketId = ticketId,
             AuthorId = RequireValue(authorId, nameof(authorId)),
             Content = RequireValue(content, nameof(content)),
-            CreatedAt = createdAt
+            CreatedAt = RequireTimestamp(createdAt, nameof(createdAt))
         };
+    }
+
+    private static DateTimeOffset RequireTimestamp(DateTimeOffset value, string parameterName)
+    {
+        if (value == DateTimeOffset.MinValue || value == DateTimeOffset.MaxValue)
+            throw new ArgumentOutOfRangeException(parameterName, value, "Timestamp must be within the supported range.");
+
+        return value;
     }
 
     private static string RequireValue(string value, string parameterName)

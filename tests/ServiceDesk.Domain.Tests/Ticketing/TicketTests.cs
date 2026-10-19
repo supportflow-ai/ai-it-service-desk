@@ -21,6 +21,18 @@ public class TicketTests
         ticket.UpdatedAt.Should().Be(createdAt);
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void Create_BoundaryTimestamp_Throws(bool minimum)
+    {
+        var timestamp = minimum ? DateTimeOffset.MinValue : DateTimeOffset.MaxValue;
+
+        var action = () => Ticket.Create("requester-1", "VPN unavailable", "Cannot connect", "Network", Impact.High, Urgency.Medium, timestamp);
+
+        action.Should().Throw<ArgumentOutOfRangeException>();
+    }
+
     [Fact]
     public void Update_Submitted_RecalculatesPriority()
     {
@@ -30,6 +42,16 @@ public class TicketTests
 
         ticket.Priority.Should().Be(Priority.P4);
         ticket.Title.Should().Be("New title");
+    }
+
+    [Fact]
+    public void Update_BoundaryTimestamp_Throws()
+    {
+        var ticket = CreateSubmittedTicket();
+
+        var action = () => ticket.Update("New title", "New description", "Hardware", Impact.Low, Urgency.Low, DateTimeOffset.MinValue);
+
+        action.Should().Throw<ArgumentOutOfRangeException>();
     }
 
     [Fact]
@@ -56,6 +78,31 @@ public class TicketTests
         ticket.Status.Should().Be(TicketStatus.Closed);
         ticket.ResolvedAt.Should().NotBeNull();
         ticket.ClosedAt.Should().NotBeNull();
+    }
+
+    [Theory]
+    [InlineData(TicketStatus.Submitted)]
+    [InlineData(TicketStatus.InProgress)]
+    [InlineData(TicketStatus.Resolved)]
+    public void Transition_BoundaryTimestamp_Throws(TicketStatus status)
+    {
+        var ticket = status switch
+        {
+            TicketStatus.Submitted => CreateSubmittedTicket(),
+            TicketStatus.InProgress => CreateClaimedTicket(),
+            TicketStatus.Resolved => CreateResolvedTicket(),
+            _ => throw new ArgumentOutOfRangeException(nameof(status))
+        };
+
+        Action action = status switch
+        {
+            TicketStatus.Submitted => () => ticket.Claim("agent-1", DateTimeOffset.MinValue),
+            TicketStatus.InProgress => () => ticket.Resolve(DateTimeOffset.MinValue),
+            TicketStatus.Resolved => () => ticket.Close(DateTimeOffset.MinValue),
+            _ => throw new ArgumentOutOfRangeException(nameof(status))
+        };
+
+        action.Should().Throw<ArgumentOutOfRangeException>();
     }
 
     [Fact]
@@ -123,6 +170,13 @@ public class TicketTests
     {
         var ticket = CreateSubmittedTicket();
         ticket.Claim("agent-1", DateTimeOffset.UtcNow);
+        return ticket;
+    }
+
+    private static Ticket CreateResolvedTicket()
+    {
+        var ticket = CreateClaimedTicket();
+        ticket.Resolve(DateTimeOffset.UtcNow);
         return ticket;
     }
 

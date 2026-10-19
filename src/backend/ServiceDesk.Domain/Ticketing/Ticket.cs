@@ -46,8 +46,8 @@ public sealed class Ticket
             Urgency = EnsureDefined(urgency, nameof(urgency)),
             Priority = PriorityMatrix.Calculate(impact, urgency),
             Status = TicketStatus.Submitted,
-            CreatedAt = createdAt,
-            UpdatedAt = createdAt
+            CreatedAt = RequireTimestamp(createdAt, nameof(createdAt)),
+            UpdatedAt = RequireTimestamp(createdAt, nameof(createdAt))
         };
     }
 
@@ -60,24 +60,26 @@ public sealed class Ticket
         DateTimeOffset updatedAt)
     {
         EnsureStatus(TicketStatus.Submitted);
+        var timestamp = RequireTimestamp(updatedAt, nameof(updatedAt));
         Title = RequireValue(title, nameof(title));
         Description = RequireValue(description, nameof(description));
         Category = RequireValue(category, nameof(category));
         Impact = EnsureDefined(impact, nameof(impact));
         Urgency = EnsureDefined(urgency, nameof(urgency));
         Priority = PriorityMatrix.Calculate(impact, urgency);
-        UpdatedAt = updatedAt;
+        UpdatedAt = timestamp;
     }
 
     public void Claim(string agentId, DateTimeOffset now)
     {
         EnsureStatus(TicketStatus.Submitted);
+        var timestamp = RequireTimestamp(now, nameof(now));
         if (!string.IsNullOrWhiteSpace(AssigneeId))
             throw new InvalidOperationException("Ticket is already assigned.");
 
         AssigneeId = RequireValue(agentId, nameof(agentId));
         Status = TicketStatus.InProgress;
-        UpdatedAt = now;
+        UpdatedAt = timestamp;
     }
 
     public void Assign(string assigneeId, DateTimeOffset now)
@@ -85,10 +87,11 @@ public sealed class Ticket
         if (Status is not (TicketStatus.Submitted or TicketStatus.InProgress))
             throw new InvalidOperationException($"Cannot assign ticket while {Status}.");
 
+        var timestamp = RequireTimestamp(now, nameof(now));
         AssigneeId = RequireValue(assigneeId, nameof(assigneeId));
         if (Status == TicketStatus.Submitted)
             Status = TicketStatus.InProgress;
-        UpdatedAt = now;
+        UpdatedAt = timestamp;
     }
 
     public void Resolve(DateTimeOffset now)
@@ -97,9 +100,10 @@ public sealed class Ticket
         if (string.IsNullOrWhiteSpace(AssigneeId))
             throw new InvalidOperationException("Assigned ticket is required to resolve.");
 
+        var timestamp = RequireTimestamp(now, nameof(now));
         Status = TicketStatus.Resolved;
-        ResolvedAt = now;
-        UpdatedAt = now;
+        ResolvedAt = timestamp;
+        UpdatedAt = timestamp;
     }
 
     public void Reopen(DateTimeOffset now)
@@ -107,23 +111,25 @@ public sealed class Ticket
         EnsureStatus(TicketStatus.Resolved);
         Status = TicketStatus.InProgress;
         ResolvedAt = null;
-        UpdatedAt = now;
+        UpdatedAt = RequireTimestamp(now, nameof(now));
     }
 
     public void Close(DateTimeOffset now)
     {
         EnsureStatus(TicketStatus.Resolved);
+        var timestamp = RequireTimestamp(now, nameof(now));
         Status = TicketStatus.Closed;
-        ClosedAt = now;
-        UpdatedAt = now;
+        ClosedAt = timestamp;
+        UpdatedAt = timestamp;
     }
 
     public void Cancel(DateTimeOffset now)
     {
         EnsureStatus(TicketStatus.Submitted);
+        var timestamp = RequireTimestamp(now, nameof(now));
         Status = TicketStatus.Cancelled;
-        CancelledAt = now;
-        UpdatedAt = now;
+        CancelledAt = timestamp;
+        UpdatedAt = timestamp;
     }
 
     public void AddComment(string authorId, string content, DateTimeOffset now)
@@ -131,7 +137,7 @@ public sealed class Ticket
         if (Status is TicketStatus.Cancelled or TicketStatus.Closed)
             throw new InvalidOperationException("Terminal tickets cannot receive comments.");
 
-        _comments.Add(TicketComment.Create(Id, authorId, content, now));
+        _comments.Add(TicketComment.Create(Id, authorId, content, RequireTimestamp(now, nameof(now))));
     }
 
     private void EnsureStatus(TicketStatus expected)
@@ -146,6 +152,14 @@ public sealed class Ticket
             throw new ArgumentException("Value is required.", parameterName);
 
         return value.Trim();
+    }
+
+    private static DateTimeOffset RequireTimestamp(DateTimeOffset value, string parameterName)
+    {
+        if (value == DateTimeOffset.MinValue || value == DateTimeOffset.MaxValue)
+            throw new ArgumentOutOfRangeException(parameterName, value, "Timestamp must be within the supported range.");
+
+        return value;
     }
 
     private static T EnsureDefined<T>(T value, string parameterName) where T : struct, Enum
