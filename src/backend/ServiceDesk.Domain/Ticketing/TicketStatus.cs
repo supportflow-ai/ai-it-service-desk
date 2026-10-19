@@ -2,9 +2,8 @@ namespace ServiceDesk.Domain.Ticketing;
 
 /// <summary>
 /// Ticket workflow states.
-/// Provided as a minimal primitive for AI contract to reference — AI analysis
-/// is a side-assistance that MUST NOT transition ticket status.
-/// Full state-machine enforcement is a Ticketing-team concern.
+/// AI analysis is side-assistance and must not transition ticket status.
+/// The Ticket aggregate enforces the MVP workflow.
 /// </summary>
 public enum TicketStatus
 {
@@ -16,5 +15,6 @@ public enum TicketStatus
     PendingUser,
     PendingExternal,
     Resolved,
-    Closed
+    Closed,
+    Cancelled
 }
