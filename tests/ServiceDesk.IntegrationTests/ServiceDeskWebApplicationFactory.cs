@@ -49,7 +49,7 @@ public class ServiceDeskWebApplicationFactory : WebApplicationFactory<ServiceDes
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseNpgsql(_postgres.GetConnectionString()));
 
-            // Remove MinIO registrations — not available in test environment
+            // Remove MinIO registrations â€” not available in test environment
             var minioClientDescriptor = services.SingleOrDefault(
                 d => d.ServiceType == typeof(IMinioClient));
 
@@ -72,6 +72,7 @@ public class ServiceDeskWebApplicationFactory : WebApplicationFactory<ServiceDes
     public async Task InitializeAsync()
     {
         await _postgres.StartAsync();
+        await TestDatabase.PrepareAsync(_postgres.GetConnectionString(), demo: true);
     }
 
     public new async Task DisposeAsync()
@@ -81,7 +82,7 @@ public class ServiceDeskWebApplicationFactory : WebApplicationFactory<ServiceDes
     }
 
     /// <summary>
-    /// Stub object storage for integration tests — no real MinIO needed.
+    /// Stub object storage for integration tests â€” no real MinIO needed.
     /// </summary>
     private sealed class TestObjectStorageService : IObjectStorageService
     {

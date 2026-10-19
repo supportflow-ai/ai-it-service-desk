@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using System.Buffers.Binary;
 using System.Text;
 
 namespace ServiceDesk.Domain.AIAssistance;
@@ -23,9 +24,19 @@ public static class InputHashComputer
     {
         ArgumentNullException.ThrowIfNull(title);
 
-        // Canonical format: normalized to lowercase, trimmed, with separator
-        var canonical = $"TITLE:{title.Trim()}\nDESCRIPTION:{(description ?? string.Empty).Trim()}";
-        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(canonical));
-        return Convert.ToHexString(bytes).ToLowerInvariant();
+        using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+        hash.AppendData(Encoding.UTF8.GetBytes("ai-input-v2\0"));
+        Span<byte> length = stackalloc byte[4];
+        foreach (var field in new[] { title.Trim(), (description ?? string.Empty).Trim() })
+        {
+            var bytes = Encoding.UTF8.GetBytes(field);
+            BinaryPrimitives.WriteInt32BigEndian(length, bytes.Length);
+            hash.AppendData(length);
+            hash.AppendData(bytes);
+        }
+        return Convert.ToHexString(hash.GetHashAndReset()).ToLowerInvariant();
     }
+
+    public static bool IsValid(string? hash) => hash is { Length: 64 } &&
+        hash.All(character => character is >= '0' and <= '9' or >= 'a' and <= 'f');
 }

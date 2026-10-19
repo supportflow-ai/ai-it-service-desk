@@ -8,10 +8,13 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Options;
 using Npgsql;
-using ServiceDesk.Application.Ticketing.Commands;
-using ServiceDesk.Application.Ticketing.Dtos;
+using ServiceDesk.Application.Ticketing.CreateTicket;
+using ServiceDesk.Application.Ticketing.Contracts;
 using ServiceDesk.Application.Ticketing.Idempotency;
 using ServiceDesk.Infrastructure.Identity;
+using ServiceDesk.Infrastructure.Clock;
+using ServiceDesk.Application.Identity.Contracts;
+using ServiceDesk.Api.Identity;
 using ServiceDesk.Infrastructure.Options;
 using Xunit;
 
@@ -20,6 +23,35 @@ namespace ServiceDesk.IntegrationTests;
 [Trait("Category", "Integration")]
 public sealed class TicketIdempotencyPostgresTests : IClassFixture<TicketIdempotencyPostgresFixture>
 {
+    [Fact]
+    public async Task CancellationAfterTicketInsert_RollsBackTicketAndReceiptAndReleasesLock()
+    {
+        using var cancellation = new CancellationTokenSource();
+        var requester = Guid.NewGuid();
+        var fingerprint = CreateTicketFingerprint.Create(requester, Guid.NewGuid().ToString(), Payload);
+        var options = new DbContextOptionsBuilder<ServiceDesk.Infrastructure.Persistence.ApplicationDbContext>()
+            .UseNpgsql(_fixture.ConnectionString).AddInterceptors(new CancelAfterInsert(cancellation)).Options;
+        await using (var context = new ServiceDesk.Infrastructure.Persistence.ApplicationDbContext(options))
+        {
+            var ticket = ServiceDesk.Domain.Ticketing.Ticket.Create(requester, Payload.Title, Payload.Description, Payload.CategoryId, DateTime.UtcNow);
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => new ServiceDesk.Infrastructure.Ticketing.PostgresTicketWriter(context)
+                .CreateAsync(ticket, fingerprint, cancellation.Token));
+        }
+        await AssertCounts(requester, 0, 0);
+        await using var check = _fixture.CreateContext();
+        Assert.True(await check.Database.SqlQuery<bool>($"SELECT pg_try_advisory_xact_lock({fingerprint.LockId}) AS \"Value\"").SingleAsync());
+    }
+
+    private sealed class CancelAfterInsert(CancellationTokenSource cancellation) : Microsoft.EntityFrameworkCore.Diagnostics.SaveChangesInterceptor
+    {
+        public override ValueTask<int> SavedChangesAsync(Microsoft.EntityFrameworkCore.Diagnostics.SaveChangesCompletedEventData eventData,
+            int result, CancellationToken cancellationToken = default)
+        {
+            cancellation.Cancel();
+            return ValueTask.FromResult(result);
+        }
+    }
+
     private readonly TicketIdempotencyPostgresFixture _fixture;
     private static readonly CreateTicketCommand Payload = new("Network access issue", "Cannot connect to VPN from home", "NET");
 
@@ -29,7 +61,7 @@ public sealed class TicketIdempotencyPostgresTests : IClassFixture<TicketIdempot
     {
         SecretKey = TicketIdempotencyPostgresFixture.Secret, Issuer = "ServiceDesk",
         Audience = "ServiceDeskClient", ExpiryMinutes = 60
-    })).GenerateToken(new IdentityUser { Id = user.ToString(), Email = "requester@test.invalid" }, ["Requester"]);
+    }), new SystemClock()).GenerateToken(new UserInfo { UserId = user.ToString(), Email = "requester@test.invalid", Roles = ["Requester"] });
 
     private HttpClient Client(bool second = false) =>
         (second ? _fixture.Second! : _fixture.First!).CreateClient();
@@ -341,8 +373,8 @@ public sealed class TicketIdempotencyPostgresTests : IClassFixture<TicketIdempot
             Audience = invalidPart == "audience" ? "different-test-audience" : "ServiceDeskClient",
             ExpiryMinutes = invalidPart == "expired" ? -60 : 60
         };
-        var token = new JwtTokenGenerator(Options.Create(options)).GenerateToken(
-            new IdentityUser { Id = user.ToString(), Email = "requester@test.invalid" }, ["Requester"]);
+        var token = new JwtTokenGenerator(Options.Create(options), new SystemClock()).GenerateToken(
+            new UserInfo { UserId = user.ToString(), Email = "requester@test.invalid", Roles = ["Requester"] });
         using var secondHost = Client(second: true);
         using var request = new HttpRequestMessage(HttpMethod.Post, "/api/tickets");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);

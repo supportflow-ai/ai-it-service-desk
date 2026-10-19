@@ -1,3 +1,8 @@
+> **Đề xuất — chưa cấp phép triển khai.**
+> Các mô tả “hiện tại/dev” và kết quả kiểm tra bên dưới chỉ thuộc ngày/SHA nguồn trong bản gốc, không mô tả HEAD mới.
+> Đối chiếu [hợp đồng hiện hành](current-backend-contract.md), [quyết định còn mở](pending-business-decisions.md) và [quy tắc bảo mật](security-design-rules.md). Chú thích bổ sung ngày 2026-10-19; giữ bản gốc để truy vết.
+
+<!-- original-record -->
 # Ticket lifecycle policy — TC-261 / TC-299
 
 - Ngày: 2026-10-10 (Asia/Bangkok). Trạng thái: READY FOR REVIEW / Proposed implementation policy.

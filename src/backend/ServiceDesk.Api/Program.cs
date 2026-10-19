@@ -6,6 +6,8 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using ServiceDesk.Api.Endpoints;
+using ServiceDesk.Api.Identity;
+using ServiceDesk.Application.Common.Interfaces;
 using ServiceDesk.Application;
 using ServiceDesk.Domain.Identity;
 using ServiceDesk.Infrastructure;
@@ -13,26 +15,23 @@ using ServiceDesk.Infrastructure.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// --- Configuration binding ---
-builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));
-builder.Services.Configure<DatabaseOptions>(builder.Configuration.GetSection(DatabaseOptions.SectionName));
-builder.Services.Configure<MinioOptions>(builder.Configuration.GetSection(MinioOptions.SectionName));
-
 // --- Layer registration ---
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 
 // --- Authentication (JWT Bearer) ---
-var jwtOptions = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>()
-    ?? new JwtOptions();
-
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 })
-.AddJwtBearer(options =>
+.AddJwtBearer();
+builder.Services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
+.Configure<IOptions<JwtOptions>>((options, configured) =>
 {
+    var jwtOptions = configured.Value;
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuer = true,
@@ -59,11 +58,7 @@ builder.Services.AddAuthorization(options =>
 // at health-check execution time — not captured from IConfiguration at startup.
 // This allows WebApplicationFactory to override Database:ConnectionString via ConfigureAppConfiguration
 // for integration tests without modifying service registrations.
-builder.Services.AddHealthChecks()
-    .AddNpgSql(
-        sp => sp.GetRequiredService<IOptions<DatabaseOptions>>().Value.ConnectionString,
-        name: "postgresql",
-        tags: ["db", "ready"]);
+builder.Services.AddBackendHealthChecks();
 
 // --- API / Swagger ---
 builder.Services.AddEndpointsApiExplorer();
@@ -115,8 +110,10 @@ builder.Services.AddCors(options =>
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-    options.KnownIPNetworks.Clear();
-    options.KnownProxies.Clear();
+    foreach (var proxy in builder.Configuration.GetSection("ReverseProxy:KnownProxies").Get<string[]>() ?? [])
+        options.KnownProxies.Add(System.Net.IPAddress.Parse(proxy));
+    foreach (var network in builder.Configuration.GetSection("ReverseProxy:KnownNetworks").Get<string[]>() ?? [])
+        options.KnownIPNetworks.Add(System.Net.IPNetwork.Parse(network));
 });
 
 // --- Problem Details ---
@@ -146,6 +143,9 @@ app.UseAuthorization();
 app.MapAuthEndpoints();
 app.MapDiagnosticEndpoints();
 app.MapTicketEndpoints();
+
+app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false });
+app.MapHealthChecks("/health/ready");
 
 // --- Health check endpoint ---
 app.MapHealthChecks("/health", new HealthCheckOptions

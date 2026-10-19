@@ -1,5 +1,5 @@
-using ServiceDesk.Application.AIAssistance.Interfaces;
-using ServiceDesk.Application.AIAssistance.Models;
+using ServiceDesk.Application.AIAssistance.Ports;
+using ServiceDesk.Application.AIAssistance.Contracts;
 
 namespace ServiceDesk.Infrastructure.AI;
 
@@ -11,13 +11,14 @@ namespace ServiceDesk.Infrastructure.AI;
 /// - Does not throw.
 /// - Returns a well-formed TriageResult with Unavailable outcome.
 /// - Does not return fake confidence scores.
-/// - Propagates (but does not use) CancellationToken.
+    /// - Observes caller cancellation before returning.
 /// </summary>
-public sealed class NoOpTicketClassificationService : ITicketClassificationService
+internal sealed class NoOpTicketClassificationService : ITicketClassificationService
 {
     public Task<TriageResult> ClassifyAsync(
         TriageRequest request, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         return Task.FromResult(
             TriageResult.Unavailable("No AI provider configured. Using NoOp fallback."));
     }

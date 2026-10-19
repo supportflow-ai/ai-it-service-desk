@@ -12,11 +12,11 @@ public class AIAnalysisTests
         var ticketId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
 
-        var analysis = AIAnalysis.CreateSucceeded(ticketId, 5, "abc123", now);
+        var analysis = AIAnalysis.CreateSucceeded(ticketId, 5, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", now);
 
         analysis.TicketId.Should().Be(ticketId);
         analysis.TicketRevision.Should().Be(5);
-        analysis.InputHash.Should().Be("abc123");
+        analysis.InputHash.Should().Be("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
         analysis.CreatedAt.Should().Be(now);
         analysis.Succeeded.Should().BeTrue();
         analysis.FailureReason.Should().BeNull();
@@ -27,7 +27,7 @@ public class AIAnalysisTests
     public void CreateFailed_ShouldStoreFailureReason()
     {
         var analysis = AIAnalysis.CreateFailed(
-            Guid.NewGuid(), 1, "hash", DateTimeOffset.UtcNow, "Provider timeout");
+            Guid.NewGuid(), 1, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", DateTimeOffset.UtcNow, "Provider timeout");
 
         analysis.Succeeded.Should().BeFalse();
         analysis.FailureReason.Should().Be("Provider timeout");
@@ -37,7 +37,7 @@ public class AIAnalysisTests
     public void AddSuggestion_OnSucceeded_ShouldWork()
     {
         var analysis = AIAnalysis.CreateSucceeded(
-            Guid.NewGuid(), 1, "hash", DateTimeOffset.UtcNow);
+            Guid.NewGuid(), 1, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", DateTimeOffset.UtcNow);
         var suggestion = AISuggestion.Create(
             analysis.Id, SuggestionType.Category, "NET", 0.85);
 
@@ -51,7 +51,7 @@ public class AIAnalysisTests
     public void AddSuggestion_OnFailed_ShouldThrow()
     {
         var analysis = AIAnalysis.CreateFailed(
-            Guid.NewGuid(), 1, "hash", DateTimeOffset.UtcNow, "timeout");
+            Guid.NewGuid(), 1, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", DateTimeOffset.UtcNow, "timeout");
 
         var suggestion = AISuggestion.Create(
             analysis.Id, SuggestionType.Category, "NET", 0.85);

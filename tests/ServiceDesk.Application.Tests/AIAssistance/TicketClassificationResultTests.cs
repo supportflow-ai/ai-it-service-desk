@@ -1,5 +1,5 @@
-using ServiceDesk.Application.AIAssistance.Interfaces;
-using ServiceDesk.Application.AIAssistance.Models;
+using ServiceDesk.Application.AIAssistance.Ports;
+using ServiceDesk.Application.AIAssistance.Contracts;
 using ServiceDesk.Domain.AIAssistance;
 using ServiceDesk.Domain.Ticketing;
 using FluentAssertions;
@@ -85,18 +85,7 @@ public class TriageResultTests
         result.CategoryConfidence.Should().BeNull();
     }
 
-    // --- Legacy backward compatibility ---
 
-    [Fact]
-    public void LegacyEmpty_ShouldReturnResultWithZeroConfidence()
-    {
-        var result = TicketClassificationResult.Empty;
-
-        result.SuggestedCategory.Should().BeNull();
-        result.SuggestedImpact.Should().BeNull();
-        result.SuggestedUrgency.Should().BeNull();
-        result.Confidence.Should().Be(0);
-    }
 }
 
 public class TriageRequestTests
@@ -117,51 +106,6 @@ public class TriageRequestTests
         request.TicketRevision.Should().Be(42);
         request.Title.Should().Be("VPN not connecting");
         request.Description.Should().Be("Cannot access corporate network via VPN");
-    }
-}
-
-public class NoOpClassificationServiceTests
-{
-    [Fact]
-    public async Task ClassifyAsync_ShouldReturnUnavailable_NotThrow()
-    {
-        // Arrange — use Infrastructure NoOp via interface
-        ITicketClassificationService service = new Infrastructure.AI.NoOpTicketClassificationService();
-        var request = new TriageRequest
-        {
-            TicketId = Guid.NewGuid(),
-            TicketRevision = 1,
-            Title = "Test",
-            Description = "Test desc"
-        };
-
-        // Act
-        var result = await service.ClassifyAsync(request, CancellationToken.None);
-
-        // Assert
-        result.Outcome.Should().Be(TriageOutcome.Unavailable);
-        result.SuggestedCategory.Should().BeNull();
-        result.CategoryScore.Should().BeNull();
-        result.FailureReason.Should().NotBeNullOrWhiteSpace();
-    }
-
-    [Fact]
-    public async Task ClassifyAsync_ShouldPropagateCancellationToken()
-    {
-        ITicketClassificationService service = new Infrastructure.AI.NoOpTicketClassificationService();
-        using var cts = new CancellationTokenSource();
-        var request = new TriageRequest
-        {
-            TicketId = Guid.NewGuid(),
-            TicketRevision = 1,
-            Title = "Test",
-            Description = "Test"
-        };
-
-        // Should not throw even with cancelled token (NoOp is immediate)
-        var result = await service.ClassifyAsync(request, cts.Token);
-
-        result.Should().NotBeNull();
     }
 }
 

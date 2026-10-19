@@ -1,5 +1,7 @@
 # ADR-001: Modular Monolith Architecture
 
+> Bổ sung phạm vi ngày 2026-10-19: Quyết định Modular Monolith vẫn áp dụng. Năm module là định hướng sản phẩm ban đầu, không phải yêu cầu tạo module rỗng. Phần đã triển khai và ranh giới hiện hành theo ADR-014: Identity, Ticketing, AIAssistance; Knowledge/Analytics chưa triển khai. Xem [ADR-014](ADR-014-feature-use-cases-and-published-contracts.md) và [bản đồ tài liệu](../README.md).
+
 ## Status
 Accepted
 

@@ -1,3 +1,8 @@
+> **Đề xuất — chưa cấp phép triển khai.**
+> Các mô tả “hiện tại/dev” và kết quả kiểm tra bên dưới chỉ thuộc ngày/SHA nguồn trong bản gốc, không mô tả HEAD mới.
+> Đối chiếu [hợp đồng hiện hành](current-backend-contract.md), [quyết định còn mở](pending-business-decisions.md) và [quy tắc bảo mật](security-design-rules.md). Chú thích bổ sung ngày 2026-10-19; giữ bản gốc để truy vết.
+
+<!-- original-record -->
 # Actor & use-case contract — TC-246 / TC-196
 
 Ngày rà soát: 2026-10-09. Trạng thái: **READY FOR REVIEW**, chưa có Backend/Frontend/QA sign-off.

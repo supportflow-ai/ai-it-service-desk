@@ -1,3 +1,9 @@
+> **Tài liệu lịch sử — không dùng làm chỉ dẫn triển khai hiện hành.**
+> Phạm vi bản gốc: hợp đồng ngày 2026-09-29. Chú thích bổ sung ngày 2026-10-19; không sửa nội dung hay ký duyệt lại bản gốc.
+> Nguồn hiện hành: [hợp đồng backend](current-backend-contract.md), [quy tắc bảo mật](security-design-rules.md), [quyết định còn mở](pending-business-decisions.md).
+> Bảng 0–8 và yêu cầu JSON chuỗi phía dưới đã được thay thế cho phạm vi hiện hành: giữ nghĩa 0–6, thêm Triaged=7/Assigned=8/PendingExternal=9; JSON vẫn là số. Không diễn giải lại dữ liệu đã lưu.
+
+<!-- original-record -->
 # TC-261: Ticket Lifecycle Baseline & Requester Visibility Contract
 
 - **Document ID:** `ARCH-CONTRACT-03`

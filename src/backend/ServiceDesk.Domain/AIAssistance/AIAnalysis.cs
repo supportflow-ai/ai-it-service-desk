@@ -68,6 +68,7 @@ public class AIAnalysis
         string inputHash,
         DateTimeOffset createdAt)
     {
+        ValidateSnapshot(ticketId, ticketRevision, inputHash);
         return new AIAnalysis
         {
             Id = Guid.NewGuid(),
@@ -89,6 +90,8 @@ public class AIAnalysis
         DateTimeOffset createdAt,
         string failureReason)
     {
+        ValidateSnapshot(ticketId, ticketRevision, inputHash);
+        ArgumentException.ThrowIfNullOrWhiteSpace(failureReason);
         return new AIAnalysis
         {
             Id = Guid.NewGuid(),
@@ -111,6 +114,18 @@ public class AIAnalysis
             throw new InvalidOperationException("Cannot add suggestions to a failed analysis.");
 
         ArgumentNullException.ThrowIfNull(suggestion);
+        if (suggestion.AnalysisId != Id)
+            throw new ArgumentException("Suggestion belongs to a different analysis.", nameof(suggestion));
+        if (_suggestions.Any(existing => existing.Id == suggestion.Id || existing.Type == suggestion.Type))
+            throw new ArgumentException("Only one suggestion per field is allowed.", nameof(suggestion));
         _suggestions.Add(suggestion);
+    }
+
+    private static void ValidateSnapshot(Guid ticketId, long revision, string inputHash)
+    {
+        if (ticketId == Guid.Empty) throw new ArgumentException("Ticket identity is required.", nameof(ticketId));
+        if (revision < 0) throw new ArgumentOutOfRangeException(nameof(revision));
+        ArgumentNullException.ThrowIfNull(inputHash);
+        if (!InputHashComputer.IsValid(inputHash)) throw new ArgumentException("A lowercase SHA-256 input hash is required.", nameof(inputHash));
     }
 }

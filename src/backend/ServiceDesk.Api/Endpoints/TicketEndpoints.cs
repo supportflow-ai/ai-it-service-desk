@@ -1,9 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
 using ServiceDesk.Application.Common.Interfaces;
-using ServiceDesk.Application.Ticketing.Commands;
-using ServiceDesk.Application.Ticketing.Dtos;
+using ServiceDesk.Application.Ticketing.CreateTicket;
+using ServiceDesk.Application.Ticketing.Contracts;
 using ServiceDesk.Application.Ticketing.Idempotency;
-using ServiceDesk.Application.Ticketing.Interfaces;
+using ServiceDesk.Application.Ticketing.GetMyTickets;
+using ServiceDesk.Application.Ticketing.GetTicketDetail;
 using ServiceDesk.Domain.Identity;
 
 namespace ServiceDesk.Api.Endpoints;
@@ -12,46 +13,20 @@ public static class TicketEndpoints
 {
     public static IEndpointRouteBuilder MapTicketEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/tickets").WithTags("Tickets");
+        var group = app.MapGroup("/api/tickets").WithTags("Tickets").AddEndpointFilter<LegacyErrorFilter>();
 
         group.MapPost("/", async (
             [FromBody] CreateTicketCommand command,
             HttpContext context,
-            ITicketService ticketService,
-            ICurrentUser currentUser,
+            ICreateTicket createTicket,
             CancellationToken ct) =>
         {
-            if (!currentUser.IsAuthenticated || !Guid.TryParse(currentUser.UserId, out var requesterId))
-                return Results.Unauthorized();
-
             var hasKey = context.Request.Headers.TryGetValue("Idempotency-Key", out var keyValues);
             if (hasKey && (keyValues.Count != 1 || string.IsNullOrWhiteSpace(keyValues[0])))
                 return Results.BadRequest(new { error = "Supply a single non-empty Idempotency-Key." });
 
-            try
-            {
-                var ticket = hasKey
-                    ? await ticketService.CreateTicketIdempotentlyAsync(command, requesterId, keyValues[0]!, ct)
-                    : await ticketService.CreateTicketAsync(command, requesterId, ct);
-                return Results.Created($"/api/tickets/{ticket.Id}", ticket);
-            }
-            catch (IdempotencyConflictException ex)
-            {
-                return Results.Conflict(new { error = ex.Message });
-            }
-            catch (IdempotencyInProgressException ex)
-            {
-                context.Response.Headers.RetryAfter = "1";
-                return Results.Json(new { error = ex.Message }, statusCode: StatusCodes.Status503ServiceUnavailable);
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Results.Unauthorized();
-            }
-            catch (ArgumentException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            var ticket = await createTicket.ExecuteAsync(command, hasKey ? keyValues[0]! : null, ct);
+            return Results.Created($"/api/tickets/{ticket.Id}", ticket);
         })
         .WithName("CreateTicket")
         .RequireAuthorization(PolicyNames.RequireRequester)
@@ -62,23 +37,12 @@ public static class TicketEndpoints
         .Produces(StatusCodes.Status503ServiceUnavailable);
 
         group.MapGet("/me", async (
-            ITicketService ticketService,
-            ICurrentUser currentUser,
+            IGetMyTickets getMyTickets,
             CancellationToken ct,
             int page = 1,
             int pageSize = 10) =>
         {
-            if (currentUser.UserId == null || !Guid.TryParse(currentUser.UserId, out var requesterId))
-            {
-                return Results.Unauthorized();
-            }
-
-            if (page < 1 || pageSize < 1 || pageSize > 100 || page > (int.MaxValue / pageSize) + 1)
-            {
-                return Results.BadRequest(new { error = "page must be at least 1 and pageSize must be between 1 and 100" });
-            }
-
-            var tickets = await ticketService.GetTicketsForRequesterAsync(requesterId, page, pageSize, ct);
+            var tickets = await getMyTickets.ExecuteAsync(new(page, pageSize), ct);
             return Results.Ok(tickets);
         })
         .WithName("GetMyTickets")
@@ -89,14 +53,10 @@ public static class TicketEndpoints
 
         group.MapGet("/{id:guid}", async (
             Guid id,
-            ITicketService ticketService,
-            ICurrentUser currentUser,
+            IGetTicketDetail getTicketDetail,
             CancellationToken ct) =>
         {
-            if (currentUser.UserId == null || !Guid.TryParse(currentUser.UserId, out var requesterId))
-                return Results.Unauthorized();
-
-            var ticket = await ticketService.GetTicketByIdAsync(id, requesterId, ct);
+            var ticket = await getTicketDetail.ExecuteAsync(new(id), ct);
             return ticket is not null ? Results.Ok(ticket) : Results.NotFound();
         })
         .WithName("GetTicketById")

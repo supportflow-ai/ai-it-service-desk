@@ -25,6 +25,7 @@ x64/
 x86/
 build/
 bld/
+.cache/
 
 # NuGet
 **/[Pp]ackages/*
@@ -32,14 +33,6 @@ bld/
 *.nuget.props
 *.nuget.targets
 project.lock.json
-
-# ==========================================
-# Node / Frontend
-# ==========================================
-node_modules/
-dist/
-.cache/
-*.tsbuildinfo
 
 # ==========================================
 # IDE
@@ -93,3 +86,6 @@ efbundle.exe
 # Context pack (planning docs, not source)
 # ==========================================
 ai-it-service-desk-claude-context-pack/
+
+.venv/
+__pycache__/

@@ -1,5 +1,5 @@
 using FluentAssertions;
-using ServiceDesk.Application.Ticketing.Commands;
+using ServiceDesk.Application.Ticketing.CreateTicket;
 using ServiceDesk.Application.Ticketing.Idempotency;
 using Xunit;
 

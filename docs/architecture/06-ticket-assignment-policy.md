@@ -1,3 +1,9 @@
+> **Tài liệu lịch sử — không dùng làm chỉ dẫn triển khai hiện hành.**
+> Phạm vi bản gốc: hợp đồng ngày 2026-09-29. Chú thích bổ sung ngày 2026-10-19; không sửa nội dung hay ký duyệt lại bản gốc.
+> Nguồn hiện hành: [hợp đồng backend](current-backend-contract.md), [quy tắc bảo mật](security-design-rules.md), [quyết định còn mở](pending-business-decisions.md).
+> Đính chính sơ đồ mục 3: xác thực → cú pháp → tải trong phạm vi nhìn thấy → quyền hành động → revision → trạng thái/đối tượng đích → ghi nguyên tử. Không kiểm revision trước quyền như bản gốc. Ticket ngoài phạm vi phải trả 404 dù revision đúng hay sai; assignment chưa triển khai, phạm vi vai trò theo DEC-02.
+
+<!-- original-record -->
 # TC-294: Ticket Assignment Policy & Actor Permissions Specification
 
 - **Document ID:** `ARCH-CONTRACT-06`

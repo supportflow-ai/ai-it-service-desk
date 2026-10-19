@@ -9,7 +9,7 @@ public class AISuggestionTests
     private static AISuggestion CreatePendingSuggestion(double? score = 0.8)
     {
         var analysis = AIAnalysis.CreateSucceeded(
-            Guid.NewGuid(), 1, "hash123", DateTimeOffset.UtcNow);
+            Guid.NewGuid(), 1, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", DateTimeOffset.UtcNow);
 
         return AISuggestion.Create(analysis.Id, SuggestionType.Category, "NET", score);
     }

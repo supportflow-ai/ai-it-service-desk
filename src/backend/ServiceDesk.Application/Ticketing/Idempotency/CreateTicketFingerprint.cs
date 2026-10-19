@@ -1,7 +1,7 @@
 using System.Buffers.Binary;
 using System.Security.Cryptography;
 using System.Text.Json;
-using ServiceDesk.Application.Ticketing.Commands;
+using ServiceDesk.Application.Ticketing.CreateTicket;
 
 namespace ServiceDesk.Application.Ticketing.Idempotency;
 

@@ -1,3 +1,5 @@
+using ServiceDesk.Domain.Ticketing;
+
 namespace ServiceDesk.Domain.AIAssistance;
 
 /// <summary>
@@ -58,8 +60,8 @@ public class AISuggestion
         string suggestedValue,
         double? modelScore)
     {
-        if (string.IsNullOrWhiteSpace(suggestedValue))
-            throw new ArgumentException("SuggestedValue is required.", nameof(suggestedValue));
+        if (analysisId == Guid.Empty) throw new ArgumentException("Analysis identity is required.", nameof(analysisId));
+        ValidateValue(type, suggestedValue);
 
         if (modelScore.HasValue && !ConfidencePolicy.IsValidScore(modelScore.Value))
             throw new ArgumentException(
@@ -98,8 +100,7 @@ public class AISuggestion
         EnsurePending();
         ValidateReviewer(reviewedBy);
 
-        if (string.IsNullOrWhiteSpace(finalValue))
-            throw new ArgumentException("FinalValue is required for Override.", nameof(finalValue));
+        ValidateValue(Type, finalValue);
 
         Decision = SuggestionDecision.Overridden;
         FinalValue = finalValue;
@@ -150,5 +151,19 @@ public class AISuggestion
     {
         if (string.IsNullOrWhiteSpace(reviewedBy))
             throw new ArgumentException("ReviewedBy is required.", nameof(reviewedBy));
+    }
+
+    private static void ValidateValue(SuggestionType type, string value)
+    {
+        if (!Enum.IsDefined(type)) throw new ArgumentOutOfRangeException(nameof(type));
+        var names = type switch
+        {
+            SuggestionType.Category => Enum.GetNames<TicketCategory>(),
+            SuggestionType.Impact => Enum.GetNames<Impact>(),
+            SuggestionType.Urgency => Enum.GetNames<Urgency>(),
+            _ => throw new ArgumentOutOfRangeException(nameof(type))
+        };
+        if (!names.Contains(value, StringComparer.Ordinal))
+            throw new ArgumentException("Suggestion value is outside the field's defined values.", nameof(value));
     }
 }

@@ -9,7 +9,7 @@ namespace ServiceDesk.Infrastructure.Storage;
 /// MinIO/S3-compatible object storage implementation.
 /// Skeleton — actual file upload/download features are deferred to future sprints.
 /// </summary>
-public sealed class MinioObjectStorageService : IObjectStorageService
+internal sealed class MinioObjectStorageService : IObjectStorageService
 {
     private readonly IMinioClient _minioClient;
     private readonly ILogger<MinioObjectStorageService> _logger;

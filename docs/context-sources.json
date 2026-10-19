@@ -1,0 +1,127 @@
+{
+  "description": "Phân loại tài liệu được quản lý trong repo; entry tệp ưu tiên hơn nhóm thư mục. Namespace/thư mục tài liệu mới phải được phân loại rõ.",
+  "documents": {
+    "README.md": {
+      "kind": "current"
+    },
+    "AGENTS.md": {
+      "kind": "current"
+    },
+    "docs/README.md": {
+      "kind": "current"
+    },
+    "docs/architecture/README.md": {
+      "kind": "current"
+    },
+    "docs/architecture/backend-modules-and-use-cases.md": {
+      "kind": "current"
+    },
+    "docs/architecture/current-backend-contract.md": {
+      "kind": "current"
+    },
+    "docs/architecture/security-design-rules.md": {
+      "kind": "current"
+    },
+    "docs/architecture/pending-business-decisions.md": {
+      "kind": "proposal",
+      "notice": "đề xuất chờ quyết định",
+      "replacement": "docs/architecture/current-backend-contract.md"
+    },
+    "docs/reviews/README.md": {
+      "kind": "current"
+    },
+    "docs/sprint-1/README.md": {
+      "kind": "current"
+    },
+    "artifacts/README.md": {
+      "kind": "current"
+    },
+    "contracts/ai/v1/README.md": {
+      "kind": "current"
+    },
+    "docs/architecture/01-rbac-and-api-permission-matrix.md": {
+      "kind": "historical",
+      "notice": "Tài liệu lịch sử",
+      "replacement": "docs/architecture/current-backend-contract.md"
+    },
+    "docs/architecture/02-ticket-domain-and-field-contract.md": {
+      "kind": "historical",
+      "notice": "Tài liệu lịch sử",
+      "replacement": "docs/architecture/current-backend-contract.md"
+    },
+    "docs/architecture/03-ticket-lifecycle-and-visibility-baseline.md": {
+      "kind": "historical",
+      "notice": "Tài liệu lịch sử",
+      "replacement": "docs/architecture/current-backend-contract.md"
+    },
+    "docs/architecture/04-ticket-state-transition-and-reopen-matrix.md": {
+      "kind": "historical",
+      "notice": "Tài liệu lịch sử",
+      "replacement": "docs/architecture/current-backend-contract.md"
+    },
+    "docs/architecture/05-comment-and-internal-note-privacy-contract.md": {
+      "kind": "historical",
+      "notice": "Tài liệu lịch sử",
+      "replacement": "docs/architecture/current-backend-contract.md"
+    },
+    "docs/architecture/06-ticket-assignment-policy.md": {
+      "kind": "historical",
+      "notice": "Tài liệu lịch sử",
+      "replacement": "docs/architecture/current-backend-contract.md"
+    },
+    "docs/architecture/07-attachment-security-limits-and-policy.md": {
+      "kind": "historical",
+      "notice": "Tài liệu lịch sử",
+      "replacement": "docs/architecture/current-backend-contract.md"
+    },
+    "docs/architecture/08-sprint-acceptance-and-governance-record.md": {
+      "kind": "historical",
+      "notice": "Tài liệu lịch sử",
+      "replacement": "docs/architecture/current-backend-contract.md"
+    },
+    "docs/architecture/01-actor-use-cases.md": {
+      "kind": "proposal",
+      "notice": "Đề xuất",
+      "replacement": "docs/architecture/pending-business-decisions.md"
+    },
+    "docs/architecture/02-rbac-permission-matrix.md": {
+      "kind": "proposal",
+      "notice": "Đề xuất",
+      "replacement": "docs/architecture/pending-business-decisions.md"
+    },
+    "docs/architecture/03-ticket-domain-contract.md": {
+      "kind": "proposal",
+      "notice": "Đề xuất",
+      "replacement": "docs/architecture/pending-business-decisions.md"
+    },
+    "docs/architecture/04-ticket-lifecycle-policy.md": {
+      "kind": "proposal",
+      "notice": "Đề xuất",
+      "replacement": "docs/architecture/pending-business-decisions.md"
+    },
+    "docs/architecture/05-assignment-and-comment-policy.md": {
+      "kind": "proposal",
+      "notice": "Đề xuất",
+      "replacement": "docs/architecture/pending-business-decisions.md"
+    },
+    "docs/architecture/06-attachment-security.md": {
+      "kind": "proposal",
+      "notice": "Đề xuất",
+      "replacement": "docs/architecture/pending-business-decisions.md"
+    },
+    "docs/adr/ADR-009-jenkins-ci-cd.md": {
+      "kind": "historical",
+      "notice": "Superseded by",
+      "replacement": "docs/adr/ADR-013-github-actions.md"
+    }
+  },
+  "groups": {
+    "docs/adr/": "decision",
+    "docs/runbooks/": "current",
+    "docs/process/": "current",
+    ".github/": "current",
+    "docs/reviews/": "evidence",
+    "docs/sprint-1/": "evidence",
+    "artifacts/": "evidence"
+  }
+}

@@ -1,3 +1,9 @@
+> **Tài liệu lịch sử — không dùng làm chỉ dẫn triển khai hiện hành.**
+> Phạm vi bản gốc: hợp đồng ngày 2026-09-29. Chú thích bổ sung ngày 2026-10-19; không sửa nội dung hay ký duyệt lại bản gốc.
+> Nguồn hiện hành: [hợp đồng backend](current-backend-contract.md), [quy tắc bảo mật](security-design-rules.md), [quyết định còn mở](pending-business-decisions.md).
+> Kết luận nghiệm thu dưới đây chỉ là bản ghi lịch sử, không xác nhận HEAD hoặc trạng thái Jira hôm nay. Hồ sơ TC-285 có đánh giá khác tại SHA/ngày khác; đối chiếu DEC-08 và hồ sơ Sprint 1. Không làm theo lệnh merge/push hoặc thay enum trong bản gốc từ nhiệm vụ chỉnh tài liệu.
+
+<!-- original-record -->
 # TC-199, TC-285, TC-326: Sprint Acceptance, Evidence Audit & Governance Record
 
 - **Document ID:** `ARCH-CONTRACT-08`
@@ -107,12 +113,12 @@ Bên cạnh các task Jira, Đức Anh với vai trò Leader/Architect chính th
 - **Hiện trạng:** Repo chỉ có `dev`, `main` và các nhánh feature/frontend; thiếu nhánh `staging` theo chuẩn kiến trúc `dev → staging → main`.
 - **Hành động khắc phục:**
   1. Tạo nhánh `staging` phân nhánh từ `dev` sau khi đợt close-out Sprint 1 hoàn tất.
-  2. Cấu hình pipeline CI/CD (Jenkinsfile) để deploy tự động lên môi trường Staging khi có commit vào `staging`.
+  2. GitHub Actions kiểm tra commit vào `staging`. Triển khai tự động được hoãn sang thay đổi riêng khi có môi trường và phê duyệt triển khai; xem ADR-013.
 
 ### Rủi ro 3: `dev` và `main` chưa được bật Branch Protection
 - **Hiện trạng:** Cả `dev` và `main` trên GitHub đang để `protected: false`, cho phép direct push và bypass review.
 - **Hành động khắc phục (Khóa Branch Protection Rules trên GitHub):**
   - Bật *Require a pull request before merging* (Tối thiểu 1 approval từ Tech Lead).
-  - Bật *Require status checks to pass before merging* (Jenkins CI Build & Tests bắt buộc xanh).
+  - Bật *Require status checks to pass before merging*: GitHub Actions job `backend` của Backend quality gates phải xanh. Repo frontend dùng `frontend`, infra dùng `smoke`; chọn checks sau khi workflow chạy thành công trên nhánh đích.
   - Bật *Do not allow bypassing the above settings* (Kể cả Admin cũng phải đi qua PR).
   - Cấm hoàn toàn `git push --force` trên `main`, `staging`, `dev`.

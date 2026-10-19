@@ -1,5 +1,7 @@
 # ADR-008: Docker Compose + NGINX Reverse Proxy
 
+> Bổ sung phạm vi ngày 2026-10-19: Quyết định topology Compose/NGINX vẫn áp dụng ở phạm vi hệ thống. Compose, gateway và smoke do kho supportflow-ai-infra sở hữu; chạy các lệnh Compose ở checkout infra theo hướng dẫn tại đó. Repo backend chỉ giữ Dockerfile API/Worker/Database; không tạo lại cấu hình triển khai trùng nguồn. Xem [ADR-014](ADR-014-feature-use-cases-and-published-contracts.md) và [bản đồ tài liệu](../README.md).
+
 ## Status
 Accepted
 
