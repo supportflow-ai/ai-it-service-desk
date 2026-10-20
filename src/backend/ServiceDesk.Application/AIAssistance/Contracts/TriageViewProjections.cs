@@ -4,17 +4,14 @@ using ServiceDesk.Domain.Ticketing;
 namespace ServiceDesk.Application.AIAssistance.Contracts;
 
 /// <summary>
-/// Requester-safe projection of a triage result.
-/// Requester can see:
-/// - Category suggestion + confidence band
-/// - Published KB recommendations (when available)
+/// Hình chiếu an toàn của kết quả AI Triage dành cho người yêu cầu (Requester).
+/// Requester CHỈ ĐƯỢC XEM:
+/// - Gợi ý danh mục + mức độ tin cậy
+/// - Cảnh báo cần phân loại thủ công
 ///
-/// Requester CANNOT see:
-/// - Impact/Urgency suggestions (Agent/Lead scope)
-/// - Historical tickets or resolutions
-/// - Internal notes
-/// - Similar resolved tickets
-/// - Raw model scores
+/// Requester KHÔNG ĐƯỢC XEM:
+/// - Gợi ý mức độ ảnh hưởng / khẩn cấp (thuộc thẩm quyền kỹ thuật viên)
+/// - Điểm số raw từ model
 /// </summary>
 public sealed record RequesterTriageView
 {
@@ -23,7 +20,6 @@ public sealed record RequesterTriageView
     public ConfidenceBand? CategoryConfidence { get; init; }
     public bool RequiresManualTriage { get; init; }
     public string? FailureReason { get; init; }
-    // Future: public IReadOnlyList<PublishedKBReference> KBRecommendations { get; init; }
 
     public static RequesterTriageView FromTriageResult(TriageResult result)
     {
@@ -39,9 +35,8 @@ public sealed record RequesterTriageView
 }
 
 /// <summary>
-/// Agent/Lead/Admin projection of a triage result.
-/// Full visibility into all suggestions, scores, and evidence.
-/// Requires authorization check before serving.
+/// Hình chiếu kết quả AI Triage đầy đủ dành cho kỹ thuật viên / quản trị viên (Agent, Admin).
+/// Hiển thị toàn bộ thông tin đề xuất, điểm số tin cậy và lỗi xác thực nếu có.
 /// </summary>
 public sealed record AgentTriageView
 {

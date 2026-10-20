@@ -33,8 +33,8 @@ internal sealed class IdentityAccountGateway(UserManager<IdentityUser> users, Ap
         if (string.IsNullOrWhiteSpace(email) || string.IsNullOrEmpty(password)) return null;
         await using var transaction = await context.Database.BeginTransactionAsync(
             System.Data.IsolationLevel.ReadCommitted, cancellationToken);
-        // Read committed + row lock: every replica observes the latest lockout state after waiting.
-        // Read a fresh snapshot without replacing a user instance already held by this scope.
+        // Read committed + row lock: đảm bảo mọi replica quan sát trạng thái lockout mới nhất sau khi chờ.
+        // Đọc snapshot mới mà không thay thế instance user đã được theo dõi trong scope này.
         var normalizedEmail = users.NormalizeEmail(email);
         var user = await context.Users.FromSqlInterpolated(
             $"SELECT * FROM public.\"AspNetUsers\" WHERE \"NormalizedEmail\" = {normalizedEmail} FOR UPDATE")

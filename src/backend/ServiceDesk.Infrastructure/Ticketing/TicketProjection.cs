@@ -3,6 +3,9 @@ using ServiceDesk.Domain.Ticketing;
 
 namespace ServiceDesk.Infrastructure.Ticketing;
 
+/// <summary>
+/// Ánh xạ dữ liệu giữa thực thể Domain Ticket và đối tượng truyền tải TicketDto.
+/// </summary>
 internal static class TicketProjection
 {
     internal static TicketDto ToDto(Ticket ticket) => new(

@@ -1,12 +1,12 @@
 namespace ServiceDesk.Application.Common.Interfaces;
 
 /// <summary>
-/// Abstraction over system clock for testability.
+/// Trừu tượng hóa thời gian hệ thống để phục vụ kiểm thử đơn vị và tính tất định.
 /// </summary>
 public interface IClock
 {
     /// <summary>
-    /// Returns the current UTC date/time.
+    /// Trả về thời gian UTC hiện tại.
     /// </summary>
     DateTimeOffset UtcNow { get; }
 }

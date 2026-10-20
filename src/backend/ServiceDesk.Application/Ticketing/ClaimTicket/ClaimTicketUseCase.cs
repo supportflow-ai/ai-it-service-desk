@@ -6,13 +6,21 @@ using ServiceDesk.Domain.Identity;
 
 namespace ServiceDesk.Application.Ticketing.ClaimTicket;
 
+/// <summary>Lệnh yêu cầu tiếp nhận ticket (Claim).</summary>
 public record ClaimTicketCommand(Guid Id);
 
+/// <summary>Hợp đồng use case kỹ thuật viên nhận vé.</summary>
 public interface IClaimTicket
 {
     Task<TicketDto> ExecuteAsync(ClaimTicketCommand command, CancellationToken cancellationToken = default);
 }
 
+/// <summary>
+/// Xử lý tiếp nhận vé:
+/// - Yêu cầu người gọi có vai trò Agent.
+/// - Kiểm tra trạng thái vé phải là Submitted.
+/// - Chuyển trạng thái sang InProgress và lưu lại thời điểm cập nhật.
+/// </summary>
 internal sealed class ClaimTicketUseCase(ITicketWriter writer, ICurrentUser currentUser, IClock clock) : IClaimTicket
 {
     public async Task<TicketDto> ExecuteAsync(ClaimTicketCommand command, CancellationToken cancellationToken = default)

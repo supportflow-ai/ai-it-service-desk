@@ -15,13 +15,13 @@ using ServiceDesk.Infrastructure.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// --- Layer registration ---
+// --- Đăng ký các tầng kiến trúc (Clean Architecture layers) ---
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 
-// --- Authentication (JWT Bearer) ---
+// --- Cấu hình xác thực người dùng (JWT Bearer Authentication) ---
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -46,6 +46,7 @@ builder.Services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationSc
     };
 });
 
+// --- Cấu hình chính sách phân quyền theo vai trò (Authorization Policies) ---
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy(PolicyNames.RequireAdmin, p => p.RequireRole(RoleNames.Admin));
@@ -53,14 +54,10 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy(PolicyNames.RequireRequester, p => p.RequireRole(RoleNames.Requester, RoleNames.Agent, RoleNames.Admin));
 });
 
-// --- Health checks ---
-// Use a factory delegate so the connection string is resolved lazily from IOptions<DatabaseOptions>
-// at health-check execution time — not captured from IConfiguration at startup.
-// This allows WebApplicationFactory to override Database:ConnectionString via ConfigureAppConfiguration
-// for integration tests without modifying service registrations.
+// --- Kiểm tra sức khỏe dịch vụ (Health Checks) ---
 builder.Services.AddBackendHealthChecks();
 
-// --- API / Swagger ---
+// --- Tài liệu hóa API với Swagger / OpenAPI ---
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -68,7 +65,7 @@ builder.Services.AddSwaggerGen(options =>
     {
         Title = "AI IT Service Desk API",
         Version = "v1",
-        Description = "Internal IT Service Request Management System with AI Assistance"
+        Description = "Hệ thống Quản lý và Tự động hóa Xử lý Yêu cầu IT Nội bộ Ứng dụng AI"
     });
 
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -78,7 +75,7 @@ builder.Services.AddSwaggerGen(options =>
         Scheme = "bearer",
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
-        Description = "Enter JWT Bearer token"
+        Description = "Nhập token JWT Bearer: Bearer {token}"
     });
 
     options.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -93,7 +90,7 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-// --- CORS (development) ---
+// --- Cấu hình CORS cho môi trường phát triển ---
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
@@ -106,7 +103,7 @@ builder.Services.AddCors(options =>
     });
 });
 
-// --- Forwarded headers (behind NGINX) ---
+// --- Cấu hình Forwarded Headers khi chạy sau Reverse Proxy (NGINX) ---
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
@@ -116,12 +113,12 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
         options.KnownIPNetworks.Add(System.Net.IPNetwork.Parse(network));
 });
 
-// --- Problem Details ---
+// --- Chuẩn hóa thông báo lỗi theo chuẩn RFC 7807 Problem Details ---
 builder.Services.AddProblemDetails();
 
 var app = builder.Build();
 
-// --- Middleware pipeline ---
+// --- Pipeline Middleware HTTP ---
 app.UseForwardedHeaders();
 
 if (app.Environment.IsDevelopment())
@@ -140,14 +137,15 @@ app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 
+// Đăng ký các nhóm route API
 app.MapAuthEndpoints();
 app.MapDiagnosticEndpoints();
 app.MapTicketEndpoints();
 
+// Endpoints kiểm tra sức khỏe
 app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false });
 app.MapHealthChecks("/health/ready");
 
-// --- Health check endpoint ---
 app.MapHealthChecks("/health", new HealthCheckOptions
 {
     ResponseWriter = async (context, report) =>
@@ -169,7 +167,7 @@ app.MapHealthChecks("/health", new HealthCheckOptions
     }
 });
 
-// --- API info endpoint ---
+// Endpoint trả về thông tin cơ bản của API
 app.MapGet("/api", () => Results.Ok(new
 {
     service = "AI IT Service Desk API",
@@ -181,7 +179,7 @@ app.MapGet("/api", () => Results.Ok(new
 
 app.Run();
 
-// Make Program accessible for integration tests
+// Cho phép WebApplicationFactory truy cập Program class trong Integration Tests
 namespace ServiceDesk.Api
 {
     public partial class Program;

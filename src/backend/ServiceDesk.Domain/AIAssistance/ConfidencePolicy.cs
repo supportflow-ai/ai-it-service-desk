@@ -1,32 +1,26 @@
 namespace ServiceDesk.Domain.AIAssistance;
 
 /// <summary>
-/// Domain policy for confidence score interpretation.
-/// Raw model scores are mapped to <see cref="ConfidenceBand"/> for product display.
-///
-/// Các ngưỡng được tập trung tại đây để các thành phần sử dụng thống nhất.
-/// Values can be made configurable via IOptions in the future.
-///
-/// IMPORTANT: These thresholds are NOT calibrated probabilities.
-/// They are operational cutoffs for reviewer prioritization.
+/// Chính sách phân loại điểm số tin cậy (Confidence Score) từ model AI sang các mức hiển thị (ConfidenceBand).
+/// Các ngưỡng được tập trung tại đây để đảm bảo tính nhất quán trên toàn hệ thống.
 /// </summary>
 public static class ConfidencePolicy
 {
-    /// <summary>Valid model score range: [0.0, 1.0].</summary>
+    /// <summary>Điểm số model tối thiểu hợp lệ [0.0, 1.0].</summary>
     public const double MinScore = 0.0;
 
-    /// <summary>Valid model score range: [0.0, 1.0].</summary>
+    /// <summary>Điểm số model tối đa hợp lệ [0.0, 1.0].</summary>
     public const double MaxScore = 1.0;
 
-    /// <summary>Scores below this are Low confidence.</summary>
+    /// <summary>Điểm số dưới ngưỡng này được xếp vào mức độ tin cậy thấp (Low: < 0.4).</summary>
     public const double LowThreshold = 0.4;
 
-    /// <summary>Scores at or above this are High confidence.</summary>
+    /// <summary>Điểm số từ ngưỡng này trở lên được xếp vào mức độ tin cậy cao (High: >= 0.75).</summary>
     public const double HighThreshold = 0.75;
 
     /// <summary>
-    /// Classify a raw model score into a confidence band.
-    /// Returns null for invalid scores (NaN, Infinity, out-of-range).
+    /// Phân loại điểm số raw từ model thành nhóm tin cậy (ConfidenceBand).
+    /// Trả về null nếu điểm số không hợp lệ (NaN, Infinity, ngoài khoảng [0, 1]).
     /// </summary>
     public static ConfidenceBand? Classify(double? score)
     {
@@ -45,7 +39,7 @@ public static class ConfidencePolicy
     }
 
     /// <summary>
-    /// Validate that a score is within the acceptable range and not NaN/Infinity.
+    /// Kiểm tra tính hợp lệ của điểm số: nằm trong khoảng [0, 1] và không phải NaN / Infinity.
     /// </summary>
     public static bool IsValidScore(double score)
     {
