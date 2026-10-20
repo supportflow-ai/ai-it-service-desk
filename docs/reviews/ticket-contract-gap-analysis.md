@@ -1,3 +1,9 @@
+# Hồ sơ lịch sử: Đối chiếu khoảng cách hợp đồng phiếu
+
+> **Tài liệu lịch sử.** Phân tích hợp đồng tại mốc nguồn gốc; các thao tác thêm trong PR #28 được ghi riêng trong hợp đồng hiện hành.
+> Chú thích tiếng Việt ngày 2026-10-20; phần bản gốc bên dưới giữ nguyên. Nguồn đang áp dụng: [hướng dẫn hiện hành](../architecture/current-backend-contract.md).
+
+<!-- original-record -->
 # Ticket contract gap analysis — TC-199 / TC-260 / TC-261 / TC-299
 
 - Audit date: 2026-10-10 (Asia/Bangkok).

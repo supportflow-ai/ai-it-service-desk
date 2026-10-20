@@ -2,6 +2,12 @@
 > Các mô tả “hiện tại/dev” và kết quả kiểm tra bên dưới chỉ thuộc ngày/SHA nguồn trong bản gốc, không mô tả HEAD mới.
 > Đối chiếu [hợp đồng hiện hành](current-backend-contract.md), [quyết định còn mở](pending-business-decisions.md) và [quy tắc bảo mật](security-design-rules.md). Chú thích bổ sung ngày 2026-10-19; giữ bản gốc để truy vết.
 
+## Tóm tắt tiếng Việt: Bảo mật tệp đính kèm
+
+Đề xuất về tải tệp có kiểm tra quyền, định dạng, dung lượng và lưu giữ. Cơ chế tải cùng giới hạn cụ thể còn theo DEC-06–07; có bộ tích hợp MinIO không xác nhận đã có nghiệp vụ tệp.
+
+Chú thích bổ sung ngày 2026-10-20; bản gốc tiếp tục được giữ để truy vết.
+
 <!-- original-record -->
 # Attachment security contract và kế hoạch triển khai
 

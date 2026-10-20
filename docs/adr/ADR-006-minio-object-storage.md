@@ -1,20 +1,27 @@
-# ADR-006: MinIO Object Storage Abstraction
+# ADR-006: Cổng lưu trữ đối tượng và MinIO
 
-## Status
-Accepted
+## Trạng thái
 
-## Context
-Hệ thống cần lưu trữ file đính kèm (attachments) cho ticket. Cần giải pháp S3-compatible, self-hosted, nhẹ, không phụ thuộc cloud provider.
+Đã chấp nhận. Bản diễn giải tiếng Việt cập nhật 2026-10-20.
 
-## Decision
-Chọn **MinIO** làm object storage, truy cập qua application-owned abstraction `IObjectStorageService`. Infrastructure cung cấp `MinioObjectStorageService`.
+## Bối cảnh
 
-## Alternatives Considered
-- **Lưu file trong PostgreSQL (bytea)**: Không phù hợp cho file lớn, tăng backup size, giảm DB performance.
-- **Lưu trực tiếp trên filesystem**: Không portable giữa containers, không scale, khó backup.
-- **AWS S3 trực tiếp**: Phụ thuộc cloud provider, tốn chi phí, không self-hosted.
+Hệ thống có định hướng lưu tệp đính kèm cho phiếu yêu cầu, cần giải pháp tương thích S3 và có thể tự vận hành.
 
-## Consequences
-- **Positive**: Self-hosted, S3-compatible API, dễ thay thế bằng AWS S3/R2/GCS nếu cần, UI console quản lý file.
-- **Negative**: Thêm một service trong Docker Compose, cần quản lý storage volume.
-- **Neutral**: Application layer không biết MinIO — chỉ biết `IObjectStorageService`.
+## Quyết định
+
+Chọn MinIO để lưu đối tượng, truy cập qua giao diện `IObjectStorageService` do Application sở hữu. Infrastructure triển khai `MinioObjectStorageService`.
+
+## Phương án đã cân nhắc
+
+- Lưu tệp trong PostgreSQL bằng `bytea`: tăng dữ liệu sao lưu và tải của cơ sở dữ liệu khi có tệp lớn.
+- Lưu trực tiếp vào hệ thống tệp: khó dùng chung giữa các container, mở rộng và sao lưu.
+- Gọi trực tiếp AWS S3: phụ thuộc nhà cung cấp và chi phí, không đáp ứng mục tiêu tự vận hành ban đầu.
+
+## Hệ quả
+
+Có API tương thích S3 và giao diện quản lý tệp; Application chỉ biết cổng lưu trữ. Đổi lại, phải vận hành thêm dịch vụ và quản lý vùng lưu dữ liệu. Việc thay nhà cung cấp cần đánh giá mức tương thích thực tế của bộ tích hợp.
+
+Đã có cổng/bộ tích hợp không có nghĩa nghiệp vụ tải lên/tải xuống đã triển khai. Các quyết định còn mở nằm tại [DEC-06–07](../architecture/pending-business-decisions.md).
+
+Nguồn quyết định trước khi Việt hóa: [bản ghi tại mốc đối chiếu](https://github.com/supportflow-ai/ai-it-service-desk/blob/260f37b5c415d0aa69818dc306411ab5a4f467f5/docs/adr/ADR-006-minio-object-storage.md).

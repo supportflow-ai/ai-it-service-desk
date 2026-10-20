@@ -2,6 +2,12 @@
 > Các mô tả “hiện tại/dev” và kết quả kiểm tra bên dưới chỉ thuộc ngày/SHA nguồn trong bản gốc, không mô tả HEAD mới.
 > Đối chiếu [hợp đồng hiện hành](current-backend-contract.md), [quyết định còn mở](pending-business-decisions.md) và [quy tắc bảo mật](security-design-rules.md). Chú thích bổ sung ngày 2026-10-19; giữ bản gốc để truy vết.
 
+## Tóm tắt tiếng Việt: Ma trận quyền truy cập API
+
+Đề xuất và phát hiện quyền ở mốc nguồn gốc, dùng làm đầu vào cho DEC-02/DEC-08. Không lấy các kết luận bảo mật cũ làm kết quả đánh giá mã mới.
+
+Chú thích bổ sung ngày 2026-10-20; bản gốc tiếp tục được giữ để truy vết.
+
 <!-- original-record -->
 # API RBAC permission matrix & security implementation review — TC-247 / TC-196
 

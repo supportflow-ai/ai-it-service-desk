@@ -2,6 +2,12 @@
 > Các mô tả “hiện tại/dev” và kết quả kiểm tra bên dưới chỉ thuộc ngày/SHA nguồn trong bản gốc, không mô tả HEAD mới.
 > Đối chiếu [hợp đồng hiện hành](current-backend-contract.md), [quyết định còn mở](pending-business-decisions.md) và [quy tắc bảo mật](security-design-rules.md). Chú thích bổ sung ngày 2026-10-19; giữ bản gốc để truy vết.
 
+## Tóm tắt tiếng Việt: Chính sách vòng đời phiếu
+
+Đề xuất về chuyển trạng thái, mở lại và điều kiện liên quan. PR #28 đã có sáu thao tác, nhưng chưa có phân công, cửa sổ mở lại hoặc tự đóng; các lựa chọn còn mở theo DEC-01/DEC-03–05.
+
+Chú thích bổ sung ngày 2026-10-20; bản gốc tiếp tục được giữ để truy vết.
+
 <!-- original-record -->
 # Ticket lifecycle policy — TC-261 / TC-299
 

@@ -1,6 +1,6 @@
 # Kiểm chứng backend
 
-Trạng thái: quy trình hiện hành, cập nhật 2026-10-19. Đợt củng cố bắt đầu từ `9dd0746450dca4348d6d0fa8a09cfc2a48860020`, trên nhánh `codex/backend-clean-architecture`, PR #26 đích dev tại thời điểm lập hồ sơ. Đây không phải xác nhận trạng thái PR hôm nay.
+Trạng thái: quy trình hiện hành, cập nhật 2026-10-20. Mô tả chức năng đã đối chiếu `dev` tại `47634bc8162c13bd6ae024233ec24a0076738c51`, sau PR #28. Đợt củng cố ban đầu bắt đầu từ `9dd0746450dca4348d6d0fa8a09cfc2a48860020`, PR #26 đích dev; đây là bối cảnh lịch sử, không phải kết quả chạy lại hôm nay.
 
 ## Chọn kiểm tra theo phạm vi
 
@@ -33,6 +33,12 @@ Linux/macOS có thể dùng `python3` đúng phiên bản theo workflow. CI còn
 - ArchitectureTests: phân loại tầng/module, Published Contracts và các mẫu helper/generic/API cố tình vượt ranh giới.
 - Domain/adapter: parent/enum/value/terminal state, hash, bất biến kết quả AI, correlation, trường lạ và cancellation NoOp/Fake.
 - Baseline API, migration bảo toàn dữ liệu và idempotency hai host: replay gốc, khác payload, expiry, timeout, rollback.
+
+Với mã đã chứa PR #28, kiểm tra thêm sáu thao tác cập nhật, nhận xử lý, giải quyết, mở lại, đóng và hủy phiếu. Bao phủ trạng thái được phép/bị cấm, chủ sở hữu/người ngoài phạm vi, Agent, Admin và người nhiều vai trò. Đối chiếu 401/403/404 theo chính sách được chọn, nhất là khác biệt quyền nhận xử lý và thứ tự kiểm tra ở thao tác giải quyết.
+
+Ghi đồng thời cần tình huống hai yêu cầu cạnh tranh trên PostgreSQL thật và phản hồi xung đột được kiểm soát. Tên `GetForUpdateAsync` không chứng minh có khóa dòng. Các kiểm tra trên là phần cần hoàn thiện, chưa được đợt sửa tài liệu này báo đạt; xem [hợp đồng hiện hành](../architecture/current-backend-contract.md#các-điểm-chưa-đạt-cần-xử-lý).
+
+Bản chuẩn OpenAPI hiện có 16 đường dẫn, gồm sáu thao tác mới và `UpdateTicketRequest`. `PublishedApiMatchesBaseline` so sánh toàn bộ tài liệu; chạy với `EXPORT_API_BASELINE` tắt để xác nhận. Chỉ bật biến xuất khi chủ đích cập nhật hợp đồng, xem chênh lệch từng mục rồi chạy lại kiểm thử theo [quy chuẩn tài liệu](../process/documentation-standard.md).
 
 Có test trong mã không chứng minh test đã chạy. Các test offline cũng không chứng minh transaction/lock hoạt động trên PostgreSQL.
 

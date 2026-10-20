@@ -1,3 +1,9 @@
+# Hồ sơ lịch sử: Kết quả kiểm tra lưu dữ liệu
+
+> **Tài liệu lịch sử.** Kết quả PostgreSQL/MinIO của thời điểm gốc; không xác nhận dữ liệu và kiểm thử của HEAD hiện tại.
+> Chú thích tiếng Việt ngày 2026-10-20; phần bản gốc bên dưới giữ nguyên. Nguồn đang áp dụng: [hướng dẫn hiện hành](../../docs/runbooks/backend-hardening-verification.md).
+
+<!-- original-record -->
 # Persistence Test Results
 
 Date: 2026-09-17

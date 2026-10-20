@@ -2,6 +2,12 @@
 > Các mô tả “hiện tại/dev” và kết quả kiểm tra bên dưới chỉ thuộc ngày/SHA nguồn trong bản gốc, không mô tả HEAD mới.
 > Đối chiếu [hợp đồng hiện hành](current-backend-contract.md), [quyết định còn mở](pending-business-decisions.md) và [quy tắc bảo mật](security-design-rules.md). Chú thích bổ sung ngày 2026-10-19; giữ bản gốc để truy vết.
 
+## Tóm tắt tiếng Việt: Vai trò và luồng nghiệp vụ
+
+Đối chiếu người yêu cầu, nhân viên hỗ trợ và quản trị viên ở mốc rà soát gốc. Phạm vi quyền sau PR #28 nằm trong hợp đồng hiện hành; quyền ghi và phân công cần được quyết định theo DEC-02.
+
+Chú thích bổ sung ngày 2026-10-20; bản gốc tiếp tục được giữ để truy vết.
+
 <!-- original-record -->
 # Actor & use-case contract — TC-246 / TC-196
 

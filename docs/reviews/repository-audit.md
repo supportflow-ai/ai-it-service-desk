@@ -1,3 +1,9 @@
+# Hồ sơ lịch sử: Rà soát kho mã và tích hợp
+
+> **Tài liệu lịch sử.** Các phát hiện, mức độ và số dòng thuộc mốc rà soát ngày 2026-10-09; việc còn tồn tại cần đối chiếu lại mã mới.
+> Chú thích tiếng Việt ngày 2026-10-20; phần bản gốc bên dưới giữ nguyên. Nguồn đang áp dụng: [hướng dẫn hiện hành](../README.md).
+
+<!-- original-record -->
 # Repository, Git Branch & Integration Audit
 
 Ngày audit: 09/10/2026 (Asia/Bangkok, UTC+07). Repository: https://github.com/supportflow-ai/ai-it-service-desk.

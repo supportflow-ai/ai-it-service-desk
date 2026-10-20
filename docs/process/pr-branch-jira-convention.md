@@ -6,13 +6,15 @@ Trạng thái: hướng dẫn hiện hành cho backend, cập nhật 2026-10-19.
 
 Mẫu thông thường: `<type>/TC-<id>-<mô-tả-ngắn-không-dấu>`. Loại nhánh: `feature`, `feat`, `bugfix`, `fix`, `chore`, `refactor`, `hotfix`, `docs`, `test`; công việc bằng Codex dùng tiền tố `codex/`. Nhánh phát hành dùng `release/<phiên-bản>` theo nhiệm vụ phát hành riêng.
 
-`TC-<id>` phải là mã Jira có thật. Không tự bịa mã hoặc suy ra quyền tạo công việc Jira. Nếu người dùng yêu cầu tiếp tục một nhánh cụ thể, giữ nhánh đó kể cả tên không khớp mẫu. Nhánh hiện tại `codex/backend-clean-architecture` thuộc trường hợp này. Ngoại lệ tên nhánh không tự miễn mã Jira của commit/PR.
+`TC-<id>` phải là mã Jira có thật. Không tự bịa mã hoặc suy ra quyền tạo công việc Jira. Nếu người dùng yêu cầu tiếp tục một nhánh cụ thể, giữ nhánh đó kể cả tên không khớp mẫu. Tên nhánh hiện tại phải lấy từ Git, không lấy từ ví dụ hoặc hồ sơ tái cấu trúc cũ. Ngoại lệ tên nhánh không tự miễn mã Jira của commit/PR.
 
 [Workflow](../../.github/workflows/ci.yml) kiểm tra mọi PR; push chỉ kích hoạt trên main/dev/staging và `codex/**`. Nhánh feature khác chưa mở PR không tự có kiểm tra push. Không tự mở rộng trigger, push hoặc tạo PR nếu chưa được giao.
 
 ## Commit và ngôn ngữ
 
 Tài liệu mới, mô tả commit và PR dùng tiếng Việt có dấu. Giữ định danh/câu lệnh kỹ thuật, tránh xen tiếng Anh khi có cách nói tiếng Việt rõ ràng.
+
+Áp dụng [quy chuẩn tài liệu](documentation-standard.md) và [bảng thuật ngữ](technical-glossary.md). Ghi rõ tài liệu bị ảnh hưởng hoặc lý do không cần cập nhật; mốc nội dung và mốc kiểm thử có thể khác nhau và phải được phân biệt.
 
 ```text
 <type>(<scope>): [TC-<id>] <mô tả tiếng Việt>

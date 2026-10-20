@@ -1,3 +1,9 @@
+# Hồ sơ lịch sử: Danh sách nợ kỹ thuật và điểm chặn
+
+> **Tài liệu lịch sử.** Danh sách theo dõi tại đợt rà soát gốc; nhãn chưa xử lý/đã xử lý không tự mô tả trạng thái hôm nay.
+> Chú thích tiếng Việt ngày 2026-10-20; phần bản gốc bên dưới giữ nguyên. Nguồn đang áp dụng: [hướng dẫn hiện hành](../architecture/pending-business-decisions.md).
+
+<!-- original-record -->
 # Technical Debt & Blocker Register
 
 Ngày audit: 09/10/2026 (Asia/Bangkok, UTC+07). Repository: https://github.com/supportflow-ai/ai-it-service-desk.

@@ -1,31 +1,41 @@
-# GitHub Actions operations
+# Vận hành GitHub Actions
 
-The source workflows are `.github/workflows/ci.yml` in the backend, web, AI and infra repositories. Jenkins is superseded by ADR-013.
+Trạng thái: hướng dẫn hiện hành; cập nhật 2026-10-20. Đối chiếu các quy trình đã công bố tại mốc backend `47634bc8162c13bd6ae024233ec24a0076738c51`; cấu hình cụ thể lấy từ từng kho và commit đang kiểm tra.
+
+## Nguồn và phạm vi
+
+Nguồn quy trình là `.github/workflows/ci.yml` trong các kho backend, giao diện, AI và hạ tầng. GitHub Actions thay Jenkins theo [ADR-013](../adr/ADR-013-github-actions.md).
+
+Backend kiểm thử và tạo ảnh API/Worker/Database. Giao diện tự kiểm tra mã, kiểm thử và tạo ảnh tại kho riêng. Hạ tầng ghim mã backend/giao diện rồi chạy hệ thống tạm qua cổng truy cập. Kho AI kiểm tra phiên bản, checksum và dữ liệu mẫu hợp đồng.
+
+Ảnh tạo trên máy chạy kiểm tra được thu dọn, chưa phát hành lên kho ảnh. Quy trình hiện chưa tự triển khai production.
 
 ## Kiểm tra tài liệu trong backend
 
-Job `backend` kiểm tra nguồn/liên kết bằng `scripts/validate_project_docs.py` và chạy các tình huống hồi quy của công cụ trước bước .NET. Công cụ dùng Python đã thiết lập trên runner, không cần database hoặc package bổ sung. Tài liệu mới phải có phân loại trong `docs/context-sources.json` hoặc thuộc nhóm thư mục được khai báo; liên kết tới tệp local bị ignore không được coi là nguồn công bố hợp lệ.
+Công việc `backend` chạy `scripts/validate_project_docs.py` và các tình huống hồi quy trước bước .NET. Công cụ dùng Python đã thiết lập trên máy chạy CI, không cần cơ sở dữ liệu hoặc gói bổ sung.
 
-Các bước .NET, PostgreSQL, hợp đồng AI và build ba image vẫn giữ nguyên. Thêm kiểm tra tài liệu không thay trigger, quyền workflow, phát hành image hoặc deploy.
+Tài liệu mới phải được phân loại trong `docs/context-sources.json` hoặc thuộc nhóm thư mục đã khai báo. Liên kết tới tệp local bị Git bỏ qua không phải nguồn đã công bố. Đối chiếu thêm [quy chuẩn tài liệu](../process/documentation-standard.md), nhất là ngôn ngữ và liên kết tới tiêu đề mà công cụ chưa kiểm tra.
 
-## Validate a change
+Thay đổi tài liệu không tự thay điều kiện kích hoạt, quyền truy cập, phát hành ảnh hoặc triển khai. CI vẫn chạy đầy đủ các bước được quy trình cấu hình.
 
-1. Push a development branch and open a PR. Check the Actions tab and PR checks.
-2. Backend: inspect job `backend`; download `backend-tests` for TRX details and the versioned AI contract artifact if needed. PostgreSQL integration runs using Testcontainers on the hosted Linux runner.
-3. Web: inspect job `frontend` for lint, tests and image build.
-4. Infra: update `sources.lock.json` to the exact reviewed backend/web commit SHAs. Job `smoke` checks out those commits and builds/starts the disposable system, including migration and roles, before gateway smoke checks. Logs are emitted even on failure; CI volumes are removed on normal job teardown. Never copy CI volume cleanup to a real environment.
-5. AI: keep the existing contract checksum/version/fixture checks green when changing a pinned contract.
+## Kiểm tra một thay đổi
 
-Manual reruns use **Actions → workflow → Run workflow** after the workflow is merged into the default branch, or the rerun button on an existing run. Canceling an obsolete run cannot change production because no deployment job exists.
+1. Khi nhiệm vụ gồm đưa mã lên GitHub và mở PR, kiểm tra kết quả tại thẻ **Actions** và phần kiểm tra của PR. Ghi đúng commit được chạy.
+2. Backend: xem công việc `backend`; tải `backend-tests` để đọc TRX và bản hợp đồng AI có phiên bản khi cần. Kiểm thử PostgreSQL chạy bằng Testcontainers trên máy Linux của GitHub.
+3. Giao diện: xem công việc `frontend` cho kiểm tra quy cách mã, kiểm thử và tạo ảnh.
+4. Hạ tầng: `sources.lock.json` phải ghim chính xác commit backend/giao diện đã được đánh giá. Công việc `smoke` lấy các commit đó, dựng hệ thống tạm, chạy migration/vai trò rồi kiểm tra qua cổng chung. Nhật ký được xuất cả khi thất bại; vùng dữ liệu CI được thu dọn theo quy trình. Không áp dụng cách thu dọn đó vào môi trường có dữ liệu cần giữ.
+5. AI: khi thay hợp đồng được ghim, đối chiếu checksum, phiên bản và dữ liệu mẫu của các kho liên quan.
 
-## Switch over after merge
+Chạy thủ công qua **Actions → tên quy trình → Run workflow** khi quy trình đã có trên nhánh mặc định; có thể dùng nút chạy lại của lượt hiện hữu. Hủy lượt lỗi thời không thay production vì chưa có công việc triển khai.
 
-Merge the reviewed workflow changes and require the new Actions checks in branch rules before removing any required Jenkins check. Verify a fresh PR receives the required successful checks. No repository protection rules are modified by this code change.
+## Chuyển kiểm tra bắt buộc và dừng Jenkins cũ
 
-Disable external Jenkins jobs/webhooks for these repositories and retire the Jenkins server only after administrators confirm no other projects depend on it. Preserve needed audit records and server volumes; this migration does not delete them or revoke shared credentials automatically.
+Sau khi thay đổi quy trình được hợp nhất, quản trị viên cấu hình kiểm tra GitHub Actions bắt buộc trước khi bỏ yêu cầu Jenkins tương ứng. Xác minh một PR mới thực sự nhận đủ kết quả thành công. Nội dung quy trình không chứng minh GitHub đã bật bảo vệ nhánh.
 
-CI needs `contents: read` and no deployment or registry secrets for the current public repositories. If a source repository becomes private, provide narrowly scoped cross-repository read access to infra checkout in a separate reviewed change.
+Chỉ dừng công việc/webhook/máy chủ Jenkins bên ngoài khi quản trị viên xác nhận không còn dự án khác phụ thuộc. Giữ hồ sơ và vùng dữ liệu cần thiết; việc xóa Jenkinsfile không tự xóa máy chủ hoặc thu hồi thông tin xác thực dùng chung.
 
-## Release boundary
+## Quyền và phát hành
 
-Docker builds validate Dockerfiles and dependencies; runner-local images are discarded. There is no GHCR publication or automatic production deployment. Follow the backend rollout and infra production handoff runbooks for an explicit release using immutable images. A registry/deployment pipeline requires a separate design and authorization.
+CI hiện dùng `contents: read`, chưa cần bí mật triển khai hoặc kho ảnh cho các kho công khai. Nếu một kho chuyển riêng tư, thay đổi quyền đọc chéo kho của hạ tầng cần được đánh giá riêng và giới hạn đúng phạm vi.
+
+Phát hành dùng ảnh bất biến theo [hướng dẫn triển khai backend](backend-refactor-rollout.md) và bàn giao của kho hạ tầng. Việc bổ sung kho ảnh hoặc tự động triển khai cần thiết kế và nhiệm vụ riêng.

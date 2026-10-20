@@ -1,3 +1,9 @@
+# Hồ sơ lịch sử: Khắc phục chống tạo trùng phiếu
+
+> **Tài liệu lịch sử.** Ghi lại phương án và chốt chặn kiểm chứng lỗi chống tạo trùng tại mốc gốc; không thay kết quả PostgreSQL của phiên bản mới.
+> Chú thích tiếng Việt ngày 2026-10-20; phần bản gốc bên dưới giữ nguyên. Nguồn đang áp dụng: [hướng dẫn hiện hành](../runbooks/backend-hardening-verification.md).
+
+<!-- original-record -->
 # P0 — Ticket idempotency remediation
 
 Ngày: 2026-10-09. **Trạng thái: IMPLEMENTED / BLOCKED merge và release do integration gate chưa đạt.**

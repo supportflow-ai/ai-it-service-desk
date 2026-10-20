@@ -50,6 +50,18 @@ dotnet test src/backend/ServiceDesk.sln -c Release --no-build --filter "Category
 
 ## 5. Điều kiện hoàn thành
 
+### Tài liệu chịu ảnh hưởng
+
+- Tài liệu đã cập nhật, gồm chỉ mục/liên kết liên quan:
+- Nếu không cần cập nhật tài liệu, nêu lý do cụ thể:
+- Commit mã nguồn đã dùng để đối chiếu nội dung:
+- Phần đã triển khai, giới hạn và quyết định còn mở:
+- Nếu thay API: đường dẫn/DTO/quyền/phản hồi, chênh lệch OpenAPI và kiểm thử tương thích:
+
+Đối chiếu [quy chuẩn tài liệu](../docs/process/documentation-standard.md) và [bảng thuật ngữ](../docs/process/technical-glossary.md). Bằng chứng kiểm thử cũ giữ nguyên ngày/commit, kết quả mới được ghi riêng.
+
+### Kiểm tra hoàn thành
+
 - [ ] Công việc Jira, mã theo dõi và phạm vi được ghi rõ.
 - [ ] Các kiểm thử liên quan đạt; đã cung cấp bằng chứng thực tế.
 - [ ] GitHub Actions của backend thành công trên đúng SHA.

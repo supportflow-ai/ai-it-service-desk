@@ -1,21 +1,26 @@
-# ADR-001: Modular Monolith Architecture
+# ADR-001: Kiến trúc nguyên khối theo mô-đun
 
-> Bổ sung phạm vi ngày 2026-10-19: Quyết định Modular Monolith vẫn áp dụng. Năm module là định hướng sản phẩm ban đầu, không phải yêu cầu tạo module rỗng. Phần đã triển khai và ranh giới hiện hành theo ADR-014: Identity, Ticketing, AIAssistance; Knowledge/Analytics chưa triển khai. Xem [ADR-014](ADR-014-feature-use-cases-and-published-contracts.md) và [bản đồ tài liệu](../README.md).
+## Trạng thái
 
-## Status
-Accepted
+Đã chấp nhận. Bản diễn giải tiếng Việt cập nhật 2026-10-20; giữ phạm vi quyết định ban đầu.
 
-## Context
-Project nhóm 5 người cần tạo hệ thống IT Service Desk với nhiều domain area (Identity, Ticketing, Knowledge, AI Assistance, Analytics). Cần kiến trúc rõ ràng nhưng không quá phức tạp.
+Bổ sung phạm vi ngày 2026-10-19: năm mô-đun là định hướng sản phẩm, không phải yêu cầu tạo mô-đun rỗng. Phần đã triển khai gồm Identity, Ticketing và AIAssistance; Knowledge/Analytics chưa triển khai. Xem [ADR-014](ADR-014-feature-use-cases-and-published-contracts.md) và [bản đồ tài liệu](../README.md).
 
-## Decision
-Chọn **Modular Monolith** — 5 logical modules trong một deployment unit.
+## Bối cảnh
 
-## Alternatives Considered
-- **Microservices**: Quá phức tạp cho nhóm 5 người, distributed-system overhead không cần thiết.
-- **Simple Monolith (no modules)**: Thiếu boundary rõ ràng, khó bảo trì khi project lớn lên.
+Nhóm năm người xây dựng hệ thống hỗ trợ yêu cầu CNTT, gồm các mảng danh tính, phiếu yêu cầu, tri thức, hỗ trợ AI và phân tích. Kiến trúc cần ranh giới rõ ràng và phù hợp quy mô nhóm.
 
-## Consequences
-- **Positive**: Đơn giản deploy, dễ debug, vertical PR review, tránh distributed overhead.
-- **Negative**: Cần discipline để giữ module boundary (enforced bằng architecture tests).
-- **Neutral**: Có thể tách module thành service sau nếu cần (unlikely).
+## Quyết định
+
+Chọn kiến trúc nguyên khối theo mô-đun (Modular Monolith): các mô-đun logic cùng nằm trong một đơn vị triển khai. Định hướng ban đầu có năm mô-đun; phần bổ sung phía trên xác định phạm vi đã có.
+
+## Phương án đã cân nhắc
+
+- Dịch vụ nhỏ độc lập: tăng chi phí xử lý hệ thống phân tán, vượt nhu cầu của nhóm.
+- Ứng dụng nguyên khối không chia mô-đun: thiếu ranh giới rõ ràng và khó bảo trì khi mở rộng.
+
+## Hệ quả
+
+Triển khai và tìm lỗi đơn giản hơn; có thể đánh giá thay đổi theo từng tính năng. Nhóm phải duy trì ranh giới bằng kiểm thử kiến trúc. Có thể tách mô-đun thành dịch vụ riêng khi có nhu cầu thực tế.
+
+Nguồn quyết định trước khi Việt hóa: [bản ghi tại mốc đối chiếu](https://github.com/supportflow-ai/ai-it-service-desk/blob/260f37b5c415d0aa69818dc306411ab5a4f467f5/docs/adr/ADR-001-modular-monolith.md).

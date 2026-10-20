@@ -1,3 +1,9 @@
+# ADR-009: Quyết định Jenkins đã được thay thế
+
+> **Tài liệu lịch sử.** Đã được thay thế bởi [ADR-013](ADR-013-github-actions.md) ngày 2026-10-18 (Superseded by).
+> Tóm tắt tiếng Việt ngày 2026-10-20: bản gốc chọn Jenkins ở giai đoạn trước; nền tảng hiện hành là GitHub Actions. Giữ nguyên bối cảnh, quyết định và kết luận gốc bên dưới.
+
+<!-- original-record -->
 # ADR-009: Jenkins CI/CD Foundation
 
 ## Status

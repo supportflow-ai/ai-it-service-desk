@@ -1,18 +1,30 @@
 ---
-name: Feature Request
-about: Suggest a new feature
+name: Đề xuất tính năng
+about: Mô tả nhu cầu, phạm vi và tiêu chí chấp nhận của tính năng backend
 title: '[FEATURE] '
 labels: enhancement
 ---
 
-## Description
+## Nhu cầu và mục tiêu
 
-<!-- What feature do you want? -->
+<!-- Ai gặp vấn đề gì và kết quả mong muốn là gì? -->
 
-## Motivation
+## Phạm vi
 
-<!-- Why is this needed? -->
+- Chức năng cần bổ sung:
+- Thành phần backend chịu ảnh hưởng:
+- Ranh giới với kho giao diện, AI hoặc hạ tầng:
 
-## Proposed Solution
+## Phương án đề xuất
 
-<!-- How should it work? -->
+<!-- Mô tả luồng nghiệp vụ, quyền truy cập, API/dữ liệu và khả năng tương thích khi có tác động. -->
+
+## Tiêu chí chấp nhận
+
+<!-- Nêu kết quả có thể kiểm chứng, gồm tình huống bị từ chối nếu thay quyền hoặc dữ liệu. -->
+
+## Quyết định và tài liệu liên quan
+
+- Yêu cầu/quyết định đã thống nhất:
+- Lựa chọn còn mở cần người phụ trách quyết định:
+- Hợp đồng hoặc tài liệu cần cập nhật:

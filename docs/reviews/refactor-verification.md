@@ -1,3 +1,9 @@
+# Hồ sơ lịch sử: Kiểm chứng đợt tái cấu trúc
+
+> **Tài liệu lịch sử.** Giữ kết quả kiểm thử và giới hạn đã ghi tại commit gốc; không quy đổi thành bằng chứng kiểm chứng HEAD.
+> Chú thích tiếng Việt ngày 2026-10-20; phần bản gốc bên dưới giữ nguyên. Nguồn đang áp dụng: [hướng dẫn hiện hành](../runbooks/backend-hardening-verification.md).
+
+<!-- original-record -->
 # Backend refactor verification
 
 The baseline is recorded in `refactor-baseline.md`. No historical migration or Git

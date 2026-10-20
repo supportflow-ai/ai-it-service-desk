@@ -1,20 +1,27 @@
-# ADR-010: Testcontainers for Integration Tests
+# ADR-010: Kiểm thử tích hợp PostgreSQL bằng Testcontainers
 
-## Status
-Accepted
+## Trạng thái
 
-## Context
-Integration tests cần PostgreSQL thật để kiểm tra EF Core migrations, Identity schema, và database behavior. Dùng EF Core InMemory provider sẽ bỏ qua các PostgreSQL-specific behavior (constraints, transactions, pgvector).
+Đã chấp nhận. Bản diễn giải tiếng Việt cập nhật 2026-10-20.
 
-## Decision
-Dùng **Testcontainers for .NET** với PostgreSQL container thật. Mỗi test run khởi động một PostgreSQL container tạm, chạy tests, rồi dọn dẹp. WebApplicationFactory replace DbContext connection string sang Testcontainer.
+## Bối cảnh
 
-## Alternatives Considered
-- **EF Core InMemory provider**: Không hỗ trợ constraints, transactions, PostgreSQL-specific features (pgvector). False positives khi test pass nhưng production fail.
-- **SQLite InMemory**: Gần SQL hơn nhưng vẫn thiếu PostgreSQL dialect, không hỗ trợ pgvector.
-- **Shared dev PostgreSQL instance**: Flaky tests do shared state, không reproducible, cần cleanup logic phức tạp.
+Cần PostgreSQL thật để kiểm tra migration EF Core, bảng Identity, ràng buộc và giao dịch. Bộ lưu dữ liệu trong bộ nhớ không thể xác nhận các hành vi đặc thù PostgreSQL.
 
-## Consequences
-- **Positive**: Tests chạy trên PostgreSQL thật, reproducible, isolated, phát hiện migration errors sớm.
-- **Negative**: Cần Docker runtime trên dev machine và CI agent, test startup chậm hơn InMemory (~2-5s cho container).
-- **Neutral**: MinIO và external AI provider được mock/stub trong test environment.
+## Quyết định
+
+Dùng Testcontainers for .NET để tạo PostgreSQL tạm cho kiểm thử. Bộ kiểm thử khởi tạo cơ sở dữ liệu, chạy các tình huống rồi thu dọn. `WebApplicationFactory` thay chuỗi kết nối bằng đích kiểm thử.
+
+## Phương án đã cân nhắc
+
+- EF Core InMemory: không kiểm chứng đầy đủ ràng buộc, giao dịch hoặc các phần riêng của PostgreSQL.
+- SQLite trong bộ nhớ: gần SQL hơn nhưng khác phương ngữ và không có các khả năng tương ứng như pgvector.
+- PostgreSQL phát triển dùng chung: trạng thái giữa các lần chạy dễ ảnh hưởng nhau và khó dựng lại độc lập.
+
+## Hệ quả
+
+Kiểm thử được cách ly và phát hiện sớm lỗi migration/hành vi dữ liệu thật. Máy phát triển hoặc môi trường CI cần Docker; khởi tạo container làm tăng thời gian chạy. MinIO và nhà cung cấp AI bên ngoài được thay bằng bộ giả phù hợp với phạm vi kiểm thử.
+
+Từng kết quả phải ghi số kiểm thử thực chạy và commit. Xem [hướng dẫn kiểm chứng](../runbooks/backend-hardening-verification.md).
+
+Nguồn quyết định trước khi Việt hóa: [bản ghi tại mốc đối chiếu](https://github.com/supportflow-ai/ai-it-service-desk/blob/260f37b5c415d0aa69818dc306411ab5a4f467f5/docs/adr/ADR-010-testcontainers-postgresql.md).
