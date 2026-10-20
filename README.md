@@ -16,6 +16,10 @@
 [![Architecture](https://img.shields.io/badge/Architecture-Modular%20Monolith-orange)](docs/adr/ADR-001-modular-monolith.md)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
+<br/>
+
+**English** | [Tiếng Việt](README.vi.md)
+
 ---
 
 [Key Highlights](#-key-highlights) •
