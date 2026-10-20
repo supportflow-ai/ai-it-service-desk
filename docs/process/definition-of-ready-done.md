@@ -13,7 +13,7 @@ Nhiệm vụ review/tài liệu có thể bắt đầu khi đã có nguồn và 
 - Hoàn tất phần được giao; mô tả rõ giới hạn, hợp đồng và rủi ro còn lại.
 - Các kiểm tra phù hợp với thay đổi đạt, có bằng chứng theo đúng SHA; phần chưa chạy phải nêu lý do và không được báo đạt thay.
 - Không có bí mật trong mã/tài liệu/nhật ký; lỗi nghiêm trọng ngoài phạm vi được báo rõ.
-- Tài liệu chịu ảnh hưởng được cập nhật bằng tiếng Việt; baseline không bị sửa để che regression.
+- Tài liệu chịu ảnh hưởng được cập nhật bằng tiếng Việt theo [quy chuẩn](documentation-standard.md), có mốc nguồn phù hợp; mốc chuẩn không bị sửa để che lỗi hồi quy. Nếu không cần sửa tài liệu, ghi lý do cụ thể trong PR/bàn giao.
 - Khi bàn giao PR để merge: CI bắt buộc đạt trên head mới, có ít nhất một người khác đánh giá/chấp thuận, các yêu cầu sửa đã được xử lý. PR hạ tầng/Docker/CI/migration cần thêm xác nhận QA hoặc DevOps phù hợp.
 - Hồ sơ Jira/PR có truy vết theo quy ước; cập nhật hệ thống bên ngoài chỉ khi được giao. Bàn giao chỉnh sửa local không đồng nghĩa PR đã được nghiệm thu hoặc đã merge.
 

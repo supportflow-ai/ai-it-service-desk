@@ -1,3 +1,9 @@
+# Hồ sơ lịch sử: Rà soát vận hành và chất lượng
+
+> **Tài liệu lịch sử.** Báo cáo tại thời điểm hệ thống còn gồm cả giao diện và hạ tầng trong cùng kho.
+> Chú thích tiếng Việt ngày 2026-10-20; phần bản gốc bên dưới giữ nguyên. Nguồn đang áp dụng: [hướng dẫn hiện hành](../../docs/runbooks/backend-hardening-verification.md).
+
+<!-- original-record -->
 # DevOps & QA Audit Report — AI IT Service Desk
 
 **Repository:** `Enterprise-Grade AI-Assisted Internal IT Service Request & Knowledge Management Platform`  

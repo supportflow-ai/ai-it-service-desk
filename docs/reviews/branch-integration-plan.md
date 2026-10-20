@@ -1,3 +1,9 @@
+# Hồ sơ lịch sử: Kế hoạch tích hợp các nhánh
+
+> **Tài liệu lịch sử.** Kế hoạch hợp nhất nhánh tại mốc rà soát gốc; trạng thái nhánh và điều kiện hợp nhất cần được kiểm tra lại.
+> Chú thích tiếng Việt ngày 2026-10-20; phần bản gốc bên dưới giữ nguyên. Nguồn đang áp dụng: [hướng dẫn hiện hành](../README.md).
+
+<!-- original-record -->
 # Branch Integration Plan — feature/* → dev → staging → main
 
 Ngày audit: 09/10/2026 (Asia/Bangkok, UTC+07). Repository: https://github.com/supportflow-ai/ai-it-service-desk.

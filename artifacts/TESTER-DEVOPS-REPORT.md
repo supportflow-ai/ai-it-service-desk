@@ -1,3 +1,9 @@
+# Hồ sơ lịch sử: Báo cáo kiểm thử và vận hành
+
+> **Tài liệu lịch sử.** Bằng chứng của môi trường, công cụ và phạm vi gốc; không xác nhận backend hiện hành đã nghiệm thu.
+> Chú thích tiếng Việt ngày 2026-10-20; phần bản gốc bên dưới giữ nguyên. Nguồn đang áp dụng: [hướng dẫn hiện hành](../docs/runbooks/backend-hardening-verification.md).
+
+<!-- original-record -->
 # Tester/DevOps Validation Report
 
 ## 1. Environment

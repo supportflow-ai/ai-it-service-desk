@@ -1,3 +1,9 @@
+# Hồ sơ lịch sử: Mốc nguồn trước tái cấu trúc
+
+> **Tài liệu lịch sử.** Lưu nguồn và công cụ của đợt tái cấu trúc ban đầu; không dùng số phiên bản hoặc câu lệnh cũ thay hướng dẫn hiện hành.
+> Chú thích tiếng Việt ngày 2026-10-20; phần bản gốc bên dưới giữ nguyên. Nguồn đang áp dụng: [hướng dẫn hiện hành](../architecture/backend-modules-and-use-cases.md).
+
+<!-- original-record -->
 # Backend refactor baseline
 
 - Source commit: `f6a0adae01bd642753f02d2beae10abff6f410e3`.

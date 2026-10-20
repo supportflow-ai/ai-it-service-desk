@@ -1,32 +1,33 @@
-# ADR-014: Feature use cases and published module contracts
+# ADR-014: Luồng xử lý theo tính năng và giao diện công khai của mô-đun
 
-Status: accepted, 2026-10-19. Baseline: 9dd0746450dca4348d6d0fa8a09cfc2a48860020.
+## Trạng thái và mốc quyết định
 
-Keep the six backend projects and three modules: Identity, Ticketing, AIAssistance.
-Application features expose six use-case interfaces: RegisterUser, LoginUser,
-GetCurrentUser, CreateTicket, GetMyTickets and GetTicketDetail. Each implementation
-is internal, executes one operation and is registered explicitly without a mediator.
+Đã chấp nhận ngày 2026-10-19. Mốc nguồn của quyết định gốc: `9dd0746450dca4348d6d0fa8a09cfc2a48860020`. Bản diễn giải tiếng Việt ngày 2026-10-20 giữ ngày, phạm vi và số liệu gốc; phần phát triển sau đó được ghi riêng ở cuối.
 
-Application owns actor validation and access scopes. Requester detail is owner-only;
-Agent/Admin detail remains system-wide. This release does not implement team isolation,
-assignment or the extended ticket lifecycle. Creation remains Submitted; self-registration
-grants Requester. FullName remains response-only until a separate profile increment.
-Title input remains limited to 100 characters while the existing column remains 200.
+## Quyết định tại mốc tái cấu trúc
 
-Published use-case contracts and DTOs are distinct from adapter ports. Cross-module
-dependencies require an explicit published-type allowlist. Shared code cannot become
-a route to module entities; architectural exceptions identify individual technical types.
-One DbContext remains, with module-owned mappings and specialized gateways.
+Giữ sáu dự án backend và ba mô-đun Identity, Ticketing, AIAssistance. Application công khai sáu giao diện nghiệp vụ tại mốc quyết định: RegisterUser, LoginUser, GetCurrentUser, CreateTicket, GetMyTickets và GetTicketDetail. Mỗi lớp triển khai là `internal`, thực hiện một thao tác và được đăng ký rõ ràng, không qua bộ điều phối trung gian.
 
-Identity serializes password checks and failed-count/reset writes per account using
-a PostgreSQL row lock and transaction. Technical write failures cannot silently drop
-security state or issue a token. Ticket creation retains its existing atomic PostgreSQL
-idempotency implementation and exact replay semantics.
+Application sở hữu kiểm tra danh tính và phạm vi truy cập. Requester chỉ đọc chi tiết phiếu của mình; Agent/Admin giữ phạm vi toàn hệ thống. Đợt này chưa triển khai cách ly theo nhóm, phân công hoặc vòng đời phiếu mở rộng. Tạo phiếu vẫn là Submitted; đăng ký chỉ cấp Requester. FullName chỉ thuộc phản hồi cho đến đợt bổ sung hồ sơ riêng. Tiêu đề đầu vào tối đa 100 ký tự; cột dữ liệu hiện có vẫn giữ 200 ký tự.
 
-AI wire DTOs/JSON mapping belong to Infrastructure. Application results enforce adapter
-postconditions. Domain owns suggestion invariants. Input hash v2 uses length-prefixed
-UTF-8 fields; the wire hash is opaque and echoed, not recomputed by a provider.
+Giao diện nghiệp vụ và DTO được công khai khác với cổng dành cho bộ tích hợp. Phụ thuộc xuyên mô-đun phải nằm trong danh sách kiểu cho phép rõ ràng. Mã dùng chung không trở thành đường đi vòng tới thực thể mô-đun; ngoại lệ kiến trúc chỉ rõ từng kiểu kỹ thuật. Giữ một `DbContext`, ánh xạ do mô-đun sở hữu và các cổng dữ liệu chuyên biệt.
 
-Baseline verification: build succeeds, 202 offline tests pass; the baseline CI also
-passed 54 real PostgreSQL tests and three image builds. Final verification must repeat
-those checks against the final implementation. No schema change is intended.
+Identity tuần tự hóa kiểm tra mật khẩu và ghi số lần sai/đặt lại theo từng tài khoản bằng khóa dòng và giao dịch PostgreSQL. Lỗi ghi kỹ thuật không được âm thầm bỏ trạng thái bảo mật hoặc cấp token. Tạo phiếu giữ cơ chế chống tạo trùng nguyên tử và phản hồi phát lại nguyên trạng.
+
+DTO/ánh xạ JSON của hợp đồng AI thuộc Infrastructure. Kết quả Application bảo đảm điều kiện đầu ra của bộ tích hợp; Domain sở hữu bất biến đề xuất. Mã băm đầu vào v2 dùng các trường UTF-8 có tiền tố độ dài; dịch vụ AI phản hồi nguyên trạng mã băm trên giao thức.
+
+## Bằng chứng tại mốc gốc
+
+Biên dịch thành công, 202 kiểm thử không cần cơ sở dữ liệu đạt; CI của mốc gốc cũng đạt 54 kiểm thử PostgreSQL thật và tạo ba ảnh ứng dụng. Đây là số liệu của mốc nguồn ghi trên, không phải số kiểm thử tại HEAD hôm nay. Nghiệm thu cuối phải kiểm tra lại đúng phiên bản triển khai. Quyết định không chủ đích thay cấu trúc dữ liệu.
+
+## Bổ sung phạm vi sau PR #28
+
+Ngày 2026-10-20, mã `dev` tại `260f37b5c415d0aa69818dc306411ab5a4f467f5` đã có thêm UpdateTicket, ClaimTicket, ResolveTicket, ReopenTicket, CloseTicket và CancelTicket, đưa tổng số luồng lên 12.
+
+Đây là phần phát triển sau mốc quyết định, không sửa nghĩa “sáu luồng” hoặc số liệu kiểm thử gốc. Các ranh giới tầng/mô-đun tiếp tục được áp dụng; chức năng và điểm chưa đạt được mô tả tại [mô-đun hiện hành](../architecture/backend-modules-and-use-cases.md), [hợp đồng backend](../architecture/current-backend-contract.md) và [quy tắc bảo mật](../architecture/security-design-rules.md).
+
+Nhận xử lý chưa có phân công; mở lại chưa có giới hạn thời gian hoặc tác vụ tự đóng. Các lựa chọn còn mở theo [bảng quyết định](../architecture/pending-business-decisions.md).
+
+Đối chiếu bổ sung ngày 2026-10-20 tại `dev@47634bc8162c13bd6ae024233ec24a0076738c51`, sau PR #29: vẫn có 12 luồng. PR #29 bổ sung tiếng Việt trong mã và một số chuỗi hiển thị, chưa hoàn tất các khoảng cách quyền/ghi đồng thời. [Bảng mốc nguồn](../architecture/source-baseline.md) phân biệt phần đã triển khai với bản local trước PR #28.
+
+Nguồn quyết định trước khi Việt hóa: [bản ghi tại mốc đối chiếu](https://github.com/supportflow-ai/ai-it-service-desk/blob/260f37b5c415d0aa69818dc306411ab5a4f467f5/docs/adr/ADR-014-feature-use-cases-and-published-contracts.md).

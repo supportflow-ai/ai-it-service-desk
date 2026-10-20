@@ -12,7 +12,7 @@ namespace ServiceDesk.IntegrationTests;
 public sealed class ApiContractTests
 {
     [Fact]
-    public async Task ExistingApiMatchesPublishedBaseline()
+    public async Task PublishedApiMatchesBaseline()
     {
         await using var factory = new ContractFactory();
         using var client = factory.CreateClient();
@@ -28,6 +28,11 @@ public sealed class ApiContractTests
             Assert.True(JsonNode.DeepEquals(endpoint.Value, actual["paths"]![endpoint.Key]), endpoint.Key);
         foreach (var schema in expected["components"]!["schemas"]!.AsObject())
             Assert.True(JsonNode.DeepEquals(schema.Value, actual["components"]!["schemas"]![schema.Key]), schema.Key);
+
+        // So sánh toàn bộ tài liệu để phát hiện cả API/schema mới bị bỏ sót
+        // và thay đổi mô tả, cấu hình bảo mật hoặc các phần OpenAPI khác.
+        Assert.True(JsonNode.DeepEquals(expected, actual),
+            "Tài liệu OpenAPI thực tế khác bản chuẩn đã công bố. Hãy xem xét toàn bộ thay đổi hợp đồng trước khi cập nhật bản chuẩn.");
     }
 
     private sealed class ContractFactory : WebApplicationFactory<ServiceDesk.Api.Program>

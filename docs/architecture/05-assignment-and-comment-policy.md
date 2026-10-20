@@ -2,6 +2,12 @@
 > Các mô tả “hiện tại/dev” và kết quả kiểm tra bên dưới chỉ thuộc ngày/SHA nguồn trong bản gốc, không mô tả HEAD mới.
 > Đối chiếu [hợp đồng hiện hành](current-backend-contract.md), [quyết định còn mở](pending-business-decisions.md) và [quy tắc bảo mật](security-design-rules.md). Chú thích bổ sung ngày 2026-10-19; giữ bản gốc để truy vết.
 
+## Tóm tắt tiếng Việt: Phân công, bình luận và ghi chú nội bộ
+
+Đề xuất về quyền phân công và tính riêng tư của nội dung trao đổi. Hiện chưa có tính năng tương ứng; quan hệ người phụ trách, nhóm và trạng thái tiếp tục cần quyết định.
+
+Chú thích bổ sung ngày 2026-10-20; bản gốc tiếp tục được giữ để truy vết.
+
 <!-- original-record -->
 # Ticket assignment, public comment và internal note policy
 

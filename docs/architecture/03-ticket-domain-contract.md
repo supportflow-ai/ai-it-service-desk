@@ -2,6 +2,12 @@
 > Các mô tả “hiện tại/dev” và kết quả kiểm tra bên dưới chỉ thuộc ngày/SHA nguồn trong bản gốc, không mô tả HEAD mới.
 > Đối chiếu [hợp đồng hiện hành](current-backend-contract.md), [quyết định còn mở](pending-business-decisions.md) và [quy tắc bảo mật](security-design-rules.md). Chú thích bổ sung ngày 2026-10-19; giữ bản gốc để truy vết.
 
+## Tóm tắt tiếng Việt: Dữ liệu và quy tắc phiếu yêu cầu
+
+Phân tích trường dữ liệu, tạo phiếu nháp/gửi phiếu và tính tương thích. Tạo phiếu hiện hành vẫn là Submitted, trạng thái JSON vẫn là số; lựa chọn thay đổi theo DEC-01.
+
+Chú thích bổ sung ngày 2026-10-20; bản gốc tiếp tục được giữ để truy vết.
+
 <!-- original-record -->
 # Ticket domain contract — TC-199 / TC-260 / TC-261
 

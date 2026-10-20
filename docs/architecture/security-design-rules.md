@@ -1,6 +1,6 @@
 # Quy tắc thiết kế quyền và ranh giới nghiệp vụ
 
-Trạng thái: hướng dẫn kỹ thuật hiện hành, cập nhật 2026-10-19. Áp dụng [ADR-014](../adr/ADR-014-feature-use-cases-and-published-contracts.md); không bổ sung endpoint, role hoặc chính sách team/assignment.
+Trạng thái: hướng dẫn kỹ thuật hiện hành, cập nhật 2026-10-20. Đối chiếu mã `dev` tại `47634bc8162c13bd6ae024233ec24a0076738c51`. Áp dụng [ADR-014](../adr/ADR-014-feature-use-cases-and-published-contracts.md); chính sách nhóm/phân công mới cần quyết định riêng.
 
 ## Module sở hữu quyền nghiệp vụ
 
@@ -8,7 +8,7 @@ Logic quyền Ticketing nằm trong `Application/Ticketing/Authorization` và c�
 
 Mẫu đang chạy: [GetTicketDetailUseCase](../../src/backend/ServiceDesk.Application/Ticketing/GetTicketDetail/GetTicketDetailUseCase.cs) xác thực actor, tạo [TicketReadScope](../../src/backend/ServiceDesk.Application/Ticketing/Authorization/TicketReadScope.cs), rồi gọi gateway. Gateway nhận phạm vi tường minh, không tự đọc claims hoặc coi null là AllTickets. Xuyên module chỉ dùng kiểu được cho phép trong [ModuleRules](../../tests/ServiceDesk.ArchitectureTests/ModuleRules.cs).
 
-## Thứ tự kiểm tra cho lệnh tài nguyên tương lai
+## Thứ tự kiểm tra khi triển khai lệnh trên tài nguyên
 
 1. Xác thực actor; policy chức năng ở HTTP có thể từ chối role trước khi tải tài nguyên.
 2. Kiểm tra cú pháp đầu vào không phụ thuộc dữ liệu riêng của tài nguyên.
@@ -30,3 +30,9 @@ Không dùng thứ tự “tìm ID → kiểm revision → kiểm quyền” tro
 - Hai request hợp lệ cạnh tranh không tạo ghi đè mất dữ liệu; lỗi lưu lịch sử rollback thay đổi nghiệp vụ.
 
 Các trường hợp assignment/revision là tiêu chí cho lần triển khai tương ứng, chưa phải kiểm thử đã chạy. Quyền Agent hiện hành nằm trong [hợp đồng backend](current-backend-contract.md); thay chính sách theo [DEC-02](pending-business-decisions.md).
+
+## Đối chiếu sáu thao tác của PR #28
+
+Các lệnh cập nhật, mở lại, đóng và hủy hiện kiểm tra chủ sở hữu hoặc Admin trong Application. Lệnh nhận xử lý có khác biệt Agent/Admin giữa HTTP và Application; lệnh giải quyết tải ID trước khi kiểm tra vai trò. Các điểm này được ghi tại [những phần cần xử lý](current-backend-contract.md#các-điểm-chưa-đạt-cần-xử-lý), không làm thay đổi quy tắc bảo mật ở trên.
+
+Khi sửa các lệnh này, kiểm tra cả người ngoài phạm vi, vai trò không đủ quyền, người nhiều vai trò, trạng thái bị cấm và hai yêu cầu cùng ghi. Một bảng trạng thái hoặc ảnh chụp OpenAPI chỉ mô tả một phần hợp đồng; bằng chứng cho quyền và ghi đồng thời phải đến từ kiểm thử hành vi tương ứng.

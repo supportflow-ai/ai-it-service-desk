@@ -1,26 +1,34 @@
-# ADR-013: GitHub Actions for repository and system validation
+# ADR-013: GitHub Actions cho kiểm tra từng kho và toàn hệ thống
 
-## Status
-Accepted, 2026-10-18. Supersedes ADR-009 at the project owner's request.
+## Trạng thái
 
-## Context
-The backend, frontend, AI contract and infrastructure are separate GitHub repositories. Maintaining Jenkinsfiles alongside working Actions workflows duplicates the same quality gates and requires a separate CI server.
+Đã chấp nhận ngày 2026-10-18, thay [ADR-009](ADR-009-jenkins-ci-cd.md) theo yêu cầu chủ dự án. Bản diễn giải tiếng Việt cập nhật 2026-10-20.
 
-## Decision
-Use GitHub Actions as the only active CI/CD platform. Remove Jenkinsfiles, Jenkins Compose/server configuration and the Jenkins-only checkout helper. Preserve Git history and historical audit evidence.
+## Bối cảnh
 
-The agreed scope is test, image build and whole-system smoke. Images are built on disposable hosted runners as validation; they are not published. No production deployment, environment credentials, registry secrets or package write permission are introduced.
+Backend, giao diện, hợp đồng AI và hạ tầng đã tách thành các kho GitHub. Duy trì Jenkinsfile song song với GitHub Actions làm trùng các bước kiểm tra và cần thêm máy chủ CI.
 
-| Repository | Required validation |
-|---|---|
-| Backend | Locked restore, build, unit/architecture/offline compatibility, real PostgreSQL integration, AI contract/fixtures, API/Worker/Database image builds |
-| Web | Locked npm install, lint, build, tests, frontend image build |
-| AI | OpenAPI, checksum/version and offline fixtures; existing Actions workflow remains |
-| Infra | Immutable backend/web source SHAs, Compose validation, migration/seed roles, disposable stack, requester smoke through gateway and health/FE checks |
+## Quyết định
 
-Backend/web run on PRs and configured development/release branch pushes, with manual dispatch available once the workflow is on the default branch. Infra runs on pushes, PRs and manual dispatch. Concurrency cancels obsolete runs for the same workflow/ref. Keep existing job IDs (`backend`, `frontend`, `smoke`) so check names remain stable.
+Dùng GitHub Actions làm nền tảng tích hợp liên tục đang áp dụng. Loại Jenkinsfile, cấu hình Jenkins trong Compose/máy chủ và công cụ lấy mã chỉ phục vụ Jenkins khỏi nguồn hiện hành; giữ lịch sử Git và bằng chứng đánh giá cũ.
 
-## Consequences
-No Jenkins server, plugins, admin password or Docker socket mounted into Jenkins is required. GitHub-hosted Linux runners provide Docker for Testcontainers and Compose. Branch protection and existing external Jenkins installations require a repository/infrastructure administrator's separate change; deleting source configuration does not remove an external server or its volumes.
+Phạm vi được chọn là kiểm thử, tạo ảnh ứng dụng và kiểm tra nhanh toàn hệ thống. Ảnh được tạo trên máy chạy kiểm tra tạm thời, chưa được phát hành. Quyết định này không bổ sung triển khai production, thông tin xác thực môi trường, bí mật kho ảnh hoặc quyền ghi gói.
 
-Registry publication and deployment, including any staging automation mentioned by historical plans, remain future decisions. Production uses the documented manual handoff with immutable images and explicit database commands.
+| Kho | Kiểm tra |
+| --- | --- |
+| Backend | Khôi phục gói theo khóa, biên dịch, kiểm thử đơn vị/kiến trúc/tương thích không cần cơ sở dữ liệu, tích hợp PostgreSQL thật, hợp đồng AI và tạo ảnh API/Worker/Database |
+| Giao diện | Cài gói theo khóa, kiểm tra quy cách mã, biên dịch, kiểm thử và tạo ảnh |
+| AI | OpenAPI, checksum/phiên bản và dữ liệu mẫu không gọi AI thật |
+| Hạ tầng | Ghim commit backend/giao diện, kiểm tra Compose, migration/vai trò, hệ thống tạm và luồng người yêu cầu qua cổng chung |
+
+Backend/giao diện kiểm tra khi có PR và khi đẩy lên các nhánh đã cấu hình. Chạy thủ công có khi quy trình nằm trên nhánh mặc định. Hạ tầng kiểm tra khi đẩy mã, có PR hoặc chạy thủ công. Các lượt cũ của cùng quy trình/nhánh được hủy theo cấu hình đồng thời. Giữ định danh công việc `backend`, `frontend`, `smoke` để ổn định tên kết quả kiểm tra.
+
+## Hệ quả
+
+Không cần máy chủ Jenkins, phần mở rộng Jenkins, mật khẩu quản trị hoặc gắn Docker socket vào Jenkins. Máy chạy Linux do GitHub cung cấp có Docker để dùng Testcontainers/Compose.
+
+Quy tắc bảo vệ nhánh và máy chủ Jenkins bên ngoài cần được quản trị viên thay đổi riêng. Xóa cấu hình trong mã nguồn không xóa máy chủ hoặc vùng dữ liệu đang tồn tại.
+
+Phát hành ảnh và tự động triển khai tiếp tục là quyết định tương lai. Hướng dẫn triển khai hiện tại dùng ảnh ghim phiên bản và lệnh Database có chủ đích. Xem [hướng dẫn GitHub Actions](../runbooks/github-actions.md).
+
+Nguồn quyết định trước khi Việt hóa: [bản ghi tại mốc đối chiếu](https://github.com/supportflow-ai/ai-it-service-desk/blob/260f37b5c415d0aa69818dc306411ab5a4f467f5/docs/adr/ADR-013-github-actions.md).

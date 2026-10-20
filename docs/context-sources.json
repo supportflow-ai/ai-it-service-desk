@@ -113,6 +113,63 @@
       "kind": "historical",
       "notice": "Superseded by",
       "replacement": "docs/adr/ADR-013-github-actions.md"
+    },
+    "artifacts/TESTER-DEVOPS-REPORT.md": {
+      "kind": "historical",
+      "notice": "Tài liệu lịch sử",
+      "replacement": "docs/runbooks/backend-hardening-verification.md"
+    },
+    "artifacts/devops/audit-report.md": {
+      "kind": "historical",
+      "notice": "Tài liệu lịch sử",
+      "replacement": "docs/runbooks/backend-hardening-verification.md"
+    },
+    "artifacts/devops/ci-quality-gates.md": {
+      "kind": "historical",
+      "notice": "Tài liệu lịch sử",
+      "replacement": "docs/runbooks/github-actions.md"
+    },
+    "artifacts/devops/clean-integration-environment.md": {
+      "kind": "historical",
+      "notice": "Tài liệu lịch sử",
+      "replacement": "docs/runbooks/environment-runbook.md"
+    },
+    "artifacts/devops/dor-dod-review-rules.md": {
+      "kind": "historical",
+      "notice": "Tài liệu lịch sử",
+      "replacement": "docs/process/definition-of-ready-done.md"
+    },
+    "artifacts/devops/pr-branch-jira-convention.md": {
+      "kind": "historical",
+      "notice": "Tài liệu lịch sử",
+      "replacement": "docs/process/pr-branch-jira-convention.md"
+    },
+    "artifacts/devops/smoke-test-report.md": {
+      "kind": "historical",
+      "notice": "Tài liệu lịch sử",
+      "replacement": "docs/runbooks/backend-hardening-verification.md"
+    },
+    "artifacts/smoke/persistence.md": {
+      "kind": "historical",
+      "notice": "Tài liệu lịch sử",
+      "replacement": "docs/runbooks/backend-hardening-verification.md"
+    },
+    "docs/process/documentation-standard.md": {
+      "kind": "current"
+    },
+    "docs/process/technical-glossary.md": {
+      "kind": "current"
+    },
+    "docs/architecture/source-baseline.md": {
+      "kind": "current"
+    },
+    "docs/adr/README.md": {
+      "kind": "current"
+    },
+    "docs/runbooks/local-startup-verification.md": {
+      "kind": "evidence",
+      "notice": "Bằng chứng tại mốc cũ",
+      "replacement": "docs/runbooks/backend-hardening-verification.md"
     }
   },
   "groups": {

@@ -1,12 +1,13 @@
 # Chỉ mục kiến trúc backend
 
-Trạng thái: hiện hành cho kho backend. Cập nhật: 2026-10-19. Quy tắc chọn nguồn nằm trong [bản đồ tài liệu](../README.md).
+Trạng thái: hiện hành cho kho backend. Đối chiếu `dev` tại `47634bc8162c13bd6ae024233ec24a0076738c51`, sau PR #28 và #29; cập nhật 2026-10-20. Quy tắc chọn nguồn nằm trong [bản đồ tài liệu](../README.md).
 
 ## Nguồn đang áp dụng
 
 | Nguồn | Phạm vi |
 | --- | --- |
-| [Module và use case](backend-modules-and-use-cases.md) | Clean Architecture, thư mục theo tính năng, Published Contracts, transaction |
+| [Mốc mã nguồn](source-baseline.md) | Phân biệt mã local, thay đổi chưa commit và dev sau PR #29; khoảng cách hợp đồng/công cụ cần xử lý trước khi tích hợp |
+| [Mô-đun và luồng xử lý](backend-modules-and-use-cases.md) | Clean Architecture, 12 luồng nghiệp vụ, giao diện công khai và giao dịch |
 | [Hợp đồng backend](current-backend-contract.md) | API, mười mã trạng thái, dữ liệu và quyền đã triển khai tại SHA được ghi |
 | [Quy tắc thiết kế bảo mật](security-design-rules.md) | Quyền trước revision, vị trí policy Ticketing, tình huống phủ định |
 | [Danh mục ADR](../adr/README.md) | Quan hệ giữa quyết định nền tảng và ADR-011–014 |
@@ -21,7 +22,7 @@ Tạo ticket hiện tại vẫn là Submitted; JSON status là số. Không đ�
 | [Actor và use case](01-actor-use-cases.md) | Review ngày 2026-10-09, nguồn `6b124e73…`; mô tả thực tế chỉ đúng tại mốc nguồn | DEC-02 |
 | [RBAC](02-rbac-permission-matrix.md) | Review cùng mốc; các security findings lịch sử không tự mô tả HEAD | DEC-02, DEC-08 |
 | [Domain ticket](03-ticket-domain-contract.md) | Đề xuất domain/tương thích, nguồn ghi trong tài liệu | DEC-01 |
-| [Lifecycle](04-ticket-lifecycle-policy.md) | Đề xuất ngày 2026-10-10 | DEC-01, DEC-03–05 |
+| [Vòng đời phiếu](04-ticket-lifecycle-policy.md) | Đề xuất ngày 2026-10-10; sáu thao tác đã có sau PR #28 được mô tả riêng trong hợp đồng hiện hành | DEC-01, DEC-03–05 |
 | [Assignment/comment](05-assignment-and-comment-policy.md) | Đề xuất; chưa có tính năng tương ứng | DEC-02–05 |
 | [Attachment](06-attachment-security.md) | Đề xuất; chưa duyệt phương thức tải và giới hạn | DEC-06–07 |
 

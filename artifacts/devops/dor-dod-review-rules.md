@@ -1,3 +1,9 @@
+# Hồ sơ lịch sử: Điều kiện bắt đầu, hoàn thành và đánh giá cũ
+
+> **Tài liệu lịch sử.** Nhãn Approved & Mandatory thuộc bản gốc; quy trình đang áp dụng được dẫn riêng.
+> Chú thích tiếng Việt ngày 2026-10-20; phần bản gốc bên dưới giữ nguyên. Nguồn đang áp dụng: [hướng dẫn hiện hành](../../docs/process/definition-of-ready-done.md).
+
+<!-- original-record -->
 # Definition of Ready (DoR), Definition of Done (DoD), and PR Review Rules
 
 **Repository:** `Enterprise-Grade AI-Assisted Internal IT Service Request & Knowledge Management Platform`  

@@ -23,8 +23,8 @@ jobs:
           python-version: '3.12'
       - name: Kiểm tra nguồn và liên kết tài liệu
         run: python scripts/validate_project_docs.py
-      - name: Kiểm tra chốt chặn tài liệu
-        run: python -m unittest discover -s scripts/tests -p "test_project_docs.py"
+      - name: Kiểm tra công cụ tài liệu và nạp cấu hình
+        run: python -m unittest discover -s scripts/tests -p "test_*.py"
       - name: Restore locked dependencies
         run: dotnet restore src/backend/ServiceDesk.sln --locked-mode
       - name: Build backend

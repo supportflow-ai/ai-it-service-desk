@@ -1,3 +1,9 @@
+# Hồ sơ lịch sử: Phát hiện bảo mật thao tác phiếu
+
+> **Tài liệu lịch sử.** Giữ phát hiện và kế hoạch tại mốc rà soát; quy tắc quyền hiện hành và phần còn lệch được mô tả ở nguồn thay thế.
+> Chú thích tiếng Việt ngày 2026-10-20; phần bản gốc bên dưới giữ nguyên. Nguồn đang áp dụng: [hướng dẫn hiện hành](../architecture/security-design-rules.md).
+
+<!-- original-record -->
 # Ticket Operations Security: audit findings và implementation plan
 
 Ngày kiểm tra: 2026-10-10; branch docs/ticket-operations-security.

@@ -1,3 +1,9 @@
+# Hồ sơ lịch sử: Quy ước nhánh, PR và Jira cũ
+
+> **Tài liệu lịch sử.** Nhãn Approved & Enforced thuộc bản gốc; không tự tạo yêu cầu hoặc quyền thao tác mới.
+> Chú thích tiếng Việt ngày 2026-10-20; phần bản gốc bên dưới giữ nguyên. Nguồn đang áp dụng: [hướng dẫn hiện hành](../../docs/process/pr-branch-jira-convention.md).
+
+<!-- original-record -->
 # PR, Branch, and Jira Linkage Convention
 
 **Standard:** Enterprise DevOps & QA Process  

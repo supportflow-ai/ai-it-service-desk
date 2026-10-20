@@ -1,3 +1,9 @@
+# Hồ sơ lịch sử: Các bước kiểm tra bắt buộc trong CI
+
+> **Tài liệu lịch sử.** Bản gốc ghi Verified & Active và quy trình cả backend/giao diện của giai đoạn cũ; nhãn đó không áp dụng cho cấu hình hiện tại.
+> Chú thích tiếng Việt ngày 2026-10-20; phần bản gốc bên dưới giữ nguyên. Nguồn đang áp dụng: [hướng dẫn hiện hành](../../docs/runbooks/github-actions.md).
+
+<!-- original-record -->
 # CI Quality Gates Specification & Verification
 
 **Repository:** `Enterprise-Grade AI-Assisted Internal IT Service Request & Knowledge Management Platform`  

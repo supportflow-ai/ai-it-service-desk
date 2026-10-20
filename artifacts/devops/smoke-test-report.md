@@ -1,3 +1,9 @@
+# Hồ sơ lịch sử: Kiểm tra nhanh hệ thống
+
+> **Tài liệu lịch sử.** Bằng chứng các luồng chính trong môi trường gốc; tên vòng đời trong tiêu đề không xác nhận đủ các thao tác PR #28.
+> Chú thích tiếng Việt ngày 2026-10-20; phần bản gốc bên dưới giữ nguyên. Nguồn đang áp dụng: [hướng dẫn hiện hành](../../docs/runbooks/backend-hardening-verification.md).
+
+<!-- original-record -->
 # Smoke Test Hook Report — Auth & Ticket Lifecycle
 
 **Repository:** `Enterprise-Grade AI-Assisted Internal IT Service Request & Knowledge Management Platform`  

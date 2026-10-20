@@ -1,3 +1,9 @@
+# Hồ sơ lịch sử: Tích hợp các nhánh vào dev
+
+> **Tài liệu lịch sử.** Ghi nhận đợt tích hợp ngày 2026-10-15; danh sách nguồn và kết quả chỉ thuộc phiên bản được ghi trong bản gốc.
+> Chú thích tiếng Việt ngày 2026-10-20; phần bản gốc bên dưới giữ nguyên. Nguồn đang áp dụng: [hướng dẫn hiện hành](../architecture/current-backend-contract.md).
+
+<!-- original-record -->
 # Consolidated dev integration — 2026-10-15
 
 This integration combines all remote branch histories into dev: main (AI contract),

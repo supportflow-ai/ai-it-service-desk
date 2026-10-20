@@ -12,46 +12,51 @@ Phiên bản công cụ lấy trực tiếp từ nguồn được ghim, không d
 
 Cần build `Release` thành công từ gốc repo trước các lệnh dùng `--no-build`. Lệnh build/test đầy đủ ở [AGENTS.md](../../AGENTS.md).
 
-## Chạy local dành cho người dùng
+## Nạp cấu hình và khởi chạy
 
-Các ví dụ nhập cấu hình bên dưới **dành cho người dùng có terminal tương tác**. Trợ lý không chạy lệnh chờ nhập tương tác. Khi cần chạy ứng dụng, người dùng cấu hình môi trường/kho bí mật qua cơ chế sẵn có; không gửi credential trong chat hoặc in chúng ra để kiểm tra.
+Các công cụ Python, kiểm thử và hướng dẫn trong phần này được công bố cùng nhau; hai quy tắc bỏ qua công cụ đã được gỡ khỏi `.gitignore` kế thừa từ dev. Đối chiếu [bảng mốc nguồn](../architecture/source-baseline.md#công-cụ-local-và-quy-tắc-git) và chuẩn bị cấu hình riêng cho mỗi máy.
 
-Biến môi trường chỉ chắc chắn tồn tại trong tiến trình đã thiết lập và các tiến trình con của nó. Mở terminal hoặc gọi công cụ mới phải nạp lại cấu hình; trợ lý phải dùng cơ chế bảo mật của cùng lần chạy, không giả định trạng thái được giữ lại.
+Các lệnh sau chạy từ gốc repo. Hướng dẫn bắt đầu, cách lấy JWT và giải thích Release/lockfile nằm trong [README](../../README.md). Trợ lý không chạy lệnh chờ nhập tương tác hoặc giả định biến môi trường tồn tại qua các lần gọi công cụ.
 
-### PowerShell
+### Cấu hình bằng .env
 
-Dành cho PowerShell có `Read-Host -MaskInput` (từ 7.1). Nhập credential của môi trường local đã có; khóa JWT cần ít nhất 32 byte UTF-8. Không đổi khóa của môi trường đang dùng hoặc tạo lại khóa mỗi lần khởi chạy.
+Nếu chưa có `.env`, sao chép [.env.example](../../.env.example) thành `.env`, điền kết nối PostgreSQL và khóa ký JWT được cấp. Không ghi đè file của môi trường đang dùng. File `.env` bị Git ignore; không gửi nội dung vào chat hoặc đưa vào log/commit. Các project chưa khai báo `UserSecretsId` và .NET không tự nạp `.env`.
 
-```powershell
-$env:DOTNET_ENVIRONMENT = 'Development'
-$env:ASPNETCORE_ENVIRONMENT = 'Development'
-$env:Database__ConnectionString = Read-Host 'Chuỗi kết nối PostgreSQL local' -MaskInput
-$env:Jwt__SecretKey = Read-Host 'Khóa JWT local' -MaskInput
-$env:Minio__Endpoint = 'localhost:9000'
-$env:Minio__AccessKey = Read-Host 'MinIO access key local' -MaskInput
-$env:Minio__SecretKey = Read-Host 'MinIO secret key local' -MaskInput
-$env:ASPNETCORE_URLS = 'http://localhost:5000'
+[Công cụ chạy backend](../../scripts/run_backend.py) hỗ trợ:
+
+- Nạp `.env` ở gốc repo nếu file tồn tại, hoặc `--env-file DUONG_DAN` được chỉ định. Chỉ định file không tồn tại là lỗi; không chỉ định file và không có `.env` thì dùng biến môi trường của tiến trình.
+- Cú pháp `KEY=value`, dòng trống, dòng chú thích bắt đầu bằng `#`, dấu nháy bao quanh giá trị và UTF-8 có/không BOM. Không thực thi shell, nội suy biến, xử lý cú pháp `export` hoặc chú thích cuối dòng. Đặt chú thích trên dòng riêng.
+- Ưu tiên: khóa .NET chuẩn thắng tên cũ trong cùng nguồn; môi trường tiến trình thắng file, kể cả khi môi trường dùng tên cũ. Không thay biến môi trường toàn máy.
+- Tên cũ được ánh xạ: `DATABASE_CONNECTION_STRING` → `Database__ConnectionString`; `JWT_SECRET_KEY`, `JWT_ISSUER`, `JWT_AUDIENCE`, `JWT_EXPIRY_MINUTES` → các khóa `Jwt__...`; `MINIO_ENDPOINT`, `MINIO_ROOT_USER`, `MINIO_ROOT_PASSWORD`, `MINIO_BUCKET`, `MINIO_USE_SSL` → các khóa `Minio__...`. Dùng tên chuẩn cho cấu hình mới.
+- API bắt buộc chuỗi kết nối và khóa ký JWT ít nhất 32 byte UTF-8, không để giá trị mẫu. Worker và lệnh Database thông thường cần chuỗi kết nối. Kiểm tra này không chứng minh credential đúng hoặc dịch vụ sẵn sàng; validator .NET tiếp tục kiểm tra cấu hình JWT khi API khởi động.
+- API đăng nhập/ticket hiện chưa gọi lưu tệp, nên MinIO chưa bắt buộc cho các luồng này. Khi dùng lưu tệp phải có endpoint và credential MinIO thật; readiness hiện chỉ kiểm tra PostgreSQL.
+- Mặc định Development nếu cả hai biến môi trường đều vắng. Khi chỉ có một trong `DOTNET_ENVIRONMENT`/`ASPNETCORE_ENVIRONMENT`, công cụ đặt biến còn lại cùng giá trị; khi cả hai có nhưng khác nhau, dừng với mã 2. Không tự đổi Production đã được cấu hình thành Development.
+- API mặc định `ASPNETCORE_URLS=http://localhost:5000` nếu chưa có. URL này ưu tiên hơn `ASPNETCORE_HTTP_PORTS`; đặt URL rõ ràng khi muốn cổng khác.
+- Gọi `dotnet run -c Release --no-launch-profile`; không nạp ngầm `launchSettings.json`. Tuỳ chọn của công cụ phải nằm trước tên thành phần; phần sau tên thành phần được chuyển cho ứng dụng.
+
+Sau locked restore và build Release thành công, chạy ở các terminal riêng:
+
+```sh
+python scripts/run_backend.py --no-build api
+python scripts/run_backend.py --no-build worker
 ```
 
-### Bash trên Linux/macOS
+Đổi file cấu hình hoặc cho phép build lúc chạy:
 
-Khối này cũng chỉ dành cho người dùng tương tác. Điều chỉnh endpoint theo dịch vụ local:
-
-```bash
-export DOTNET_ENVIRONMENT=Development ASPNETCORE_ENVIRONMENT=Development
-export ASPNETCORE_URLS=http://localhost:5000 Minio__Endpoint=localhost:9000
-read -r -s -p 'Chuỗi kết nối PostgreSQL local: ' Database__ConnectionString
-printf '\n'
-read -r -s -p 'Khóa JWT local: ' Jwt__SecretKey
-printf '\n'
-read -r -s -p 'MinIO access key local: ' Minio__AccessKey
-printf '\n'
-read -r -s -p 'MinIO secret key local: ' Minio__SecretKey
-printf '\n'
-export Database__ConnectionString Jwt__SecretKey Minio__AccessKey Minio__SecretKey
+```sh
+python scripts/run_backend.py --env-file .env --no-build api
+python scripts/run_backend.py api
 ```
 
-.NET không tự nạp `.env` trong repo; các project chưa khai báo `UserSecretsId`. API dùng cấu hình JWT/MinIO; Worker và các lệnh Database thông thường chỉ cần chuỗi kết nối. Issuer/audience/thời hạn JWT theo cấu hình ứng dụng; không thay đổi ngoài nhiệm vụ.
+Linux/macOS có thể cần `python3`. Dừng bằng Ctrl+C. Nếu nhiệm vụ cần trợ lý chạy host, chạy nền bằng công cụ môi trường, lưu PID/ID phiên, kiểm tra hữu hạn rồi dừng tiến trình do mình tạo.
+
+Đọc `.env` không tự mở tunnel hoặc chạy migration/seed. Database dùng chung có quy trình riêng tại [runbook VPS](shared-development-database.md). Mở tunnel bằng `python scripts/start_database_tunnel.py` ở terminal riêng trước API. Với tài khoản chỉ mở tunnel, không thử mở shell trên VPS. Loopback của tunnel vẫn là database từ xa, không phải database local dùng một lần.
+
+Thành phần `database` chuyển tham số sang công cụ Database, ví dụ `python scripts/run_backend.py --no-build database migrate`; chỉ chạy khi nhiệm vụ và đích được xác minh theo phần dưới. Lệnh `seed-demo`/`bootstrap-admin` cần cấu hình riêng theo quy trình triển khai, không truyền credential provisioning sang API/Worker.
+
+### Không dùng Python
+
+Người dùng có thể cấp biến môi trường cho tiến trình bằng công cụ quản lý bí mật của mình rồi gọi trực tiếp .NET. Phải dùng tên cấu hình chuẩn, ví dụ `Database__ConnectionString`, `Jwt__SecretKey`; tên cũ viết hoa chỉ được công cụ Python chuyển đổi. Mở terminal mới phải nạp lại cấu hình. Các lệnh .NET trực tiếp phía dưới không tự nạp `.env`.
 
 ### Trước khi ghi vào database
 
@@ -105,7 +110,9 @@ except Exception:
 
 Đầu ra chỉ có host/cổng/tên database. Lỗi CLI, JSON không hợp lệ hoặc metadata không khớp đều trả mã lỗi `db_target_unverified` và dừng; không in stdout/stderr thô của EF. Phép kiểm tra này đọc cấu hình qua context của repo hiện tại, không mở kết nối database; nếu sửa bootstrap có tác dụng phụ, phải đánh giá lại trước khi dùng.
 
-Sau đó vẫn phải kiểm tra tài nguyên local, không suy ra an toàn chỉ từ metadata khớp:
+Với PostgreSQL riêng trên máy phát triển, tiếp tục kiểm tra tài nguyên local như bên dưới. Trường hợp kết nối cơ sở dữ liệu dùng chung qua SSH theo [hướng dẫn VPS](shared-development-database.md) chỉ cấp đường truyền cho ứng dụng; không áp dụng các lệnh migration của mục local cho đích dùng chung. Thao tác quản trị đích đó đi theo người phụ trách, tài khoản owner và quy trình riêng trong hướng dẫn VPS.
+
+Không suy ra đích là local chỉ từ metadata khớp:
 
 ```sh
 docker context show

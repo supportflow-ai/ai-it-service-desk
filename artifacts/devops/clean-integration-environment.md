@@ -1,3 +1,9 @@
+# Hồ sơ lịch sử: Kiểm chứng môi trường tích hợp
+
+> **Tài liệu lịch sử.** Bằng chứng Compose ở môi trường và thời điểm gốc; cấu hình vận hành hệ thống hiện thuộc kho hạ tầng.
+> Chú thích tiếng Việt ngày 2026-10-20; phần bản gốc bên dưới giữ nguyên. Nguồn đang áp dụng: [hướng dẫn hiện hành](../../docs/runbooks/environment-runbook.md).
+
+<!-- original-record -->
 # Clean Integration Environment Verification Report
 
 **Repository:** `Enterprise-Grade AI-Assisted Internal IT Service Request & Knowledge Management Platform`  
