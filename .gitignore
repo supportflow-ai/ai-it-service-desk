@@ -98,6 +98,7 @@ __pycache__/
 *.pem
 *.key
 HUONG-DAN.md
+TIEN-TRINH.md
 scripts/run_backend.py
 scripts/start_database_tunnel.py
 .claude/
