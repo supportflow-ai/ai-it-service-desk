@@ -8,4 +8,6 @@ namespace ServiceDesk.Application.Ticketing.Ports;
 public interface ITicketWriter
 {
     Task<TicketDto> CreateAsync(Ticket ticket, CreateTicketFingerprint? fingerprint, CancellationToken cancellationToken);
+    Task<Ticket?> GetForUpdateAsync(Guid id, CancellationToken cancellationToken);
+    Task<TicketDto> UpdateTicketAsync(Ticket ticket, CancellationToken cancellationToken);
 }

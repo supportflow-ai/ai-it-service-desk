@@ -5,6 +5,12 @@ using ServiceDesk.Application.Identity.GetCurrentUser;
 using ServiceDesk.Application.Ticketing.CreateTicket;
 using ServiceDesk.Application.Ticketing.GetMyTickets;
 using ServiceDesk.Application.Ticketing.GetTicketDetail;
+using ServiceDesk.Application.Ticketing.UpdateTicket;
+using ServiceDesk.Application.Ticketing.ClaimTicket;
+using ServiceDesk.Application.Ticketing.ResolveTicket;
+using ServiceDesk.Application.Ticketing.ReopenTicket;
+using ServiceDesk.Application.Ticketing.CloseTicket;
+using ServiceDesk.Application.Ticketing.CancelTicket;
 
 namespace ServiceDesk.Application;
 
@@ -24,6 +30,12 @@ public static class DependencyInjection
         services.AddScoped<ICreateTicket, CreateTicketUseCase>();
         services.AddScoped<IGetMyTickets, GetMyTicketsUseCase>();
         services.AddScoped<IGetTicketDetail, GetTicketDetailUseCase>();
+        services.AddScoped<IUpdateTicket, UpdateTicketUseCase>();
+        services.AddScoped<IClaimTicket, ClaimTicketUseCase>();
+        services.AddScoped<IResolveTicket, ResolveTicketUseCase>();
+        services.AddScoped<IReopenTicket, ReopenTicketUseCase>();
+        services.AddScoped<ICloseTicket, CloseTicketUseCase>();
+        services.AddScoped<ICancelTicket, CancelTicketUseCase>();
         return services;
     }
 

@@ -74,4 +74,99 @@ public class Ticket
 
     public bool IsOwnedBy(Guid requesterId) =>
         requesterId != Guid.Empty && RequesterId == requesterId;
+
+    public void Claim(DateTime now)
+    {
+        if (Status != TicketStatus.Submitted)
+        {
+            throw new InvalidOperationException($"Cannot claim ticket in status {Status}");
+        }
+
+        Status = TicketStatus.InProgress;
+        UpdatedAt = now;
+    }
+
+    public void Resolve(DateTime now)
+    {
+        if (Status != TicketStatus.InProgress)
+        {
+            throw new InvalidOperationException($"Cannot resolve ticket in status {Status}");
+        }
+
+        Status = TicketStatus.Resolved;
+        UpdatedAt = now;
+    }
+
+    public void Reopen(DateTime now)
+    {
+        if (Status != TicketStatus.Resolved)
+        {
+            throw new InvalidOperationException($"Cannot reopen ticket in status {Status}");
+        }
+
+        Status = TicketStatus.InProgress;
+        UpdatedAt = now;
+    }
+
+    public void Close(DateTime now)
+    {
+        if (Status != TicketStatus.Resolved)
+        {
+            throw new InvalidOperationException($"Cannot close ticket in status {Status}");
+        }
+
+        Status = TicketStatus.Closed;
+        UpdatedAt = now;
+    }
+
+    public void Cancel(DateTime now)
+    {
+        if (Status != TicketStatus.Submitted)
+        {
+            throw new InvalidOperationException($"Cannot cancel ticket in status {Status}");
+        }
+
+        Status = TicketStatus.Cancelled;
+        UpdatedAt = now;
+    }
+
+    public void Update(string title, string description, string categoryId, DateTime now)
+    {
+        if (Status != TicketStatus.Submitted)
+        {
+            throw new InvalidOperationException("Ticket can only be updated when Submitted");
+        }
+
+        var normalizedTitle = title?.Trim();
+        if (string.IsNullOrWhiteSpace(normalizedTitle))
+        {
+            throw new ArgumentException("Title is required");
+        }
+
+        if (normalizedTitle.Length > 100)
+        {
+            throw new ArgumentException("Title must not exceed 100 characters");
+        }
+
+        var normalizedDescription = description?.Trim();
+        if (string.IsNullOrWhiteSpace(normalizedDescription))
+        {
+            throw new ArgumentException("Description is required");
+        }
+
+        if (normalizedDescription.Length < 10)
+        {
+            throw new ArgumentException("Description must be at least 10 characters");
+        }
+
+        if (!TicketCategories.All.Contains(categoryId, StringComparer.Ordinal))
+        {
+            throw new ArgumentException("Invalid category");
+        }
+
+        Title = normalizedTitle;
+        Description = normalizedDescription;
+        CategoryId = categoryId;
+        UpdatedAt = now;
+    }
 }

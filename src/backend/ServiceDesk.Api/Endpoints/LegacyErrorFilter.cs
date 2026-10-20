@@ -8,6 +8,7 @@ public sealed class LegacyErrorFilter : IEndpointFilter
     {
         try { return await next(context); }
         catch (UnauthorizedAccessException) { return Results.Unauthorized(); }
+        catch (KeyNotFoundException) { return Results.NotFound(); }
         catch (IdempotencyConflictException ex) { return Results.Conflict(new { error = ex.Message }); }
         catch (IdempotencyInProgressException ex)
         {
