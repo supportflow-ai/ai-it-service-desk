@@ -93,3 +93,16 @@ efbundle.exe
 # Context pack (planning docs, not source)
 # ==========================================
 ai-it-service-desk-claude-context-pack/
+
+# ==========================================
+# Local credentials & development tools
+# ==========================================
+*_ed25519*
+*.pub
+*.pem
+*.key
+HUONG-DAN.md
+scripts/
+.claude/
+.superpowers/
+
