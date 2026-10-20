@@ -17,6 +17,12 @@ internal static class ModuleRules
         "ServiceDesk.Application.Ticketing.GetMyTickets.IGetMyTickets", "ServiceDesk.Application.Ticketing.GetMyTickets.GetMyTicketsQuery",
         "ServiceDesk.Application.Ticketing.GetTicketDetail.IGetTicketDetail", "ServiceDesk.Application.Ticketing.GetTicketDetail.GetTicketDetailQuery",
         "ServiceDesk.Application.Ticketing.Contracts.TicketDto", "ServiceDesk.Application.Ticketing.Contracts.PagedTicketResult",
+        "ServiceDesk.Application.Ticketing.UpdateTicket.IUpdateTicket", "ServiceDesk.Application.Ticketing.UpdateTicket.UpdateTicketCommand",
+        "ServiceDesk.Application.Ticketing.ClaimTicket.IClaimTicket", "ServiceDesk.Application.Ticketing.ClaimTicket.ClaimTicketCommand",
+        "ServiceDesk.Application.Ticketing.ResolveTicket.IResolveTicket", "ServiceDesk.Application.Ticketing.ResolveTicket.ResolveTicketCommand",
+        "ServiceDesk.Application.Ticketing.ReopenTicket.IReopenTicket", "ServiceDesk.Application.Ticketing.ReopenTicket.ReopenTicketCommand",
+        "ServiceDesk.Application.Ticketing.CloseTicket.ICloseTicket", "ServiceDesk.Application.Ticketing.CloseTicket.CloseTicketCommand",
+        "ServiceDesk.Application.Ticketing.CancelTicket.ICancelTicket", "ServiceDesk.Application.Ticketing.CancelTicket.CancelTicketCommand",
         "ServiceDesk.Application.Ticketing.Idempotency.IdempotencyConflictException",
         "ServiceDesk.Application.Ticketing.Idempotency.IdempotencyInProgressException"
     };

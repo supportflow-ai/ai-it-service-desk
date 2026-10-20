@@ -10,6 +10,12 @@ using ServiceDesk.Infrastructure.Persistence;
 
 namespace ServiceDesk.Infrastructure.Ticketing;
 
+/// <summary>
+/// Cài đặt cổng ghi dữ liệu ticket vào PostgreSQL:
+/// - Xử lý tạo vé nguyên tử (atomic transaction) kết hợp hóa đơn Idempotency.
+/// - Dùng PostgreSQL advisory lock (pg_advisory_xact_lock) để đồng bộ giữa nhiều API instance.
+/// - Cập nhật trạng thái vé và lưu thay đổi qua SaveChangesAsync.
+/// </summary>
 internal sealed class PostgresTicketWriter(ApplicationDbContext context) : ITicketWriter
 {
     private readonly ApplicationDbContext _context = context;
@@ -29,13 +35,12 @@ internal sealed class PostgresTicketWriter(ApplicationDbContext context) : ITick
             IsolationLevel.ReadCommitted, cancellationToken);
         try
         {
-            // Transaction-scoped, shared by all API instances, automatically released on rollback.
-            // A 64-bit hash collision only serializes unrelated keys; lookup still uses the full scope.
+            // Lock theo transaction, chia sẻ giữa tất cả API replica, tự giải phóng khi rollback.
             await _context.Database.ExecuteSqlRawAsync("SET LOCAL lock_timeout = '5s'", cancellationToken);
             await _context.Database.ExecuteSqlInterpolatedAsync(
                 $"SELECT pg_advisory_xact_lock({fingerprint.LockId})", cancellationToken);
 
-            // Read after acquiring the lock, under READ COMMITTED; use database time on every instance.
+            // Đọc dữ liệu sau khi chiếm lock dưới mức cô lập READ COMMITTED; dùng thời gian database.
             var now = await DatabaseUtcNowAsync(cancellationToken);
             var receipt = await _context.TicketIdempotencyRecords.SingleOrDefaultAsync(record =>
                 record.RequesterId == requesterId &&
@@ -48,12 +53,12 @@ internal sealed class PostgresTicketWriter(ApplicationDbContext context) : ITick
                 if (receipt.PayloadHash != fingerprint.PayloadHash)
                     throw new IdempotencyConflictException();
 
-                // Defense in depth: replay must never use the broader Agent/Admin detail visibility.
+                // Phòng thủ chiều sâu: replay không bao giờ được lộ phạm vi chi tiết của Agent/Admin.
                 var ownsTicket = await _context.Tickets.AsNoTracking().AnyAsync(
                     ticket => ticket.Id == receipt.TicketId && ticket.RequesterId == requesterId, cancellationToken);
                 var response = JsonSerializer.Deserialize<TicketDto>(receipt.ResponseJson);
                 if (!ownsTicket || response is null || response.Id != receipt.TicketId)
-                    throw new InvalidOperationException("Invalid ticket idempotency receipt.");
+                    throw new InvalidOperationException("Hóa đơn replay idempotent không hợp lệ.");
 
                 await transaction.CommitAsync(cancellationToken);
                 return response;
@@ -78,7 +83,7 @@ internal sealed class PostgresTicketWriter(ApplicationDbContext context) : ITick
                 _context.TicketIdempotencyRecords.Add(receipt);
             }
 
-            // An expired key starts a new generation while holding the same scope lock.
+            // Khóa đã hết hạn sẽ bắt đầu một vòng đời mới trong khi vẫn giữ lock.
             receipt.PayloadHash = fingerprint.PayloadHash;
             receipt.TicketId = ticket.Id;
             receipt.ResponseJson = JsonSerializer.Serialize(createdResponse);
@@ -90,16 +95,22 @@ internal sealed class PostgresTicketWriter(ApplicationDbContext context) : ITick
         }
         catch (PostgresException exception) when (exception.SqlState == PostgresErrorCodes.LockNotAvailable)
         {
-            // The transaction is disposed/rolled back before the API returns this retryable error.
+            // Transaction được hủy bỏ trước khi API trả về lỗi có thể thử lại này.
             throw new IdempotencyInProgressException(exception);
         }
-        // Other failures/cancellation also dispose the transaction: no ticket or receipt is committed.
-        // DbContext is scoped per HTTP request and must be discarded after a failed operation.
+        // Các lỗi khác hoặc hủy yêu cầu cũng tự động hủy transaction: không có vé hay hóa đơn nào được lưu.
     }
 
     private Task<DateTime> DatabaseUtcNowAsync(CancellationToken cancellationToken) =>
         _context.Database.SqlQuery<DateTime>($"SELECT clock_timestamp() AS \"Value\"")
             .SingleAsync(cancellationToken);
 
+    public Task<Ticket?> GetForUpdateAsync(Guid id, CancellationToken cancellationToken)
+        => _context.Tickets.SingleOrDefaultAsync(t => t.Id == id, cancellationToken);
 
+    public async Task<TicketDto> UpdateTicketAsync(Ticket ticket, CancellationToken cancellationToken)
+    {
+        await _context.SaveChangesAsync(cancellationToken);
+        return TicketProjection.ToDto(ticket);
+    }
 }

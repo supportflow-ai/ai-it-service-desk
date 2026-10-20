@@ -1,13 +1,13 @@
 namespace ServiceDesk.Application.Common.Interfaces;
 
 /// <summary>
-/// Application-owned abstraction over object/file storage (MinIO/S3-compatible).
-/// Infrastructure provides the concrete implementation.
+/// Cổng trừu tượng hóa dịch vụ lưu trữ đối tượng/tệp tin (MinIO/S3-compatible) do tầng Application làm chủ.
+/// Tầng Infrastructure cung cấp cài đặt cụ thể.
 /// </summary>
 public interface IObjectStorageService
 {
     /// <summary>
-    /// Generates a pre-signed URL for uploading an object.
+    /// Tạo URL ký sẵn (Pre-signed URL) để tải tệp tin lên lưu trữ.
     /// </summary>
     Task<string> GetPresignedUploadUrlAsync(
         string bucketName,
@@ -16,7 +16,7 @@ public interface IObjectStorageService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Generates a pre-signed URL for downloading an object.
+    /// Tạo URL ký sẵn (Pre-signed URL) để tải tệp tin xuống.
     /// </summary>
     Task<string> GetPresignedDownloadUrlAsync(
         string bucketName,
@@ -25,14 +25,14 @@ public interface IObjectStorageService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Checks if a bucket exists.
+    /// Kiểm tra xem bucket có tồn tại hay không.
     /// </summary>
     Task<bool> BucketExistsAsync(
         string bucketName,
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Ensures the bucket exists, creating it if necessary.
+    /// Đảm bảo bucket đã tồn tại, tự động tạo mới nếu chưa có.
     /// </summary>
     Task EnsureBucketExistsAsync(
         string bucketName,

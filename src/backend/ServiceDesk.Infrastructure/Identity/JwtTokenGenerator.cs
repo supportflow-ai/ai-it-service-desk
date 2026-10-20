@@ -10,10 +10,12 @@ using ServiceDesk.Infrastructure.Options;
 
 namespace ServiceDesk.Infrastructure.Identity;
 
+/// <summary>
+/// Trình tạo mã xác thực JWT Bearer Token theo cấu hình JwtOptions.
+/// </summary>
 internal sealed class JwtTokenGenerator : IAccessTokenIssuer
 {
     private readonly JwtOptions _options;
-
     private readonly IClock _clock;
 
     public JwtTokenGenerator(IOptions<JwtOptions> options, IClock clock)
@@ -22,6 +24,9 @@ internal sealed class JwtTokenGenerator : IAccessTokenIssuer
         _clock = clock;
     }
 
+    /// <summary>
+    /// Tạo JWT token chứa User ID, Email và danh sách vai trò (Role claims).
+    /// </summary>
     public string GenerateToken(UserInfo user)
     {
         var claims = new List<Claim>

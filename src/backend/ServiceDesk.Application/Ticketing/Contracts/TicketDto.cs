@@ -1,5 +1,8 @@
 namespace ServiceDesk.Application.Ticketing.Contracts;
 
+/// <summary>
+/// DTO chứa thông tin chi tiết của một ticket trả về cho client.
+/// </summary>
 public record TicketDto(
     Guid Id,
     string TicketNumber,

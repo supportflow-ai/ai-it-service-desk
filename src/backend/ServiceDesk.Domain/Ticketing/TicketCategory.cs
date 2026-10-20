@@ -1,43 +1,41 @@
 namespace ServiceDesk.Domain.Ticketing;
 
 /// <summary>
-/// Canonical ticket category codes.
-/// Used by AI triage to validate suggested categories against the official taxonomy.
-/// Full category management (CRUD, active/inactive) is a Ticketing-team concern;
-/// this enum establishes the stable contract for AI classification validation.
+/// Danh mục sự cố dạng Enum chuẩn hoá.
+/// Được AI Triage sử dụng để kiểm tra tính hợp lệ của phân loại gợi ý.
 /// </summary>
 public enum TicketCategory
 {
-    /// <summary>Account issues (password, login, profile).</summary>
+    /// <summary>Sự cố tài khoản (mật khẩu, đăng nhập, thông tin người dùng).</summary>
     ACC,
 
-    /// <summary>Network connectivity.</summary>
+    /// <summary>Kết nối mạng nội bộ và đường truyền Internet.</summary>
     NET,
 
-    /// <summary>VPN / remote access.</summary>
+    /// <summary>Mạng riêng ảo VPN và truy cập từ xa.</summary>
     VPN,
 
-    /// <summary>Email and messaging.</summary>
+    /// <summary>Thư điện tử Email và tin nhắn nội bộ.</summary>
     MAIL,
 
-    /// <summary>Software installation, licensing, updates.</summary>
+    /// <summary>Cài đặt phần mềm, bản quyền ứng dụng, cập nhật hệ thống.</summary>
     SW,
 
-    /// <summary>Hardware failures, replacements.</summary>
+    /// <summary>Hỏng hóc phần cứng, thay thế linh kiện máy tính.</summary>
     HW,
 
-    /// <summary>Printing and scanning.</summary>
+    /// <summary>Máy in và máy quét văn phòng.</summary>
     PRINT,
 
-    /// <summary>Access control, permissions, group membership.</summary>
+    /// <summary>Phân quyền truy cập, quyền hạn nhóm và thư mục.</summary>
     ACCESS,
 
-    /// <summary>Equipment requests (laptop, monitor, peripherals).</summary>
+    /// <summary>Yêu cầu cấp phát thiết bị làm việc (laptop, màn hình, phụ kiện).</summary>
     EQUIP,
 
-    /// <summary>Security incident — always requires manual triage.</summary>
+    /// <summary>Sự cố an ninh & an toàn thông tin — luôn yêu cầu phân loại thủ công.</summary>
     SEC,
 
-    /// <summary>Uncategorized / other.</summary>
+    /// <summary>Yêu cầu khác hoặc chưa phân loại.</summary>
     OTHER
 }

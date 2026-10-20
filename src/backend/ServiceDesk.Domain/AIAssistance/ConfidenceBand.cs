@@ -1,21 +1,18 @@
 namespace ServiceDesk.Domain.AIAssistance;
 
 /// <summary>
-/// Product-facing confidence band derived from raw model score.
-/// Thresholds are defined by <see cref="ConfidencePolicy"/> — not hardcoded.
-///
-/// IMPORTANT: This is NOT a calibrated probability.
-/// It is a discretized label derived from the raw model score to help
-/// reviewers prioritize which suggestions to examine.
+/// Mức độ tin cậy của gợi ý AI hiển thị cho người dùng (Low, Medium, High).
+/// Được suy diễn từ điểm số raw của model thông qua ConfidencePolicy.
+/// Lưu ý: Đây là nhãn phân nhóm hỗ trợ người dùng ưu tiên xem xét, không phải xác suất thống kê tuyệt đối.
 /// </summary>
 public enum ConfidenceBand
 {
-    /// <summary>Model score is below threshold — suggestion needs careful review.</summary>
+    /// <summary>Độ tin cậy thấp — cần xem xét kỹ lưỡng trước khi áp dụng.</summary>
     Low,
 
-    /// <summary>Model score is in mid-range — review recommended.</summary>
+    /// <summary>Độ tin cậy trung bình — khuyến nghị kỹ thuật viên rà soát.</summary>
     Medium,
 
-    /// <summary>Model score is above high threshold — likely accurate but human decides.</summary>
+    /// <summary>Độ tin cậy cao — khả năng chính xác cao nhưng quyết định cuối cùng vẫn thuộc về con người.</summary>
     High
 }

@@ -97,6 +97,81 @@ public class TicketTests
         ticket.IsOwnedBy(Guid.Empty).Should().BeFalse();
     }
 
+    [Fact]
+    public void Claim_SubmittedTicket_TransitionsToInProgress()
+    {
+        var ticket = CreateValidTicket();
+        var now = DateTime.UtcNow;
+
+        ticket.Claim(now);
+
+        ticket.Status.Should().Be(TicketStatus.InProgress);
+        ticket.UpdatedAt.Should().Be(now);
+    }
+
+    [Fact]
+    public void Claim_NonSubmittedTicket_Throws()
+    {
+        var ticket = CreateValidTicket();
+        ticket.Claim(DateTime.UtcNow);
+
+        var act = () => ticket.Claim(DateTime.UtcNow);
+        act.Should().Throw<InvalidOperationException>();
+    }
+
+    [Fact]
+    public void FullLifecycle_Resolve_Reopen_Close_Works()
+    {
+        var ticket = CreateValidTicket();
+        var now = DateTime.UtcNow;
+
+        ticket.Claim(now);
+        ticket.Resolve(now);
+        ticket.Status.Should().Be(TicketStatus.Resolved);
+
+        ticket.Reopen(now);
+        ticket.Status.Should().Be(TicketStatus.InProgress);
+
+        ticket.Resolve(now);
+        ticket.Close(now);
+        ticket.Status.Should().Be(TicketStatus.Closed);
+    }
+
+    [Fact]
+    public void Cancel_SubmittedTicket_SetsCancelled()
+    {
+        var ticket = CreateValidTicket();
+        var now = DateTime.UtcNow;
+
+        ticket.Cancel(now);
+
+        ticket.Status.Should().Be(TicketStatus.Cancelled);
+    }
+
+    [Fact]
+    public void Cancel_NonSubmittedTicket_Throws()
+    {
+        var ticket = CreateValidTicket();
+        ticket.Claim(DateTime.UtcNow);
+
+        var act = () => ticket.Cancel(DateTime.UtcNow);
+        act.Should().Throw<InvalidOperationException>();
+    }
+
+    [Fact]
+    public void Update_SubmittedTicket_UpdatesFields()
+    {
+        var ticket = CreateValidTicket();
+        var now = DateTime.UtcNow;
+
+        ticket.Update("New Title", "New Description at least 10 chars", TicketCategories.HW, now);
+
+        ticket.Title.Should().Be("New Title");
+        ticket.Description.Should().Be("New Description at least 10 chars");
+        ticket.CategoryId.Should().Be(TicketCategories.HW);
+        ticket.UpdatedAt.Should().Be(now);
+    }
+
     private static Ticket CreateValidTicket(
         Guid? requesterId = null,
         string title = "Cannot access VPN",

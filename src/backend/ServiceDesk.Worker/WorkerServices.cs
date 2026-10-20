@@ -7,6 +7,11 @@ using ServiceDesk.Infrastructure;
 
 namespace ServiceDesk.Worker;
 
+/// <summary>
+/// Đăng ký các dịch vụ phụ thuộc cần thiết cho Background Worker:
+/// - Không phụ thuộc HttpContext (dùng AnonymousCurrentUser).
+/// - Chỉ đăng ký các module nghiệp vụ và hạ tầng phục vụ tác vụ ngầm.
+/// </summary>
 public static class WorkerServices
 {
     public static IServiceCollection AddWorkerServices(this IServiceCollection services, IConfiguration configuration)
