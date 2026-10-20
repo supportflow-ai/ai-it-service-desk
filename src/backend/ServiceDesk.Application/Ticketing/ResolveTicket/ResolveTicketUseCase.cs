@@ -6,13 +6,21 @@ using ServiceDesk.Domain.Identity;
 
 namespace ServiceDesk.Application.Ticketing.ResolveTicket;
 
+/// <summary>Lệnh hoàn thành xử lý ticket (Resolve).</summary>
 public record ResolveTicketCommand(Guid Id);
 
+/// <summary>Hợp đồng use case đánh dấu giải quyết vé.</summary>
 public interface IResolveTicket
 {
     Task<TicketDto> ExecuteAsync(ResolveTicketCommand command, CancellationToken cancellationToken = default);
 }
 
+/// <summary>
+/// Xử lý đánh dấu hoàn thành vé:
+/// - Yêu cầu người gọi có vai trò Agent hoặc Admin.
+/// - Trạng thái vé bắt buộc phải là InProgress.
+/// - Chuyển trạng thái sang Resolved.
+/// </summary>
 internal sealed class ResolveTicketUseCase(ITicketWriter writer, ICurrentUser currentUser, IClock clock) : IResolveTicket
 {
     public async Task<TicketDto> ExecuteAsync(ResolveTicketCommand command, CancellationToken cancellationToken = default)

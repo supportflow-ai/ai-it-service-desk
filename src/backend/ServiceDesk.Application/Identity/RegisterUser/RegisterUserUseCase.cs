@@ -3,11 +3,17 @@ using ServiceDesk.Application.Identity.Ports;
 
 namespace ServiceDesk.Application.Identity.RegisterUser;
 
+/// <summary>Hợp đồng use case đăng ký tài khoản người dùng mới.</summary>
 public interface IRegisterUser
 {
     Task<AuthResult> ExecuteAsync(RegisterRequest request, CancellationToken cancellationToken = default);
 }
 
+/// <summary>
+/// Xử lý nghiệp vụ đăng ký người dùng:
+/// - Tạo tài khoản với vai trò mặc định là Requester.
+/// - Phát sinh access token JWT ngay sau khi đăng ký thành công.
+/// </summary>
 internal sealed class RegisterUserUseCase(IUserAccountGateway accounts, IAccessTokenIssuer tokens) : IRegisterUser
 {
     public async Task<AuthResult> ExecuteAsync(RegisterRequest request, CancellationToken cancellationToken = default)

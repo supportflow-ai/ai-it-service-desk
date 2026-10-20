@@ -2,6 +2,14 @@ using ServiceDesk.Application.Ticketing.Idempotency;
 
 namespace ServiceDesk.Api.Endpoints;
 
+/// <summary>
+/// Bộ lọc xử lý ngoại lệ nghiệp vụ tại tầng Endpoint:
+/// - UnauthorizedAccessException -> 401 Unauthorized
+/// - KeyNotFoundException -> 404 Not Found
+/// - IdempotencyConflictException -> 409 Conflict
+/// - IdempotencyInProgressException -> 503 Service Unavailable (kèm Retry-After)
+/// - ArgumentException -> 400 Bad Request
+/// </summary>
 public sealed class LegacyErrorFilter : IEndpointFilter
 {
     public async ValueTask<object?> InvokeAsync(EndpointFilterInvocationContext context, EndpointFilterDelegate next)

@@ -1,23 +1,50 @@
 namespace ServiceDesk.Domain.Ticketing;
 
+/// <summary>
+/// Thực thể gốc (Aggregate Root) đại diện cho một yêu cầu hỗ trợ IT (Ticket).
+/// Đảm bảo tính toàn vẹn dữ liệu và kiểm soát quy trình chuyển trạng thái theo State Machine.
+/// </summary>
 public class Ticket
 {
     private Ticket()
     {
     }
 
+    /// <summary>Mã định danh duy nhất (GUID) của ticket.</summary>
     public Guid Id { get; private set; }
-    public string TicketNumber { get; private set; } = null!; // IT-YYYY-NNNN format (DB sequence generated)
-    public Guid RequesterId { get; private set; }
-    public Guid? RequesterDepartmentId { get; private set; } // Snapshot at submission time (FR-TKT-10)
-    public string Title { get; private set; } = string.Empty;
-    public string Description { get; private set; } = string.Empty;
-    public string CategoryId { get; private set; } = string.Empty;
-    public TicketStatus Status { get; private set; }
-    public DateTime CreatedAt { get; private set; }
-    public DateTime UpdatedAt { get; private set; }
-    // xmin (PostgreSQL system column) used as concurrency token - handled by EF Core
 
+    /// <summary>Mã số vé hiển thị định dạng IT-YYYY-NNNN (do sequence database tự động sinh).</summary>
+    public string TicketNumber { get; private set; } = null!;
+
+    /// <summary>Mã định danh người gửi yêu cầu (Requester).</summary>
+    public Guid RequesterId { get; private set; }
+
+    /// <summary>Mã phòng ban của người gửi tại thời điểm tạo vé (snapshot cố định).</summary>
+    public Guid? RequesterDepartmentId { get; private set; }
+
+    /// <summary>Tiêu đề tóm tắt sự cố (tối đa 100 ký tự).</summary>
+    public string Title { get; private set; } = string.Empty;
+
+    /// <summary>Mô tả chi tiết sự cố (tối thiểu 10 ký tự).</summary>
+    public string Description { get; private set; } = string.Empty;
+
+    /// <summary>Mã danh mục sự cố (ACC, NET, VPN, SW, HW...).</summary>
+    public string CategoryId { get; private set; } = string.Empty;
+
+    /// <summary>Trạng thái hiện tại của vé trong vòng đời xử lý.</summary>
+    public TicketStatus Status { get; private set; }
+
+    /// <summary>Thời điểm tạo vé (UTC).</summary>
+    public DateTime CreatedAt { get; private set; }
+
+    /// <summary>Thời điểm cập nhật vé gần nhất (UTC).</summary>
+    public DateTime UpdatedAt { get; private set; }
+
+    // Cột hệ thống xmin của PostgreSQL đóng vai trò concurrency token - EF Core tự động xử lý
+
+    /// <summary>
+    /// Tạo mới một ticket với trạng thái khởi tạo mặc định là Submitted.
+    /// </summary>
     public static Ticket Create(
         Guid requesterId,
         string title,
@@ -72,9 +99,13 @@ public class Ticket
         };
     }
 
+    /// <summary>Kiểm tra quyền sở hữu của người gửi đối với ticket này.</summary>
     public bool IsOwnedBy(Guid requesterId) =>
         requesterId != Guid.Empty && RequesterId == requesterId;
 
+    /// <summary>
+    /// Kỹ thuật viên tiếp nhận xử lý vé (Submitted -> InProgress).
+    /// </summary>
     public void Claim(DateTime now)
     {
         if (Status != TicketStatus.Submitted)
@@ -86,6 +117,9 @@ public class Ticket
         UpdatedAt = now;
     }
 
+    /// <summary>
+    /// Đánh dấu vé đã được giải quyết xong (InProgress -> Resolved).
+    /// </summary>
     public void Resolve(DateTime now)
     {
         if (Status != TicketStatus.InProgress)
@@ -97,6 +131,9 @@ public class Ticket
         UpdatedAt = now;
     }
 
+    /// <summary>
+    /// Người dùng mở lại vé nếu chưa hài lòng với kết quả (Resolved -> InProgress).
+    /// </summary>
     public void Reopen(DateTime now)
     {
         if (Status != TicketStatus.Resolved)
@@ -108,6 +145,9 @@ public class Ticket
         UpdatedAt = now;
     }
 
+    /// <summary>
+    /// Đóng vé hoàn tất sau khi nghiệm thu (Resolved -> Closed).
+    /// </summary>
     public void Close(DateTime now)
     {
         if (Status != TicketStatus.Resolved)
@@ -119,6 +159,9 @@ public class Ticket
         UpdatedAt = now;
     }
 
+    /// <summary>
+    /// Hủy vé khi còn ở trạng thái chờ tiếp nhận (Submitted -> Cancelled).
+    /// </summary>
     public void Cancel(DateTime now)
     {
         if (Status != TicketStatus.Submitted)
@@ -130,6 +173,9 @@ public class Ticket
         UpdatedAt = now;
     }
 
+    /// <summary>
+    /// Cập nhật thông tin vé (chỉ cho phép khi vé ở trạng thái Submitted).
+    /// </summary>
     public void Update(string title, string description, string categoryId, DateTime now)
     {
         if (Status != TicketStatus.Submitted)

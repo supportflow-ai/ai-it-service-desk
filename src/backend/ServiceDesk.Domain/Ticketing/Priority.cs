@@ -1,21 +1,21 @@
 namespace ServiceDesk.Domain.Ticketing;
 
 /// <summary>
-/// Computed ticket priority (P1–P4).
-/// Priority is ALWAYS computed by deterministic business rules (Impact × Urgency).
-/// AI MUST NOT set or suggest Priority directly — it may only suggest Impact and Urgency.
+/// Mức độ ưu tiên xử lý của vé (P1 đến P4).
+/// Độ ưu tiên LUÔN ĐƯỢC TÍNH TOÁN tự động từ Impact × Urgency theo chuẩn ITIL.
+/// Phía Client hoặc AI tuyệt đối không được phép tự gán trực tiếp Priority.
 /// </summary>
 public enum Priority
 {
-    /// <summary>Critical: requires immediate response.</summary>
+    /// <summary>P1 - Khẩn cấp cực độ (Critical): Cần can thiệp ngay lập tức.</summary>
     P1,
 
-    /// <summary>High: significant impact, needs prompt attention.</summary>
+    /// <summary>P2 - Ưu tiên cao (High): Ảnh hưởng lớn, cần xử lý trong thời gian ngắn.</summary>
     P2,
 
-    /// <summary>Medium: moderate impact, standard response.</summary>
+    /// <summary>P3 - Ưu tiên trung bình (Medium): Ảnh hưởng vừa phải, xử lý theo luồng tiêu chuẩn.</summary>
     P3,
 
-    /// <summary>Low: minimal impact, scheduled handling.</summary>
+    /// <summary>P4 - Ưu tiên thấp (Low): Ảnh hưởng nhỏ, xử lý theo kế hoạch thông thường.</summary>
     P4
 }

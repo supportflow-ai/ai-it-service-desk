@@ -6,12 +6,16 @@ using ServiceDesk.Application.Identity.Contracts;
 
 namespace ServiceDesk.Api.Endpoints;
 
+/// <summary>
+/// Định nghĩa các API endpoints cho phân hệ định danh & xác thực người dùng (Identity & Authentication).
+/// </summary>
 public static class AuthEndpoints
 {
     public static IEndpointRouteBuilder MapAuthEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/auth").WithTags("Auth");
 
+        // POST /api/auth/register: Đăng ký tài khoản người dùng mới (mặc định gán vai trò Requester)
         group.MapPost("/register", async (
             [FromBody] RegisterRequest request,
             IRegisterUser registerUser,
@@ -32,6 +36,7 @@ public static class AuthEndpoints
         .WithName("Register")
         .AllowAnonymous();
 
+        // POST /api/auth/login: Đăng nhập hệ thống bằng email và mật khẩu (trả về JWT Bearer Token)
         group.MapPost("/login", async (
             [FromBody] LoginRequest request,
             ILoginUser loginUser,
@@ -52,6 +57,7 @@ public static class AuthEndpoints
         .WithName("Login")
         .AllowAnonymous();
 
+        // GET /api/auth/me: Lấy thông tin tài khoản và danh sách vai trò (roles) của người dùng đang đăng nhập
         group.MapGet("/me", async (
             IGetCurrentUser getCurrentUser,
             CancellationToken ct) =>
