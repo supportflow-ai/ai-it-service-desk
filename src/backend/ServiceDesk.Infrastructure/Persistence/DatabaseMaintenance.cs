@@ -4,22 +4,28 @@ using ServiceDesk.Domain.Identity;
 
 namespace ServiceDesk.Infrastructure.Persistence;
 
-/// <summary>Explicit operations invoked by the database tool and isolated test setup, never application startup.</summary>
+/// <summary>
+/// Các thao tác bảo trì cơ sở dữ liệu có chủ đích (Migration, Seed roles, Seed demo data, Bootstrap admin).
+/// Được gọi từ công cụ ServiceDesk.Database hoặc test setup, không tự ý chạy khi khởi động API thông thường.
+/// </summary>
 public sealed class DatabaseMaintenance(ApplicationDbContext context, RoleManager<IdentityRole> roles, UserManager<IdentityUser> users)
 {
     public static readonly string[] DemoEmails = ["admin@test.com", "agent@test.com", "requester@test.com"];
 
+    /// <summary>Áp dụng các migration còn thiếu vào database.</summary>
     public async Task MigrateAsync(CancellationToken ct = default)
     {
         await WithLockAsync(() => context.Database.MigrateAsync(ct), ct);
     }
 
+    /// <summary>Khởi tạo 3 vai trò chuẩn (Requester, Agent, Admin) nếu chưa tồn tại.</summary>
     public Task SeedRolesAsync(CancellationToken ct = default) => WithLockAsync(async () =>
     {
         foreach (var role in RoleNames.All)
             if (!await roles.RoleExistsAsync(role)) Ensure(await roles.CreateAsync(new IdentityRole(role)));
     }, ct);
 
+    /// <summary>Khởi tạo tài khoản mẫu (Demo) cho môi trường Development hoặc Test.</summary>
     public Task SeedDemoAsync(string environment, bool enabled, string password, CancellationToken ct = default)
     {
         if (!enabled || environment is not ("Development" or "Test"))
@@ -29,7 +35,7 @@ public sealed class DatabaseMaintenance(ApplicationDbContext context, RoleManage
             var demoRoles = new[] { RoleNames.Admin, RoleNames.Agent, RoleNames.Requester };
             for (var i = 0; i < DemoEmails.Length; i++)
             {
-                // Never modify or elevate an existing account, even in development.
+                // Tuyệt đối không sửa đổi hoặc nâng quyền tài khoản đã tồn tại.
                 if (await users.FindByEmailAsync(DemoEmails[i]) is not null) continue;
                 await using var transaction = await context.Database.BeginTransactionAsync(ct);
                 var user = new IdentityUser { UserName = DemoEmails[i], Email = DemoEmails[i], EmailConfirmed = true };
@@ -40,6 +46,7 @@ public sealed class DatabaseMaintenance(ApplicationDbContext context, RoleManage
         }, ct);
     }
 
+    /// <summary>Tạo tài khoản Quản trị viên (Admin) đầu tiên nếu chưa có.</summary>
     public Task BootstrapAdminAsync(string email, string password, CancellationToken ct = default) => WithLockAsync(async () =>
     {
         if (string.IsNullOrWhiteSpace(email) || string.IsNullOrEmpty(password))
@@ -53,6 +60,7 @@ public sealed class DatabaseMaintenance(ApplicationDbContext context, RoleManage
         await transaction.CommitAsync(ct);
     }, ct);
 
+    /// <summary>Kiểm tra an toàn trên môi trường Production (chặn mật khẩu demo mặc định).</summary>
     public async Task CheckProductionAsync(CancellationToken ct = default)
     {
         foreach (var email in DemoEmails)
@@ -86,7 +94,6 @@ public sealed class DatabaseMaintenance(ApplicationDbContext context, RoleManage
 
     private static void Ensure(IdentityResult result)
     {
-        // Identity error codes contain no submitted credential or raw user input.
         if (!result.Succeeded) throw new DatabaseMaintenanceException("identity_write_failed");
     }
 }

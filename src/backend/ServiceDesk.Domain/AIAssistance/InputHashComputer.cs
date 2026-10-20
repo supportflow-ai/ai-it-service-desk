@@ -5,21 +5,19 @@ using System.Text;
 namespace ServiceDesk.Domain.AIAssistance;
 
 /// <summary>
-/// Deterministic hash computation for AI-relevant ticket input.
-/// Used for stale-suggestion detection: if the hash changes,
-/// all pending suggestions based on the old input are stale.
-///
-/// Hash covers only the fields sent to the AI classifier (Title + Description).
-/// Uses SHA-256 for stability and determinism.
+/// Tính toán mã băm (Hash) tất định cho dữ liệu đầu vào của ticket gửi tới AI.
+/// Sử dụng để phát hiện dữ liệu cũ (stale suggestion): nếu mã hash thay đổi do người dùng cập nhật ticket,
+/// toàn bộ các gợi ý cũ đang chờ duyệt sẽ bị đánh dấu hết hạn (Expired).
+/// Sử dụng thuật toán SHA-256 ổn định và bất biến.
 /// </summary>
 public static class InputHashComputer
 {
     /// <summary>
-    /// Compute a deterministic SHA-256 hash of the canonical AI input.
+    /// Tính toán chuỗi băm SHA-256 tất định từ tiêu đề và mô tả ticket.
     /// </summary>
-    /// <param name="title">Ticket title (required).</param>
-    /// <param name="description">Ticket description (may be null/empty).</param>
-    /// <returns>Hex-encoded SHA-256 hash string.</returns>
+    /// <param name="title">Tiêu đề ticket (bắt buộc).</param>
+    /// <param name="description">Mô tả ticket.</param>
+    /// <returns>Chuỗi hex mã băm SHA-256 chữ thường.</returns>
     public static string Compute(string title, string? description)
     {
         ArgumentNullException.ThrowIfNull(title);
@@ -37,6 +35,9 @@ public static class InputHashComputer
         return Convert.ToHexString(hash.GetHashAndReset()).ToLowerInvariant();
     }
 
+    /// <summary>
+    /// Kiểm tra định dạng chuỗi hash SHA-256 (phải đúng 64 ký tự hex chữ thường).
+    /// </summary>
     public static bool IsValid(string? hash) => hash is { Length: 64 } &&
         hash.All(character => character is >= '0' and <= '9' or >= 'a' and <= 'f');
 }

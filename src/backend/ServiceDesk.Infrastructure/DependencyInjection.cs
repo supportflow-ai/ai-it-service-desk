@@ -18,11 +18,16 @@ using ServiceDesk.Infrastructure.Ticketing;
 
 namespace ServiceDesk.Infrastructure;
 
+/// <summary>
+/// Đăng ký các dịch vụ thuộc tầng hạ tầng (Infrastructure) vào DI container.
+/// </summary>
 public static class DependencyInjection
 {
+    /// <summary>Đăng ký toàn bộ hạ tầng: Persistence, Identity, Storage, Clock, AI Adapters.</summary>
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration) =>
         services.AddPersistence(configuration).AddIdentityInfrastructure(configuration).AddStorage(configuration).AddClock().AddAiAdapters();
 
+    /// <summary>Cấu hình cơ sở dữ liệu PostgreSQL (EF Core) và các cổng truy vấn/ghi dữ liệu ticket.</summary>
     public static IServiceCollection AddPersistence(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddOptions<DatabaseOptions>().Bind(configuration.GetSection(DatabaseOptions.SectionName));
@@ -33,6 +38,7 @@ public static class DependencyInjection
         return services;
     }
 
+    /// <summary>Đăng ký các kho lưu trữ Identity (User, Role, DataProtection) và Gateway quản lý tài khoản.</summary>
     public static IServiceCollection AddIdentityStores(this IServiceCollection services)
     {
         services.AddDataProtection();
@@ -51,6 +57,7 @@ public static class DependencyInjection
         return services;
     }
 
+    /// <summary>Cấu hình hạ tầng danh tính và cấp phát mã JWT Bearer Token.</summary>
     public static IServiceCollection AddIdentityInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddIdentityStores();
@@ -60,12 +67,14 @@ public static class DependencyInjection
         return services;
     }
 
+    /// <summary>Đăng ký dịch vụ thời gian hệ thống.</summary>
     public static IServiceCollection AddClock(this IServiceCollection services)
     {
         services.AddSingleton<IClock, SystemClock>();
         return services;
     }
 
+    /// <summary>Đăng ký kiểm tra sức khỏe hệ thống (Health Check) với PostgreSQL.</summary>
     public static IServiceCollection AddBackendHealthChecks(this IServiceCollection services)
     {
         services.AddHealthChecks().AddNpgSql(
@@ -74,6 +83,7 @@ public static class DependencyInjection
         return services;
     }
 
+    /// <summary>Đăng ký các bộ chuyển đổi AI tạm thời (NoOp) khi chưa tích hợp AI Service thật.</summary>
     public static IServiceCollection AddAiAdapters(this IServiceCollection services)
     {
         services.AddSingleton<ITicketClassificationService, NoOpTicketClassificationService>();
@@ -81,6 +91,7 @@ public static class DependencyInjection
         return services;
     }
 
+    /// <summary>Đăng ký client MinIO Object Storage (tương thích AWS S3).</summary>
     public static IServiceCollection AddStorage(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddOptions<MinioOptions>().Bind(configuration.GetSection(MinioOptions.SectionName));

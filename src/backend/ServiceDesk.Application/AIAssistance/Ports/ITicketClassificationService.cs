@@ -3,22 +3,14 @@ using ServiceDesk.Application.AIAssistance.Contracts;
 namespace ServiceDesk.Application.AIAssistance.Ports;
 
 /// <summary>
-/// AI-powered ticket classification (category, impact, urgency suggestion).
-/// Infrastructure provides NoOp implementation for bootstrap; real provider later.
-///
-/// Use the data-minimized ticket snapshot for classification.
+/// Cổng dịch vụ phân loại ticket bằng AI (gợi ý danh mục, mức độ ảnh hưởng, mức độ khẩn cấp).
+/// Tầng Infrastructure cung cấp cài đặt NoOp khi chưa nối AI service thật.
 /// </summary>
 public interface ITicketClassificationService
 {
     /// <summary>
-    /// Classify a ticket based on a data-minimized triage request.
-    /// Returns a typed <see cref="TriageResult"/> with explicit outcome semantics.
-    ///
-    /// Implementations MUST:
-    /// - Not throw on provider failures (return Unavailable/Timeout/InvalidResponse).
-    /// - Observe pre-cancelled tokens and propagate cancellation; never convert it to Unavailable.
-    /// - Validate output before returning (unknown category â†’ InvalidResponse).
-    /// - Not return fake confidence scores.
+    /// Phân loại ticket dựa trên dữ liệu đầu vào đã được tối giản (TriageRequest).
+    /// Trả về đối tượng TriageResult có kiểm soát lỗi chặt chẽ, không throw exception khi AI gặp sự cố.
     /// </summary>
     Task<TriageResult> ClassifyAsync(
         TriageRequest request,

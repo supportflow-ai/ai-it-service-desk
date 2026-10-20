@@ -3,56 +3,54 @@ using ServiceDesk.Domain.Ticketing;
 namespace ServiceDesk.Domain.AIAssistance;
 
 /// <summary>
-/// An individual AI suggestion within an <see cref="AIAnalysis"/>.
-/// Represents a proposed value for a specific ticket field (Category, Impact, Urgency).
+/// Đại diện cho một gợi ý cụ thể từ AI trong một phiên phân tích AIAnalysis.
+/// Đề xuất giá trị cho một trường thông tin của vé (Category, Impact, hoặc Urgency).
 ///
-/// Decision lifecycle:
-/// - Created as Pending.
-/// - Human reviewer moves to Accepted/Overridden/Rejected (terminal).
-/// - System moves to Expired if the ticket changes (stale).
-/// - Terminal states cannot be changed.
+/// Vòng đời quyết định:
+/// - Khởi tạo ở trạng thái Pending.
+/// - Con người đánh giá chuyển sang Accepted / Overridden / Rejected (trạng thái kết thúc).
+/// - Hệ thống tự chuyển sang Expired nếu ticket thay đổi nội dung (stale).
 /// </summary>
 public class AISuggestion
 {
     public Guid Id { get; private set; }
 
-    /// <summary>FK to the parent analysis.</summary>
+    /// <summary>Khóa ngoại liên kết tới phiên phân tích cha (AIAnalysis).</summary>
     public Guid AnalysisId { get; private set; }
 
-    /// <summary>Which field this suggestion applies to.</summary>
+    /// <summary>Loại trường thông tin mà gợi ý này áp dụng.</summary>
     public SuggestionType Type { get; private set; }
 
-    /// <summary>The AI-proposed value (e.g., "NET", "High").</summary>
+    /// <summary>Giá trị do AI đề xuất (ví dụ: "NET", "High").</summary>
     public string SuggestedValue { get; private set; } = string.Empty;
 
     /// <summary>
-    /// Raw model score for this suggestion, range [0.0, 1.0].
-    /// Null if the provider does not return per-field scores.
-    /// NOT a calibrated probability — see <see cref="ConfidencePolicy"/>.
+    /// Điểm số raw từ model AI, khoảng [0.0, 1.0].
+    /// Null nếu provider không trả về điểm số chi tiết từng trường.
     /// </summary>
     public double? ModelScore { get; private set; }
 
-    /// <summary>Current decision state.</summary>
+    /// <summary>Trạng thái quyết định hiện tại của gợi ý.</summary>
     public SuggestionDecision Decision { get; private set; } = SuggestionDecision.Pending;
 
     /// <summary>
-    /// The final applied value.
-    /// - Accepted: equals SuggestedValue.
-    /// - Overridden: the human-provided replacement.
-    /// - Rejected/Expired: null.
+    /// Giá trị cuối cùng được áp dụng vào ticket:
+    /// - Accepted: bằng SuggestedValue.
+    /// - Overridden: giá trị do con người nhập thay thế.
+    /// - Rejected / Expired: null.
     /// </summary>
     public string? FinalValue { get; private set; }
 
-    /// <summary>User ID of the reviewer. Null while Pending.</summary>
+    /// <summary>Mã người dùng thực hiện review. Null khi đang ở trạng thái Pending.</summary>
     public string? ReviewedBy { get; private set; }
 
-    /// <summary>When the decision was made. Null while Pending.</summary>
+    /// <summary>Thời điểm thực hiện review. Null khi đang ở trạng thái Pending.</summary>
     public DateTimeOffset? ReviewedAt { get; private set; }
 
-    private AISuggestion() { } // EF Core
+    private AISuggestion() { } // Dành cho EF Core
 
     /// <summary>
-    /// Create a new pending suggestion.
+    /// Khởi tạo một gợi ý mới ở trạng thái Pending.
     /// </summary>
     public static AISuggestion Create(
         Guid analysisId,
@@ -79,7 +77,7 @@ public class AISuggestion
     }
 
     /// <summary>
-    /// Accept the AI suggestion — FinalValue becomes the SuggestedValue.
+    /// Chấp nhận gợi ý từ AI — FinalValue sẽ bằng SuggestedValue.
     /// </summary>
     public void Accept(string reviewedBy, DateTimeOffset reviewedAt)
     {
@@ -93,7 +91,7 @@ public class AISuggestion
     }
 
     /// <summary>
-    /// Override the AI suggestion with a human-provided value.
+    /// Ghi đè gợi ý AI bằng giá trị do con người quyết định.
     /// </summary>
     public void Override(string finalValue, string reviewedBy, DateTimeOffset reviewedAt)
     {
@@ -109,7 +107,7 @@ public class AISuggestion
     }
 
     /// <summary>
-    /// Reject the AI suggestion — no value is applied.
+    /// Từ chối gợi ý AI — không áp dụng giá trị nào vào ticket.
     /// </summary>
     public void Reject(string reviewedBy, DateTimeOffset reviewedAt)
     {
@@ -123,20 +121,19 @@ public class AISuggestion
     }
 
     /// <summary>
-    /// Mark the suggestion as expired (stale) because the ticket changed.
-    /// This is a system action, not a human decision.
+    /// Đánh dấu gợi ý đã hết hạn (Expired) do ticket đã thay đổi nội dung.
     /// </summary>
     public void MarkExpired()
     {
         if (Decision != SuggestionDecision.Pending)
-            return; // Only pending suggestions can expire; terminal states are final.
+            return; // Chỉ gợi ý đang chờ (Pending) mới hết hạn; trạng thái kết thúc giữ nguyên.
 
         Decision = SuggestionDecision.Expired;
         FinalValue = null;
     }
 
     /// <summary>
-    /// Whether this suggestion is in a terminal state (no further transitions).
+    /// Kiểm tra xem gợi ý đã ở trạng thái kết thúc (không thể thay đổi tiếp) hay chưa.
     /// </summary>
     public bool IsTerminal => Decision != SuggestionDecision.Pending;
 

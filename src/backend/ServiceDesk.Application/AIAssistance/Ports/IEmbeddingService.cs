@@ -1,14 +1,14 @@
 namespace ServiceDesk.Application.AIAssistance.Ports;
 
 /// <summary>
-/// Embedding service for vector-based similarity search.
-/// Infrastructure provides NoOp implementation for bootstrap; real provider later.
+/// Cổng dịch vụ tạo vector nhúng (Embedding) phục vụ tìm kiếm tương đồng và RAG.
+/// Tầng Infrastructure cung cấp cài đặt NoOp trong giai đoạn khởi tạo ban đầu.
 /// </summary>
 public interface IEmbeddingService
 {
     /// <summary>
-    /// Generate an embedding vector for the given text.
-    /// Returns empty array in NoOp mode.
+    /// Sinh vector nhúng cho một đoạn văn bản.
+    /// Trả về mảng rỗng khi ở chế độ NoOp.
     /// </summary>
     Task<float[]> GenerateEmbeddingAsync(
         string text,

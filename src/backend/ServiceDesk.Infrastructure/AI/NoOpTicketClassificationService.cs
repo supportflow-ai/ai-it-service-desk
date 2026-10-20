@@ -4,14 +4,14 @@ using ServiceDesk.Application.AIAssistance.Contracts;
 namespace ServiceDesk.Infrastructure.AI;
 
 /// <summary>
-/// No-op ticket classification — returns controlled Unavailable result.
-/// Placeholder until a real AI provider is integrated.
+/// Cài đặt NoOp cho dịch vụ phân loại ticket — trả về kết quả Unavailable có kiểm soát.
+/// Đóng vai trò giữ chỗ (placeholder) khi chưa tích hợp AI service thật.
 ///
-/// Contract compliance:
-/// - Does not throw.
-/// - Returns a well-formed TriageResult with Unavailable outcome.
-/// - Does not return fake confidence scores.
-    /// - Observes caller cancellation before returning.
+/// Tuân thủ hợp đồng:
+/// - Không throw exception khi không có AI.
+/// - Trả về TriageResult đầy đủ với trạng thái Unavailable.
+/// - Không giả lập điểm số tin cậy (không fake confidence score).
+/// - Tôn trọng CancellationToken từ caller.
 /// </summary>
 internal sealed class NoOpTicketClassificationService : ITicketClassificationService
 {
@@ -20,6 +20,6 @@ internal sealed class NoOpTicketClassificationService : ITicketClassificationSer
     {
         cancellationToken.ThrowIfCancellationRequested();
         return Task.FromResult(
-            TriageResult.Unavailable("No AI provider configured. Using NoOp fallback."));
+            TriageResult.Unavailable("Chưa cấu hình AI provider. Sử dụng NoOp fallback."));
     }
 }

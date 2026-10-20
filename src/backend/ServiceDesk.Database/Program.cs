@@ -11,7 +11,7 @@ if (args.Length == 0 || args[0] is not ("migrate" or "seed-roles" or "seed-demo"
     return 2;
 }
 var builder = Host.CreateApplicationBuilder(args.Skip(1).ToArray());
-// Provisioning logs must never include connection strings, bootstrap secrets or SQL parameters.
+// Log khởi tạo tuyệt đối không được ghi chuỗi kết nối, bí mật bootstrap hoặc tham số SQL.
 builder.Logging.ClearProviders();
 builder.Services.AddPersistence(builder.Configuration).AddIdentityStores();
 builder.Services.AddScoped<DatabaseMaintenance>();

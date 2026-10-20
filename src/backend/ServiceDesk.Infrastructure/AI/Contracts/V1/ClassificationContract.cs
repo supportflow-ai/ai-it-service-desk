@@ -68,7 +68,7 @@ internal static class ClassificationContractMapper
         return TriageResult.Success(category, impact, urgency, categoryScore, impactScore, urgencyScore);
     }
 
-    // Versioned allowlists: adding a domain enum never silently expands the v1 protocol.
+    // Danh sách cho phép theo phiên bản: thêm enum trong Domain không tự ý mở rộng giao thức v1.
     private static readonly IReadOnlyDictionary<string, TicketCategory> Categories = new Dictionary<string, TicketCategory>(StringComparer.Ordinal)
     {
         ["ACC"] = TicketCategory.ACC, ["NET"] = TicketCategory.NET, ["VPN"] = TicketCategory.VPN,

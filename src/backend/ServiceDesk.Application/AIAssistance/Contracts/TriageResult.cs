@@ -4,76 +4,54 @@ using ServiceDesk.Domain.Ticketing;
 namespace ServiceDesk.Application.AIAssistance.Contracts;
 
 /// <summary>
-/// Result of an AI triage classification attempt.
-/// Represents the complete outcome including success/failure state.
-///
-/// DESIGN DECISIONS:
-/// - SuggestedCategory/Impact/Urgency use domain enums (typed, not free-text).
-/// - ModelScore is raw [0.0, 1.0], NOT a calibrated probability.
-/// - ConfidenceBand is a product label derived from ModelScore via ConfidencePolicy.
-/// - Priority is NEVER included â€” it is computed by deterministic PriorityMatrix.
-/// - Outcome indicates success/failure/degraded state.
+/// Kết quả phân loại tự động của AI Triage.
+/// Bao gồm trạng thái thực thi (Outcome), các gợi ý và điểm số tin cậy tương ứng.
 /// </summary>
 public sealed record TriageResult
 {
     private TriageResult() { }
-    /// <summary>
-    /// Overall outcome of the classification attempt.
-    /// </summary>
+
+    /// <summary>Kết quả chung của lần phân loại AI.</summary>
     public TriageOutcome Outcome { get; private init; }
 
-    /// <summary>AI-suggested category, if classification succeeded.</summary>
+    /// <summary>Danh mục AI đề xuất.</summary>
     public TicketCategory? SuggestedCategory { get; private init; }
 
-    /// <summary>AI-suggested impact level, if classification succeeded.</summary>
+    /// <summary>Mức độ ảnh hưởng (Impact) AI đề xuất.</summary>
     public Impact? SuggestedImpact { get; private init; }
 
-    /// <summary>AI-suggested urgency level, if classification succeeded.</summary>
+    /// <summary>Mức độ khẩn cấp (Urgency) AI đề xuất.</summary>
     public Urgency? SuggestedUrgency { get; private init; }
 
-    /// <summary>
-    /// Raw model score for category suggestion, range [0.0, 1.0].
-    /// Null if unavailable or classification failed.
-    /// NOT a calibrated probability â€” see <see cref="ConfidencePolicy"/>.
-    /// </summary>
+    /// <summary>Điểm số raw [0.0, 1.0] cho gợi ý danh mục.</summary>
     public double? CategoryScore { get; private init; }
 
-    /// <summary>Raw model score for impact suggestion.</summary>
+    /// <summary>Điểm số raw [0.0, 1.0] cho gợi ý Impact.</summary>
     public double? ImpactScore { get; private init; }
 
-    /// <summary>Raw model score for urgency suggestion.</summary>
+    /// <summary>Điểm số raw [0.0, 1.0] cho gợi ý Urgency.</summary>
     public double? UrgencyScore { get; private init; }
 
-    /// <summary>
-    /// Product-facing confidence band for the category suggestion.
-    /// Derived from CategoryScore via <see cref="ConfidencePolicy.Classify"/>.
-    /// </summary>
+    /// <summary>Mức tin cậy (Low, Medium, High) cho gợi ý danh mục.</summary>
     public ConfidenceBand? CategoryConfidence => ConfidencePolicy.Classify(CategoryScore);
 
-    /// <summary>Product-facing confidence band for impact suggestion.</summary>
+    /// <summary>Mức tin cậy (Low, Medium, High) cho gợi ý Impact.</summary>
     public ConfidenceBand? ImpactConfidence => ConfidencePolicy.Classify(ImpactScore);
 
-    /// <summary>Product-facing confidence band for urgency suggestion.</summary>
+    /// <summary>Mức tin cậy (Low, Medium, High) cho gợi ý Urgency.</summary>
     public ConfidenceBand? UrgencyConfidence => ConfidencePolicy.Classify(UrgencyScore);
 
-    /// <summary>Whether the suggested category requires mandatory manual triage.</summary>
+    /// <summary>Cho biết danh mục đề xuất có bắt buộc phải phân loại thủ công hay không.</summary>
     public bool RequiresManualTriage =>
         SuggestedCategory.HasValue && TriagePolicy.RequiresManualTriage(SuggestedCategory.Value);
 
-    /// <summary>
-    /// Controlled failure information when Outcome is not Success.
-    /// Must not leak raw provider exceptions.
-    /// </summary>
+    /// <summary>Thông tin nguyên nhân nếu phân loại thất bại hoặc không khả dụng.</summary>
     public string? FailureReason { get; private init; }
 
-    /// <summary>
-    /// Validation errors from output validation (unknown category, invalid score, etc.).
-    /// </summary>
+    /// <summary>Danh sách lỗi xác thực dữ liệu đầu ra từ AI nếu có.</summary>
     public IReadOnlyList<string> ValidationErrors { get; private init; } = [];
 
-    /// <summary>
-    /// Factory for a successful classification result.
-    /// </summary>
+    /// <summary>Khởi tạo kết quả phân loại thành công.</summary>
     public static TriageResult Success(
         TicketCategory? category,
         Impact? impact,
@@ -97,10 +75,7 @@ public sealed record TriageResult
         };
     }
 
-    /// <summary>
-    /// Factory for when the AI provider is unavailable.
-    /// Core workflow must remain usable.
-    /// </summary>
+    /// <summary>Khởi tạo kết quả khi dịch vụ AI không khả dụng (luồng chính vẫn tiếp tục bình thường).</summary>
     public static TriageResult Unavailable(string reason = "AI classification service is unavailable.")
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(reason);
@@ -111,9 +86,7 @@ public sealed record TriageResult
         };
     }
 
-    /// <summary>
-    /// Factory for when the AI provider times out.
-    /// </summary>
+    /// <summary>Khởi tạo kết quả khi kết nối AI bị quá thời gian chờ (Timeout).</summary>
     public static TriageResult Timeout(string reason = "AI classification timed out.")
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(reason);
@@ -124,9 +97,7 @@ public sealed record TriageResult
         };
     }
 
-    /// <summary>
-    /// Factory for when the AI provider returns an invalid/unparseable response.
-    /// </summary>
+    /// <summary>Khởi tạo kết quả khi AI trả về phản hồi không đúng cấu trúc / không hợp lệ.</summary>
     public static TriageResult InvalidResponse(string reason, IReadOnlyList<string>? validationErrors = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(reason);
@@ -147,23 +118,21 @@ public sealed record TriageResult
     }
 }
 
-/// <summary>
-/// Outcome of a triage classification attempt.
-/// </summary>
+/// <summary>Trạng thái kết quả của một lần thực thi AI Triage.</summary>
 public enum TriageOutcome
 {
-    /// <summary>Classification completed successfully.</summary>
+    /// <summary>Phân loại thành công.</summary>
     Success,
 
-    /// <summary>AI provider is not available â€” core workflow continues without AI.</summary>
+    /// <summary>Dịch vụ AI không khả dụng.</summary>
     Unavailable,
 
-    /// <summary>AI provider timed out â€” core workflow continues without AI.</summary>
+    /// <summary>Quá thời gian chờ phản hồi từ AI.</summary>
     Timeout,
 
-    /// <summary>AI returned invalid/unparseable output â€” treated as degraded.</summary>
+    /// <summary>Phản hồi từ AI không đúng cấu trúc hợp lệ.</summary>
     InvalidResponse,
 
-    /// <summary>Output validation failed (unknown category, invalid score, etc.).</summary>
+    /// <summary>Dữ liệu đề xuất không vượt qua kiểm tra tính hợp lệ.</summary>
     ValidationFailed
 }

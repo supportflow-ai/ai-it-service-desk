@@ -3,7 +3,7 @@ using ServiceDesk.Application.Common.Interfaces;
 namespace ServiceDesk.Infrastructure.Clock;
 
 /// <summary>
-/// Production clock implementation returning real UTC time.
+/// Cài đặt đồng hồ hệ thống thực tế trả về thời gian UTC (DateTimeOffset.UtcNow).
 /// </summary>
 internal sealed class SystemClock : IClock
 {

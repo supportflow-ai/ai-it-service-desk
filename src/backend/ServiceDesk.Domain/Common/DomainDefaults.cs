@@ -1,18 +1,17 @@
 namespace ServiceDesk.Domain.Common;
 
 /// <summary>
-/// Marker class for Domain.Common namespace.
-/// Domain entities and value objects will be added here in future sprints.
+/// Các giá trị mặc định và giới hạn độ dài chuẩn dùng chung trong tầng Domain.
 /// </summary>
 public static class DomainDefaults
 {
     /// <summary>
-    /// Maximum length for standard name fields across the domain.
+    /// Độ dài tối đa cho các trường tên chuẩn trong tầng Domain.
     /// </summary>
     public const int NameMaxLength = 256;
 
     /// <summary>
-    /// Maximum length for description/content fields.
+    /// Độ dài tối đa cho các trường mô tả hoặc nội dung.
     /// </summary>
     public const int DescriptionMaxLength = 4000;
 }
