@@ -45,6 +45,12 @@ public class TicketIdempotencyEndpointTests
         builder.Services.AddSingleton(service);
         builder.Services.AddSingleton(Mock.Of<ServiceDesk.Application.Ticketing.GetMyTickets.IGetMyTickets>());
         builder.Services.AddSingleton(Mock.Of<ServiceDesk.Application.Ticketing.GetTicketDetail.IGetTicketDetail>());
+        builder.Services.AddSingleton(Mock.Of<ServiceDesk.Application.Ticketing.UpdateTicket.IUpdateTicket>());
+        builder.Services.AddSingleton(Mock.Of<ServiceDesk.Application.Ticketing.ClaimTicket.IClaimTicket>());
+        builder.Services.AddSingleton(Mock.Of<ServiceDesk.Application.Ticketing.ResolveTicket.IResolveTicket>());
+        builder.Services.AddSingleton(Mock.Of<ServiceDesk.Application.Ticketing.ReopenTicket.IReopenTicket>());
+        builder.Services.AddSingleton(Mock.Of<ServiceDesk.Application.Ticketing.CloseTicket.ICloseTicket>());
+        builder.Services.AddSingleton(Mock.Of<ServiceDesk.Application.Ticketing.CancelTicket.ICancelTicket>());
         builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
         {
             options.TokenValidationParameters = new TokenValidationParameters
@@ -57,8 +63,12 @@ public class TicketIdempotencyEndpointTests
                 RoleClaimType = System.Security.Claims.ClaimTypes.Role
             };
         });
-        builder.Services.AddAuthorization(options => options.AddPolicy(
-            PolicyNames.RequireRequester, policy => policy.RequireRole(RoleNames.Requester, RoleNames.Agent, RoleNames.Admin)));
+        builder.Services.AddAuthorization(options =>
+        {
+            options.AddPolicy(PolicyNames.RequireRequester, policy => policy.RequireRole(RoleNames.Requester, RoleNames.Agent, RoleNames.Admin));
+            options.AddPolicy(PolicyNames.RequireAgent, policy => policy.RequireRole(RoleNames.Agent, RoleNames.Admin));
+            options.AddPolicy(PolicyNames.RequireAdmin, policy => policy.RequireRole(RoleNames.Admin));
+        });
         var app = builder.Build();
         app.UseAuthentication();
         app.UseAuthorization();

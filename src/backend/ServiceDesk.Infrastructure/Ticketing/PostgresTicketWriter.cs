@@ -101,5 +101,12 @@ internal sealed class PostgresTicketWriter(ApplicationDbContext context) : ITick
         _context.Database.SqlQuery<DateTime>($"SELECT clock_timestamp() AS \"Value\"")
             .SingleAsync(cancellationToken);
 
+    public Task<Ticket?> GetForUpdateAsync(Guid id, CancellationToken cancellationToken)
+        => _context.Tickets.SingleOrDefaultAsync(t => t.Id == id, cancellationToken);
 
+    public async Task<TicketDto> UpdateTicketAsync(Ticket ticket, CancellationToken cancellationToken)
+    {
+        await _context.SaveChangesAsync(cancellationToken);
+        return TicketProjection.ToDto(ticket);
+    }
 }

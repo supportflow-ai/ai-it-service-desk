@@ -89,3 +89,17 @@ ai-it-service-desk-claude-context-pack/
 
 .venv/
 __pycache__/
+
+# ==========================================
+# Local credentials & development tools
+# ==========================================
+*_ed25519*
+*.pub
+*.pem
+*.key
+HUONG-DAN.md
+TIEN-TRINH.md
+scripts/run_backend.py
+scripts/start_database_tunnel.py
+.claude/
+.superpowers/

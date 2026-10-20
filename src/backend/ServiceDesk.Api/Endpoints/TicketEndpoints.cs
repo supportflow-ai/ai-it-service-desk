@@ -5,9 +5,17 @@ using ServiceDesk.Application.Ticketing.Contracts;
 using ServiceDesk.Application.Ticketing.Idempotency;
 using ServiceDesk.Application.Ticketing.GetMyTickets;
 using ServiceDesk.Application.Ticketing.GetTicketDetail;
+using ServiceDesk.Application.Ticketing.UpdateTicket;
+using ServiceDesk.Application.Ticketing.ClaimTicket;
+using ServiceDesk.Application.Ticketing.ResolveTicket;
+using ServiceDesk.Application.Ticketing.ReopenTicket;
+using ServiceDesk.Application.Ticketing.CloseTicket;
+using ServiceDesk.Application.Ticketing.CancelTicket;
 using ServiceDesk.Domain.Identity;
 
 namespace ServiceDesk.Api.Endpoints;
+
+public record UpdateTicketRequest(string Title, string Description, string CategoryId);
 
 public static class TicketEndpoints
 {
@@ -64,6 +72,97 @@ public static class TicketEndpoints
         .Produces<TicketDto>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status404NotFound)
         .Produces(StatusCodes.Status401Unauthorized);
+
+        group.MapPost("/{id:guid}/update", async (
+            Guid id,
+            [FromBody] UpdateTicketRequest request,
+            IUpdateTicket updateTicket,
+            CancellationToken ct) =>
+        {
+            var ticket = await updateTicket.ExecuteAsync(new(id, request.Title, request.Description, request.CategoryId), ct);
+            return Results.Ok(ticket);
+        })
+        .WithName("UpdateTicket")
+        .RequireAuthorization(PolicyNames.RequireRequester)
+        .Produces<TicketDto>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status404NotFound);
+
+        group.MapPost("/{id:guid}/claim", async (
+            Guid id,
+            IClaimTicket claimTicket,
+            CancellationToken ct) =>
+        {
+            var ticket = await claimTicket.ExecuteAsync(new(id), ct);
+            return Results.Ok(ticket);
+        })
+        .WithName("ClaimTicket")
+        .RequireAuthorization(PolicyNames.RequireAgent)
+        .Produces<TicketDto>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status404NotFound);
+
+        group.MapPost("/{id:guid}/resolve", async (
+            Guid id,
+            IResolveTicket resolveTicket,
+            CancellationToken ct) =>
+        {
+            var ticket = await resolveTicket.ExecuteAsync(new(id), ct);
+            return Results.Ok(ticket);
+        })
+        .WithName("ResolveTicket")
+        .RequireAuthorization()
+        .Produces<TicketDto>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status404NotFound);
+
+        group.MapPost("/{id:guid}/reopen", async (
+            Guid id,
+            IReopenTicket reopenTicket,
+            CancellationToken ct) =>
+        {
+            var ticket = await reopenTicket.ExecuteAsync(new(id), ct);
+            return Results.Ok(ticket);
+        })
+        .WithName("ReopenTicket")
+        .RequireAuthorization()
+        .Produces<TicketDto>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status404NotFound);
+
+        group.MapPost("/{id:guid}/close", async (
+            Guid id,
+            ICloseTicket closeTicket,
+            CancellationToken ct) =>
+        {
+            var ticket = await closeTicket.ExecuteAsync(new(id), ct);
+            return Results.Ok(ticket);
+        })
+        .WithName("CloseTicket")
+        .RequireAuthorization()
+        .Produces<TicketDto>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status404NotFound);
+
+        group.MapPost("/{id:guid}/cancel", async (
+            Guid id,
+            ICancelTicket cancelTicket,
+            CancellationToken ct) =>
+        {
+            var ticket = await cancelTicket.ExecuteAsync(new(id), ct);
+            return Results.Ok(ticket);
+        })
+        .WithName("CancelTicket")
+        .RequireAuthorization()
+        .Produces<TicketDto>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status404NotFound);
 
         return app;
     }

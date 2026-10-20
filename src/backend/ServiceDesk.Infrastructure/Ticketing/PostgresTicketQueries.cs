@@ -25,15 +25,7 @@ internal sealed class PostgresTicketQueries(ApplicationDbContext context) : ITic
             .ThenByDescending(ticket => ticket.Id)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(ticket => new TicketDto(
-                ticket.Id,
-                ticket.TicketNumber,
-                ticket.Title,
-                ticket.Description,
-                ticket.CategoryId,
-                (int)ticket.Status,
-                ticket.CreatedAt,
-                ticket.RequesterDepartmentId))
+            .Select(ticket => TicketProjection.ToDto(ticket))
             .ToListAsync(cancellationToken);
 
         return new PagedTicketResult(tickets, page, pageSize, totalCount);
