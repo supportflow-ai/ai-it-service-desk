@@ -29,11 +29,13 @@ public sealed class TicketLifecycleUseCaseTests
         _clock.SetupGet(c => c.UtcNow).Returns(_now);
     }
 
-    [Fact]
-    public async Task Claim_RequiresAgentRole_AndTransitionsToInProgress()
+    [Theory]
+    [InlineData(RoleNames.Agent)]
+    [InlineData(RoleNames.Admin)]
+    public async Task Claim_StaffRole_TransitionsToInProgress(string role)
     {
-        _user.SetupGet(u => u.Roles).Returns([RoleNames.Agent]);
-        _user.Setup(u => u.IsInRole(RoleNames.Agent)).Returns(true);
+        _user.SetupGet(u => u.Roles).Returns([role]);
+        _user.Setup(u => u.IsInRole(It.IsAny<string>())).Returns((string candidate) => candidate == role);
         var ticket = Ticket.Create(_actor, "Issue", "Problem description long enough", TicketCategories.VPN, _now.UtcDateTime);
         _writer.Setup(w => w.GetForUpdateAsync(ticket.Id, It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
         _writer.Setup(w => w.UpdateTicketAsync(ticket, It.IsAny<CancellationToken>()))
@@ -56,12 +58,13 @@ public sealed class TicketLifecycleUseCaseTests
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() => useCase.ExecuteAsync(new(Guid.NewGuid())));
     }
 
-    [Fact]
-    public async Task Resolve_AgentRole_SetsResolved()
+    [Theory]
+    [InlineData(RoleNames.Agent)]
+    [InlineData(RoleNames.Admin)]
+    public async Task Resolve_StaffRole_SetsResolved(string role)
     {
-        _user.SetupGet(u => u.Roles).Returns([RoleNames.Agent]);
-        _user.Setup(u => u.IsInRole(RoleNames.Agent)).Returns(true);
-        _user.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(false);
+        _user.SetupGet(u => u.Roles).Returns([role]);
+        _user.Setup(u => u.IsInRole(It.IsAny<string>())).Returns((string candidate) => candidate == role);
         var ticket = Ticket.Create(Guid.NewGuid(), "Issue", "Problem description long enough", TicketCategories.VPN, _now.UtcDateTime);
         ticket.Claim(_now.UtcDateTime);
 
@@ -150,6 +153,50 @@ public sealed class TicketLifecycleUseCaseTests
 
         Assert.Equal("Updated Title", ticket.Title);
         Assert.Equal(TicketCategories.HW, ticket.CategoryId);
+        _writer.VerifyAll();
+    }
+
+    [Theory]
+    [InlineData(RoleNames.Requester)]
+    [InlineData("Observer")]
+    public async Task Resolve_ForbiddenActor_NeverLoadsOrWritesTicket(string role)
+    {
+        _user.SetupGet(user => user.Roles).Returns([role]);
+        _user.Setup(user => user.IsInRole(It.IsAny<string>())).Returns((string candidate) => candidate == role);
+        var useCase = new ResolveTicketUseCase(_writer.Object, _user.Object, _clock.Object);
+
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => useCase.ExecuteAsync(new(Guid.NewGuid())));
+        _writer.VerifyNoOtherCalls();
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task StaffCommands_RejectUnauthenticatedActorBeforePersistence(bool resolve)
+    {
+        _user.SetupGet(user => user.IsAuthenticated).Returns(false);
+        _user.SetupGet(user => user.Roles).Returns([RoleNames.Admin]);
+        _user.Setup(user => user.IsInRole(RoleNames.Admin)).Returns(true);
+
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => resolve
+            ? new ResolveTicketUseCase(_writer.Object, _user.Object, _clock.Object).ExecuteAsync(new(Guid.NewGuid()))
+            : new ClaimTicketUseCase(_writer.Object, _user.Object, _clock.Object).ExecuteAsync(new(Guid.NewGuid())));
+        _writer.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task Claim_MultipleRoles_RetainsStaffPermission()
+    {
+        _user.SetupGet(user => user.Roles).Returns([RoleNames.Requester, RoleNames.Admin]);
+        _user.Setup(user => user.IsInRole(RoleNames.Admin)).Returns(true);
+        var ticket = Ticket.Create(Guid.NewGuid(), "Issue", "Problem description long enough", TicketCategories.VPN, _now.UtcDateTime);
+        _writer.Setup(writer => writer.GetForUpdateAsync(ticket.Id, It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
+        _writer.Setup(writer => writer.UpdateTicketAsync(ticket, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new TicketDto(ticket.Id, "IT-2026-0001", ticket.Title, ticket.Description, ticket.CategoryId,
+                (int)TicketStatus.InProgress, ticket.CreatedAt));
+
+        await new ClaimTicketUseCase(_writer.Object, _user.Object, _clock.Object).ExecuteAsync(new(ticket.Id));
+        Assert.Equal(TicketStatus.InProgress, ticket.Status);
         _writer.VerifyAll();
     }
 }

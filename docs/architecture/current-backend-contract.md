@@ -1,6 +1,6 @@
 # Hợp đồng backend đang triển khai
 
-Trạng thái: mô tả hiện hành, đối chiếu mã `dev` tại `47634bc8162c13bd6ae024233ec24a0076738c51`, sau PR #28 và #29; cập nhật 2026-10-20. Mốc nguồn có thể mới hơn nhánh local của người đọc; đối chiếu commit trước khi chạy. Cập nhật tài liệu không thay API, quyền hoặc dữ liệu, không xác nhận đã nghiệm thu các hành vi còn lỗi. Quyết định kiến trúc: [ADR-014](../adr/ADR-014-feature-use-cases-and-published-contracts.md). Chính sách cần chốt: [bảng quyết định](pending-business-decisions.md).
+Trạng thái: mô tả mã làm việc sau đợt củng cố ngày 2026-10-23, trên nền `47da28103cc46500aac0847accfbaa2783f88db2` (cùng cây nội dung với `e2d1ad4`). Các thay đổi của đợt này chưa commit tại lúc cập nhật tài liệu; kết quả kiểm chứng phải gắn với bản làm việc thực tế. Quyết định nền: [ADR-014](../adr/ADR-014-feature-use-cases-and-published-contracts.md). Chính sách còn mở: [bảng quyết định](pending-business-decisions.md).
 
 ## HTTP và danh tính
 
@@ -15,7 +15,7 @@ Trạng thái: mô tả hiện hành, đối chiếu mã `dev` tại `47634bc816
 | Danh sách cá nhân | `GET /api/tickets/me` | Chỉ phiếu của người đang đăng nhập; kết quả phân trang, không phải mảng trần |
 | Chi tiết | `GET /api/tickets/{id}` | Requester chỉ đọc phiếu của mình; Agent/Admin đọc toàn hệ thống; thiếu/ngoài phạm vi trả 404 |
 | Cập nhật phiếu | `POST /api/tickets/{id}/update` | Chủ sở hữu hoặc Admin; chỉ ở Submitted; nhận `title`, `description`, `categoryId`; trả 200 với `TicketDto` |
-| Nhận xử lý | `POST /api/tickets/{id}/claim` | Application hiện yêu cầu Agent; Submitted sang InProgress; trả 200 với `TicketDto`; xem điểm lệch quyền bên dưới |
+| Nhận xử lý | `POST /api/tickets/{id}/claim` | Application yêu cầu Agent hoặc Admin; Submitted sang InProgress; trả 200 với `TicketDto`; quyền đã đồng bộ với HTTP trong đợt củng cố |
 | Giải quyết | `POST /api/tickets/{id}/resolve` | Agent/Admin; InProgress sang Resolved; trả 200 với `TicketDto` |
 | Mở lại | `POST /api/tickets/{id}/reopen` | Chủ sở hữu hoặc Admin; Resolved sang InProgress; trả 200 với `TicketDto` |
 | Đóng | `POST /api/tickets/{id}/close` | Chủ sở hữu hoặc Admin; Resolved sang Closed; trả 200 với `TicketDto` |
@@ -40,21 +40,21 @@ Sáu thao tác mới đều dùng POST. Chỉ `update` nhận nội dung JSON; c
 | Đóng | Resolved | Closed | Chưa có tác vụ đóng tự động |
 | Hủy | Submitted | Cancelled | Chưa nhận lý do hủy hoặc lưu lịch sử nghiệp vụ |
 
-Trạng thái khác bị Domain từ chối; Application chuyển lỗi trạng thái thành `ArgumentException`, bộ lọc HTTP hiện trả 400 với `{ error }`. Phiếu thiếu hoặc ngoài quyền chủ sở hữu của các lệnh `update/reopen/close/cancel` trả 404. Các lệnh mới chưa có cơ chế khóa chống tạo trùng hoặc phát lại phản hồi như thao tác tạo phiếu. Yêu cầu đã thực hiện thành công rồi gửi lại có thể nhận lỗi trạng thái.
+Trạng thái khác bị Domain từ chối; Application chuyển lỗi trạng thái thành `ArgumentException`, bộ lọc HTTP hiện trả 400 với `{ error }`. Phiếu thiếu hoặc ngoài quyền chủ sở hữu của các lệnh `update/reopen/close/cancel` trả 404. Các lệnh vòng đời chưa có cơ chế khóa chống tạo trùng hoặc phát lại phản hồi như thao tác tạo phiếu. Khi phát hiện xung đột ghi qua `xmin`, adapter chuyển lỗi EF thành `TicketConcurrencyException`; HTTP trả 409 với `{ error }`, không kèm `Retry-After` và không thử lại tự động. Chỉ caller đã qua kiểm tra quyền mới có thể đi đến bước ghi này. Yêu cầu đã thực hiện thành công rồi gửi lại có thể nhận lỗi trạng thái.
 
-Nguồn được ghim: [các đường dẫn HTTP tại mốc đối chiếu](https://github.com/supportflow-ai/ai-it-service-desk/blob/47634bc8162c13bd6ae024233ec24a0076738c51/src/backend/ServiceDesk.Api/Endpoints/TicketEndpoints.cs), [quy tắc trên Ticket](https://github.com/supportflow-ai/ai-it-service-desk/blob/47634bc8162c13bd6ae024233ec24a0076738c51/src/backend/ServiceDesk.Domain/Ticketing/Ticket.cs), [các luồng Ticketing](https://github.com/supportflow-ai/ai-it-service-desk/tree/47634bc8162c13bd6ae024233ec24a0076738c51/src/backend/ServiceDesk.Application/Ticketing).
+Nguồn lịch sử trước đợt củng cố (các sửa đổi mới đọc mã local và phần dưới): [các đường dẫn HTTP tại mốc đối chiếu](https://github.com/supportflow-ai/ai-it-service-desk/blob/47634bc8162c13bd6ae024233ec24a0076738c51/src/backend/ServiceDesk.Api/Endpoints/TicketEndpoints.cs), [quy tắc trên Ticket](https://github.com/supportflow-ai/ai-it-service-desk/blob/47634bc8162c13bd6ae024233ec24a0076738c51/src/backend/ServiceDesk.Domain/Ticketing/Ticket.cs), [các luồng Ticketing](https://github.com/supportflow-ai/ai-it-service-desk/tree/47634bc8162c13bd6ae024233ec24a0076738c51/src/backend/ServiceDesk.Application/Ticketing).
+
+## Kết quả củng cố và giới hạn còn lại
+
+- **Quyền nhận xử lý:** Agent và Admin đều được phép claim. Chủ dự án chọn phương án này ngày 2026-10-23; quyết định chỉ áp dụng claim, không mở rộng quyền theo nhóm hoặc phân công.
+- **Giải quyết phiếu:** xác thực actor và kiểm tra Agent/Admin trước khi gọi persistence. Caller thiếu quyền chức năng nhận cùng phản hồi 401 cho mọi ID theo dạng lỗi hiện hành; không tải phiếu để quyết định phản hồi đó. Chưa chuyển đồng loạt các lỗi thiếu quyền sang 403.
+- **Ghi đồng thời:** `xmin` tiếp tục phát hiện cạnh tranh. Sáu lệnh vòng đời công bố phản hồi 409 `{ error }` khi phiên bản đã tải bị thay đổi/xóa trước lúc lưu. Không tự thử lại lệnh và không trả lỗi EF/PostgreSQL ra ngoài.
+
+`GetForUpdateAsync` vẫn tải thực thể được theo dõi bằng `SingleOrDefaultAsync`, không thực hiện `SELECT ... FOR UPDATE`. `xmin` không thay thế revision do client gửi; hiện DTO/command chưa có revision hoặc ETag. Tên phương thức và việc có kiểm thử trong mã không chứng minh kiểm thử đã chạy. Kiểm chứng theo [runbook](../runbooks/backend-hardening-verification.md).
 
 ## Các điểm chưa đạt cần xử lý
 
-Các phát hiện dưới đây từ đối chiếu mã nguồn tại mốc ghi đầu tài liệu; chưa phải kết quả tái hiện HTTP mới trong đợt sửa tài liệu.
-
-| Vấn đề | Hành vi trong mã | Yêu cầu theo dõi |
-| --- | --- | --- |
-| Quyền nhận xử lý chưa thống nhất | `RequireAgent` ở HTTP nhận Agent hoặc Admin, nhưng `ClaimTicketUseCase` chỉ nhận Agent; Admin chỉ có vai trò Admin bị bộ lọc trả 401 | Chốt phạm vi vai trò theo DEC-02; kiểm thử Agent, Admin và người nhiều vai trò; sửa phản hồi từ chối theo chính sách được chọn |
-| Giải quyết tải tài nguyên trước kiểm tra vai trò | `ResolveTicketUseCase` tìm ID rồi mới kiểm tra Agent/Admin; Requester đã đăng nhập có thể nhận 404 khi thiếu phiếu và 401 khi phiếu tồn tại | Áp dụng thứ tự kiểm tra quyền và che giấu tài nguyên trong quy tắc bảo mật; bổ sung kiểm thử từ chối tương ứng |
-| Phản hồi ghi đồng thời chưa hoàn thiện | `xmin` là dấu phát hiện xung đột; bộ ghi mới chưa ánh xạ `DbUpdateConcurrencyException` thành lỗi nghiệp vụ ổn định | Kiểm thử hai yêu cầu cạnh tranh trên PostgreSQL thật; xử lý xung đột ở bộ tích hợp mà không đưa kiểu EF vào Application |
-
-`GetForUpdateAsync` hiện dùng `SingleOrDefaultAsync`, không thực hiện `SELECT ... FOR UPDATE`. Không suy ra có khóa dòng từ tên phương thức hoặc coi CI cũ là bằng chứng đã kiểm tra các tình huống trên. Xem [quy tắc bảo mật](security-design-rules.md), [DEC-02/DEC-05](pending-business-decisions.md) và [hướng dẫn kiểm chứng](../runbooks/backend-hardening-verification.md).
+Chưa có team/assignment, revision do client gửi, lịch sử nghiệp vụ hoặc chính sách reopen theo thời gian. Quyết định còn mở tiếp tục theo [bảng quyết định](pending-business-decisions.md); kết quả củng cố không chứng nhận các phần đó đã được triển khai.
 
 ## Dữ liệu phiếu và mã trạng thái
 
@@ -99,6 +99,6 @@ Nguồn: [TicketStatus](../../src/backend/ServiceDesk.Domain/Ticketing/TicketSta
 
 Bản chuẩn OpenAPI đã được đồng bộ trên mã sau PR #29: 16 đường dẫn, gồm sáu thao tác mới và `UpdateTicketRequest`. Kiểm thử `PublishedApiMatchesBaseline` so sánh toàn bộ tài liệu, phát hiện cả mục mới chưa công bố và thay đổi mô tả/bảo mật. Quy trình cập nhật có chủ đích theo [quy chuẩn tài liệu](../process/documentation-standard.md); kết quả này không xác nhận các khoảng cách hành vi ở trên đã được sửa.
 
-PR #29 cũng Việt hóa mô tả API và hướng dẫn Bearer trong Swagger, trong khi bản chuẩn vẫn giữ mô tả tiếng Anh. Kiểm thử hiện không so sánh toàn bộ phần `info`/mô tả bảo mật, nên việc CI đạt chưa chứng minh những phần mô tả này đã đồng bộ. Các điểm quyền nhận xử lý, thứ tự tải phiếu ở giải quyết và ghi đồng thời trong bảng trên vẫn còn tại mốc PR #29.
+Kiểm thử `PublishedApiMatchesBaseline` hiện so sánh toàn bộ tài liệu, gồm `info` và mô tả bảo mật. Đợt củng cố chỉ bổ sung sáu phản hồi 409 cho các lệnh vòng đời; giữ nguyên các đường dẫn, schema và phản hồi khác. Các khoảng cách ghi nhận tại PR #29 được xử lý trong đợt củng cố mô tả phía trên; không dùng CI của PR #29 làm bằng chứng cho các sửa đổi mới.
 
 Chưa có luồng Draft/Submit riêng, phân công, nhóm, SLA, bình luận/tệp đính kèm, AI thật hoặc thu hồi tức thời quyền trong JWT đã phát. FullName chưa có dữ liệu hồ sơ riêng được lưu. Các phần còn thiếu thuộc đợt phát triển được quyết định riêng.

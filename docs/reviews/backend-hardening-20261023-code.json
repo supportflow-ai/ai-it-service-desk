@@ -1,0 +1,23 @@
+{
+  "baseline_sha": "47da28103cc46500aac0847accfbaa2783f88db2",
+  "uncommitted": true,
+  "scope": "Mã và kiểm thử đã build, cùng OpenAPI; không bao gồm tài liệu hay cấu hình bí mật.",
+  "files": {
+    "contracts/backend/openapi-baseline.json": "e13598b9e871eacd16acfe33a868322969598f388582a4b9b58e8126edeff593",
+    "src/backend/ServiceDesk.Api/Endpoints/LegacyErrorFilter.cs": "2272c4ca936b7ccaa5e7134159d8a5c2a01a1254b0e41f1e5664613a6eb007cd",
+    "src/backend/ServiceDesk.Api/Endpoints/TicketEndpoints.cs": "59df91da3abb18f43c392ba2af52f62462cf6ea201e7ed379be536b6e18c970c",
+    "src/backend/ServiceDesk.Application/Ticketing/ClaimTicket/ClaimTicketUseCase.cs": "e85e94f4b18d256a99c29ec6fe10ca06067790c26c5215c377449e16bafc36af",
+    "src/backend/ServiceDesk.Application/Ticketing/Errors/TicketConcurrencyException.cs": "4b4e077a40e3475182d928100532b35042d270f7fb9be07b574086357c1c57df",
+    "src/backend/ServiceDesk.Application/Ticketing/Ports/ITicketWriter.cs": "3ba441be4e4224de704d3c57ffca85192715ab603f8f9d200218d32d700387d2",
+    "src/backend/ServiceDesk.Application/Ticketing/ResolveTicket/ResolveTicketUseCase.cs": "06bd33707dec10052bb4b58b5decef592718eef946b2c6ec249ba541951a5696",
+    "src/backend/ServiceDesk.Infrastructure/Ticketing/PostgresTicketWriter.cs": "c1858f9a66024209e694f6adf40e8e3b9a7630be5f1b0da9adb1973c7abd7f21",
+    "tests/ServiceDesk.Application.Tests/Ticketing/TicketLifecycleUseCaseTests.cs": "b9b04559e933b655f928d479def7d9661a5c018327190c296a329c6b85f47f31",
+    "tests/ServiceDesk.ArchitectureTests/ModuleEncapsulationTests.cs": "f09f262d4ddfe34950790f0ce605131f559f4998439e36bc323a5a466b7d2dd6",
+    "tests/ServiceDesk.ArchitectureTests/ModuleRuleNegativeTests.cs": "4c63e7ffe49863c53345ddbb9631cd623ebd1258239d4a281aa2127a1a96a66a",
+    "tests/ServiceDesk.ArchitectureTests/ModuleRules.cs": "10d2aeb5820408cac25cc54a5bbab1df06e4a41f65ab86a4460aa7cd9674f638",
+    "tests/ServiceDesk.ArchitectureTests/Rules/PublishedContracts.cs": "4f10b03de3505c7283f7c5e738c241606a3e7c5db4e83265fda1ffa4ad3e9352",
+    "tests/ServiceDesk.IntegrationTests/TicketConcurrencyPostgresTests.cs": "4d7140337a595a6cb3ad5b070ce8a0e0a999be860970ad2e8f5e529247229638",
+    "tests/ServiceDesk.IntegrationTests/TicketIdempotencyPostgresFixture.cs": "222827cace22994b4af7f7223adf3d6dfc1b46ec2a9a6ec98a6dc35dce52e969",
+    "tests/ServiceDesk.IntegrationTests/TicketLifecycleBoundaryTests.cs": "7d152a79fdc6e34c792f2d6c8e38a8b7ea8eaa3273d79869937d0baf5ce8500b"
+  }
+}

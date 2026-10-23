@@ -36,7 +36,7 @@ Linux/macOS có thể dùng `python3` đúng phiên bản theo workflow. CI còn
 
 Với mã đã chứa PR #28, kiểm tra thêm sáu thao tác cập nhật, nhận xử lý, giải quyết, mở lại, đóng và hủy phiếu. Bao phủ trạng thái được phép/bị cấm, chủ sở hữu/người ngoài phạm vi, Agent, Admin và người nhiều vai trò. Đối chiếu 401/403/404 theo chính sách được chọn, nhất là khác biệt quyền nhận xử lý và thứ tự kiểm tra ở thao tác giải quyết.
 
-Ghi đồng thời cần tình huống hai yêu cầu cạnh tranh trên PostgreSQL thật và phản hồi xung đột được kiểm soát. Tên `GetForUpdateAsync` không chứng minh có khóa dòng. Các kiểm tra trên là phần cần hoàn thiện, chưa được đợt sửa tài liệu này báo đạt; xem [hợp đồng hiện hành](../architecture/current-backend-contract.md#các-điểm-chưa-đạt-cần-xử-lý).
+Ghi đồng thời cần tình huống hai yêu cầu cạnh tranh trên PostgreSQL thật và phản hồi xung đột được kiểm soát. Tên `GetForUpdateAsync` không chứng minh có khóa dòng. Đợt củng cố thêm `TicketConcurrencyPostgresTests`: sáu lệnh cạnh tranh ghi, xóa phiếu đã tải và hai host HTTP cùng sửa một phiếu, chỉ một thay đổi được lưu và yêu cầu còn lại nhận 409. `TicketLifecycleBoundaryTests` kiểm tra quyền/JWT và dạng lỗi HTTP offline. Những mô tả này không báo test đã đạt; xem [hợp đồng hiện hành](../architecture/current-backend-contract.md#kết-quả-củng-cố-và-giới-hạn-còn-lại) và kết quả chạy tại đúng mã.
 
 Bản chuẩn OpenAPI hiện có 16 đường dẫn, gồm sáu thao tác mới và `UpdateTicketRequest`. `PublishedApiMatchesBaseline` so sánh toàn bộ tài liệu; chạy với `EXPORT_API_BASELINE` tắt để xác nhận. Chỉ bật biến xuất khi chủ đích cập nhật hợp đồng, xem chênh lệch từng mục rồi chạy lại kiểm thử theo [quy chuẩn tài liệu](../process/documentation-standard.md).
 

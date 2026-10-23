@@ -29,11 +29,16 @@ public sealed class ModuleEncapsulationTests
     }
 
     [Fact]
-    public void SixUseCasesAreInternalAndWireTypesBelongOnlyToInfrastructure()
+    public void UseCasesAreInternalAndWireTypesBelongOnlyToInfrastructure()
     {
         var application = Assembly.Load("ServiceDesk.Application");
         var cases = application.GetTypes().Where(t => t.Name.EndsWith("UseCase", StringComparison.Ordinal)).ToArray();
-        Assert.Equal(12, cases.Length);
+        Assert.NotEmpty(cases);
+        foreach (var useCase in cases)
+        {
+            var contract = Assert.Single(useCase.GetInterfaces(), type => type.IsPublic && type.Namespace == useCase.Namespace);
+            Assert.Single(contract.GetMethods(), method => method.Name == "ExecuteAsync");
+        }
         Assert.All(cases, type => Assert.True(type.IsNotPublic && type.IsSealed, type.FullName));
         Assert.DoesNotContain(application.GetTypes(), type => type.Name.StartsWith("ClassificationContract", StringComparison.Ordinal));
         // Ticket idempotency deliberately retains its versioned JSON fingerprint encoding.

@@ -25,19 +25,20 @@ internal sealed class ResolveTicketUseCase(ITicketWriter writer, ICurrentUser cu
 {
     public async Task<TicketDto> ExecuteAsync(ResolveTicketCommand command, CancellationToken cancellationToken = default)
     {
-        var actorId = TicketActor.RequireId(currentUser);
+        TicketActor.RequireId(currentUser);
         ArgumentNullException.ThrowIfNull(command);
+
+        // Kiểm tra quyền chức năng trước persistence để không lộ sự tồn tại của phiếu.
+        var isStaff = currentUser.IsInRole(RoleNames.Agent) || currentUser.IsInRole(RoleNames.Admin);
+        if (!isStaff)
+        {
+            throw new UnauthorizedAccessException("Only an agent or admin can resolve this ticket.");
+        }
 
         var ticket = await writer.GetForUpdateAsync(command.Id, cancellationToken);
         if (ticket == null)
         {
             throw new KeyNotFoundException("Ticket not found.");
-        }
-
-        var isStaff = currentUser.IsInRole(RoleNames.Agent) || currentUser.IsInRole(RoleNames.Admin);
-        if (!isStaff)
-        {
-            throw new UnauthorizedAccessException("Only an agent or admin can resolve this ticket.");
         }
 
         try

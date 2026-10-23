@@ -33,6 +33,6 @@ Các trường hợp assignment/revision là tiêu chí cho lần triển khai t
 
 ## Đối chiếu sáu thao tác của PR #28
 
-Các lệnh cập nhật, mở lại, đóng và hủy hiện kiểm tra chủ sở hữu hoặc Admin trong Application. Lệnh nhận xử lý có khác biệt Agent/Admin giữa HTTP và Application; lệnh giải quyết tải ID trước khi kiểm tra vai trò. Các điểm này được ghi tại [những phần cần xử lý](current-backend-contract.md#các-điểm-chưa-đạt-cần-xử-lý), không làm thay đổi quy tắc bảo mật ở trên.
+Các lệnh cập nhật, mở lại, đóng và hủy hiện kiểm tra chủ sở hữu hoặc Admin trong Application. Đợt củng cố 2026-10-23 đồng bộ quyền nhận xử lý cho Agent/Admin theo lựa chọn của chủ dự án và kiểm tra vai trò giải quyết trước khi tải ID. Các lỗi thiếu quyền chức năng tiếp tục dùng dạng phản hồi hiện hành; không thay đồng loạt thành 403. Xung đột `xmin` được chuyển thành 409 sau bước kiểm quyền. Kết quả và giới hạn được ghi tại [hợp đồng hiện hành](current-backend-contract.md#kết-quả-củng-cố-và-giới-hạn-còn-lại), không làm thay đổi quy tắc bảo mật ở trên.
 
 Khi sửa các lệnh này, kiểm tra cả người ngoài phạm vi, vai trò không đủ quyền, người nhiều vai trò, trạng thái bị cấm và hai yêu cầu cùng ghi. Một bảng trạng thái hoặc ảnh chụp OpenAPI chỉ mô tả một phần hợp đồng; bằng chứng cho quyền và ghi đồng thời phải đến từ kiểm thử hành vi tương ứng.

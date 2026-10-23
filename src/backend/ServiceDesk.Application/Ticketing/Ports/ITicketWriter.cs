@@ -12,7 +12,7 @@ public interface ITicketWriter
     /// <summary>Tạo mới ticket kèm dấu vân tay Idempotency nếu có.</summary>
     Task<TicketDto> CreateAsync(Ticket ticket, CreateTicketFingerprint? fingerprint, CancellationToken cancellationToken);
 
-    /// <summary>Tải ticket lên từ cơ sở dữ liệu để chuẩn bị cập nhật trạng thái.</summary>
+    /// <summary>Tải phiếu được theo dõi để cập nhật; không đặt khóa hàng. Adapter dùng concurrency token khi ghi.</summary>
     Task<Ticket?> GetForUpdateAsync(Guid id, CancellationToken cancellationToken);
 
     /// <summary>Lưu các thay đổi của ticket vào cơ sở dữ liệu.</summary>

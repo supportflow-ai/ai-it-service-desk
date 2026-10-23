@@ -31,3 +31,9 @@ Nhận xử lý chưa có phân công; mở lại chưa có giới hạn thời 
 Đối chiếu bổ sung ngày 2026-10-20 tại `dev@47634bc8162c13bd6ae024233ec24a0076738c51`, sau PR #29: vẫn có 12 luồng. PR #29 bổ sung tiếng Việt trong mã và một số chuỗi hiển thị, chưa hoàn tất các khoảng cách quyền/ghi đồng thời. [Bảng mốc nguồn](../architecture/source-baseline.md) phân biệt phần đã triển khai với bản local trước PR #28.
 
 Nguồn quyết định trước khi Việt hóa: [bản ghi tại mốc đối chiếu](https://github.com/supportflow-ai/ai-it-service-desk/blob/260f37b5c415d0aa69818dc306411ab5a4f467f5/docs/adr/ADR-014-feature-use-cases-and-published-contracts.md).
+
+## Củng cố ranh giới ngày 2026-10-23
+
+Trên nền `47da281` (cùng cây nội dung với `e2d1ad4`), tách danh sách contract gọi từ HTTP khỏi ma trận contract theo bên sử dụng và mô-đun sở hữu; giữ kiểm tra từ chối kiểu chưa phân loại. Bổ sung ownership đối với kiểu Identity của framework và đường gọi generic. Không đổi mô hình dữ liệu, không cố định tổng số use case; kiểm thử vẫn yêu cầu implementation nội bộ và contract `ExecuteAsync` cùng tính năng.
+
+Chủ dự án chọn Agent/Admin đều được claim; quyết định một phần DEC-02 và tác động ở [bảng quyết định](../architecture/pending-business-decisions.md). Quyền resolve được kiểm tra trước persistence. Xung đột ghi lạc quan được chuyển từ EF sang lỗi Application rồi HTTP 409 `{ error }`; đây là bổ sung có chủ đích cho sáu lệnh vòng đời, không chuyển toàn bộ lỗi HTTP sang một mô hình mới. Các thay đổi chưa commit khi ghi bổ sung; bằng chứng chạy phải ghi riêng theo bản làm việc, không kế thừa số liệu tại mốc gốc.

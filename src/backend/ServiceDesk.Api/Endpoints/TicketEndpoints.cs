@@ -96,7 +96,8 @@ public static class TicketEndpoints
         .Produces<TicketDto>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status400BadRequest)
         .Produces(StatusCodes.Status401Unauthorized)
-        .Produces(StatusCodes.Status404NotFound);
+        .Produces(StatusCodes.Status404NotFound)
+        .Produces(StatusCodes.Status409Conflict);
 
         // POST /api/tickets/{id}/claim: Kỹ thuật viên tiếp nhận xử lý vé (Submitted -> InProgress)
         group.MapPost("/{id:guid}/claim", async (
@@ -112,7 +113,8 @@ public static class TicketEndpoints
         .Produces<TicketDto>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status400BadRequest)
         .Produces(StatusCodes.Status401Unauthorized)
-        .Produces(StatusCodes.Status404NotFound);
+        .Produces(StatusCodes.Status404NotFound)
+        .Produces(StatusCodes.Status409Conflict);
 
         // POST /api/tickets/{id}/resolve: Kỹ thuật viên / Admin đánh dấu giải quyết xong (InProgress -> Resolved)
         group.MapPost("/{id:guid}/resolve", async (
@@ -128,7 +130,8 @@ public static class TicketEndpoints
         .Produces<TicketDto>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status400BadRequest)
         .Produces(StatusCodes.Status401Unauthorized)
-        .Produces(StatusCodes.Status404NotFound);
+        .Produces(StatusCodes.Status404NotFound)
+        .Produces(StatusCodes.Status409Conflict);
 
         // POST /api/tickets/{id}/reopen: Mở lại vé nếu sự cố tái diễn hoặc chưa triệt để (Resolved -> InProgress)
         group.MapPost("/{id:guid}/reopen", async (
@@ -144,7 +147,8 @@ public static class TicketEndpoints
         .Produces<TicketDto>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status400BadRequest)
         .Produces(StatusCodes.Status401Unauthorized)
-        .Produces(StatusCodes.Status404NotFound);
+        .Produces(StatusCodes.Status404NotFound)
+        .Produces(StatusCodes.Status409Conflict);
 
         // POST /api/tickets/{id}/close: Đóng vé hoàn tất sau khi nghiệm thu (Resolved -> Closed)
         group.MapPost("/{id:guid}/close", async (
@@ -160,7 +164,8 @@ public static class TicketEndpoints
         .Produces<TicketDto>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status400BadRequest)
         .Produces(StatusCodes.Status401Unauthorized)
-        .Produces(StatusCodes.Status404NotFound);
+        .Produces(StatusCodes.Status404NotFound)
+        .Produces(StatusCodes.Status409Conflict);
 
         // POST /api/tickets/{id}/cancel: Hủy vé khi còn ở trạng thái chờ tiếp nhận (Submitted -> Cancelled)
         group.MapPost("/{id:guid}/cancel", async (
@@ -176,7 +181,8 @@ public static class TicketEndpoints
         .Produces<TicketDto>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status400BadRequest)
         .Produces(StatusCodes.Status401Unauthorized)
-        .Produces(StatusCodes.Status404NotFound);
+        .Produces(StatusCodes.Status404NotFound)
+        .Produces(StatusCodes.Status409Conflict);
 
         return app;
     }

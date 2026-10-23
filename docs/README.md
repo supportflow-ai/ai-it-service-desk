@@ -43,3 +43,5 @@ python -m unittest discover -s scripts/tests -p "test_project_docs.py"
 ```
 
 Công cụ chỉ dùng thư viện chuẩn, không cần venv hoặc kết nối mạng. Kiểm tra tệp được quản lý trong Git và tệp mới không bị ignore, phân loại nguồn theo [danh mục](context-sources.json), liên kết Markdown tới tệp cục bộ, chú thích lịch sử/đề xuất và nguồn thay thế. Lệnh không kiểm tra URL mạng, anchor hoặc lệnh vận hành bằng cách thực thi chúng. Không coi kiểm tra tĩnh là nghiệm thu ứng dụng.
+
+Hướng dẫn phát triển: [Thêm tính năng hoặc mô-đun backend](process/adding-feature-or-module.md).

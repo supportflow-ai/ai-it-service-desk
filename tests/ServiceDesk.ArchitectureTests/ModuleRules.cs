@@ -1,31 +1,12 @@
 using Mono.Cecil;
 using Mono.Cecil.Cil;
+using ServiceDesk.ArchitectureTests.Rules;
 
 namespace ServiceDesk.ArchitectureTests;
 
 internal static class ModuleRules
 {
-    internal static readonly HashSet<string> Published = new(StringComparer.Ordinal)
-    {
-        "ServiceDesk.Domain.Identity.RoleNames", "ServiceDesk.Domain.Identity.PolicyNames",
-        "ServiceDesk.Domain.Ticketing.TicketCategory", "ServiceDesk.Domain.Ticketing.Impact", "ServiceDesk.Domain.Ticketing.Urgency",
-        "ServiceDesk.Application.Identity.RegisterUser.IRegisterUser", "ServiceDesk.Application.Identity.LoginUser.ILoginUser",
-        "ServiceDesk.Application.Identity.GetCurrentUser.IGetCurrentUser",
-        "ServiceDesk.Application.Identity.Contracts.RegisterRequest", "ServiceDesk.Application.Identity.Contracts.LoginRequest",
-        "ServiceDesk.Application.Identity.Contracts.AuthResult", "ServiceDesk.Application.Identity.Contracts.UserInfo",
-        "ServiceDesk.Application.Ticketing.CreateTicket.ICreateTicket", "ServiceDesk.Application.Ticketing.CreateTicket.CreateTicketCommand",
-        "ServiceDesk.Application.Ticketing.GetMyTickets.IGetMyTickets", "ServiceDesk.Application.Ticketing.GetMyTickets.GetMyTicketsQuery",
-        "ServiceDesk.Application.Ticketing.GetTicketDetail.IGetTicketDetail", "ServiceDesk.Application.Ticketing.GetTicketDetail.GetTicketDetailQuery",
-        "ServiceDesk.Application.Ticketing.Contracts.TicketDto", "ServiceDesk.Application.Ticketing.Contracts.PagedTicketResult",
-        "ServiceDesk.Application.Ticketing.UpdateTicket.IUpdateTicket", "ServiceDesk.Application.Ticketing.UpdateTicket.UpdateTicketCommand",
-        "ServiceDesk.Application.Ticketing.ClaimTicket.IClaimTicket", "ServiceDesk.Application.Ticketing.ClaimTicket.ClaimTicketCommand",
-        "ServiceDesk.Application.Ticketing.ResolveTicket.IResolveTicket", "ServiceDesk.Application.Ticketing.ResolveTicket.ResolveTicketCommand",
-        "ServiceDesk.Application.Ticketing.ReopenTicket.IReopenTicket", "ServiceDesk.Application.Ticketing.ReopenTicket.ReopenTicketCommand",
-        "ServiceDesk.Application.Ticketing.CloseTicket.ICloseTicket", "ServiceDesk.Application.Ticketing.CloseTicket.CloseTicketCommand",
-        "ServiceDesk.Application.Ticketing.CancelTicket.ICancelTicket", "ServiceDesk.Application.Ticketing.CancelTicket.CancelTicketCommand",
-        "ServiceDesk.Application.Ticketing.Idempotency.IdempotencyConflictException",
-        "ServiceDesk.Application.Ticketing.Idempotency.IdempotencyInProgressException"
-    };
+    internal static IReadOnlySet<string> Published => PublishedContracts.Presentation;
 
     private static readonly HashSet<string> Composition = new(StringComparer.Ordinal)
     {
@@ -85,6 +66,10 @@ internal static class ModuleRules
                     (name.StartsWith("Microsoft.EntityFrameworkCore.", StringComparison.Ordinal) ||
                      name.StartsWith("Npgsql.", StringComparison.Ordinal)))
                     errors.Add($"Persistence access outside a module adapter: {type.FullName} -> {name}");
+                // Các kiểu Identity của framework cũng thuộc quyền sở hữu mô-đun Identity.
+                if (name.StartsWith("Microsoft.AspNetCore.Identity.", StringComparison.Ordinal) &&
+                    source is not ("Identity" or "Provisioning" or "Composition"))
+                    errors.Add($"Identity persistence access outside its owning module: {type.FullName} -> {name}");
                 if (!name.StartsWith("ServiceDesk.", StringComparison.Ordinal)) continue;
                 var other = Classify(target);
                 if (other is null) { errors.Add($"Unclassified dependency: {type.FullName} -> {name}"); continue; }
@@ -95,13 +80,10 @@ internal static class ModuleRules
                     "Provisioning" => other is "Provisioning" or "Shared" or "Ticketing" or "Identity",
                     "Shared" => other == "Shared",
                     "Presentation" => other is "Presentation" or "Shared" || published,
-                    _ => other == source || other == "Shared" || published ||
+                    _ => other == source || other == "Shared" || PublishedContracts.Allows(source, other, name) ||
                          (name == "ServiceDesk.Infrastructure.Persistence.ApplicationDbContext" &&
                           RootName(type).StartsWith("ServiceDesk.Infrastructure.", StringComparison.Ordinal))
                 };
-                if (source == "AIAssistance" && other is "Ticketing" or "Identity")
-                    allowed = name is "ServiceDesk.Domain.Ticketing.TicketCategory" or
-                        "ServiceDesk.Domain.Ticketing.Impact" or "ServiceDesk.Domain.Ticketing.Urgency";
                 // Composition is not an escape hatch for arbitrary API/Worker database access.
                 if (source == "Composition" && (type.Module.Assembly.Name.Name is "ServiceDesk.Api" or "ServiceDesk.Worker") &&
                     name.StartsWith("ServiceDesk.Infrastructure.", StringComparison.Ordinal))

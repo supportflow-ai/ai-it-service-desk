@@ -53,7 +53,7 @@ public sealed class TicketIdempotencyPostgresFixture : IAsyncLifetime
         await _postgres.DisposeAsync();
     }
 
-    public sealed class Factory(string connectionString) : WebApplicationFactory<ServiceDesk.Api.Program>
+    public sealed class Factory(string connectionString, Microsoft.EntityFrameworkCore.Diagnostics.IInterceptor? interceptor = null) : WebApplicationFactory<ServiceDesk.Api.Program>
     {
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
@@ -79,7 +79,11 @@ public sealed class TicketIdempotencyPostgresFixture : IAsyncLifetime
                 });
                 services.RemoveAll<DbContextOptions<ApplicationDbContext>>();
                 services.RemoveAll<IDbContextOptionsConfiguration<ApplicationDbContext>>();
-                services.AddDbContext<ApplicationDbContext>(options => options.UseNpgsql(connectionString));
+                services.AddDbContext<ApplicationDbContext>(options =>
+                {
+                    options.UseNpgsql(connectionString);
+                    if (interceptor is not null) options.AddInterceptors(interceptor);
+                });
             });
         }
     }

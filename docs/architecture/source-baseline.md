@@ -43,3 +43,13 @@ Checkout mới có đủ công cụ để làm theo [hướng dẫn môi trườ
 - [Kiểm chứng khởi chạy cũ](../runbooks/local-startup-verification.md) là bằng chứng ngày 2026-10-19, không xác nhận trạng thái VPS hôm nay.
 - Kho hạ tầng tại nhánh `codex/infra-handoff` ghim backend `9dd0746450dca4348d6d0fa8a09cfc2a48860020` trong `sources.lock.json` lúc rà soát. Kiểm tra hệ thống theo khóa đó không chứng nhận backend mới.
 - Quyết định kiến trúc và kết quả sprint giữ ngày/commit gốc; bản dịch hoặc chú thích mới không tạo lại nghiệm thu.
+
+## Đợt củng cố ngày 2026-10-23
+
+Mã nền local: `codex/backend-clean-architecture@47da28103cc46500aac0847accfbaa2783f88db2`, cùng cây nội dung với commit `e2d1ad406337dbd1a9a63ac6b522b005dc502674`. Các thay đổi mô tả dưới đây chưa commit khi cập nhật; không dùng kết quả tại mã nền để nghiệm thu bản làm việc mới.
+
+- Claim cho phép Agent/Admin theo quyết định trực tiếp của chủ dự án; resolve kiểm tra quyền chức năng trước persistence.
+- Sáu lệnh vòng đời bổ sung 409 `{ error }` cho xung đột ghi `xmin`; không đổi route, DTO, status enum, schema dữ liệu hoặc cơ chế tạo phiếu/receipt.
+- Contract gọi từ HTTP được tách khỏi ma trận cấp quyền xuyên mô-đun; ownership kiểu dữ liệu Identity được kiểm tra cả qua generic; không cố định số use case.
+- Có thêm hồi quy use case, HTTP và PostgreSQL hai host; phải đọc số test/kết quả thực chạy tại đúng bản làm việc. Kiểm thử SQL dạng chuỗi và smoke toàn hệ thống vẫn cần đánh giá riêng theo phạm vi.
+- Cách thêm chức năng theo [hướng dẫn phát triển](../process/adding-feature-or-module.md); tài liệu và quyết định được cập nhật cùng mã.

@@ -1,6 +1,6 @@
 # Mô-đun backend và luồng xử lý nghiệp vụ
 
-Trạng thái: mô tả hiện hành. Đối chiếu mã `dev` tại `47634bc8162c13bd6ae024233ec24a0076738c51`, sau PR #28 và #29; cập nhật 2026-10-20. Quyết định nền tảng: [ADR-011](../adr/ADR-011-backend-module-boundaries.md), [ADR-014](../adr/ADR-014-feature-use-cases-and-published-contracts.md). Quyền và phản hồi HTTP chi tiết ở [hợp đồng hiện hành](current-backend-contract.md). Mốc đối chiếu không khẳng định bản làm việc của người đọc đã chứa commit này.
+Trạng thái: mô tả hiện hành; bổ sung đợt củng cố ngày 2026-10-23 trên nền `47da281`, thay đổi chưa commit. Đối chiếu mã `dev` tại `47634bc8162c13bd6ae024233ec24a0076738c51`, sau PR #28 và #29; cập nhật 2026-10-20. Quyết định nền tảng: [ADR-011](../adr/ADR-011-backend-module-boundaries.md), [ADR-014](../adr/ADR-014-feature-use-cases-and-published-contracts.md). Quyền và phản hồi HTTP chi tiết ở [hợp đồng hiện hành](current-backend-contract.md). Mốc đối chiếu không khẳng định bản làm việc của người đọc đã chứa commit này.
 
 ## Chiều phụ thuộc
 
@@ -28,7 +28,7 @@ API/Worker tham chiếu Infrastructure để lắp ghép dịch vụ. Đăng ký
 
 `Common` chứa giao diện danh tính hiện tại, đồng hồ, lưu trữ và kiểm tra định danh dùng chung. Nó không chứa thực thể phiếu hoặc kho dữ liệu của mô-đun khác. Ánh xạ EF thuộc `Infrastructure.Ticketing`. Một `DbContext` dùng chung giữ các bảng và mô hình hiện có.
 
-Danh sách kiểu được phép truy cập xuyên mô-đun và ngoại lệ kỹ thuật nằm trong [ModuleRules](../../tests/ServiceDesk.ArchitectureTests/ModuleRules.cs). Khai báo `public` không tự cấp quyền truy cập. Lớp triển khai nghiệp vụ và bộ tích hợp là `internal`; quyền truy cập nội bộ dành cho kiểm thử được giới hạn theo assembly.
+Danh sách contract dành cho HTTP và ma trận quyền giữa các mô-đun nằm trong [PublishedContracts](../../tests/ServiceDesk.ArchitectureTests/Rules/PublishedContracts.cs); [ModuleRules](../../tests/ServiceDesk.ArchitectureTests/ModuleRules.cs) kiểm tra ownership và ngoại lệ kỹ thuật. Các kiểu chưa phân loại vẫn bị từ chối. Ticketing chỉ dùng `RoleNames` của Identity; AIAssistance chỉ dùng ba kiểu giá trị Ticketing đã cấp quyền. Contract dùng được từ HTTP không tự cấp quyền cho mô-đun khác. Kiểm tra kiểu/generic còn chặn adapter Ticketing dùng kiểu dữ liệu Identity; SQL dạng chuỗi vẫn cần review về bảng đích. Khai báo `public` không tự cấp quyền truy cập. Lớp triển khai nghiệp vụ và bộ tích hợp là `internal`; quyền truy cập nội bộ dành cho kiểm thử được giới hạn theo assembly.
 
 ## Mười hai luồng đã triển khai
 
@@ -43,7 +43,7 @@ Danh sách kiểu được phép truy cập xuyên mô-đun và ngoại lệ k�
 | `GET /api/tickets/me` | `IGetMyTickets` | Kiểm tra phân trang; chỉ truy vấn phiếu của người đang đăng nhập |
 | `GET /api/tickets/{id}` | `IGetTicketDetail` | Xác định phạm vi nhìn thấy rõ ràng rồi truy vấn phiếu |
 | `POST /api/tickets/{id}/update` | `IUpdateTicket` | Chủ sở hữu hoặc Admin cập nhật phiếu ở Submitted |
-| `POST /api/tickets/{id}/claim` | `IClaimTicket` | Kiểm tra Agent; chuyển Submitted sang InProgress |
+| `POST /api/tickets/{id}/claim` | `IClaimTicket` | Kiểm tra Agent/Admin; chuyển Submitted sang InProgress |
 | `POST /api/tickets/{id}/resolve` | `IResolveTicket` | Agent/Admin chuyển InProgress sang Resolved |
 | `POST /api/tickets/{id}/reopen` | `IReopenTicket` | Chủ sở hữu hoặc Admin chuyển Resolved sang InProgress |
 | `POST /api/tickets/{id}/close` | `ICloseTicket` | Chủ sở hữu hoặc Admin chuyển Resolved sang Closed |
@@ -57,7 +57,7 @@ Truy vấn chi tiết dùng `OwnTickets(actorId)` cho Requester và `AllTickets`
 
 Các lệnh ghi của PR #28 dùng `ITicketWriter.GetForUpdateAsync` tải thực thể rồi kiểm tra quyền riêng. Phương thức này chưa nhận `TicketReadScope`. Tên phương thức không chứng minh có khóa dòng: bộ tích hợp hiện dùng `SingleOrDefaultAsync`.
 
-Các điểm cần xử lý được ghi trong [hợp đồng hiện hành](current-backend-contract.md#các-điểm-chưa-đạt-cần-xử-lý): quyền nhận xử lý Agent/Admin chưa thống nhất giữa HTTP và Application; giải quyết phiếu tải ID trước khi kiểm tra vai trò; lỗi ghi đồng thời chưa có ánh xạ phản hồi riêng.
+Đợt củng cố đồng bộ quyền claim cho Agent/Admin, kiểm tra quyền resolve trước persistence và ánh xạ xung đột ghi thành lỗi Application/HTTP 409. Chi tiết và giới hạn theo [hợp đồng hiện hành](current-backend-contract.md#kết-quả-củng-cố-và-giới-hạn-còn-lại).
 
 Nhận xử lý chưa lưu người phụ trách. Mở lại chưa kiểm tra thời gian hoặc lịch sử giải quyết. Chưa có phân quyền theo nhóm, phân công hoặc thu hồi tức thời quyền trong JWT đã phát. Những giới hạn này tiếp tục theo [bảng quyết định](pending-business-decisions.md).
 
@@ -69,7 +69,7 @@ Application kiểm tra định danh người gọi độc lập với HTTP. Work
 
 Tạo phiếu với khóa chống tạo trùng giữ giao dịch, khóa PostgreSQL, biên nhận và phiếu trong cùng bộ tích hợp `ITicketWriter`. Hiệu lực biên nhận 10 phút theo giờ cơ sở dữ liệu; thời gian chờ khóa 5 giây. Thuật toán dấu vân tay, phạm vi chủ sở hữu và phản hồi phát lại được giữ nguyên.
 
-Các lệnh vòng đời gọi quy tắc trên `Ticket`, sau đó `SaveChangesAsync`. Chưa có bản ghi lịch sử nghiệp vụ hoặc cơ chế chống lặp tương tự tạo phiếu cho các lệnh này. `xmin` phát hiện xung đột ở cơ sở dữ liệu; việc chuyển lỗi đó thành phản hồi nghiệp vụ còn cần hoàn thiện.
+Các lệnh vòng đời gọi quy tắc trên `Ticket`, sau đó `SaveChangesAsync`. Chưa có bản ghi lịch sử nghiệp vụ hoặc cơ chế chống lặp tương tự tạo phiếu cho các lệnh này. `xmin` phát hiện xung đột ở cơ sở dữ liệu; `PostgresTicketWriter` chuyển lỗi thành `TicketConcurrencyException`, bộ lọc HTTP trả 409 theo dạng `{ error }`. Không tự thử lại và chưa có kiểm soát revision do client gửi.
 
 ## Ranh giới AI
 

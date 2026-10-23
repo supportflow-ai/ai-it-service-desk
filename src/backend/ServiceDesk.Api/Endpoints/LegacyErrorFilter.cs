@@ -1,3 +1,4 @@
+using ServiceDesk.Application.Ticketing.Errors;
 using ServiceDesk.Application.Ticketing.Idempotency;
 
 namespace ServiceDesk.Api.Endpoints;
@@ -7,6 +8,7 @@ namespace ServiceDesk.Api.Endpoints;
 /// - UnauthorizedAccessException -> 401 Unauthorized
 /// - KeyNotFoundException -> 404 Not Found
 /// - IdempotencyConflictException -> 409 Conflict
+/// - TicketConcurrencyException -> 409 Conflict
 /// - IdempotencyInProgressException -> 503 Service Unavailable (kèm Retry-After)
 /// - ArgumentException -> 400 Bad Request
 /// </summary>
@@ -17,6 +19,7 @@ public sealed class LegacyErrorFilter : IEndpointFilter
         try { return await next(context); }
         catch (UnauthorizedAccessException) { return Results.Unauthorized(); }
         catch (KeyNotFoundException) { return Results.NotFound(); }
+        catch (TicketConcurrencyException ex) { return Results.Conflict(new { error = ex.Message }); }
         catch (IdempotencyConflictException ex) { return Results.Conflict(new { error = ex.Message }); }
         catch (IdempotencyInProgressException ex)
         {

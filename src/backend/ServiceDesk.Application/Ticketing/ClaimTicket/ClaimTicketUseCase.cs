@@ -17,7 +17,7 @@ public interface IClaimTicket
 
 /// <summary>
 /// Xử lý tiếp nhận vé:
-/// - Yêu cầu người gọi có vai trò Agent.
+/// - Yêu cầu người gọi có vai trò Agent hoặc Admin.
 /// - Kiểm tra trạng thái vé phải là Submitted.
 /// - Chuyển trạng thái sang InProgress và lưu lại thời điểm cập nhật.
 /// </summary>
@@ -25,10 +25,10 @@ internal sealed class ClaimTicketUseCase(ITicketWriter writer, ICurrentUser curr
 {
     public async Task<TicketDto> ExecuteAsync(ClaimTicketCommand command, CancellationToken cancellationToken = default)
     {
-        var actorId = TicketActor.RequireId(currentUser);
-        if (!currentUser.IsInRole(RoleNames.Agent))
+        TicketActor.RequireId(currentUser);
+        if (!currentUser.IsInRole(RoleNames.Agent) && !currentUser.IsInRole(RoleNames.Admin))
         {
-            throw new UnauthorizedAccessException("Agent role is required to claim a ticket.");
+            throw new UnauthorizedAccessException("Yêu cầu vai trò Agent hoặc Admin để nhận xử lý phiếu.");
         }
 
         ArgumentNullException.ThrowIfNull(command);

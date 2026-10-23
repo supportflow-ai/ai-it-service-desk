@@ -3,6 +3,7 @@ using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using ServiceDesk.Application.Ticketing.Contracts;
+using ServiceDesk.Application.Ticketing.Errors;
 using ServiceDesk.Application.Ticketing.Idempotency;
 using ServiceDesk.Application.Ticketing.Ports;
 using ServiceDesk.Domain.Ticketing;
@@ -110,7 +111,15 @@ internal sealed class PostgresTicketWriter(ApplicationDbContext context) : ITick
 
     public async Task<TicketDto> UpdateTicketAsync(Ticket ticket, CancellationToken cancellationToken)
     {
-        await _context.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException exception)
+        {
+            // Không thử lại tự động: caller phải tải dữ liệu và kiểm tra lại quyền/trạng thái.
+            throw new TicketConcurrencyException(exception);
+        }
         return TicketProjection.ToDto(ticket);
     }
 }

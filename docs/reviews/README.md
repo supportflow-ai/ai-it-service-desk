@@ -30,3 +30,5 @@ Nguồn tham chiếu hiện tại:
 - [Kho hạ tầng và kiểm tra toàn hệ thống](https://github.com/supportflow-ai/supportflow-ai-infra).
 
 Đợt đồng bộ ngữ cảnh: [báo cáo trước chỉnh sửa](project-context-audit.md) và [kết quả xử lý](project-context-remediation.md). Báo cáo trước chỉnh sửa giữ nguyên phát hiện và số dòng tại mốc đã ghi; dùng kết quả xử lý để biết phần đã được cập nhật.
+
+- [Củng cố backend 2026-10-23](backend-hardening-20261023.md): thay đổi chưa commit, 291 test offline; PostgreSQL chưa nghiệm thu.
