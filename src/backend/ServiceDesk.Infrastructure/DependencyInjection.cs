@@ -35,6 +35,7 @@ public static class DependencyInjection
             sp.GetRequiredService<IOptions<DatabaseOptions>>().Value.ConnectionString));
         services.AddScoped<ITicketWriter, PostgresTicketWriter>();
         services.AddScoped<ITicketQueries, PostgresTicketQueries>();
+        services.AddSingleton<ITicketTimelineStore, InMemoryTicketTimelineStore>();
         return services;
     }
 
