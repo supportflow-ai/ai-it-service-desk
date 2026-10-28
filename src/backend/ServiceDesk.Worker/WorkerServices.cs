@@ -18,6 +18,7 @@ public static class WorkerServices
     {
         services.AddTicketingApplication();
         services.AddPersistence(configuration);
+        services.AddStorage(configuration);
         services.AddClock();
         services.AddAiAdapters();
         services.AddScoped<ICurrentUser, AnonymousCurrentUser>();
