@@ -33,7 +33,7 @@ public sealed class ModuleEncapsulationTests
     {
         var application = Assembly.Load("ServiceDesk.Application");
         var cases = application.GetTypes().Where(t => t.Name.EndsWith("UseCase", StringComparison.Ordinal)).ToArray();
-        Assert.Equal(12, cases.Length);
+        Assert.Equal(20, cases.Length);
         Assert.All(cases, type => Assert.True(type.IsNotPublic && type.IsSealed, type.FullName));
         Assert.DoesNotContain(application.GetTypes(), type => type.Name.StartsWith("ClassificationContract", StringComparison.Ordinal));
         // Ticket idempotency deliberately retains its versioned JSON fingerprint encoding.

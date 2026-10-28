@@ -16,6 +16,9 @@ internal sealed class TicketConfiguration : IEntityTypeConfiguration<Ticket>
         entity.ToTable("tickets");
         entity.HasKey(t => t.Id);
 
+        entity.Ignore(t => t.AssignedToId);
+        entity.Ignore(t => t.AssignedAt);
+
         entity.HasIndex(t => t.TicketNumber).IsUnique();
         entity.HasIndex(t => t.RequesterId);
         entity.HasIndex(t => new { t.RequesterId, t.CreatedAt, t.Id })

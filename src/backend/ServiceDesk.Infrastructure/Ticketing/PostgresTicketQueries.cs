@@ -49,4 +49,46 @@ internal sealed class PostgresTicketQueries(ApplicationDbContext context) : ITic
         var ticket = await query.FirstOrDefaultAsync(cancellationToken);
         return ticket is null ? null : TicketProjection.ToDto(ticket);
     }
+
+    /// <summary>Truy vấn hàng đợi vé cho nhân viên hỗ trợ (Agent Queue) có lọc và phân trang.</summary>
+    public async Task<PagedTicketResult> GetAgentQueueAsync(
+        int? status,
+        string? categoryId,
+        string? scope,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _context.Tickets.AsNoTracking();
+
+        if (status.HasValue)
+        {
+            query = query.Where(ticket => (int)ticket.Status == status.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(categoryId))
+        {
+            query = query.Where(ticket => ticket.CategoryId == categoryId);
+        }
+
+        if (string.Equals(scope, "unassigned", StringComparison.OrdinalIgnoreCase))
+        {
+            query = query.Where(ticket => ticket.Status == Domain.Ticketing.TicketStatus.Submitted);
+        }
+        else if (string.Equals(scope, "my", StringComparison.OrdinalIgnoreCase))
+        {
+            query = query.Where(ticket => ticket.Status == Domain.Ticketing.TicketStatus.InProgress);
+        }
+
+        var totalCount = await query.CountAsync(cancellationToken);
+        var tickets = await query
+            .OrderByDescending(ticket => ticket.CreatedAt)
+            .ThenByDescending(ticket => ticket.Id)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(ticket => TicketProjection.ToDto(ticket))
+            .ToListAsync(cancellationToken);
+
+        return new PagedTicketResult(tickets, page, pageSize, totalCount);
+    }
 }

@@ -11,6 +11,14 @@ using ServiceDesk.Application.Ticketing.ResolveTicket;
 using ServiceDesk.Application.Ticketing.ReopenTicket;
 using ServiceDesk.Application.Ticketing.CloseTicket;
 using ServiceDesk.Application.Ticketing.CancelTicket;
+using ServiceDesk.Application.Ticketing.GetAgentQueue;
+using ServiceDesk.Application.Ticketing.AssignTicket;
+using ServiceDesk.Application.Ticketing.UnassignTicket;
+using ServiceDesk.Application.Ticketing.AddComment;
+using ServiceDesk.Application.Ticketing.AddInternalNote;
+using ServiceDesk.Application.Ticketing.GetTicketTimeline;
+using ServiceDesk.Application.Ticketing.GenerateAttachmentUploadUrl;
+using ServiceDesk.Application.Ticketing.GetAttachmentDownloadUrl;
 
 namespace ServiceDesk.Application;
 
@@ -36,6 +44,14 @@ public static class DependencyInjection
         services.AddScoped<IReopenTicket, ReopenTicketUseCase>();
         services.AddScoped<ICloseTicket, CloseTicketUseCase>();
         services.AddScoped<ICancelTicket, CancelTicketUseCase>();
+        services.AddScoped<IGetAgentQueue, GetAgentQueueUseCase>();
+        services.AddScoped<IAssignTicket, AssignTicketUseCase>();
+        services.AddScoped<IUnassignTicket, UnassignTicketUseCase>();
+        services.AddScoped<IAddComment, AddCommentUseCase>();
+        services.AddScoped<IAddInternalNote, AddInternalNoteUseCase>();
+        services.AddScoped<IGetTicketTimeline, GetTicketTimelineUseCase>();
+        services.AddScoped<IGenerateAttachmentUploadUrl, GenerateAttachmentUploadUrlUseCase>();
+        services.AddScoped<IGetAttachmentDownloadUrl, GetAttachmentDownloadUrlUseCase>();
         return services;
     }
 

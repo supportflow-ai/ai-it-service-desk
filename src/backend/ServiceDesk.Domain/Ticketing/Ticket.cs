@@ -22,6 +22,12 @@ public class Ticket
     /// <summary>Mã phòng ban của người gửi tại thời điểm tạo vé (snapshot cố định).</summary>
     public Guid? RequesterDepartmentId { get; private set; }
 
+    /// <summary>Mã định danh kỹ thuật viên được phân công xử lý vé (Assignee).</summary>
+    public Guid? AssignedToId { get; private set; }
+
+    /// <summary>Thời điểm vé được phân công cho kỹ thuật viên (UTC).</summary>
+    public DateTime? AssignedAt { get; private set; }
+
     /// <summary>Tiêu đề tóm tắt sự cố (tối đa 100 ký tự).</summary>
     public string Title { get; private set; } = string.Empty;
 
@@ -104,11 +110,38 @@ public class Ticket
         requesterId != Guid.Empty && RequesterId == requesterId;
 
     /// <summary>
-    /// Kỹ thuật viên tiếp nhận xử lý vé (Submitted -> InProgress).
+    /// Phân công kỹ thuật viên xử lý vé.
+    /// </summary>
+    public void Assign(Guid agentId, DateTime now)
+    {
+        if (agentId == Guid.Empty) throw new ArgumentException("Agent ID is required.");
+        if (Status == TicketStatus.Closed || Status == TicketStatus.Cancelled)
+            throw new InvalidOperationException($"Cannot assign ticket in status {Status}");
+        AssignedToId = agentId;
+        AssignedAt = now;
+        if (Status == TicketStatus.Submitted) Status = TicketStatus.Assigned;
+        UpdatedAt = now;
+    }
+
+    /// <summary>
+    /// Hủy phân công kỹ thuật viên xử lý vé.
+    /// </summary>
+    public void Unassign(DateTime now)
+    {
+        if (Status == TicketStatus.Closed || Status == TicketStatus.Cancelled)
+            throw new InvalidOperationException($"Cannot unassign ticket in status {Status}");
+        AssignedToId = null;
+        AssignedAt = null;
+        if (Status == TicketStatus.Assigned) Status = TicketStatus.Submitted;
+        UpdatedAt = now;
+    }
+
+    /// <summary>
+    /// Kỹ thuật viên tiếp nhận xử lý vé (Submitted/Assigned -> InProgress).
     /// </summary>
     public void Claim(DateTime now)
     {
-        if (Status != TicketStatus.Submitted)
+        if (Status != TicketStatus.Submitted && Status != TicketStatus.Assigned)
         {
             throw new InvalidOperationException($"Cannot claim ticket in status {Status}");
         }

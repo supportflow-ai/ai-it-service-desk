@@ -23,6 +23,18 @@ internal static class ModuleRules
         "ServiceDesk.Application.Ticketing.ReopenTicket.IReopenTicket", "ServiceDesk.Application.Ticketing.ReopenTicket.ReopenTicketCommand",
         "ServiceDesk.Application.Ticketing.CloseTicket.ICloseTicket", "ServiceDesk.Application.Ticketing.CloseTicket.CloseTicketCommand",
         "ServiceDesk.Application.Ticketing.CancelTicket.ICancelTicket", "ServiceDesk.Application.Ticketing.CancelTicket.CancelTicketCommand",
+        "ServiceDesk.Application.Ticketing.GetAgentQueue.IGetAgentQueue", "ServiceDesk.Application.Ticketing.GetAgentQueue.GetAgentQueueQuery",
+        "ServiceDesk.Application.Ticketing.AssignTicket.IAssignTicket", "ServiceDesk.Application.Ticketing.AssignTicket.AssignTicketCommand",
+        "ServiceDesk.Application.Ticketing.UnassignTicket.IUnassignTicket", "ServiceDesk.Application.Ticketing.UnassignTicket.UnassignTicketCommand",
+        "ServiceDesk.Application.Ticketing.AddComment.IAddComment", "ServiceDesk.Application.Ticketing.AddComment.AddCommentCommand",
+        "ServiceDesk.Application.Ticketing.AddInternalNote.IAddInternalNote", "ServiceDesk.Application.Ticketing.AddInternalNote.AddInternalNoteCommand",
+        "ServiceDesk.Application.Ticketing.GetTicketTimeline.IGetTicketTimeline", "ServiceDesk.Application.Ticketing.GetTicketTimeline.GetTicketTimelineQuery",
+        "ServiceDesk.Application.Ticketing.Contracts.TimelineItemDto",
+        "ServiceDesk.Application.Ticketing.GenerateAttachmentUploadUrl.IGenerateAttachmentUploadUrl", "ServiceDesk.Application.Ticketing.GenerateAttachmentUploadUrl.GenerateAttachmentUploadUrlCommand",
+        "ServiceDesk.Application.Ticketing.GetAttachmentDownloadUrl.IGetAttachmentDownloadUrl", "ServiceDesk.Application.Ticketing.GetAttachmentDownloadUrl.GetAttachmentDownloadUrlQuery",
+        "ServiceDesk.Application.Ticketing.Contracts.GenerateUploadUrlRequest",
+        "ServiceDesk.Application.Ticketing.Contracts.UploadUrlResult",
+        "ServiceDesk.Application.Ticketing.Contracts.DownloadUrlResult",
         "ServiceDesk.Application.Ticketing.Idempotency.IdempotencyConflictException",
         "ServiceDesk.Application.Ticketing.Idempotency.IdempotencyInProgressException"
     };

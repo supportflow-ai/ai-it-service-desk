@@ -11,12 +11,29 @@ using ServiceDesk.Application.Ticketing.ResolveTicket;
 using ServiceDesk.Application.Ticketing.ReopenTicket;
 using ServiceDesk.Application.Ticketing.CloseTicket;
 using ServiceDesk.Application.Ticketing.CancelTicket;
+using ServiceDesk.Application.Ticketing.GetAgentQueue;
+using ServiceDesk.Application.Ticketing.AssignTicket;
+using ServiceDesk.Application.Ticketing.UnassignTicket;
+using ServiceDesk.Application.Ticketing.AddComment;
+using ServiceDesk.Application.Ticketing.AddInternalNote;
+using ServiceDesk.Application.Ticketing.GetTicketTimeline;
+using ServiceDesk.Application.Ticketing.GenerateAttachmentUploadUrl;
+using ServiceDesk.Application.Ticketing.GetAttachmentDownloadUrl;
 using ServiceDesk.Domain.Identity;
 
 namespace ServiceDesk.Api.Endpoints;
 
 /// <summary>Request body cập nhật thông tin ticket.</summary>
 public record UpdateTicketRequest(string Title, string Description, string CategoryId);
+
+/// <summary>Request body phân công ticket.</summary>
+public record AssignTicketRequest(Guid AgentId);
+
+/// <summary>Request body gửi bình luận công khai.</summary>
+public record AddCommentRequest(string Content);
+
+/// <summary>Request body gửi ghi chú nội bộ.</summary>
+public record AddInternalNoteRequest(string Content);
 
 /// <summary>
 /// Định nghĩa các API endpoints cho phân hệ quản lý vé (Ticket Management).
@@ -66,6 +83,26 @@ public static class TicketEndpoints
         .Produces(StatusCodes.Status400BadRequest)
         .Produces(StatusCodes.Status401Unauthorized);
 
+        // GET /api/tickets/queue: Hàng đợi vé dành cho Agent/Admin có lọc và phân trang
+        group.MapGet("/queue", async (
+            [FromServices] IGetAgentQueue getAgentQueue,
+            CancellationToken ct,
+            int page = 1,
+            int pageSize = 10,
+            int? status = null,
+            string? category = null,
+            string? scope = null) =>
+        {
+            var tickets = await getAgentQueue.ExecuteAsync(new(status, category, scope, page, pageSize), ct);
+            return Results.Ok(tickets);
+        })
+        .WithName("GetAgentQueue")
+        .RequireAuthorization(PolicyNames.RequireAgent)
+        .Produces<PagedTicketResult>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status403Forbidden);
+
         // GET /api/tickets/{id}: Lấy thông tin chi tiết một vé
         group.MapGet("/{id:guid}", async (
             Guid id,
@@ -108,6 +145,39 @@ public static class TicketEndpoints
             return Results.Ok(ticket);
         })
         .WithName("ClaimTicket")
+        .RequireAuthorization(PolicyNames.RequireAgent)
+        .Produces<TicketDto>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status404NotFound);
+
+        // POST /api/tickets/{id}/assign: Phân công ticket cho kỹ thuật viên
+        group.MapPost("/{id:guid}/assign", async (
+            Guid id,
+            [FromBody] AssignTicketRequest request,
+            [FromServices] IAssignTicket assignTicket,
+            CancellationToken ct) =>
+        {
+            var ticket = await assignTicket.ExecuteAsync(new(id, request.AgentId), ct);
+            return Results.Ok(ticket);
+        })
+        .WithName("AssignTicket")
+        .RequireAuthorization(PolicyNames.RequireAgent)
+        .Produces<TicketDto>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status404NotFound);
+
+        // POST /api/tickets/{id}/unassign: Hủy phân công ticket
+        group.MapPost("/{id:guid}/unassign", async (
+            Guid id,
+            [FromServices] IUnassignTicket unassignTicket,
+            CancellationToken ct) =>
+        {
+            var ticket = await unassignTicket.ExecuteAsync(new(id), ct);
+            return Results.Ok(ticket);
+        })
+        .WithName("UnassignTicket")
         .RequireAuthorization(PolicyNames.RequireAgent)
         .Produces<TicketDto>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status400BadRequest)
@@ -174,6 +244,90 @@ public static class TicketEndpoints
         .WithName("CancelTicket")
         .RequireAuthorization()
         .Produces<TicketDto>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status404NotFound);
+
+        // POST /api/tickets/{id}/comments: Gửi bình luận công khai
+        group.MapPost("/{id:guid}/comments", async (
+            Guid id,
+            [FromBody] AddCommentRequest request,
+            [FromServices] IAddComment addComment,
+            CancellationToken ct) =>
+        {
+            var comment = await addComment.ExecuteAsync(new(id, request.Content), ct);
+            return Results.Created($"/api/tickets/{id}/comments/{comment.Id}", comment);
+        })
+        .WithName("AddTicketComment")
+        .RequireAuthorization(PolicyNames.RequireRequester)
+        .Produces<TimelineItemDto>(StatusCodes.Status201Created)
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status404NotFound);
+
+        // POST /api/tickets/{id}/internal-notes: Gửi ghi chú nội bộ (chỉ Agent/Admin)
+        group.MapPost("/{id:guid}/internal-notes", async (
+            Guid id,
+            [FromBody] AddInternalNoteRequest request,
+            [FromServices] IAddInternalNote addInternalNote,
+            CancellationToken ct) =>
+        {
+            var note = await addInternalNote.ExecuteAsync(new(id, request.Content), ct);
+            return Results.Created($"/api/tickets/{id}/internal-notes/{note.Id}", note);
+        })
+        .WithName("AddTicketInternalNote")
+        .RequireAuthorization(PolicyNames.RequireAgent)
+        .Produces<TimelineItemDto>(StatusCodes.Status201Created)
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status403Forbidden)
+        .Produces(StatusCodes.Status404NotFound);
+
+        // GET /api/tickets/{id}/timeline: Lấy dòng hoạt động & trao đổi
+        group.MapGet("/{id:guid}/timeline", async (
+            Guid id,
+            [FromServices] IGetTicketTimeline getTicketTimeline,
+            CancellationToken ct) =>
+        {
+            var timeline = await getTicketTimeline.ExecuteAsync(new(id), ct);
+            return Results.Ok(timeline);
+        })
+        .WithName("GetTicketTimeline")
+        .RequireAuthorization(PolicyNames.RequireRequester)
+        .Produces<IReadOnlyList<TimelineItemDto>>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status404NotFound);
+
+        // POST /api/tickets/{id}/attachments/upload-url: Sinh pre-signed URL tải tệp đính kèm
+        group.MapPost("/{id:guid}/attachments/upload-url", async (
+            Guid id,
+            [FromBody] GenerateUploadUrlRequest request,
+            [FromServices] IGenerateAttachmentUploadUrl generateUploadUrl,
+            CancellationToken ct) =>
+        {
+            var result = await generateUploadUrl.ExecuteAsync(new(id, request), ct);
+            return Results.Ok(result);
+        })
+        .WithName("GenerateAttachmentUploadUrl")
+        .RequireAuthorization(PolicyNames.RequireRequester)
+        .Produces<UploadUrlResult>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status404NotFound);
+
+        // GET /api/tickets/{id}/attachments/download-url: Sinh pre-signed URL tải xuống
+        group.MapGet("/{id:guid}/attachments/download-url", async (
+            Guid id,
+            string storageKey,
+            [FromServices] IGetAttachmentDownloadUrl getDownloadUrl,
+            CancellationToken ct) =>
+        {
+            var result = await getDownloadUrl.ExecuteAsync(new(id, storageKey), ct);
+            return Results.Ok(result);
+        })
+        .WithName("GetAttachmentDownloadUrl")
+        .RequireAuthorization(PolicyNames.RequireRequester)
+        .Produces<DownloadUrlResult>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status400BadRequest)
         .Produces(StatusCodes.Status401Unauthorized)
         .Produces(StatusCodes.Status404NotFound);
