@@ -13,4 +13,7 @@ public interface ITicketQueries
 
     /// <summary>Lấy thông tin chi tiết một vé theo phạm vi quyền (TicketReadScope).</summary>
     Task<TicketDto?> GetByIdAsync(Guid id, TicketReadScope scope, CancellationToken cancellationToken);
+
+    /// <summary>Truy vấn hàng đợi vé cho nhân viên hỗ trợ (Agent Queue) có lọc và phân trang.</summary>
+    Task<PagedTicketResult> GetAgentQueueAsync(int? status, string? categoryId, string? scope, int page, int pageSize, CancellationToken cancellationToken);
 }
