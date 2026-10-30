@@ -28,9 +28,9 @@ public sealed class IdentityMigrationTests
         var requesterId = Guid.NewGuid();
         var now = DateTime.UtcNow;
         await context.Database.ExecuteSqlInterpolatedAsync(
-            $"INSERT INTO public.tickets (id, requester_id, title, description, category_id, status, created_at, updated_at) VALUES ({ticketId}, {requesterId}, 'Existing ticket', 'Existing persisted ticket description', 'NET', 4, {now}, {now})");
+            $"INSERT INTO public.tickets (\"Id\", requester_id, title, description, category_id, status, created_at, updated_at) VALUES ({ticketId}, {requesterId}, 'Existing ticket', 'Existing persisted ticket description', 'NET', 4, {now}, {now})");
         var ticketNumber = await context.Database.SqlQuery<string>(
-            $"SELECT ticket_number AS \"Value\" FROM public.tickets WHERE id = {ticketId}").SingleAsync();
+            $"SELECT ticket_number AS \"Value\" FROM public.tickets WHERE \"Id\" = {ticketId}").SingleAsync();
 
         await context.Database.MigrateAsync();
         var account = new IdentityUser { Id = Guid.NewGuid().ToString(), UserName = "existing", NormalizedUserName = "EXISTING" };
