@@ -1,3 +1,4 @@
+using ServiceDesk.Application.Common;
 using ServiceDesk.Application.Common.Interfaces;
 using ServiceDesk.Application.Ticketing.Authorization;
 using ServiceDesk.Application.Ticketing.Contracts;
@@ -26,6 +27,10 @@ internal sealed class GetAttachmentDownloadUrlUseCase(
         if (string.IsNullOrWhiteSpace(query.StorageKey))
             throw new ArgumentException("Storage key is required.");
 
+        var expectedPrefix = $"tickets/{query.TicketId}/";
+        if (!query.StorageKey.StartsWith(expectedPrefix, StringComparison.OrdinalIgnoreCase))
+            throw new UnauthorizedAccessException("Tệp đính kèm không thuộc về yêu cầu này.");
+
         var isStaff = currentUser.IsInRole(RoleNames.Agent) || currentUser.IsInRole(RoleNames.Admin);
         var scope = isStaff ? (TicketReadScope)new TicketReadScope.AllTickets() : new TicketReadScope.OwnTickets(actorId);
 
@@ -33,16 +38,14 @@ internal sealed class GetAttachmentDownloadUrlUseCase(
         if (ticket == null) throw new KeyNotFoundException("Ticket not found.");
 
         const int expirySeconds = 3600;
-        string downloadUrl;
         try
         {
-            downloadUrl = await storageService.GetPresignedDownloadUrlAsync("servicedesk", query.StorageKey, expirySeconds, cancellationToken);
+            var downloadUrl = await storageService.GetPresignedDownloadUrlAsync("servicedesk", query.StorageKey, expirySeconds, cancellationToken);
+            return new DownloadUrlResult(downloadUrl);
         }
-        catch
+        catch (Exception ex)
         {
-            downloadUrl = $"http://localhost:9000/servicedesk/{query.StorageKey}?download=true";
+            throw new ServiceUnavailableException($"Dịch vụ lưu trữ tệp (MinIO) hiện không khả dụng: {ex.Message}");
         }
-
-        return new DownloadUrlResult(downloadUrl);
     }
 }

@@ -1,3 +1,4 @@
+using ServiceDesk.Application.Common;
 using ServiceDesk.Application.Common.Interfaces;
 using ServiceDesk.Application.Ticketing.Authorization;
 using ServiceDesk.Application.Ticketing.Contracts;
@@ -50,17 +51,14 @@ internal sealed class GenerateAttachmentUploadUrlUseCase(
         var storageKey = $"tickets/{command.TicketId}/{Guid.NewGuid()}_{Path.GetFileName(req.FileName)}";
         const int expirySeconds = 3600;
 
-        string uploadUrl;
         try
         {
-            uploadUrl = await storageService.GetPresignedUploadUrlAsync("servicedesk", storageKey, expirySeconds, cancellationToken);
+            var uploadUrl = await storageService.GetPresignedUploadUrlAsync("servicedesk", storageKey, expirySeconds, cancellationToken);
+            return new UploadUrlResult(uploadUrl, storageKey, expirySeconds);
         }
-        catch
+        catch (Exception ex)
         {
-            // Fallback khi MinIO chưa kết nối
-            uploadUrl = $"http://localhost:9000/servicedesk/{storageKey}?upload=true";
+            throw new ServiceUnavailableException($"Dịch vụ lưu trữ tệp (MinIO) hiện không khả dụng: {ex.Message}");
         }
-
-        return new UploadUrlResult(uploadUrl, storageKey, expirySeconds);
     }
 }

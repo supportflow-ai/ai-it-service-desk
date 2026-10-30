@@ -17,6 +17,7 @@ public interface IAddInternalNote
 internal sealed class AddInternalNoteUseCase(
     ITicketWriter writer,
     ITicketTimelineStore timelineStore,
+    IAgentDirectory agentDirectory,
     ICurrentUser currentUser,
     IClock clock) : IAddInternalNote
 {
@@ -34,7 +35,7 @@ internal sealed class AddInternalNoteUseCase(
         var ticket = await writer.GetForUpdateAsync(command.TicketId, cancellationToken);
         if (ticket == null) throw new KeyNotFoundException("Ticket not found.");
 
-        var authorName = currentUser.UserId ?? "Kỹ thuật viên";
+        var authorName = await agentDirectory.GetDisplayNameAsync(actorId, cancellationToken);
         var authorRole = currentUser.Roles.FirstOrDefault() ?? "Agent";
 
         var comment = TicketComment.CreateInternalNote(

@@ -81,6 +81,34 @@ internal sealed class IdentityAccountGateway(UserManager<IdentityUser> users, Ap
         return user is null ? null : await ToUserAsync(user);
     }
 
+    public async Task<bool> IsAgentAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var user = await users.FindByIdAsync(userId.ToString());
+        if (user is null) return false;
+        return await users.IsInRoleAsync(user, RoleNames.Agent);
+    }
+
+    public async Task<string> GetDisplayNameAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var user = await users.FindByIdAsync(userId.ToString());
+        if (user is null) return "Người dùng";
+        return !string.IsNullOrWhiteSpace(user.UserName) ? user.UserName : (!string.IsNullOrWhiteSpace(user.Email) ? user.Email : "Người dùng");
+    }
+
+    public async Task<IReadOnlyList<UserInfo>> GetUsersInRoleAsync(string roleName, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var roleUsers = await users.GetUsersInRoleAsync(roleName);
+        var result = new List<UserInfo>(roleUsers.Count);
+        foreach (var user in roleUsers)
+        {
+            result.Add(await ToUserAsync(user));
+        }
+        return result;
+    }
+
     private async Task<UserInfo> ToUserAsync(IdentityUser user) => new()
     {
         UserId = user.Id, Email = user.Email!, Roles = (await users.GetRolesAsync(user)).ToArray()

@@ -27,7 +27,7 @@ public sealed class GetAgentQueueUseCaseTests
         _user.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(false);
 
         var pagedResult = new PagedTicketResult([], 1, 10, 0);
-        _queries.Setup(q => q.GetAgentQueueAsync(null, null, "unassigned", 1, 10, It.IsAny<CancellationToken>()))
+        _queries.Setup(q => q.GetAgentQueueAsync(It.IsAny<Guid>(), null, null, "unassigned", 1, 10, It.IsAny<CancellationToken>()))
             .ReturnsAsync(pagedResult);
 
         var useCase = new GetAgentQueueUseCase(_queries.Object, _user.Object);

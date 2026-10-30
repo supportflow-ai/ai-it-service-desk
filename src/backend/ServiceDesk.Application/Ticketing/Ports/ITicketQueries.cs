@@ -15,5 +15,5 @@ public interface ITicketQueries
     Task<TicketDto?> GetByIdAsync(Guid id, TicketReadScope scope, CancellationToken cancellationToken);
 
     /// <summary>Truy vấn hàng đợi vé cho nhân viên hỗ trợ (Agent Queue) có lọc và phân trang.</summary>
-    Task<PagedTicketResult> GetAgentQueueAsync(int? status, string? categoryId, string? scope, int page, int pageSize, CancellationToken cancellationToken);
+    Task<PagedTicketResult> GetAgentQueueAsync(Guid currentUserId, int? status, string? categoryId, string? scope, int page, int pageSize, CancellationToken cancellationToken);
 }

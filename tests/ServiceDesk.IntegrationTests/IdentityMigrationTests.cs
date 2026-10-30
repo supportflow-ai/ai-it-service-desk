@@ -24,11 +24,13 @@ public sealed class IdentityMigrationTests
         const string ticketBaseline = "20261014230000_AddRequesterCreatedAtIdIndex";
         await migrator.MigrateAsync(ticketBaseline);
 
-        var ticket = Ticket.Create(Guid.NewGuid(), "Existing ticket", "Existing persisted ticket description", "NET", DateTime.UtcNow);
-        context.Tickets.Add(ticket);
-        context.Entry(ticket).Property(value => value.Status).CurrentValue = TicketStatus.Resolved;
-        await context.SaveChangesAsync();
-        var ticketNumber = ticket.TicketNumber;
+        var ticketId = Guid.NewGuid();
+        var requesterId = Guid.NewGuid();
+        var now = DateTime.UtcNow;
+        await context.Database.ExecuteSqlInterpolatedAsync(
+            $"INSERT INTO public.tickets (\"Id\", requester_id, title, description, category_id, status, created_at, updated_at) VALUES ({ticketId}, {requesterId}, 'Existing ticket', 'Existing persisted ticket description', 'NET', 4, {now}, {now})");
+        var ticketNumber = await context.Database.SqlQuery<string>(
+            $"SELECT ticket_number AS \"Value\" FROM public.tickets WHERE \"Id\" = {ticketId}").SingleAsync();
 
         await context.Database.MigrateAsync();
         var account = new IdentityUser { Id = Guid.NewGuid().ToString(), UserName = "existing", NormalizedUserName = "EXISTING" };

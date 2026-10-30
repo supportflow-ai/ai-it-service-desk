@@ -8,7 +8,7 @@ namespace ServiceDesk.Infrastructure.Ticketing;
 /// </summary>
 internal static class TicketProjection
 {
-    internal static TicketDto ToDto(Ticket ticket) => new(
+    internal static TicketDto ToDto(Ticket ticket, uint revision = 0) => new(
         ticket.Id,
         ticket.TicketNumber,
         ticket.Title,
@@ -16,5 +16,13 @@ internal static class TicketProjection
         ticket.CategoryId,
         (int)ticket.Status,
         ticket.CreatedAt,
-        ticket.RequesterDepartmentId);
+        ticket.RequesterDepartmentId,
+        ticket.RequesterId,
+        ticket.AssignedToId,
+        ticket.AssignedAt,
+        ticket.UpdatedAt,
+        revision,
+        ticket.Priority?.ToString(),
+        ticket.Impact?.ToString(),
+        ticket.Urgency?.ToString());
 }

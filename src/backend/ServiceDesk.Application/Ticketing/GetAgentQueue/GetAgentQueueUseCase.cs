@@ -25,7 +25,7 @@ internal sealed class GetAgentQueueUseCase(ITicketQueries queries, ICurrentUser 
 {
     public Task<PagedTicketResult> ExecuteAsync(GetAgentQueueQuery query, CancellationToken cancellationToken = default)
     {
-        TicketActor.RequireId(currentUser);
+        var actorId = TicketActor.RequireId(currentUser);
         ArgumentNullException.ThrowIfNull(query);
 
         var isStaff = currentUser.IsInRole(RoleNames.Agent) || currentUser.IsInRole(RoleNames.Admin);
@@ -39,6 +39,6 @@ internal sealed class GetAgentQueueUseCase(ITicketQueries queries, ICurrentUser 
             throw new ArgumentException("page must be at least 1 and pageSize must be between 1 and 100");
         }
 
-        return queries.GetAgentQueueAsync(query.Status, query.CategoryId, query.Scope, query.Page, query.PageSize, cancellationToken);
+        return queries.GetAgentQueueAsync(actorId, query.Status, query.CategoryId, query.Scope, query.Page, query.PageSize, cancellationToken);
     }
 }

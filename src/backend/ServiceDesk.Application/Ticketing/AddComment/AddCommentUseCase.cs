@@ -16,6 +16,7 @@ public interface IAddComment
 internal sealed class AddCommentUseCase(
     ITicketWriter writer,
     ITicketTimelineStore timelineStore,
+    IAgentDirectory agentDirectory,
     ICurrentUser currentUser,
     IClock clock) : IAddComment
 {
@@ -27,7 +28,7 @@ internal sealed class AddCommentUseCase(
         var ticket = await writer.GetForUpdateAsync(command.TicketId, cancellationToken);
         if (ticket == null) throw new KeyNotFoundException("Ticket not found.");
 
-        var authorName = currentUser.UserId ?? "Người dùng";
+        var authorName = await agentDirectory.GetDisplayNameAsync(actorId, cancellationToken);
         var authorRole = currentUser.Roles.FirstOrDefault() ?? "Requester";
 
         var comment = TicketComment.CreatePublic(

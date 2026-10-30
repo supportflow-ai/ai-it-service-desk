@@ -1,5 +1,6 @@
 using Moq;
 using ServiceDesk.Application.Common.Interfaces;
+using ServiceDesk.Application.Identity.Ports;
 using ServiceDesk.Application.Ticketing.AddComment;
 using ServiceDesk.Application.Ticketing.AddInternalNote;
 using ServiceDesk.Application.Ticketing.Authorization;
@@ -17,6 +18,7 @@ public sealed class TimelineSecurityTests
     private readonly Mock<ITicketQueries> _ticketQueries = new();
     private readonly Mock<ITicketWriter> _ticketWriter = new();
     private readonly Mock<ITicketTimelineStore> _timelineStore = new();
+    private readonly Mock<IAgentDirectory> _agentDirectory = new();
     private readonly Mock<ICurrentUser> _user = new();
     private readonly Mock<IClock> _clock = new();
     private readonly Guid _ticketId = Guid.NewGuid();
@@ -63,7 +65,7 @@ public sealed class TimelineSecurityTests
         _user.Setup(u => u.IsInRole(RoleNames.Agent)).Returns(false);
         _user.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(false);
 
-        var useCase = new AddInternalNoteUseCase(_ticketWriter.Object, _timelineStore.Object, _user.Object, _clock.Object);
+        var useCase = new AddInternalNoteUseCase(_ticketWriter.Object, _timelineStore.Object, _agentDirectory.Object, _user.Object, _clock.Object);
 
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
             useCase.ExecuteAsync(new(_ticketId, "Leaked secret internal diagnostic")));

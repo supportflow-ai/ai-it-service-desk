@@ -28,6 +28,15 @@ public class Ticket
     /// <summary>Thời điểm vé được phân công cho kỹ thuật viên (UTC).</summary>
     public DateTime? AssignedAt { get; private set; }
 
+    /// <summary>Mức độ ảnh hưởng của sự cố đối với hoạt động của tổ chức.</summary>
+    public Impact? Impact { get; private set; }
+
+    /// <summary>Mức độ khẩn cấp về thời gian cần xử lý sự cố.</summary>
+    public Urgency? Urgency { get; private set; }
+
+    /// <summary>Mức độ ưu tiên xử lý (P1 - P4) được tính tất định từ Impact × Urgency.</summary>
+    public Priority? Priority { get; private set; }
+
     /// <summary>Tiêu đề tóm tắt sự cố (tối đa 100 ký tự).</summary>
     public string Title { get; private set; } = string.Empty;
 
@@ -100,9 +109,23 @@ public class Ticket
             Description = normalizedDescription,
             CategoryId = categoryId,
             Status = TicketStatus.Submitted,
+            Impact = Ticketing.Impact.Medium,
+            Urgency = Ticketing.Urgency.Medium,
+            Priority = Ticketing.Priority.P3,
             CreatedAt = createdAt,
             UpdatedAt = createdAt
         };
+    }
+
+    /// <summary>
+    /// Thiết lập phân loại Impact và Urgency, tự động tính Priority theo ma trận ITIL.
+    /// </summary>
+    public void SetTriage(Impact impact, Urgency urgency, DateTime now)
+    {
+        Impact = impact;
+        Urgency = urgency;
+        Priority = PriorityMatrix.Calculate(impact, urgency);
+        UpdatedAt = now;
     }
 
     /// <summary>Kiểm tra quyền sở hữu của người gửi đối với ticket này.</summary>
@@ -139,16 +162,24 @@ public class Ticket
     /// <summary>
     /// Kỹ thuật viên tiếp nhận xử lý vé (Submitted/Assigned -> InProgress).
     /// </summary>
-    public void Claim(DateTime now)
+    public void Claim(Guid agentId, DateTime now)
     {
+        if (agentId == Guid.Empty) throw new ArgumentException("Agent ID is required.");
         if (Status != TicketStatus.Submitted && Status != TicketStatus.Assigned)
         {
             throw new InvalidOperationException($"Cannot claim ticket in status {Status}");
         }
 
+        AssignedToId = agentId;
+        AssignedAt = now;
         Status = TicketStatus.InProgress;
         UpdatedAt = now;
     }
+
+    /// <summary>
+    /// Tương thích ngược: Tiếp nhận xử lý vé không truyền ID cụ thể.
+    /// </summary>
+    public void Claim(DateTime now) => Claim(Guid.NewGuid(), now);
 
     /// <summary>
     /// Đánh dấu vé đã được giải quyết xong (InProgress -> Resolved).

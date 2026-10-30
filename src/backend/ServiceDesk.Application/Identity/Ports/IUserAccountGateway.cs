@@ -18,4 +18,10 @@ public interface IUserAccountGateway
 
     /// <summary>Tìm kiếm thông tin người dùng theo Id.</summary>
     Task<UserInfo?> FindByIdAsync(string userId, CancellationToken cancellationToken);
+
+    /// <summary>Kiểm tra xem người dùng có tồn tại và thuộc vai trò Agent hay không.</summary>
+    Task<bool> IsAgentAsync(Guid userId, CancellationToken cancellationToken);
+
+    /// <summary>Lấy danh sách người dùng theo vai trò cụ thể.</summary>
+    Task<IReadOnlyList<UserInfo>> GetUsersInRoleAsync(string roleName, CancellationToken cancellationToken);
 }

@@ -1,3 +1,4 @@
+using ServiceDesk.Application.Common;
 using ServiceDesk.Application.Common.Interfaces;
 using ServiceDesk.Application.Ticketing.Authorization;
 using ServiceDesk.Application.Ticketing.Contracts;
@@ -7,7 +8,7 @@ using ServiceDesk.Domain.Identity;
 namespace ServiceDesk.Application.Ticketing.UpdateTicket;
 
 /// <summary>Lệnh cập nhật thông tin ticket (tiêu đề, mô tả, danh mục).</summary>
-public record UpdateTicketCommand(Guid Id, string Title, string Description, string CategoryId);
+public record UpdateTicketCommand(Guid Id, string Title, string Description, string CategoryId, uint? ExpectedRevision = null);
 
 /// <summary>Hợp đồng use case cập nhật ticket.</summary>
 public interface IUpdateTicket
@@ -32,6 +33,15 @@ internal sealed class UpdateTicketUseCase(ITicketWriter writer, ICurrentUser cur
         if (ticket == null || (!ticket.IsOwnedBy(actorId) && !currentUser.IsInRole(RoleNames.Admin)))
         {
             throw new KeyNotFoundException("Ticket not found or outside access scope.");
+        }
+
+        if (command.ExpectedRevision.HasValue && command.ExpectedRevision.Value > 0)
+        {
+            var currentRev = writer.GetRevision(ticket);
+            if (currentRev != 0 && currentRev != command.ExpectedRevision.Value)
+            {
+                throw new ConcurrencyConflictException("Dữ liệu đã bị thay đổi bởi người khác hoặc phiên làm việc đã cũ. Vui lòng tải lại trang.");
+            }
         }
 
         try
