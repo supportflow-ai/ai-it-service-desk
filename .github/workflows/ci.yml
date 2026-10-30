@@ -1,7 +1,7 @@
 name: Backend quality gates
 on:
   push:
-    branches: [main, dev, staging, 'codex/**']
+    branches: [main, dev, staging, 'codex/**', 'devops/**']
   pull_request:
   workflow_dispatch:
 permissions:
@@ -51,3 +51,64 @@ jobs:
         run: docker build -f src/backend/ServiceDesk.Worker/Dockerfile -t servicedesk-worker:ci .
       - name: Build database tool image
         run: docker build -f src/backend/ServiceDesk.Database/Dockerfile -t servicedesk-database:ci .
+
+  publish:
+    name: Publish GHCR images
+    runs-on: ubuntu-24.04
+    needs: backend
+    if: github.repository_owner == 'supportflow-ai' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/devops/'))
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Log in to GitHub Container Registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+      - name: Build and push API image
+        id: build-api
+        run: |
+          IMAGE="ghcr.io/supportflow-ai/servicedesk-api:sha-${{ github.sha }}"
+          docker build -f src/backend/ServiceDesk.Api/Dockerfile -t "$IMAGE" .
+          docker push "$IMAGE"
+          DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' "$IMAGE" 2>/dev/null | awk -F'@' '{print $2}')
+          echo "api_digest=$DIGEST" >> "$GITHUB_OUTPUT"
+          echo "API Digest: $DIGEST"
+      - name: Build and push Worker image
+        id: build-worker
+        run: |
+          IMAGE="ghcr.io/supportflow-ai/servicedesk-worker:sha-${{ github.sha }}"
+          docker build -f src/backend/ServiceDesk.Worker/Dockerfile -t "$IMAGE" .
+          docker push "$IMAGE"
+          DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' "$IMAGE" 2>/dev/null | awk -F'@' '{print $2}')
+          echo "worker_digest=$DIGEST" >> "$GITHUB_OUTPUT"
+          echo "Worker Digest: $DIGEST"
+      - name: Build and push Database tool image
+        id: build-database
+        run: |
+          IMAGE="ghcr.io/supportflow-ai/servicedesk-database:sha-${{ github.sha }}"
+          docker build -f src/backend/ServiceDesk.Database/Dockerfile -t "$IMAGE" .
+          docker push "$IMAGE"
+          DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' "$IMAGE" 2>/dev/null | awk -F'@' '{print $2}')
+          echo "database_digest=$DIGEST" >> "$GITHUB_OUTPUT"
+          echo "Database Digest: $DIGEST"
+      - name: Record published backend artifact digests
+        run: |
+          mkdir -p artifacts/ghcr
+          cat <<EOF > artifacts/ghcr/backend-digests.json
+          {
+            "repository": "${{ github.repository }}",
+            "commit": "${{ github.sha }}",
+            "ref": "${{ github.ref }}",
+            "publishedAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "images": {
+              "api": "ghcr.io/supportflow-ai/servicedesk-api@${{ steps.build-api.outputs.api_digest }}",
+              "worker": "ghcr.io/supportflow-ai/servicedesk-worker@${{ steps.build-worker.outputs.worker_digest }}",
+              "database": "ghcr.io/supportflow-ai/servicedesk-database@${{ steps.build-database.outputs.database_digest }}"
+            }
+          }
+          EOF
+          cat artifacts/ghcr/backend-digests.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: backend-ghcr-digests-${{ github.sha }}
+          path: artifacts/ghcr/backend-digests.json
