@@ -16,14 +16,13 @@ internal sealed class TicketConfiguration : IEntityTypeConfiguration<Ticket>
         entity.ToTable("tickets");
         entity.HasKey(t => t.Id);
 
-        entity.Ignore(t => t.AssignedToId);
-        entity.Ignore(t => t.AssignedAt);
-
         entity.HasIndex(t => t.TicketNumber).IsUnique();
         entity.HasIndex(t => t.RequesterId);
         entity.HasIndex(t => new { t.RequesterId, t.CreatedAt, t.Id })
             .HasDatabaseName("IX_tickets_requester_id_created_at_id");
         entity.HasIndex(t => t.Status);
+        entity.HasIndex(t => t.AssignedToId);
+        entity.HasIndex(t => t.Priority);
 
         entity.Property(t => t.RequesterId)
             .HasColumnName("requester_id")
@@ -31,6 +30,21 @@ internal sealed class TicketConfiguration : IEntityTypeConfiguration<Ticket>
 
         entity.Property(t => t.RequesterDepartmentId)
             .HasColumnName("requester_department_id");
+
+        entity.Property(t => t.AssignedToId)
+            .HasColumnName("assigned_to_id");
+
+        entity.Property(t => t.AssignedAt)
+            .HasColumnName("assigned_at");
+
+        entity.Property(t => t.Impact)
+            .HasColumnName("impact");
+
+        entity.Property(t => t.Urgency)
+            .HasColumnName("urgency");
+
+        entity.Property(t => t.Priority)
+            .HasColumnName("priority");
 
         entity.Property(t => t.Title)
             .HasColumnName("title")

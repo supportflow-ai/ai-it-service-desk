@@ -30,7 +30,7 @@ internal sealed class PostgresTicketQueries(ApplicationDbContext context) : ITic
             .ThenByDescending(ticket => ticket.Id)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(ticket => TicketProjection.ToDto(ticket))
+            .Select(ticket => TicketProjection.ToDto(ticket, EF.Property<uint>(ticket, "xmin")))
             .ToListAsync(cancellationToken);
 
         return new PagedTicketResult(tickets, page, pageSize, totalCount);
@@ -46,12 +46,14 @@ internal sealed class PostgresTicketQueries(ApplicationDbContext context) : ITic
             TicketReadScope.AllTickets => query,
             _ => throw new ArgumentException("Yêu cầu phạm vi quyền đọc hợp lệ.", nameof(scope))
         };
-        var ticket = await query.FirstOrDefaultAsync(cancellationToken);
-        return ticket is null ? null : TicketProjection.ToDto(ticket);
+        return await query
+            .Select(ticket => TicketProjection.ToDto(ticket, EF.Property<uint>(ticket, "xmin")))
+            .FirstOrDefaultAsync(cancellationToken);
     }
 
     /// <summary>Truy vấn hàng đợi vé cho nhân viên hỗ trợ (Agent Queue) có lọc và phân trang.</summary>
     public async Task<PagedTicketResult> GetAgentQueueAsync(
+        Guid currentUserId,
         int? status,
         string? categoryId,
         string? scope,
@@ -73,11 +75,11 @@ internal sealed class PostgresTicketQueries(ApplicationDbContext context) : ITic
 
         if (string.Equals(scope, "unassigned", StringComparison.OrdinalIgnoreCase))
         {
-            query = query.Where(ticket => ticket.Status == Domain.Ticketing.TicketStatus.Submitted);
+            query = query.Where(ticket => ticket.AssignedToId == null && ticket.Status != Domain.Ticketing.TicketStatus.Closed && ticket.Status != Domain.Ticketing.TicketStatus.Cancelled);
         }
         else if (string.Equals(scope, "my", StringComparison.OrdinalIgnoreCase))
         {
-            query = query.Where(ticket => ticket.Status == Domain.Ticketing.TicketStatus.InProgress);
+            query = query.Where(ticket => ticket.AssignedToId == currentUserId && ticket.Status != Domain.Ticketing.TicketStatus.Closed && ticket.Status != Domain.Ticketing.TicketStatus.Cancelled);
         }
 
         var totalCount = await query.CountAsync(cancellationToken);
@@ -86,7 +88,7 @@ internal sealed class PostgresTicketQueries(ApplicationDbContext context) : ITic
             .ThenByDescending(ticket => ticket.Id)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(ticket => TicketProjection.ToDto(ticket))
+            .Select(ticket => TicketProjection.ToDto(ticket, EF.Property<uint>(ticket, "xmin")))
             .ToListAsync(cancellationToken);
 
         return new PagedTicketResult(tickets, page, pageSize, totalCount);

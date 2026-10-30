@@ -35,7 +35,9 @@ public static class DependencyInjection
             sp.GetRequiredService<IOptions<DatabaseOptions>>().Value.ConnectionString));
         services.AddScoped<ITicketWriter, PostgresTicketWriter>();
         services.AddScoped<ITicketQueries, PostgresTicketQueries>();
-        services.AddSingleton<ITicketTimelineStore, InMemoryTicketTimelineStore>();
+        services.AddScoped<ITicketTimelineStore, PostgresTicketTimelineStore>();
+        services.AddScoped<ITicketAttachmentStore, PostgresTicketAttachmentStore>();
+        services.AddScoped<IAgentDirectory, AgentDirectory>();
         return services;
     }
 

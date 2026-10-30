@@ -28,7 +28,7 @@ internal sealed class PostgresTicketWriter(ApplicationDbContext context) : ITick
             _context.Tickets.Add(ticket);
             await _context.SaveChangesAsync(cancellationToken);
             await _context.Entry(ticket).ReloadAsync(cancellationToken);
-            return TicketProjection.ToDto(ticket);
+            return TicketProjection.ToDto(ticket, GetRevision(ticket));
         }
         var requesterId = ticket.RequesterId;
         await using var transaction = await _context.Database.BeginTransactionAsync(
@@ -67,7 +67,7 @@ internal sealed class PostgresTicketWriter(ApplicationDbContext context) : ITick
             _context.Tickets.Add(ticket);
             await _context.SaveChangesAsync(cancellationToken);
             await _context.Entry(ticket).ReloadAsync(cancellationToken);
-            var createdResponse = TicketProjection.ToDto(ticket);
+            var createdResponse = TicketProjection.ToDto(ticket, GetRevision(ticket));
 
             var completedAt = await DatabaseUtcNowAsync(cancellationToken);
             if (receipt is null)
@@ -108,9 +108,22 @@ internal sealed class PostgresTicketWriter(ApplicationDbContext context) : ITick
     public Task<Ticket?> GetForUpdateAsync(Guid id, CancellationToken cancellationToken)
         => _context.Tickets.SingleOrDefaultAsync(t => t.Id == id, cancellationToken);
 
+    public uint GetRevision(Ticket ticket)
+    {
+        try { return _context.Entry(ticket).Property<uint>("xmin").CurrentValue; }
+        catch { return 0; }
+    }
+
     public async Task<TicketDto> UpdateTicketAsync(Ticket ticket, CancellationToken cancellationToken)
     {
-        await _context.SaveChangesAsync(cancellationToken);
-        return TicketProjection.ToDto(ticket);
+        try
+        {
+            await _context.SaveChangesAsync(cancellationToken);
+            return TicketProjection.ToDto(ticket, GetRevision(ticket));
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw new Application.Common.ConcurrencyConflictException();
+        }
     }
 }

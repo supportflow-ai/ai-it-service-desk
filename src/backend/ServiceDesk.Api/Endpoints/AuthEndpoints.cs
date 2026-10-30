@@ -2,7 +2,9 @@ using Microsoft.AspNetCore.Mvc;
 using ServiceDesk.Application.Identity.RegisterUser;
 using ServiceDesk.Application.Identity.LoginUser;
 using ServiceDesk.Application.Identity.GetCurrentUser;
+using ServiceDesk.Application.Identity.GetUsersByRole;
 using ServiceDesk.Application.Identity.Contracts;
+using ServiceDesk.Domain.Identity;
 
 namespace ServiceDesk.Api.Endpoints;
 
@@ -73,6 +75,23 @@ public static class AuthEndpoints
         .AddEndpointFilter<LegacyErrorFilter>()
         .WithName("GetCurrentUser")
         .RequireAuthorization();
+
+        // GET /api/users: Lấy danh sách người dùng theo vai trò (Agent/Admin)
+        app.MapGet("/api/users", async (
+            [FromQuery] string? role,
+            [FromServices] IGetUsersByRole getUsersByRole,
+            CancellationToken ct) =>
+        {
+            var targetRole = string.IsNullOrWhiteSpace(role) ? RoleNames.Agent : role;
+            var users = await getUsersByRole.ExecuteAsync(new(targetRole), ct);
+            return Results.Ok(users);
+        })
+        .AddEndpointFilter<LegacyErrorFilter>()
+        .WithName("GetUsers")
+        .RequireAuthorization(PolicyNames.RequireAgent)
+        .Produces<IReadOnlyList<UserInfo>>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status403Forbidden);
 
         return app;
     }

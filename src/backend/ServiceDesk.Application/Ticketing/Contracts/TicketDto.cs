@@ -11,5 +11,13 @@ public record TicketDto(
     string CategoryId,
     int Status,
     DateTime CreatedAt,
-    Guid? RequesterDepartmentId = null
+    Guid? RequesterDepartmentId = null,
+    Guid RequesterId = default,
+    Guid? AssignedToId = null,
+    DateTime? AssignedAt = null,
+    DateTime? UpdatedAt = null,
+    uint Revision = 0,
+    string? Priority = null,
+    string? Impact = null,
+    string? Urgency = null
 );

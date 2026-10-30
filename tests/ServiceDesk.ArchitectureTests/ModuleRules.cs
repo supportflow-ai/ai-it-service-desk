@@ -35,6 +35,13 @@ internal static class ModuleRules
         "ServiceDesk.Application.Ticketing.Contracts.GenerateUploadUrlRequest",
         "ServiceDesk.Application.Ticketing.Contracts.UploadUrlResult",
         "ServiceDesk.Application.Ticketing.Contracts.DownloadUrlResult",
+        "ServiceDesk.Application.Ticketing.ConfirmAttachmentUpload.IConfirmAttachmentUpload", "ServiceDesk.Application.Ticketing.ConfirmAttachmentUpload.ConfirmAttachmentUploadCommand",
+        "ServiceDesk.Application.Ticketing.GetTicketAttachments.IGetTicketAttachments", "ServiceDesk.Application.Ticketing.GetTicketAttachments.GetTicketAttachmentsQuery",
+        "ServiceDesk.Application.Ticketing.Contracts.ConfirmAttachmentUploadRequest",
+        "ServiceDesk.Application.Ticketing.Contracts.TicketAttachmentDto",
+        "ServiceDesk.Application.Identity.GetUsersByRole.IGetUsersByRole", "ServiceDesk.Application.Identity.GetUsersByRole.GetUsersByRoleQuery",
+        "ServiceDesk.Application.Common.ConcurrencyConflictException",
+        "ServiceDesk.Application.Common.ServiceUnavailableException",
         "ServiceDesk.Application.Ticketing.Idempotency.IdempotencyConflictException",
         "ServiceDesk.Application.Ticketing.Idempotency.IdempotencyInProgressException"
     };
@@ -55,6 +62,7 @@ internal static class ModuleRules
         "ServiceDesk.Infrastructure.Persistence.Migrations.AddRequesterCreatedAtIdIndex",
         "ServiceDesk.Infrastructure.Persistence.Migrations.RestoreIdentitySchema",
         "ServiceDesk.Infrastructure.Persistence.Migrations.FixTicketNumberWidth",
+        "ServiceDesk.Infrastructure.Persistence.Migrations.AddTicketAssignmentPriorityAndCollaboration",
         "ServiceDesk.Infrastructure.Persistence.Migrations.ApplicationDbContextModelSnapshot"
     };
 

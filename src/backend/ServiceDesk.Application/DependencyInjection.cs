@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using ServiceDesk.Application.Identity.RegisterUser;
 using ServiceDesk.Application.Identity.LoginUser;
 using ServiceDesk.Application.Identity.GetCurrentUser;
+using ServiceDesk.Application.Identity.GetUsersByRole;
 using ServiceDesk.Application.Ticketing.CreateTicket;
 using ServiceDesk.Application.Ticketing.GetMyTickets;
 using ServiceDesk.Application.Ticketing.GetTicketDetail;
@@ -19,6 +20,8 @@ using ServiceDesk.Application.Ticketing.AddInternalNote;
 using ServiceDesk.Application.Ticketing.GetTicketTimeline;
 using ServiceDesk.Application.Ticketing.GenerateAttachmentUploadUrl;
 using ServiceDesk.Application.Ticketing.GetAttachmentDownloadUrl;
+using ServiceDesk.Application.Ticketing.ConfirmAttachmentUpload;
+using ServiceDesk.Application.Ticketing.GetTicketAttachments;
 
 namespace ServiceDesk.Application;
 
@@ -52,6 +55,8 @@ public static class DependencyInjection
         services.AddScoped<IGetTicketTimeline, GetTicketTimelineUseCase>();
         services.AddScoped<IGenerateAttachmentUploadUrl, GenerateAttachmentUploadUrlUseCase>();
         services.AddScoped<IGetAttachmentDownloadUrl, GetAttachmentDownloadUrlUseCase>();
+        services.AddScoped<IConfirmAttachmentUpload, ConfirmAttachmentUploadUseCase>();
+        services.AddScoped<IGetTicketAttachments, GetTicketAttachmentsUseCase>();
         return services;
     }
 
@@ -60,6 +65,7 @@ public static class DependencyInjection
         services.AddScoped<IRegisterUser, RegisterUserUseCase>();
         services.AddScoped<ILoginUser, LoginUserUseCase>();
         services.AddScoped<IGetCurrentUser, GetCurrentUserUseCase>();
+        services.AddScoped<IGetUsersByRole, GetUsersByRoleUseCase>();
         return services;
     }
 }
