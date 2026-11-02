@@ -29,8 +29,7 @@ public class DatabaseTests : IClassFixture<ServiceDeskWebApplicationFactory>
     {
         using var scope = _factory.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var ticketId = await context.Tickets.Select(t => t.Id).FirstAsync();
-        var actorId = await context.Tickets.Where(t => t.Id == ticketId).Select(t => t.RequesterId).SingleAsync();
+        var (ticketId, actorId) = await EnsureTicketAsync(context);
         var key = $"tickets/{ticketId}/{Guid.NewGuid()}_evidence.png";
         var now = DateTime.UtcNow;
         context.AttachmentUploadGrants.Add(AttachmentUploadGrant.Create(ticketId, actorId, "evidence.png", 1024,
@@ -62,8 +61,7 @@ public class DatabaseTests : IClassFixture<ServiceDeskWebApplicationFactory>
     {
         using var scope = _factory.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var ticketId = await context.Tickets.Select(t => t.Id).FirstAsync();
-        var actorId = await context.Tickets.Where(t => t.Id == ticketId).Select(t => t.RequesterId).SingleAsync();
+        var (ticketId, actorId) = await EnsureTicketAsync(context);
         var key = $"tickets/{ticketId}/{Guid.NewGuid()}_evidence.png";
         var now = DateTime.UtcNow;
         var grant = AttachmentUploadGrant.Create(ticketId, actorId, "evidence.png", 1024, "image/png", key,
@@ -109,8 +107,9 @@ public class DatabaseTests : IClassFixture<ServiceDeskWebApplicationFactory>
         using (var seedScope = _factory.Services.CreateScope())
         {
             var seedContext = seedScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            ticketId = await seedContext.Tickets.Select(t => t.Id).FirstAsync();
-            actorId = await seedContext.Tickets.Where(t => t.Id == ticketId).Select(t => t.RequesterId).SingleAsync();
+            var ticketInfo = await EnsureTicketAsync(seedContext);
+            ticketId = ticketInfo.TicketId;
+            actorId = ticketInfo.RequesterId;
             key = $"tickets/{ticketId}/{Guid.NewGuid()}_evidence.png";
             seedContext.AttachmentUploadGrants.Add(AttachmentUploadGrant.Create(ticketId, actorId, "evidence.png", 1024,
                 "image/png", key, now.AddMinutes(1)));
@@ -158,5 +157,17 @@ public class DatabaseTests : IClassFixture<ServiceDeskWebApplicationFactory>
         (await dbContext.Database.GetPendingMigrationsAsync()).Should().BeEmpty();
         (await dbContext.Roles.CountAsync()).Should().Be(3);
         (await dbContext.Users.CountAsync()).Should().Be(3);
+    }
+
+    private static async Task<(Guid TicketId, Guid RequesterId)> EnsureTicketAsync(ApplicationDbContext context)
+    {
+        var existing = await context.Tickets.Select(t => new { t.Id, t.RequesterId }).FirstOrDefaultAsync();
+        if (existing != null) return (existing.Id, existing.RequesterId);
+
+        var requesterId = Guid.NewGuid();
+        var ticket = Ticket.Create(requesterId, "Seed Ticket", "Valid ticket description for testing", TicketCategories.VPN, DateTime.UtcNow);
+        context.Tickets.Add(ticket);
+        await context.SaveChangesAsync();
+        return (ticket.Id, ticket.RequesterId);
     }
 }
