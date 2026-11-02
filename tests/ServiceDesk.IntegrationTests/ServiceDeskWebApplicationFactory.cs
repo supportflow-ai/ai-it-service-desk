@@ -96,6 +96,10 @@ public class ServiceDeskWebApplicationFactory : WebApplicationFactory<ServiceDes
             CancellationToken cancellationToken = default)
             => Task.FromResult($"https://test-storage/{bucketName}/{objectName}");
 
+        public Task<ObjectStorageObjectInfo> StatObjectAsync(
+            string bucketName, string objectName, CancellationToken cancellationToken = default)
+            => throw new FileNotFoundException("Test storage không có object đã tải lên.");
+
         public Task<bool> BucketExistsAsync(
             string bucketName, CancellationToken cancellationToken = default)
             => Task.FromResult(true);

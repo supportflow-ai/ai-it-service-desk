@@ -14,7 +14,6 @@ namespace ServiceDesk.Application.Tests.Ticketing;
 public sealed class AssignmentUseCaseTests
 {
     private readonly Mock<ITicketWriter> _writer = new(MockBehavior.Strict);
-    private readonly Mock<ITicketTimelineStore> _timeline = new();
     private readonly Mock<IAgentDirectory> _agentDirectory = new();
     private readonly Mock<ICurrentUser> _user = new();
     private readonly Mock<IClock> _clock = new();
@@ -39,10 +38,15 @@ public sealed class AssignmentUseCaseTests
         var ticket = Ticket.Create(Guid.NewGuid(), "Title", "Valid description here", TicketCategories.VPN, _now.UtcDateTime);
         _writer.Setup(w => w.GetForUpdateAsync(ticket.Id, It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
         _writer.Setup(w => w.GetRevision(ticket)).Returns(1);
-        _writer.Setup(w => w.UpdateTicketAsync(ticket, It.IsAny<CancellationToken>()))
+        _writer.Setup(w => w.UpdateTicketWithAuditAsync(
+                ticket,
+                It.Is<TicketComment>(audit => audit.TicketId == ticket.Id &&
+                    audit.AuthorId == _agentId &&
+                    audit.Content == "Yêu cầu đã được phân công cho kỹ thuật viên."),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(new TicketDto(ticket.Id, "IT-2026-0001", ticket.Title, ticket.Description, ticket.CategoryId, (int)TicketStatus.Assigned, ticket.CreatedAt));
 
-        var useCase = new AssignTicketUseCase(_writer.Object, _timeline.Object, _agentDirectory.Object, _user.Object, _clock.Object);
+        var useCase = new AssignTicketUseCase(_writer.Object, _agentDirectory.Object, _user.Object, _clock.Object);
         var result = await useCase.ExecuteAsync(new(ticket.Id, _agentId, 1));
 
         Assert.Equal(TicketStatus.Assigned, ticket.Status);
@@ -62,15 +66,63 @@ public sealed class AssignmentUseCaseTests
 
         _writer.Setup(w => w.GetForUpdateAsync(ticket.Id, It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
         _writer.Setup(w => w.GetRevision(ticket)).Returns(1);
-        _writer.Setup(w => w.UpdateTicketAsync(ticket, It.IsAny<CancellationToken>()))
+        _writer.Setup(w => w.UpdateTicketWithAuditAsync(
+                ticket,
+                It.Is<TicketComment>(audit => audit.TicketId == ticket.Id &&
+                    audit.AuthorId == _agentId &&
+                    audit.Content == "Yêu cầu đã được hủy phân công xử lý."),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(new TicketDto(ticket.Id, "IT-2026-0001", ticket.Title, ticket.Description, ticket.CategoryId, (int)TicketStatus.Submitted, ticket.CreatedAt));
 
-        var useCase = new UnassignTicketUseCase(_writer.Object, _timeline.Object, _user.Object, _clock.Object);
+        var useCase = new UnassignTicketUseCase(_writer.Object, _user.Object, _clock.Object);
         var result = await useCase.ExecuteAsync(new(ticket.Id, 1));
 
         Assert.Equal(TicketStatus.Submitted, ticket.Status);
         Assert.Null(ticket.AssignedToId);
         _writer.VerifyAll();
+    }
+
+    [Fact]
+    public async Task Assign_PersistsTicketAndAuditThroughWriterTogether()
+    {
+        _user.SetupGet(u => u.Roles).Returns([RoleNames.Agent]);
+        _user.Setup(u => u.IsInRole(RoleNames.Agent)).Returns(true);
+        _user.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(false);
+
+        var ticket = Ticket.Create(Guid.NewGuid(), "Title", "Valid description here", TicketCategories.VPN, _now.UtcDateTime);
+        _writer.Setup(w => w.GetForUpdateAsync(ticket.Id, It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
+        _writer.Setup(w => w.UpdateTicketWithAuditAsync(ticket, It.IsAny<TicketComment>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new TicketDto(ticket.Id, "IT-2026-0001", ticket.Title, ticket.Description, ticket.CategoryId, (int)TicketStatus.Assigned, ticket.CreatedAt));
+
+        var useCase = new AssignTicketUseCase(_writer.Object, _agentDirectory.Object, _user.Object, _clock.Object);
+        await useCase.ExecuteAsync(new(ticket.Id, _agentId));
+
+        _writer.Verify(w => w.UpdateTicketWithAuditAsync(
+            ticket,
+            It.Is<TicketComment>(audit => audit.TicketId == ticket.Id && audit.AuthorId == _agentId),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Unassign_PersistsTicketAndAuditThroughWriterTogether()
+    {
+        _user.SetupGet(u => u.Roles).Returns([RoleNames.Agent]);
+        _user.Setup(u => u.IsInRole(RoleNames.Agent)).Returns(true);
+        _user.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(false);
+
+        var ticket = Ticket.Create(Guid.NewGuid(), "Title", "Valid description here", TicketCategories.VPN, _now.UtcDateTime);
+        ticket.Assign(_agentId, _now.UtcDateTime);
+        _writer.Setup(w => w.GetForUpdateAsync(ticket.Id, It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
+        _writer.Setup(w => w.UpdateTicketWithAuditAsync(ticket, It.IsAny<TicketComment>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new TicketDto(ticket.Id, "IT-2026-0001", ticket.Title, ticket.Description, ticket.CategoryId, (int)TicketStatus.Submitted, ticket.CreatedAt));
+
+        var useCase = new UnassignTicketUseCase(_writer.Object, _user.Object, _clock.Object);
+        await useCase.ExecuteAsync(new(ticket.Id));
+
+        _writer.Verify(w => w.UpdateTicketWithAuditAsync(
+            ticket,
+            It.Is<TicketComment>(audit => audit.TicketId == ticket.Id && audit.AuthorId == _agentId),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -80,7 +132,7 @@ public sealed class AssignmentUseCaseTests
         _user.Setup(u => u.IsInRole(RoleNames.Agent)).Returns(false);
         _user.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(false);
 
-        var useCase = new AssignTicketUseCase(_writer.Object, _timeline.Object, _agentDirectory.Object, _user.Object, _clock.Object);
+        var useCase = new AssignTicketUseCase(_writer.Object, _agentDirectory.Object, _user.Object, _clock.Object);
 
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
             useCase.ExecuteAsync(new(Guid.NewGuid(), _agentId)));

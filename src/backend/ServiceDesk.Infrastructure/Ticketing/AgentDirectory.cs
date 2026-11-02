@@ -9,10 +9,14 @@ internal sealed class AgentDirectory(ApplicationDbContext context) : IAgentDirec
 {
     public async Task<bool> IsAgentAsync(Guid agentId, CancellationToken cancellationToken = default)
     {
-        var agentRole = await context.Roles.AsNoTracking().FirstOrDefaultAsync(r => r.Name == RoleNames.Agent, cancellationToken);
-        if (agentRole is null) return false;
+        var staffRoleIds = await context.Roles.AsNoTracking()
+            .Where(r => r.Name == RoleNames.Agent || r.Name == RoleNames.Admin)
+            .Select(r => r.Id)
+            .ToListAsync(cancellationToken);
+        if (staffRoleIds.Count == 0) return false;
         var userIdStr = agentId.ToString();
-        return await context.UserRoles.AsNoTracking().AnyAsync(ur => ur.UserId == userIdStr && ur.RoleId == agentRole.Id, cancellationToken);
+        return await context.UserRoles.AsNoTracking()
+            .AnyAsync(ur => ur.UserId == userIdStr && staffRoleIds.Contains(ur.RoleId), cancellationToken);
     }
 
     public async Task<string> GetDisplayNameAsync(Guid userId, CancellationToken cancellationToken = default)
