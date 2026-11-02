@@ -1,3 +1,4 @@
+using ServiceDesk.Application.Common;
 using ServiceDesk.Application.Common.Interfaces;
 using ServiceDesk.Application.Ticketing.Authorization;
 using ServiceDesk.Application.Ticketing.Contracts;
@@ -17,6 +18,7 @@ public interface IConfirmAttachmentUpload
 internal sealed class ConfirmAttachmentUploadUseCase(
     ITicketQueries ticketQueries,
     ITicketAttachmentStore attachmentStore,
+    IObjectStorageService storageService,
     ICurrentUser currentUser,
     IClock clock) : IConfirmAttachmentUpload
 {
@@ -38,15 +40,20 @@ internal sealed class ConfirmAttachmentUploadUseCase(
         var ticket = await ticketQueries.GetByIdAsync(command.TicketId, scope, cancellationToken);
         if (ticket == null) throw new KeyNotFoundException("Ticket not found.");
 
-        var attachment = TicketAttachment.Create(
-            command.TicketId,
-            req.FileName,
-            req.FileSizeBytes,
-            req.ContentType,
-            req.StorageKey,
-            actorId,
-            clock.UtcNow.UtcDateTime);
+        ObjectStorageObjectInfo objectInfo;
+        try
+        {
+            objectInfo = await storageService.StatObjectAsync("servicedesk", req.StorageKey, cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception)
+        {
+            throw new ServiceUnavailableException("Dịch vụ lưu trữ tệp (MinIO) hiện không khả dụng.");
+        }
 
-        return await attachmentStore.AddAsync(attachment, cancellationToken);
+        return await attachmentStore.ConfirmUploadAsync(command.TicketId, actorId, req, objectInfo, clock.UtcNow.UtcDateTime, cancellationToken);
     }
 }

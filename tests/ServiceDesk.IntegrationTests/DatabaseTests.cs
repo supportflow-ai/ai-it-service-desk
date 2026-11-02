@@ -1,7 +1,11 @@
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using ServiceDesk.Application.Common.Interfaces;
+using ServiceDesk.Application.Ticketing.Contracts;
+using ServiceDesk.Domain.Ticketing;
 using ServiceDesk.Infrastructure.Persistence;
+using ServiceDesk.Infrastructure.Ticketing;
 using Xunit;
 
 namespace ServiceDesk.IntegrationTests;
@@ -21,6 +25,128 @@ public class DatabaseTests : IClassFixture<ServiceDeskWebApplicationFactory>
     }
 
     [Fact]
+    public async Task AttachmentGrant_ReplayIsRejected_AndOnlyOneAttachmentIsStored()
+    {
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var (ticketId, actorId) = await EnsureTicketAsync(context);
+        var key = $"tickets/{ticketId}/{Guid.NewGuid()}_evidence.png";
+        var now = DateTime.UtcNow;
+        context.AttachmentUploadGrants.Add(AttachmentUploadGrant.Create(ticketId, actorId, "evidence.png", 1024,
+            "image/png", key, now.AddMinutes(1)));
+        await context.SaveChangesAsync();
+
+        var store = new PostgresTicketAttachmentStore(context);
+        var request = new ConfirmAttachmentUploadRequest("evidence.png", 1024, "image/png", key);
+        var objectInfo = new ObjectStorageObjectInfo(1024, "image/png");
+        await store.ConfirmUploadAsync(ticketId, actorId, request, objectInfo, now);
+
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            store.ConfirmUploadAsync(ticketId, actorId, request, objectInfo, now));
+        Assert.Equal(1, await context.TicketAttachments.CountAsync(a => a.StorageKey == key));
+    }
+
+    [Theory]
+    [InlineData("unissued")]
+    [InlineData("expired")]
+    [InlineData("consumed")]
+    [InlineData("wrong-actor")]
+    [InlineData("wrong-ticket")]
+    [InlineData("wrong-name")]
+    [InlineData("wrong-size")]
+    [InlineData("wrong-mime")]
+    [InlineData("wrong-object-size")]
+    [InlineData("wrong-object-mime")]
+    public async Task AttachmentGrant_InvalidConfirmation_IsRejectedWithoutConsumingGrant(string scenario)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var (ticketId, actorId) = await EnsureTicketAsync(context);
+        var key = $"tickets/{ticketId}/{Guid.NewGuid()}_evidence.png";
+        var now = DateTime.UtcNow;
+        var grant = AttachmentUploadGrant.Create(ticketId, actorId, "evidence.png", 1024, "image/png", key,
+            scenario == "expired" ? now.AddMinutes(-1) : now.AddMinutes(1));
+        if (scenario == "consumed") grant.Consume(now);
+        if (scenario != "unissued")
+        {
+            context.AttachmentUploadGrants.Add(grant);
+            await context.SaveChangesAsync();
+        }
+
+        var request = new ConfirmAttachmentUploadRequest(
+            scenario == "wrong-name" ? "other.png" : "evidence.png",
+            scenario == "wrong-size" ? 2048 : 1024,
+            scenario == "wrong-mime" ? "image/jpeg" : "image/png",
+            key);
+        var objectInfo = new ObjectStorageObjectInfo(
+            scenario == "wrong-object-size" ? 2048 : 1024,
+            scenario == "wrong-object-mime" ? "image/jpeg" : "image/png");
+        var confirmationActor = scenario == "wrong-actor" ? Guid.NewGuid() : actorId;
+        var confirmationTicket = scenario == "wrong-ticket" ? Guid.NewGuid() : ticketId;
+        var store = new PostgresTicketAttachmentStore(context);
+
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            store.ConfirmUploadAsync(confirmationTicket, confirmationActor, request, objectInfo, now));
+
+        Assert.Equal(0, await context.TicketAttachments.CountAsync(a => a.StorageKey == key));
+        if (scenario != "unissued")
+        {
+            var persistedGrant = await context.AttachmentUploadGrants.AsNoTracking().SingleAsync(g => g.Id == grant.Id);
+            if (scenario == "consumed") Assert.NotNull(persistedGrant.ConsumedAt);
+            else Assert.Null(persistedGrant.ConsumedAt);
+        }
+    }
+
+    [Fact]
+    public async Task AttachmentGrant_ConcurrentConfirmation_StoresOnlyOneAttachment()
+    {
+        Guid ticketId;
+        Guid actorId;
+        string key;
+        var now = DateTime.UtcNow;
+        using (var seedScope = _factory.Services.CreateScope())
+        {
+            var seedContext = seedScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var ticketInfo = await EnsureTicketAsync(seedContext);
+            ticketId = ticketInfo.TicketId;
+            actorId = ticketInfo.RequesterId;
+            key = $"tickets/{ticketId}/{Guid.NewGuid()}_evidence.png";
+            seedContext.AttachmentUploadGrants.Add(AttachmentUploadGrant.Create(ticketId, actorId, "evidence.png", 1024,
+                "image/png", key, now.AddMinutes(1)));
+            await seedContext.SaveChangesAsync();
+        }
+
+        var start = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        async Task<bool> ConfirmAsync()
+        {
+            using var scope = _factory.Services.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            await start.Task;
+            try
+            {
+                await new PostgresTicketAttachmentStore(context).ConfirmUploadAsync(ticketId, actorId,
+                    new ConfirmAttachmentUploadRequest("evidence.png", 1024, "image/png", key),
+                    new ObjectStorageObjectInfo(1024, "image/png"), now);
+                return true;
+            }
+            catch (ArgumentException)
+            {
+                return false;
+            }
+        }
+
+        var first = ConfirmAsync();
+        var second = ConfirmAsync();
+        start.SetResult();
+        var results = await Task.WhenAll(first, second);
+
+        Assert.Equal(1, results.Count(result => result));
+        using var assertScope = _factory.Services.CreateScope();
+        var assertContext = assertScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        Assert.Equal(1, await assertContext.TicketAttachments.CountAsync(a => a.StorageKey == key));
+    }
+
+    [Fact]
     public async Task DbContext_CanConnect_AndMigrateIdentitySchema()
     {
         using var scope = _factory.Services.CreateScope();
@@ -31,5 +157,17 @@ public class DatabaseTests : IClassFixture<ServiceDeskWebApplicationFactory>
         (await dbContext.Database.GetPendingMigrationsAsync()).Should().BeEmpty();
         (await dbContext.Roles.CountAsync()).Should().Be(3);
         (await dbContext.Users.CountAsync()).Should().Be(3);
+    }
+
+    private static async Task<(Guid TicketId, Guid RequesterId)> EnsureTicketAsync(ApplicationDbContext context)
+    {
+        var existing = await context.Tickets.Select(t => new { t.Id, t.RequesterId }).FirstOrDefaultAsync();
+        if (existing != null) return (existing.Id, existing.RequesterId);
+
+        var requesterId = Guid.NewGuid();
+        var ticket = Ticket.Create(requesterId, "Seed Ticket", "Valid ticket description for testing", TicketCategories.VPN, DateTime.UtcNow);
+        context.Tickets.Add(ticket);
+        await context.SaveChangesAsync();
+        return (ticket.Id, ticket.RequesterId);
     }
 }

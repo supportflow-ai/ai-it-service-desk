@@ -4,6 +4,7 @@ using ServiceDesk.Application.Ticketing.Authorization;
 using ServiceDesk.Application.Ticketing.Contracts;
 using ServiceDesk.Application.Ticketing.Ports;
 using ServiceDesk.Domain.Identity;
+using ServiceDesk.Domain.Ticketing;
 
 namespace ServiceDesk.Application.Ticketing.GenerateAttachmentUploadUrl;
 
@@ -16,8 +17,10 @@ public interface IGenerateAttachmentUploadUrl
 
 internal sealed class GenerateAttachmentUploadUrlUseCase(
     ITicketQueries ticketQueries,
+    ITicketAttachmentStore attachmentStore,
     IObjectStorageService storageService,
-    ICurrentUser currentUser) : IGenerateAttachmentUploadUrl
+    ICurrentUser currentUser,
+    IClock clock) : IGenerateAttachmentUploadUrl
 {
     private static readonly HashSet<string> AllowedExtensions = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -50,15 +53,23 @@ internal sealed class GenerateAttachmentUploadUrlUseCase(
 
         var storageKey = $"tickets/{command.TicketId}/{Guid.NewGuid()}_{Path.GetFileName(req.FileName)}";
         const int expirySeconds = 3600;
+        var expiresAt = clock.UtcNow.AddSeconds(expirySeconds).UtcDateTime;
 
         try
         {
             var uploadUrl = await storageService.GetPresignedUploadUrlAsync("servicedesk", storageKey, expirySeconds, cancellationToken);
+            await attachmentStore.CreateUploadGrantAsync(
+                AttachmentUploadGrant.Create(command.TicketId, actorId, req.FileName, req.FileSizeBytes, req.ContentType, storageKey, expiresAt),
+                cancellationToken);
             return new UploadUrlResult(uploadUrl, storageKey, expirySeconds);
         }
-        catch (Exception ex)
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            throw new ServiceUnavailableException($"Dịch vụ lưu trữ tệp (MinIO) hiện không khả dụng: {ex.Message}");
+            throw;
+        }
+        catch (Exception)
+        {
+            throw new ServiceUnavailableException("Dịch vụ lưu trữ tệp (MinIO) hiện không khả dụng.");
         }
     }
 }

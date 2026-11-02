@@ -126,4 +126,18 @@ internal sealed class PostgresTicketWriter(ApplicationDbContext context) : ITick
             throw new Application.Common.ConcurrencyConflictException();
         }
     }
+
+    public async Task<TicketDto> UpdateTicketWithAuditAsync(Ticket ticket, TicketComment audit, CancellationToken cancellationToken)
+    {
+        try
+        {
+            _context.TicketComments.Add(audit);
+            await _context.SaveChangesAsync(cancellationToken);
+            return TicketProjection.ToDto(ticket, GetRevision(ticket));
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw new Application.Common.ConcurrencyConflictException();
+        }
+    }
 }

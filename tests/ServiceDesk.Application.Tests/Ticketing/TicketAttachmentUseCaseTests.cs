@@ -61,15 +61,65 @@ public sealed class TicketAttachmentUseCaseTests
     }
 
     [Fact]
+    public async Task ConfirmUpload_UnissuedStorageKey_Throws()
+    {
+        var storageKey = $"tickets/{_ticketId}/unissued.png";
+        var request = new ConfirmAttachmentUploadRequest("evidence.png", 1024, "image/png", storageKey);
+        _storageService.Setup(s => s.StatObjectAsync("servicedesk", storageKey, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ObjectStorageObjectInfo(1024, "image/png"));
+        _attachmentStore.Setup(s => s.ConfirmUploadAsync(_ticketId, _userId, request,
+                It.IsAny<ObjectStorageObjectInfo>(), _now.UtcDateTime, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new ArgumentException());
+        var useCase = new ConfirmAttachmentUploadUseCase(_ticketQueries.Object, _attachmentStore.Object, _storageService.Object, _user.Object, _clock.Object);
+
+        await Assert.ThrowsAsync<ArgumentException>(() => useCase.ExecuteAsync(new(_ticketId, request)));
+    }
+
+    [Fact]
+    public async Task ConfirmUpload_StorageMetadataMismatch_DoesNotConfirm()
+    {
+        var validKey = $"tickets/{_ticketId}/evidence.png";
+        var request = new ConfirmAttachmentUploadRequest("evidence.png", 1024, "image/png", validKey);
+        _storageService.Setup(s => s.StatObjectAsync("servicedesk", validKey, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ObjectStorageObjectInfo(2048, "image/png"));
+        _attachmentStore.Setup(s => s.ConfirmUploadAsync(_ticketId, _userId, request,
+                It.IsAny<ObjectStorageObjectInfo>(), _now.UtcDateTime, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new ArgumentException());
+
+        var useCase = new ConfirmAttachmentUploadUseCase(_ticketQueries.Object, _attachmentStore.Object, _storageService.Object, _user.Object, _clock.Object);
+
+        await Assert.ThrowsAsync<ArgumentException>(() => useCase.ExecuteAsync(new(_ticketId, request)));
+    }
+
+    [Fact]
+    public async Task ConfirmUpload_MissingObject_DoesNotSaveMetadata()
+    {
+        var key = $"tickets/{_ticketId}/missing.png";
+        _storageService.Setup(storage => storage.StatObjectAsync("servicedesk", key, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("Sensitive storage details"));
+        var useCase = new ConfirmAttachmentUploadUseCase(_ticketQueries.Object, _attachmentStore.Object, _storageService.Object, _user.Object, _clock.Object);
+
+        var error = await Assert.ThrowsAsync<ServiceUnavailableException>(() =>
+            useCase.ExecuteAsync(new(_ticketId, new("missing.png", 1024, "image/png", key))));
+
+        Assert.DoesNotContain("Sensitive storage details", error.Message);
+        _attachmentStore.Verify(store => store.ConfirmUploadAsync(It.IsAny<Guid>(), It.IsAny<Guid>(),
+            It.IsAny<ConfirmAttachmentUploadRequest>(), It.IsAny<ObjectStorageObjectInfo>(), It.IsAny<DateTime>(),
+            It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
     public async Task ConfirmUpload_ValidRequest_SavesMetadata()
     {
         var validKey = $"tickets/{_ticketId}/evidence.png";
         var request = new ConfirmAttachmentUploadRequest("evidence.png", 1024, "image/png", validKey);
-
-        _attachmentStore.Setup(s => s.AddAsync(It.IsAny<TicketAttachment>(), It.IsAny<CancellationToken>()))
+        _storageService.Setup(s => s.StatObjectAsync("servicedesk", validKey, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ObjectStorageObjectInfo(1024, "image/png"));
+        _attachmentStore.Setup(s => s.ConfirmUploadAsync(_ticketId, _userId, request,
+                It.IsAny<ObjectStorageObjectInfo>(), _now.UtcDateTime, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new TicketAttachmentDto(Guid.NewGuid(), _ticketId, "evidence.png", 1024, "image/png", validKey, _userId, _now.UtcDateTime));
 
-        var useCase = new ConfirmAttachmentUploadUseCase(_ticketQueries.Object, _attachmentStore.Object, _user.Object, _clock.Object);
+        var useCase = new ConfirmAttachmentUploadUseCase(_ticketQueries.Object, _attachmentStore.Object, _storageService.Object, _user.Object, _clock.Object);
         var result = await useCase.ExecuteAsync(new(_ticketId, request));
 
         Assert.Equal("evidence.png", result.FileName);

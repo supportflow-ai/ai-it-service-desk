@@ -19,7 +19,6 @@ public interface IAssignTicket
 
 internal sealed class AssignTicketUseCase(
     ITicketWriter writer,
-    ITicketTimelineStore timelineStore,
     IAgentDirectory agentDirectory,
     ICurrentUser currentUser,
     IClock clock) : IAssignTicket
@@ -65,9 +64,7 @@ internal sealed class AssignTicketUseCase(
             throw new ArgumentException(ex.Message);
         }
 
-        var updated = await writer.UpdateTicketAsync(ticket, cancellationToken);
         var audit = TicketComment.CreatePublic(ticket.Id, actorId, "Hệ thống", "System", "Yêu cầu đã được phân công cho kỹ thuật viên.", now);
-        await timelineStore.AddAsync(audit, cancellationToken);
-        return updated;
+        return await writer.UpdateTicketWithAuditAsync(ticket, audit, cancellationToken);
     }
 }

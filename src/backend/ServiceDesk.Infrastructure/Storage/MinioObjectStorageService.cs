@@ -45,6 +45,15 @@ internal sealed class MinioObjectStorageService : IObjectStorageService
         return await _minioClient.PresignedGetObjectAsync(args).ConfigureAwait(false);
     }
 
+    /// <summary>Lấy metadata object từ MinIO để xác thực xác nhận tải lên.</summary>
+    public async Task<ObjectStorageObjectInfo> StatObjectAsync(
+        string bucketName, string objectName, CancellationToken cancellationToken = default)
+    {
+        var args = new StatObjectArgs().WithBucket(bucketName).WithObject(objectName);
+        var stat = await _minioClient.StatObjectAsync(args, cancellationToken).ConfigureAwait(false);
+        return new ObjectStorageObjectInfo(stat.Size, stat.ContentType);
+    }
+
     /// <summary>Kiểm tra bucket có tồn tại hay không.</summary>
     public async Task<bool> BucketExistsAsync(
         string bucketName, CancellationToken cancellationToken = default)

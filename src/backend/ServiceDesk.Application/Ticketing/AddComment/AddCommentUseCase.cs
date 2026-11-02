@@ -2,6 +2,7 @@ using ServiceDesk.Application.Common.Interfaces;
 using ServiceDesk.Application.Ticketing.Authorization;
 using ServiceDesk.Application.Ticketing.Contracts;
 using ServiceDesk.Application.Ticketing.Ports;
+using ServiceDesk.Domain.Identity;
 using ServiceDesk.Domain.Ticketing;
 
 namespace ServiceDesk.Application.Ticketing.AddComment;
@@ -27,6 +28,10 @@ internal sealed class AddCommentUseCase(
 
         var ticket = await writer.GetForUpdateAsync(command.TicketId, cancellationToken);
         if (ticket == null) throw new KeyNotFoundException("Ticket not found.");
+
+        var isStaff = currentUser.IsInRole(RoleNames.Agent) || currentUser.IsInRole(RoleNames.Admin);
+        if (!isStaff && !ticket.IsOwnedBy(actorId))
+            throw new UnauthorizedAccessException("Không có quyền bình luận ticket này.");
 
         var authorName = await agentDirectory.GetDisplayNameAsync(actorId, cancellationToken);
         var authorRole = currentUser.Roles.FirstOrDefault() ?? "Requester";

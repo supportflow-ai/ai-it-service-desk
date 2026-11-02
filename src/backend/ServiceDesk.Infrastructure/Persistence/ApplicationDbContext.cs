@@ -18,6 +18,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<TicketIdempotencyRecord> TicketIdempotencyRecords { get; set; }
     public DbSet<TicketComment> TicketComments { get; set; }
     public DbSet<TicketAttachment> TicketAttachments { get; set; }
+    public DbSet<AttachmentUploadGrant> AttachmentUploadGrants { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

@@ -25,6 +25,14 @@ public interface IObjectStorageService
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Lấy metadata của object đã tải lên mà không tin dữ liệu do client gửi.
+    /// </summary>
+    Task<ObjectStorageObjectInfo> StatObjectAsync(
+        string bucketName,
+        string objectName,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Kiểm tra xem bucket có tồn tại hay không.
     /// </summary>
     Task<bool> BucketExistsAsync(
