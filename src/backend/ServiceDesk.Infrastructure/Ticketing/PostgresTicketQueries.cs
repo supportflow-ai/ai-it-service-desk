@@ -57,6 +57,8 @@ internal sealed class PostgresTicketQueries(ApplicationDbContext context) : ITic
         int? status,
         string? categoryId,
         string? scope,
+        string? priority,
+        bool sortByPriority,
         int page,
         int pageSize,
         CancellationToken cancellationToken = default)
@@ -73,6 +75,13 @@ internal sealed class PostgresTicketQueries(ApplicationDbContext context) : ITic
             query = query.Where(ticket => ticket.CategoryId == categoryId);
         }
 
+        if (!string.IsNullOrWhiteSpace(priority))
+        {
+            if (!Enum.TryParse<Domain.Ticketing.Priority>(priority, true, out var parsedPriority))
+                throw new ArgumentException("priority must be one of P1, P2, P3, P4");
+            query = query.Where(ticket => ticket.Priority == parsedPriority);
+        }
+
         if (string.Equals(scope, "unassigned", StringComparison.OrdinalIgnoreCase))
         {
             query = query.Where(ticket => ticket.AssignedToId == null && ticket.Status != Domain.Ticketing.TicketStatus.Closed && ticket.Status != Domain.Ticketing.TicketStatus.Cancelled);
@@ -83,9 +92,10 @@ internal sealed class PostgresTicketQueries(ApplicationDbContext context) : ITic
         }
 
         var totalCount = await query.CountAsync(cancellationToken);
-        var tickets = await query
-            .OrderByDescending(ticket => ticket.CreatedAt)
-            .ThenByDescending(ticket => ticket.Id)
+        var ordered = sortByPriority
+            ? query.OrderBy(ticket => ticket.Priority).ThenByDescending(ticket => ticket.CreatedAt).ThenByDescending(ticket => ticket.Id)
+            : query.OrderByDescending(ticket => ticket.CreatedAt).ThenByDescending(ticket => ticket.Id);
+        var tickets = await ordered
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .Select(ticket => TicketProjection.ToDto(ticket, EF.Property<uint>(ticket, "xmin")))
