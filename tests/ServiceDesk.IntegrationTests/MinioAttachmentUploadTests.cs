@@ -15,7 +15,7 @@ public sealed class MinioAttachmentUploadTests
     [Fact]
     public async Task SignedPolicyEnforcesSizeAndCopyIsNotWritableByOldUploadForm()
     {
-        await using var container = new ContainerBuilder("minio/minio:RELEASE.2024-10-13T13-34-11Z")
+        await using var container = new ContainerBuilder("bitnamilegacy/minio:2025.7.23-debian-12-r3")
             .WithEnvironment("MINIO_ROOT_USER", "synthetic-user")
             .WithEnvironment("MINIO_ROOT_PASSWORD", "synthetic-only-password")
             .WithPortBinding(9000, true).WithCommand("server", "/data")
