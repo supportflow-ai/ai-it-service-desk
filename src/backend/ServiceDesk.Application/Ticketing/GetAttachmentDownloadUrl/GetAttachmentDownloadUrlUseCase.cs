@@ -17,6 +17,7 @@ public interface IGetAttachmentDownloadUrl
 internal sealed class GetAttachmentDownloadUrlUseCase(
     ITicketQueries ticketQueries,
     IObjectStorageService storageService,
+    ITicketAttachmentStore attachmentStore,
     ICurrentUser currentUser) : IGetAttachmentDownloadUrl
 {
     public async Task<DownloadUrlResult> ExecuteAsync(GetAttachmentDownloadUrlQuery query, CancellationToken cancellationToken = default)
@@ -37,15 +38,18 @@ internal sealed class GetAttachmentDownloadUrlUseCase(
         var ticket = await ticketQueries.GetByIdAsync(query.TicketId, scope, cancellationToken);
         if (ticket == null) throw new KeyNotFoundException("Ticket not found.");
 
+        if (!await attachmentStore.ExistsAsync(query.TicketId, query.StorageKey, cancellationToken))
+            throw new KeyNotFoundException("Attachment not found.");
+
         const int expirySeconds = 3600;
         try
         {
-            var downloadUrl = await storageService.GetPresignedDownloadUrlAsync("servicedesk", query.StorageKey, expirySeconds, cancellationToken);
+            var downloadUrl = await storageService.GetPresignedDownloadUrlAsync(storageService.DefaultBucket, query.StorageKey, expirySeconds, cancellationToken);
             return new DownloadUrlResult(downloadUrl);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            throw new ServiceUnavailableException($"Dịch vụ lưu trữ tệp (MinIO) hiện không khả dụng: {ex.Message}");
+            throw new ServiceUnavailableException("Dịch vụ lưu trữ tệp hiện không khả dụng.");
         }
     }
 }

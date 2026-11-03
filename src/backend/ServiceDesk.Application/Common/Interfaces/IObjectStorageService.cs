@@ -1,11 +1,19 @@
 namespace ServiceDesk.Application.Common.Interfaces;
 
+public sealed record StoredObject(long Size, string ContentType, string ETag);
+public sealed record PresignedUpload(string Url, IReadOnlyDictionary<string, string> FormData);
+
 /// <summary>
 /// Cổng trừu tượng hóa dịch vụ lưu trữ đối tượng/tệp tin (MinIO/S3-compatible) do tầng Application làm chủ.
 /// Tầng Infrastructure cung cấp cài đặt cụ thể.
 /// </summary>
 public interface IObjectStorageService
 {
+    string DefaultBucket { get; }
+    Task<PresignedUpload> CreateUploadAsync(string bucket, string key, string contentType, long size, int expirySeconds, CancellationToken cancellationToken = default);
+    Task<StoredObject?> StatAsync(string bucket, string key, CancellationToken cancellationToken = default);
+    Task CopyAsync(string bucket, string source, string destination, string expectedETag, CancellationToken cancellationToken = default);
+    Task DeleteAsync(string bucket, string key, CancellationToken cancellationToken = default);
     /// <summary>
     /// Tạo URL ký sẵn (Pre-signed URL) để tải tệp tin lên lưu trữ.
     /// </summary>

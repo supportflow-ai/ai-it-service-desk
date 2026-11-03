@@ -64,6 +64,7 @@ internal static class ModuleRules
         "ServiceDesk.Infrastructure.Persistence.Migrations.FixTicketNumberWidth",
         "ServiceDesk.Infrastructure.Persistence.Migrations.AddTicketAssignmentPriorityAndCollaboration",
         "ServiceDesk.Infrastructure.Persistence.Migrations.AddAttachmentUploadGrant",
+        "ServiceDesk.Infrastructure.Persistence.Migrations.LinkAttachmentUploadGrant",
         "ServiceDesk.Infrastructure.Persistence.Migrations.ApplicationDbContextModelSnapshot"
     };
 

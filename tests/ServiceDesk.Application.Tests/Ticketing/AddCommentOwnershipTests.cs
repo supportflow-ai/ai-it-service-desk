@@ -38,7 +38,7 @@ public sealed class AddCommentOwnershipTests
 
         var useCase = CreateUseCase();
 
-        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+        await Assert.ThrowsAsync<KeyNotFoundException>(() =>
             useCase.ExecuteAsync(new(ticket.Id, "Attempt to comment on another ticket.")));
         _timelineStore.Verify(store => store.AddAsync(It.IsAny<TicketComment>(), It.IsAny<CancellationToken>()), Times.Never);
     }

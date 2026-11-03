@@ -1,6 +1,9 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Configuration;
+using ServiceDesk.Application.AIAssistance.Ports;
+using ServiceDesk.Infrastructure.AI;
 using ServiceDesk.Infrastructure;
 using Xunit;
 
@@ -8,6 +11,22 @@ namespace ServiceDesk.IntegrationTests;
 
 public sealed class WorkerRegistrationTests
 {
+    [Fact]
+    public void WorkerResolvesConfiguredHttpAdapterWithoutCallingAiOrImpersonatingUser()
+    {
+        var builder = Host.CreateApplicationBuilder();
+        builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["Ai:Enabled"] = "true", ["Ai:Endpoint"] = "http://ai-service:8000",
+            ["Ai:BearerToken"] = "synthetic-service-token-at-least-32-characters"
+        });
+        ServiceDesk.Worker.WorkerServices.AddWorkerServices(builder.Services, builder.Configuration);
+        using var host = builder.Build();
+        using var scope = host.Services.CreateScope();
+        Assert.IsType<HttpTicketClassificationService>(scope.ServiceProvider.GetRequiredService<ITicketClassificationService>());
+        Assert.False(scope.ServiceProvider.GetRequiredService<ServiceDesk.Application.Common.Interfaces.ICurrentUser>().IsAuthenticated);
+    }
+
     [Fact]
     public async Task ActualWorkerStartsInDevelopmentWithoutDatabaseOrHttpContext()
     {

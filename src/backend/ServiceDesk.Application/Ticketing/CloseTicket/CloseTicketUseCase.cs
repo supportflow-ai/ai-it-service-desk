@@ -25,7 +25,6 @@ public interface ICloseTicket
 /// </summary>
 internal sealed class CloseTicketUseCase(
     ITicketWriter writer,
-    ITicketTimelineStore timelineStore,
     ICurrentUser currentUser,
     IClock clock) : ICloseTicket
 {
@@ -59,9 +58,7 @@ internal sealed class CloseTicketUseCase(
             throw new ArgumentException(ex.Message);
         }
 
-        var updated = await writer.UpdateTicketAsync(ticket, cancellationToken);
         var audit = TicketComment.CreatePublic(ticket.Id, actorId, "Hệ thống", "System", "Yêu cầu đã được đóng hoàn tất sau nghiệm thu.", now);
-        await timelineStore.AddAsync(audit, cancellationToken);
-        return updated;
+        return await writer.UpdateTicketWithAuditAsync(ticket, audit, cancellationToken);
     }
 }

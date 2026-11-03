@@ -25,7 +25,6 @@ public interface IReopenTicket
 /// </summary>
 internal sealed class ReopenTicketUseCase(
     ITicketWriter writer,
-    ITicketTimelineStore timelineStore,
     ICurrentUser currentUser,
     IClock clock) : IReopenTicket
 {
@@ -59,9 +58,7 @@ internal sealed class ReopenTicketUseCase(
             throw new ArgumentException(ex.Message);
         }
 
-        var updated = await writer.UpdateTicketAsync(ticket, cancellationToken);
         var audit = TicketComment.CreatePublic(ticket.Id, actorId, "Hệ thống", "System", "Người dùng đã mở lại yêu cầu.", now);
-        await timelineStore.AddAsync(audit, cancellationToken);
-        return updated;
+        return await writer.UpdateTicketWithAuditAsync(ticket, audit, cancellationToken);
     }
 }

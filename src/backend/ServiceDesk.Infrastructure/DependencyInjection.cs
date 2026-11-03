@@ -25,7 +25,7 @@ public static class DependencyInjection
 {
     /// <summary>Đăng ký toàn bộ hạ tầng: Persistence, Identity, Storage, Clock, AI Adapters.</summary>
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration) =>
-        services.AddPersistence(configuration).AddIdentityInfrastructure(configuration).AddStorage(configuration).AddClock().AddAiAdapters();
+        services.AddPersistence(configuration).AddIdentityInfrastructure(configuration).AddStorage(configuration).AddClock().AddAiAdapters(configuration);
 
     /// <summary>Cấu hình cơ sở dữ liệu PostgreSQL (EF Core) và các cổng truy vấn/ghi dữ liệu ticket.</summary>
     public static IServiceCollection AddPersistence(this IServiceCollection services, IConfiguration configuration)
@@ -86,10 +86,19 @@ public static class DependencyInjection
         return services;
     }
 
-    /// <summary>Đăng ký các bộ chuyển đổi AI tạm thời (NoOp) khi chưa tích hợp AI Service thật.</summary>
-    public static IServiceCollection AddAiAdapters(this IServiceCollection services)
+    /// <summary>Chỉ bật HTTP khi được cấu hình; giữ NoOp cho môi trường chưa nối AI.</summary>
+    public static IServiceCollection AddAiAdapters(this IServiceCollection services, IConfiguration? configuration = null)
     {
-        services.AddSingleton<ITicketClassificationService, NoOpTicketClassificationService>();
+        var section = configuration?.GetSection(AiOptions.SectionName);
+        var options = services.AddOptions<AiOptions>();
+        if (section is not null) options.Bind(section);
+        options.Validate(value => value.IsValid(), "Cấu hình Ai không hợp lệ: cần origin HTTP(S), token S2S và timeout 1–30 giây.").ValidateOnStart();
+        services.AddSingleton<ClassificationCircuit>();
+        services.AddHttpClient<HttpTicketClassificationService>(client => client.Timeout = Timeout.InfiniteTimeSpan)
+            .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
+        services.AddSingleton<NoOpTicketClassificationService>();
+        services.AddScoped<ITicketClassificationService>(sp => sp.GetRequiredService<IOptions<AiOptions>>().Value.Enabled
+            ? sp.GetRequiredService<HttpTicketClassificationService>() : sp.GetRequiredService<NoOpTicketClassificationService>());
         services.AddSingleton<IEmbeddingService, NoOpEmbeddingService>();
         return services;
     }

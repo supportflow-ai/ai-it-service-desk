@@ -25,7 +25,6 @@ public interface IResolveTicket
 /// </summary>
 internal sealed class ResolveTicketUseCase(
     ITicketWriter writer,
-    ITicketTimelineStore timelineStore,
     ICurrentUser currentUser,
     IClock clock) : IResolveTicket
 {
@@ -65,9 +64,7 @@ internal sealed class ResolveTicketUseCase(
             throw new ArgumentException(ex.Message);
         }
 
-        var updated = await writer.UpdateTicketAsync(ticket, cancellationToken);
         var audit = TicketComment.CreatePublic(ticket.Id, actorId, "Hệ thống", "System", "Yêu cầu đã được đánh dấu giải quyết xong.", now);
-        await timelineStore.AddAsync(audit, cancellationToken);
-        return updated;
+        return await writer.UpdateTicketWithAuditAsync(ticket, audit, cancellationToken);
     }
 }

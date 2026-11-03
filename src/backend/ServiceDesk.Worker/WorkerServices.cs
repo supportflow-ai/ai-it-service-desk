@@ -20,7 +20,7 @@ public static class WorkerServices
         services.AddPersistence(configuration);
         services.AddStorage(configuration);
         services.AddClock();
-        services.AddAiAdapters();
+        services.AddAiAdapters(configuration);
         services.AddScoped<ICurrentUser, AnonymousCurrentUser>();
         return services;
     }

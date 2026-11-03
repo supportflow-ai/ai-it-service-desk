@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using ServiceDesk.Application.Common.Interfaces;
 using ServiceDesk.Application.Ticketing.Contracts;
 using ServiceDesk.Application.Ticketing.Ports;
 using ServiceDesk.Domain.Ticketing;
@@ -9,50 +8,55 @@ namespace ServiceDesk.Infrastructure.Ticketing;
 
 internal sealed class PostgresTicketAttachmentStore(ApplicationDbContext context) : ITicketAttachmentStore
 {
-    public async Task CreateUploadGrantAsync(AttachmentUploadGrant grant, CancellationToken cancellationToken = default)
+    public async Task CreateUploadGrantAsync(AttachmentUploadGrant upload, CancellationToken cancellationToken = default)
     {
-        context.AttachmentUploadGrants.Add(grant);
+        await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+        await context.Database.ExecuteSqlRawAsync("SET LOCAL lock_timeout = '5s'", cancellationToken);
+        var scope = "attachment-upload:" + upload.ActorId;
+        await context.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock(hashtextextended({scope}, 0))", cancellationToken);
+        var now = await context.Database.SqlQuery<DateTime>($"SELECT clock_timestamp() AS \"Value\"").SingleAsync(cancellationToken);
+        if (await context.AttachmentUploadGrants.CountAsync(value => value.ActorId == upload.ActorId && value.ConsumedAt == null && value.ExpiresAt > now, cancellationToken) >= 20)
+            throw new ArgumentException("Đang có quá nhiều tệp chờ xác nhận. Vui lòng xác nhận hoặc chờ yêu cầu cũ hết hạn.");
+        context.AttachmentUploadGrants.Add(upload);
         await context.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
     }
 
-    public async Task<TicketAttachmentDto> ConfirmUploadAsync(
-        Guid ticketId,
-        Guid actorId,
-        ConfirmAttachmentUploadRequest request,
-        ObjectStorageObjectInfo objectInfo,
-        DateTime now,
-        CancellationToken cancellationToken = default)
+    public Task<AttachmentUploadGrant?> GetUploadGrantAsync(Guid ticketId, string storageKey, Guid actor, CancellationToken cancellationToken = default) =>
+        context.AttachmentUploadGrants.AsNoTracking().SingleOrDefaultAsync(value =>
+            value.TicketId == ticketId && value.StorageKey == storageKey && value.ActorId == actor, cancellationToken);
+
+    public async Task<TicketAttachmentDto?> GetByIdAsync(Guid attachmentId, CancellationToken cancellationToken = default)
     {
-        var grant = await context.AttachmentUploadGrants.AsNoTracking().SingleOrDefaultAsync(g =>
-            g.TicketId == ticketId && g.ActorId == actorId && g.StorageKey == request.StorageKey,
-            cancellationToken);
+        var attachment = await context.TicketAttachments.AsNoTracking().SingleOrDefaultAsync(value => value.Id == attachmentId, cancellationToken);
+        return attachment is null ? null : ToDto(attachment);
+    }
 
-        if (grant is null || grant.ConsumedAt != null || grant.ExpiresAt < now ||
-            grant.FileName != request.FileName || grant.FileSizeBytes != request.FileSizeBytes ||
-            !string.Equals(grant.ContentType, request.ContentType, StringComparison.OrdinalIgnoreCase) ||
-            objectInfo.Size != grant.FileSizeBytes ||
-            !string.Equals(objectInfo.ContentType, grant.ContentType, StringComparison.OrdinalIgnoreCase))
-        {
-            throw new ArgumentException("Xác nhận tải tệp không hợp lệ, đã hết hạn hoặc tệp không khớp quyền đã cấp.");
-        }
-
+    public async Task<TicketAttachmentDto> ConfirmAsync(Guid uploadId, TicketAttachment attachment, DateTime now, CancellationToken cancellationToken = default)
+    {
         await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
-        var consumed = await context.AttachmentUploadGrants
-            .Where(g => g.Id == grant.Id && g.ConsumedAt == null && g.ExpiresAt >= now)
-            .ExecuteUpdateAsync(s => s.SetProperty(g => g.ConsumedAt, now), cancellationToken);
-        if (consumed != 1)
+        await context.Database.ExecuteSqlRawAsync("SET LOCAL lock_timeout = '5s'", cancellationToken);
+        await context.Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT pg_advisory_xact_lock(hashtextextended({uploadId.ToString()}, 0))", cancellationToken);
+        var upload = await context.AttachmentUploadGrants.SingleOrDefaultAsync(value => value.Id == uploadId, cancellationToken)
+            ?? throw new KeyNotFoundException("Upload grant not found.");
+        if (upload.AttachmentId is { } existingId)
         {
-            throw new ArgumentException("Quyền tải tệp đã được sử dụng hoặc hết hạn.");
+            var existing = await GetByIdAsync(existingId, cancellationToken)
+                ?? throw new InvalidOperationException("Metadata xác nhận không còn tồn tại.");
+            await transaction.CommitAsync(cancellationToken);
+            return existing;
         }
-
-        var attachment = TicketAttachment.Create(ticketId, grant.FileName, objectInfo.Size, objectInfo.ContentType, grant.StorageKey, actorId, now);
+        var databaseNow = await context.Database.SqlQuery<DateTime>($"SELECT clock_timestamp() AS \"Value\"").SingleAsync(cancellationToken);
+        upload.Confirm(attachment, now > databaseNow ? now : databaseNow);
         context.TicketAttachments.Add(attachment);
         await context.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
-
-        return new TicketAttachmentDto(attachment.Id, attachment.TicketId, attachment.FileName, attachment.FileSizeBytes,
-            attachment.ContentType, attachment.StorageKey, attachment.UploadedBy, attachment.CreatedAt);
+        return ToDto(attachment);
     }
+
+    private static TicketAttachmentDto ToDto(TicketAttachment value) => new(value.Id, value.TicketId,
+        value.FileName, value.FileSizeBytes, value.ContentType, value.StorageKey, value.UploadedBy, value.CreatedAt);
 
     public async Task<TicketAttachmentDto> AddAsync(TicketAttachment attachment, CancellationToken cancellationToken = default)
     {

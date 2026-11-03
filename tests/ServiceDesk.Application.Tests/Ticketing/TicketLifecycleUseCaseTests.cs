@@ -17,7 +17,6 @@ namespace ServiceDesk.Application.Tests.Ticketing;
 public sealed class TicketLifecycleUseCaseTests
 {
     private readonly Mock<ITicketWriter> _writer = new(MockBehavior.Strict);
-    private readonly Mock<ITicketTimelineStore> _timeline = new();
     private readonly Mock<ICurrentUser> _user = new();
     private readonly Mock<IClock> _clock = new();
     private readonly Guid _actor = Guid.NewGuid();
@@ -39,10 +38,10 @@ public sealed class TicketLifecycleUseCaseTests
         var ticket = Ticket.Create(_actor, "Issue", "Problem description long enough", TicketCategories.VPN, _now.UtcDateTime);
         _writer.Setup(w => w.GetForUpdateAsync(ticket.Id, It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
         _writer.Setup(w => w.GetRevision(ticket)).Returns(1);
-        _writer.Setup(w => w.UpdateTicketAsync(ticket, It.IsAny<CancellationToken>()))
+        _writer.Setup(w => w.UpdateTicketWithAuditAsync(ticket, It.Is<TicketComment>(entry => entry.TicketId == ticket.Id && entry.AuthorId == _actor), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new TicketDto(ticket.Id, "IT-2026-0001", ticket.Title, ticket.Description, ticket.CategoryId, (int)TicketStatus.InProgress, ticket.CreatedAt));
 
-        var useCase = new ClaimTicketUseCase(_writer.Object, _timeline.Object, _user.Object, _clock.Object);
+        var useCase = new ClaimTicketUseCase(_writer.Object, _user.Object, _clock.Object);
         var result = await useCase.ExecuteAsync(new(ticket.Id, 1));
 
         Assert.Equal(TicketStatus.InProgress, ticket.Status);
@@ -55,7 +54,7 @@ public sealed class TicketLifecycleUseCaseTests
         _user.SetupGet(u => u.Roles).Returns([RoleNames.Requester]);
         _user.Setup(u => u.IsInRole(RoleNames.Agent)).Returns(false);
         _user.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(false);
-        var useCase = new ClaimTicketUseCase(_writer.Object, _timeline.Object, _user.Object, _clock.Object);
+        var useCase = new ClaimTicketUseCase(_writer.Object, _user.Object, _clock.Object);
 
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() => useCase.ExecuteAsync(new(Guid.NewGuid())));
     }
@@ -71,10 +70,10 @@ public sealed class TicketLifecycleUseCaseTests
 
         _writer.Setup(w => w.GetForUpdateAsync(ticket.Id, It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
         _writer.Setup(w => w.GetRevision(ticket)).Returns(1);
-        _writer.Setup(w => w.UpdateTicketAsync(ticket, It.IsAny<CancellationToken>()))
+        _writer.Setup(w => w.UpdateTicketWithAuditAsync(ticket, It.Is<TicketComment>(entry => entry.TicketId == ticket.Id && entry.AuthorId == _actor), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new TicketDto(ticket.Id, "IT-2026-0001", ticket.Title, ticket.Description, ticket.CategoryId, (int)TicketStatus.Resolved, ticket.CreatedAt));
 
-        var useCase = new ResolveTicketUseCase(_writer.Object, _timeline.Object, _user.Object, _clock.Object);
+        var useCase = new ResolveTicketUseCase(_writer.Object, _user.Object, _clock.Object);
         await useCase.ExecuteAsync(new(ticket.Id, 1));
 
         Assert.Equal(TicketStatus.Resolved, ticket.Status);
@@ -92,10 +91,10 @@ public sealed class TicketLifecycleUseCaseTests
 
         _writer.Setup(w => w.GetForUpdateAsync(ticket.Id, It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
         _writer.Setup(w => w.GetRevision(ticket)).Returns(1);
-        _writer.Setup(w => w.UpdateTicketAsync(ticket, It.IsAny<CancellationToken>()))
+        _writer.Setup(w => w.UpdateTicketWithAuditAsync(ticket, It.Is<TicketComment>(entry => entry.TicketId == ticket.Id && entry.AuthorId == _actor), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new TicketDto(ticket.Id, "IT-2026-0001", ticket.Title, ticket.Description, ticket.CategoryId, (int)TicketStatus.InProgress, ticket.CreatedAt));
 
-        var useCase = new ReopenTicketUseCase(_writer.Object, _timeline.Object, _user.Object, _clock.Object);
+        var useCase = new ReopenTicketUseCase(_writer.Object, _user.Object, _clock.Object);
         await useCase.ExecuteAsync(new(ticket.Id, 1));
 
         Assert.Equal(TicketStatus.InProgress, ticket.Status);
@@ -113,10 +112,10 @@ public sealed class TicketLifecycleUseCaseTests
 
         _writer.Setup(w => w.GetForUpdateAsync(ticket.Id, It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
         _writer.Setup(w => w.GetRevision(ticket)).Returns(1);
-        _writer.Setup(w => w.UpdateTicketAsync(ticket, It.IsAny<CancellationToken>()))
+        _writer.Setup(w => w.UpdateTicketWithAuditAsync(ticket, It.Is<TicketComment>(entry => entry.TicketId == ticket.Id && entry.AuthorId == _actor), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new TicketDto(ticket.Id, "IT-2026-0001", ticket.Title, ticket.Description, ticket.CategoryId, (int)TicketStatus.Closed, ticket.CreatedAt));
 
-        var useCase = new CloseTicketUseCase(_writer.Object, _timeline.Object, _user.Object, _clock.Object);
+        var useCase = new CloseTicketUseCase(_writer.Object, _user.Object, _clock.Object);
         await useCase.ExecuteAsync(new(ticket.Id, 1));
 
         Assert.Equal(TicketStatus.Closed, ticket.Status);
@@ -132,10 +131,10 @@ public sealed class TicketLifecycleUseCaseTests
 
         _writer.Setup(w => w.GetForUpdateAsync(ticket.Id, It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
         _writer.Setup(w => w.GetRevision(ticket)).Returns(1);
-        _writer.Setup(w => w.UpdateTicketAsync(ticket, It.IsAny<CancellationToken>()))
+        _writer.Setup(w => w.UpdateTicketWithAuditAsync(ticket, It.Is<TicketComment>(entry => entry.TicketId == ticket.Id && entry.AuthorId == _actor), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new TicketDto(ticket.Id, "IT-2026-0001", ticket.Title, ticket.Description, ticket.CategoryId, (int)TicketStatus.Cancelled, ticket.CreatedAt));
 
-        var useCase = new CancelTicketUseCase(_writer.Object, _timeline.Object, _user.Object, _clock.Object);
+        var useCase = new CancelTicketUseCase(_writer.Object, _user.Object, _clock.Object);
         await useCase.ExecuteAsync(new(ticket.Id, 1));
 
         Assert.Equal(TicketStatus.Cancelled, ticket.Status);

@@ -25,7 +25,6 @@ public interface IClaimTicket
 /// </summary>
 internal sealed class ClaimTicketUseCase(
     ITicketWriter writer,
-    ITicketTimelineStore timelineStore,
     ICurrentUser currentUser,
     IClock clock) : IClaimTicket
 {
@@ -65,9 +64,7 @@ internal sealed class ClaimTicketUseCase(
             throw new ArgumentException(ex.Message);
         }
 
-        var updated = await writer.UpdateTicketAsync(ticket, cancellationToken);
         var audit = TicketComment.CreatePublic(ticket.Id, actorId, "Hệ thống", "System", "Kỹ thuật viên đã tiếp nhận xử lý yêu cầu.", now);
-        await timelineStore.AddAsync(audit, cancellationToken);
-        return updated;
+        return await writer.UpdateTicketWithAuditAsync(ticket, audit, cancellationToken);
     }
 }

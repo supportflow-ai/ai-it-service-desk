@@ -31,7 +31,7 @@ internal sealed class AddCommentUseCase(
 
         var isStaff = currentUser.IsInRole(RoleNames.Agent) || currentUser.IsInRole(RoleNames.Admin);
         if (!isStaff && !ticket.IsOwnedBy(actorId))
-            throw new UnauthorizedAccessException("Không có quyền bình luận ticket này.");
+            throw new KeyNotFoundException("Ticket not found.");
 
         var authorName = await agentDirectory.GetDisplayNameAsync(actorId, cancellationToken);
         var authorRole = currentUser.Roles.FirstOrDefault() ?? "Requester";

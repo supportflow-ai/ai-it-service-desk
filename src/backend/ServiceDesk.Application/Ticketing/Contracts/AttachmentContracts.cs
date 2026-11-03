@@ -2,7 +2,7 @@ namespace ServiceDesk.Application.Ticketing.Contracts;
 
 public record GenerateUploadUrlRequest(string FileName, long FileSizeBytes, string ContentType);
 
-public record UploadUrlResult(string UploadUrl, string StorageKey, int ExpirySeconds);
+public record UploadUrlResult(string UploadUrl, string StorageKey, int ExpirySeconds, IReadOnlyDictionary<string, string>? FormData = null);
 
 public record DownloadUrlResult(string DownloadUrl);
 

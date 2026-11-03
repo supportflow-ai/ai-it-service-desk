@@ -1455,6 +1455,13 @@
           "expirySeconds": {
             "type": "integer",
             "format": "int32"
+          },
+          "formData": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "nullable": true
           }
         },
         "additionalProperties": false

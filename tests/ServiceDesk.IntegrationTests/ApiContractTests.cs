@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,7 +18,8 @@ public sealed class ApiContractTests
         await using var factory = new ContractFactory();
         using var client = factory.CreateClient();
         var actual = JsonNode.Parse(await client.GetStringAsync("/swagger/v1/swagger.json"))!;
-        var path = Path.Combine(AppContext.BaseDirectory, "../../../../../contracts/backend/openapi-baseline.json");
+        var assemblyDirectory = Path.GetDirectoryName(typeof(ApiContractTests).Assembly.Location)!;
+        var path = Path.Combine(assemblyDirectory, "../../../../../contracts/backend/openapi-baseline.json");
         if (Environment.GetEnvironmentVariable("EXPORT_API_BASELINE") == "1")
         {
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
@@ -42,6 +44,7 @@ public sealed class ApiContractTests
             builder.UseEnvironment("Development");
             builder.ConfigureTestServices(services =>
             {
+                services.AddDataProtection().UseEphemeralDataProtectionProvider();
                 foreach (var service in services.Where(d => d.ServiceType == typeof(IHostedService) &&
                              d.ImplementationType?.Name == "IdentityDataSeeder").ToArray())
                     services.Remove(service);

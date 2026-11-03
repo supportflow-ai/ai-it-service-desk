@@ -27,7 +27,7 @@ public sealed class TicketCommentAccessTests(TicketIdempotencyPostgresFixture fi
 
         using var response = await requester.PostAsJsonAsync($"/api/tickets/{ticket.Id}/comments", new { content = "Unauthorized requester comment" });
 
-        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
     [Theory]

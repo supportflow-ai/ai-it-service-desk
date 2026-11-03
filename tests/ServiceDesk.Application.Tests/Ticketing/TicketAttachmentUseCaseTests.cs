@@ -31,6 +31,7 @@ public sealed class TicketAttachmentUseCaseTests
         _user.SetupGet(u => u.UserId).Returns(_userId.ToString());
         _user.SetupGet(u => u.Roles).Returns([RoleNames.Requester]);
         _clock.SetupGet(c => c.UtcNow).Returns(_now);
+        _storageService.SetupGet(s => s.DefaultBucket).Returns("servicedesk-test");
 
         var ticketDto = new TicketDto(_ticketId, "IT-2026-0001", "Title", "Description", "VPN", 1, _now.UtcDateTime, RequesterId: _userId);
         _ticketQueries.Setup(q => q.GetByIdAsync(_ticketId, It.IsAny<TicketReadScope>(), It.IsAny<CancellationToken>()))
@@ -41,7 +42,7 @@ public sealed class TicketAttachmentUseCaseTests
     public async Task DownloadUrl_WrongTicketPrefix_ThrowsForbidden()
     {
         var otherTicketId = Guid.NewGuid();
-        var useCase = new GetAttachmentDownloadUrlUseCase(_ticketQueries.Object, _storageService.Object, _user.Object);
+        var useCase = new GetAttachmentDownloadUrlUseCase(_ticketQueries.Object, _storageService.Object, _attachmentStore.Object, _user.Object);
 
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
             useCase.ExecuteAsync(new(_ticketId, $"tickets/{otherTicketId}/malicious.pdf")));
@@ -51,78 +52,90 @@ public sealed class TicketAttachmentUseCaseTests
     public async Task DownloadUrl_MinIOThrows_ThrowsServiceUnavailable()
     {
         var validKey = $"tickets/{_ticketId}/document.pdf";
-        _storageService.Setup(s => s.GetPresignedDownloadUrlAsync("servicedesk", validKey, 3600, It.IsAny<CancellationToken>()))
+        _attachmentStore.Setup(s => s.ExistsAsync(_ticketId, validKey, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        _storageService.Setup(s => s.GetPresignedDownloadUrlAsync("servicedesk-test", validKey, 3600, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("MinIO offline"));
 
-        var useCase = new GetAttachmentDownloadUrlUseCase(_ticketQueries.Object, _storageService.Object, _user.Object);
+        var useCase = new GetAttachmentDownloadUrlUseCase(_ticketQueries.Object, _storageService.Object, _attachmentStore.Object, _user.Object);
 
         await Assert.ThrowsAsync<ServiceUnavailableException>(() =>
             useCase.ExecuteAsync(new(_ticketId, validKey)));
     }
 
     [Fact]
-    public async Task ConfirmUpload_UnissuedStorageKey_Throws()
-    {
-        var storageKey = $"tickets/{_ticketId}/unissued.png";
-        var request = new ConfirmAttachmentUploadRequest("evidence.png", 1024, "image/png", storageKey);
-        _storageService.Setup(s => s.StatObjectAsync("servicedesk", storageKey, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ObjectStorageObjectInfo(1024, "image/png"));
-        _attachmentStore.Setup(s => s.ConfirmUploadAsync(_ticketId, _userId, request,
-                It.IsAny<ObjectStorageObjectInfo>(), _now.UtcDateTime, It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new ArgumentException());
-        var useCase = new ConfirmAttachmentUploadUseCase(_ticketQueries.Object, _attachmentStore.Object, _storageService.Object, _user.Object, _clock.Object);
-
-        await Assert.ThrowsAsync<ArgumentException>(() => useCase.ExecuteAsync(new(_ticketId, request)));
-    }
-
-    [Fact]
-    public async Task ConfirmUpload_StorageMetadataMismatch_DoesNotConfirm()
-    {
-        var validKey = $"tickets/{_ticketId}/evidence.png";
-        var request = new ConfirmAttachmentUploadRequest("evidence.png", 1024, "image/png", validKey);
-        _storageService.Setup(s => s.StatObjectAsync("servicedesk", validKey, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ObjectStorageObjectInfo(2048, "image/png"));
-        _attachmentStore.Setup(s => s.ConfirmUploadAsync(_ticketId, _userId, request,
-                It.IsAny<ObjectStorageObjectInfo>(), _now.UtcDateTime, It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new ArgumentException());
-
-        var useCase = new ConfirmAttachmentUploadUseCase(_ticketQueries.Object, _attachmentStore.Object, _storageService.Object, _user.Object, _clock.Object);
-
-        await Assert.ThrowsAsync<ArgumentException>(() => useCase.ExecuteAsync(new(_ticketId, request)));
-    }
-
-    [Fact]
-    public async Task ConfirmUpload_MissingObject_DoesNotSaveMetadata()
-    {
-        var key = $"tickets/{_ticketId}/missing.png";
-        _storageService.Setup(storage => storage.StatObjectAsync("servicedesk", key, It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new InvalidOperationException("Sensitive storage details"));
-        var useCase = new ConfirmAttachmentUploadUseCase(_ticketQueries.Object, _attachmentStore.Object, _storageService.Object, _user.Object, _clock.Object);
-
-        var error = await Assert.ThrowsAsync<ServiceUnavailableException>(() =>
-            useCase.ExecuteAsync(new(_ticketId, new("missing.png", 1024, "image/png", key))));
-
-        Assert.DoesNotContain("Sensitive storage details", error.Message);
-        _attachmentStore.Verify(store => store.ConfirmUploadAsync(It.IsAny<Guid>(), It.IsAny<Guid>(),
-            It.IsAny<ConfirmAttachmentUploadRequest>(), It.IsAny<ObjectStorageObjectInfo>(), It.IsAny<DateTime>(),
-            It.IsAny<CancellationToken>()), Times.Never);
-    }
-
-    [Fact]
     public async Task ConfirmUpload_ValidRequest_SavesMetadata()
     {
-        var validKey = $"tickets/{_ticketId}/evidence.png";
+        var upload = AttachmentUploadGrant.CreatePending(_ticketId, _userId, "evidence.png", 1024, "image/png", _now.UtcDateTime.AddHours(1));
+        var validKey = upload.StorageKey;
+        _attachmentStore.Setup(s => s.GetUploadGrantAsync(_ticketId, validKey, _userId, It.IsAny<CancellationToken>())).ReturnsAsync(upload);
+        _storageService.Setup(s => s.StatAsync("servicedesk-test", It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(new StoredObject(1024, "image/png", "etag"));
         var request = new ConfirmAttachmentUploadRequest("evidence.png", 1024, "image/png", validKey);
-        _storageService.Setup(s => s.StatObjectAsync("servicedesk", validKey, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ObjectStorageObjectInfo(1024, "image/png"));
-        _attachmentStore.Setup(s => s.ConfirmUploadAsync(_ticketId, _userId, request,
-                It.IsAny<ObjectStorageObjectInfo>(), _now.UtcDateTime, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new TicketAttachmentDto(Guid.NewGuid(), _ticketId, "evidence.png", 1024, "image/png", validKey, _userId, _now.UtcDateTime));
+
+        _attachmentStore.Setup(s => s.ConfirmAsync(upload.Id, It.IsAny<TicketAttachment>(), _now.UtcDateTime, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Guid _, TicketAttachment attachment, DateTime _, CancellationToken _) =>
+                new TicketAttachmentDto(attachment.Id, _ticketId, "evidence.png", 1024, "image/png", attachment.StorageKey, _userId, _now.UtcDateTime));
 
         var useCase = new ConfirmAttachmentUploadUseCase(_ticketQueries.Object, _attachmentStore.Object, _storageService.Object, _user.Object, _clock.Object);
         var result = await useCase.ExecuteAsync(new(_ticketId, request));
 
         Assert.Equal("evidence.png", result.FileName);
+        Assert.StartsWith($"tickets/{_ticketId}/attachments/", result.StorageKey);
         _attachmentStore.VerifyAll();
+    }
+
+    [Fact]
+    public async Task ConfirmUpload_UnissuedStorageKey_Throws()
+    {
+        var key = $"tickets/{_ticketId}/unissued.png";
+        var useCase = new ConfirmAttachmentUploadUseCase(_ticketQueries.Object, _attachmentStore.Object, _storageService.Object, _user.Object, _clock.Object);
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => useCase.ExecuteAsync(new(_ticketId, new("evidence.png", 1024, "image/png", key))));
+        _storageService.Verify(s => s.StatAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ConfirmUpload_StorageMetadataMismatch_DoesNotConfirm()
+    {
+        var grant = AttachmentUploadGrant.CreatePending(_ticketId, _userId, "evidence.png", 1024, "image/png", _now.UtcDateTime.AddHours(1));
+        _attachmentStore.Setup(s => s.GetUploadGrantAsync(_ticketId, grant.StorageKey, _userId, It.IsAny<CancellationToken>())).ReturnsAsync(grant);
+        _storageService.Setup(s => s.StatAsync("servicedesk-test", grant.StorageKey, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new StoredObject(2048, "image/png", "etag"));
+        var useCase = new ConfirmAttachmentUploadUseCase(_ticketQueries.Object, _attachmentStore.Object, _storageService.Object, _user.Object, _clock.Object);
+        await Assert.ThrowsAsync<ArgumentException>(() => useCase.ExecuteAsync(new(_ticketId, new("evidence.png", 1024, "image/png", grant.StorageKey))));
+        _attachmentStore.Verify(s => s.ConfirmAsync(It.IsAny<Guid>(), It.IsAny<TicketAttachment>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ConfirmUpload_MissingObject_DoesNotSaveMetadata()
+    {
+        var grant = AttachmentUploadGrant.CreatePending(_ticketId, _userId, "evidence.png", 1024, "image/png", _now.UtcDateTime.AddHours(1));
+        _attachmentStore.Setup(s => s.GetUploadGrantAsync(_ticketId, grant.StorageKey, _userId, It.IsAny<CancellationToken>())).ReturnsAsync(grant);
+        _storageService.Setup(s => s.StatAsync("servicedesk-test", grant.StorageKey, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new IOException("Sensitive storage details"));
+        var useCase = new ConfirmAttachmentUploadUseCase(_ticketQueries.Object, _attachmentStore.Object, _storageService.Object, _user.Object, _clock.Object);
+        var error = await Assert.ThrowsAsync<ServiceUnavailableException>(() => useCase.ExecuteAsync(new(_ticketId, new("evidence.png", 1024, "image/png", grant.StorageKey))));
+        Assert.DoesNotContain("Sensitive storage details", error.Message);
+        _attachmentStore.Verify(s => s.ConfirmAsync(It.IsAny<Guid>(), It.IsAny<TicketAttachment>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GenerateUpload_IssuesCanonicalGrantAndBoundedPostPolicy()
+    {
+        AttachmentUploadGrant? issued = null;
+        var fields = new Dictionary<string, string> { ["policy"] = "synthetic-policy" };
+        _storageService.Setup(s => s.CreateUploadAsync("servicedesk-test", It.IsAny<string>(), "text/plain", 5, 3600, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new PresignedUpload("https://storage.example.invalid/bucket", fields));
+        _attachmentStore.Setup(s => s.CreateUploadGrantAsync(It.IsAny<AttachmentUploadGrant>(), It.IsAny<CancellationToken>()))
+            .Callback<AttachmentUploadGrant, CancellationToken>((grant, _) => issued = grant)
+            .Returns(Task.CompletedTask);
+        var useCase = new GenerateAttachmentUploadUrlUseCase(_ticketQueries.Object, _storageService.Object,
+            _attachmentStore.Object, _clock.Object, _user.Object);
+        var result = await useCase.ExecuteAsync(new(_ticketId, new("log.txt", 5, "text/plain")));
+        Assert.NotNull(issued);
+        Assert.Equal(_userId, issued.ActorId);
+        Assert.StartsWith($"uploads/pending/{_ticketId}/", issued.StorageKey);
+        Assert.Equal(issued.StorageKey, result.StorageKey);
+        Assert.Equal(_now.UtcDateTime.AddHours(1), issued.ExpiresAt);
+        Assert.Same(fields, result.FormData);
+        _attachmentStore.Verify(s => s.CreateUploadGrantAsync(It.IsAny<AttachmentUploadGrant>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 }

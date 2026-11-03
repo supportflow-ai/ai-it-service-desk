@@ -28,8 +28,11 @@ internal sealed class ConfirmAttachmentUploadUseCase(
         ArgumentNullException.ThrowIfNull(command);
         var req = command.Request;
 
-        var expectedPrefix = $"tickets/{command.TicketId}/";
-        if (string.IsNullOrWhiteSpace(req.StorageKey) || !req.StorageKey.StartsWith(expectedPrefix, StringComparison.OrdinalIgnoreCase))
+        var pendingPrefix = $"uploads/pending/{command.TicketId}/";
+        var legacyPrefix = $"tickets/{command.TicketId}/";
+        if (string.IsNullOrWhiteSpace(req.StorageKey) ||
+            (!req.StorageKey.StartsWith(pendingPrefix, StringComparison.Ordinal) &&
+             !req.StorageKey.StartsWith(legacyPrefix, StringComparison.Ordinal)))
         {
             throw new ArgumentException("Storage key không hợp lệ hoặc không thuộc về vé này.");
         }
@@ -40,20 +43,55 @@ internal sealed class ConfirmAttachmentUploadUseCase(
         var ticket = await ticketQueries.GetByIdAsync(command.TicketId, scope, cancellationToken);
         if (ticket == null) throw new KeyNotFoundException("Ticket not found.");
 
-        ObjectStorageObjectInfo objectInfo;
+        var upload = await attachmentStore.GetUploadGrantAsync(command.TicketId, req.StorageKey, actorId, cancellationToken)
+            ?? throw new KeyNotFoundException("Upload not found.");
+        if ((req.FileName ?? string.Empty).Trim() != upload.FileName || req.FileSizeBytes != upload.FileSizeBytes ||
+            !string.Equals(req.ContentType, upload.ContentType, StringComparison.OrdinalIgnoreCase))
+            throw new ArgumentException("Metadata không khớp yêu cầu upload đã cấp.");
+        if (upload.AttachmentId is { } existingId)
+            return await attachmentStore.GetByIdAsync(existingId, cancellationToken)
+                ?? throw new KeyNotFoundException("Attachment not found.");
+        if (upload.ConsumedAt.HasValue)
+            throw new ArgumentException("Quyền tải tệp đã được sử dụng. Vui lòng tải lại danh sách tệp.");
+        if (upload.ExpiresAt <= clock.UtcNow.UtcDateTime)
+            throw new ArgumentException("Yêu cầu upload đã hết hạn. Vui lòng tải lại tệp.");
+
+        var bucket = storageService.DefaultBucket;
+        var finalKey = $"tickets/{command.TicketId}/attachments/{Guid.NewGuid()}";
         try
         {
-            objectInfo = await storageService.StatObjectAsync("servicedesk", req.StorageKey, cancellationToken);
+            var source = await storageService.StatAsync(bucket, upload.StorageKey, cancellationToken);
+            VerifyObject(source, upload);
+            await storageService.CopyAsync(bucket, upload.StorageKey, finalKey, source!.ETag, cancellationToken);
+            VerifyObject(await storageService.StatAsync(bucket, finalKey, cancellationToken), upload);
         }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        catch (Exception ex) when (ex is not ArgumentException and not OperationCanceledException)
         {
-            throw;
-        }
-        catch (Exception)
-        {
-            throw new ServiceUnavailableException("Dịch vụ lưu trữ tệp (MinIO) hiện không khả dụng.");
+            throw new ServiceUnavailableException("Không thể xác minh tệp đã tải lên. Vui lòng thử xác nhận lại.");
         }
 
-        return await attachmentStore.ConfirmUploadAsync(command.TicketId, actorId, req, objectInfo, clock.UtcNow.UtcDateTime, cancellationToken);
+        var attachment = TicketAttachment.Create(command.TicketId, upload.FileName, upload.FileSizeBytes,
+            upload.ContentType, finalKey, actorId, clock.UtcNow.UtcDateTime);
+        // Không xóa finalKey khi commit báo lỗi: kết quả commit có thể chưa xác định do mất kết nối.
+        // Tác vụ dọn object mồ côi phải kiểm tra metadata và thời hạn trước khi xóa.
+        var result = await attachmentStore.ConfirmAsync(upload.Id, attachment, clock.UtcNow.UtcDateTime, cancellationToken);
+        await TryCleanupAsync(bucket, upload.StorageKey);
+        if (result.StorageKey != finalKey) await TryCleanupAsync(bucket, finalKey);
+        return result;
+    }
+
+    private static void VerifyObject(StoredObject? value, AttachmentUploadGrant upload)
+    {
+        if (value is null) throw new ArgumentException("Chưa tìm thấy tệp đã tải lên.");
+        if (value.Size != upload.FileSizeBytes || value.Size <= 0 || value.Size > 10 * 1024 * 1024 ||
+            !string.Equals(value.ContentType.Split(';')[0].Trim(), upload.ContentType.Split(';')[0].Trim(), StringComparison.OrdinalIgnoreCase))
+            throw new ArgumentException("Kích thước hoặc loại tệp thực tế không khớp yêu cầu upload.");
+    }
+
+    private async Task TryCleanupAsync(string bucket, string key)
+    {
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+        try { await storageService.DeleteAsync(bucket, key, timeout.Token); }
+        catch (Exception) { /* Adapter ghi log; metadata đã commit, cleanup không biến thành lỗi nghiệp vụ. */ }
     }
 }

@@ -19,7 +19,12 @@ internal sealed class AttachmentUploadGrantConfiguration : IEntityTypeConfigurat
         entity.Property(g => g.StorageKey).HasColumnName("storage_key").HasMaxLength(500).IsRequired();
         entity.Property(g => g.ExpiresAt).HasColumnName("expires_at").IsRequired();
         entity.Property(g => g.ConsumedAt).HasColumnName("consumed_at");
+        entity.Property(g => g.AttachmentId).HasColumnName("attachment_id");
 
         entity.HasIndex(g => g.StorageKey).IsUnique();
+        entity.HasIndex(g => new { g.ActorId, g.ExpiresAt });
+        entity.HasIndex(g => g.AttachmentId).IsUnique();
+        entity.HasOne<TicketAttachment>().WithMany().HasForeignKey(g => g.AttachmentId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }
