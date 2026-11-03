@@ -32,6 +32,11 @@ internal sealed class ResolveTicketUseCase(
     {
         var actorId = TicketActor.RequireId(currentUser);
         ArgumentNullException.ThrowIfNull(command);
+        var isStaff = currentUser.IsInRole(RoleNames.Agent) || currentUser.IsInRole(RoleNames.Admin);
+        if (!isStaff)
+        {
+            throw new UnauthorizedAccessException("Only an agent or admin can resolve this ticket.");
+        }
 
         var ticket = await writer.GetForUpdateAsync(command.Id, cancellationToken);
         if (ticket == null)
@@ -39,19 +44,15 @@ internal sealed class ResolveTicketUseCase(
             throw new KeyNotFoundException("Ticket not found.");
         }
 
-        var isStaff = currentUser.IsInRole(RoleNames.Agent) || currentUser.IsInRole(RoleNames.Admin);
-        if (!isStaff)
+        if (!command.ExpectedRevision.HasValue || command.ExpectedRevision.Value == 0)
         {
-            throw new UnauthorizedAccessException("Only an agent or admin can resolve this ticket.");
+            throw new ArgumentException("Expected revision is required.");
         }
 
-        if (command.ExpectedRevision.HasValue && command.ExpectedRevision.Value > 0)
+        var currentRev = writer.GetRevision(ticket);
+        if (currentRev != command.ExpectedRevision.Value)
         {
-            var currentRev = writer.GetRevision(ticket);
-            if (currentRev != 0 && currentRev != command.ExpectedRevision.Value)
-            {
-                throw new ConcurrencyConflictException("Dữ liệu đã bị thay đổi bởi người khác hoặc phiên làm việc đã cũ. Vui lòng tải lại trang.");
-            }
+            throw new ConcurrencyConflictException("Dữ liệu đã bị thay đổi bởi người khác hoặc phiên làm việc đã cũ. Vui lòng tải lại trang.");
         }
 
         var now = clock.UtcNow.UtcDateTime;

@@ -17,7 +17,7 @@ public sealed class IdentityPersistenceTests(ServiceDeskWebApplicationFactory fa
         await using (var scope = factory.Services.CreateAsyncScope())
         {
             var gateway = scope.ServiceProvider.GetRequiredService<IUserAccountGateway>();
-            Assert.NotNull((await gateway.CreateRequesterAsync(email, "Test@1234", default)).User);
+            Assert.NotNull((await gateway.CreateRequesterAsync(email, "Test@1234", null, default)).User);
         }
         for (var attempt = 0; attempt < 5; attempt++)
         {
@@ -44,6 +44,25 @@ public sealed class IdentityPersistenceTests(ServiceDeskWebApplicationFactory fa
     }
 
     [Fact]
+    public async Task FullNameClaimPersistsAndIsReturnedByFreshGateway()
+    {
+        var email = $"fullname-{Guid.NewGuid()}@test.invalid";
+        string userId;
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            var result = await scope.ServiceProvider.GetRequiredService<IUserAccountGateway>()
+                .CreateRequesterAsync(email, "Test@1234", "  Example User  ", default);
+            userId = result.User!.UserId;
+            Assert.Equal("Example User", result.User.FullName);
+        }
+
+        await using var freshScope = factory.Services.CreateAsyncScope();
+        var user = await freshScope.ServiceProvider.GetRequiredService<IUserAccountGateway>()
+            .FindByIdAsync(userId, default);
+        Assert.Equal("Example User", user!.FullName);
+    }
+
+    [Fact]
     public async Task RoleWriteFailureRollsBackUserCreation()
     {
         await using var scope = factory.Services.CreateAsyncScope();
@@ -58,7 +77,7 @@ public sealed class IdentityPersistenceTests(ServiceDeskWebApplicationFactory fa
         try
         {
             await Assert.ThrowsAnyAsync<Exception>(() => scope.ServiceProvider.GetRequiredService<IUserAccountGateway>()
-                .CreateRequesterAsync(email, "Test@1234", default));
+                .CreateRequesterAsync(email, "Test@1234", null, default));
             context.ChangeTracker.Clear();
             Assert.False(await context.Users.AnyAsync(u => u.Email == email));
         }

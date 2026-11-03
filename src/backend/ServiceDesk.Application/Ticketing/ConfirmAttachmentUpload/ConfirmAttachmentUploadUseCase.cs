@@ -42,6 +42,8 @@ internal sealed class ConfirmAttachmentUploadUseCase(
 
         var ticket = await ticketQueries.GetByIdAsync(command.TicketId, scope, cancellationToken);
         if (ticket == null) throw new KeyNotFoundException("Ticket not found.");
+        if (ticket.Status is (int)TicketStatus.Closed or (int)TicketStatus.Cancelled)
+            throw new ArgumentException("Không thể xác nhận tệp cho vé đã kết thúc.");
 
         var upload = await attachmentStore.GetUploadGrantAsync(command.TicketId, req.StorageKey, actorId, cancellationToken)
             ?? throw new KeyNotFoundException("Upload not found.");

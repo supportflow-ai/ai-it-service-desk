@@ -91,11 +91,12 @@ public sealed class AssignmentUseCaseTests
 
         var ticket = Ticket.Create(Guid.NewGuid(), "Title", "Valid description here", TicketCategories.VPN, _now.UtcDateTime);
         _writer.Setup(w => w.GetForUpdateAsync(ticket.Id, It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
+        _writer.Setup(w => w.GetRevision(ticket)).Returns(1);
         _writer.Setup(w => w.UpdateTicketWithAuditAsync(ticket, It.IsAny<TicketComment>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new TicketDto(ticket.Id, "IT-2026-0001", ticket.Title, ticket.Description, ticket.CategoryId, (int)TicketStatus.Assigned, ticket.CreatedAt));
 
         var useCase = new AssignTicketUseCase(_writer.Object, _agentDirectory.Object, _user.Object, _clock.Object);
-        await useCase.ExecuteAsync(new(ticket.Id, _agentId));
+        await useCase.ExecuteAsync(new(ticket.Id, _agentId, 1));
 
         _writer.Verify(w => w.UpdateTicketWithAuditAsync(
             ticket,
@@ -113,11 +114,12 @@ public sealed class AssignmentUseCaseTests
         var ticket = Ticket.Create(Guid.NewGuid(), "Title", "Valid description here", TicketCategories.VPN, _now.UtcDateTime);
         ticket.Assign(_agentId, _now.UtcDateTime);
         _writer.Setup(w => w.GetForUpdateAsync(ticket.Id, It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
+        _writer.Setup(w => w.GetRevision(ticket)).Returns(1);
         _writer.Setup(w => w.UpdateTicketWithAuditAsync(ticket, It.IsAny<TicketComment>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new TicketDto(ticket.Id, "IT-2026-0001", ticket.Title, ticket.Description, ticket.CategoryId, (int)TicketStatus.Submitted, ticket.CreatedAt));
 
         var useCase = new UnassignTicketUseCase(_writer.Object, _user.Object, _clock.Object);
-        await useCase.ExecuteAsync(new(ticket.Id));
+        await useCase.ExecuteAsync(new(ticket.Id, 1));
 
         _writer.Verify(w => w.UpdateTicketWithAuditAsync(
             ticket,

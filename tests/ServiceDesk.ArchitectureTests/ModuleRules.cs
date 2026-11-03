@@ -40,6 +40,7 @@ internal static class ModuleRules
         "ServiceDesk.Application.Ticketing.Contracts.ConfirmAttachmentUploadRequest",
         "ServiceDesk.Application.Ticketing.Contracts.TicketAttachmentDto",
         "ServiceDesk.Application.Identity.GetUsersByRole.IGetUsersByRole", "ServiceDesk.Application.Identity.GetUsersByRole.GetUsersByRoleQuery",
+        "ServiceDesk.Application.Identity.GetUsersByRole.UserDirectoryEntry",
         "ServiceDesk.Application.Common.ConcurrencyConflictException",
         "ServiceDesk.Application.Common.ServiceUnavailableException",
         "ServiceDesk.Application.Ticketing.Idempotency.IdempotencyConflictException",

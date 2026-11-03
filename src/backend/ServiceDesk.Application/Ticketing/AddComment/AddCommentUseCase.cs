@@ -29,12 +29,16 @@ internal sealed class AddCommentUseCase(
         var ticket = await writer.GetForUpdateAsync(command.TicketId, cancellationToken);
         if (ticket == null) throw new KeyNotFoundException("Ticket not found.");
 
+        if (ticket.Status is TicketStatus.Closed or TicketStatus.Cancelled)
+            throw new ArgumentException("Không thể thêm bình luận vào vé đã kết thúc.");
+
         var isStaff = currentUser.IsInRole(RoleNames.Agent) || currentUser.IsInRole(RoleNames.Admin);
         if (!isStaff && !ticket.IsOwnedBy(actorId))
             throw new KeyNotFoundException("Ticket not found.");
 
         var authorName = await agentDirectory.GetDisplayNameAsync(actorId, cancellationToken);
-        var authorRole = currentUser.Roles.FirstOrDefault() ?? "Requester";
+        var authorRole = currentUser.IsInRole(RoleNames.Admin) ? RoleNames.Admin
+            : currentUser.IsInRole(RoleNames.Agent) ? RoleNames.Agent : RoleNames.Requester;
 
         var comment = TicketComment.CreatePublic(
             command.TicketId,

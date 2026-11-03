@@ -25,6 +25,13 @@ public sealed class TicketAttachmentUseCaseTests
     private readonly Guid _userId = Guid.NewGuid();
     private readonly DateTimeOffset _now = new(2026, 10, 20, 10, 0, 0, TimeSpan.Zero);
 
+    private void SetupTicketStatus(TicketStatus status)
+    {
+        var ticketDto = new TicketDto(_ticketId, "IT-2026-0001", "Title", "Description", "VPN", (int)status, _now.UtcDateTime, RequesterId: _userId);
+        _ticketQueries.Setup(q => q.GetByIdAsync(_ticketId, It.IsAny<TicketReadScope>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(ticketDto);
+    }
+
     public TicketAttachmentUseCaseTests()
     {
         _user.SetupGet(u => u.IsAuthenticated).Returns(true);
@@ -36,6 +43,19 @@ public sealed class TicketAttachmentUseCaseTests
         var ticketDto = new TicketDto(_ticketId, "IT-2026-0001", "Title", "Description", "VPN", 1, _now.UtcDateTime, RequesterId: _userId);
         _ticketQueries.Setup(q => q.GetByIdAsync(_ticketId, It.IsAny<TicketReadScope>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(ticketDto);
+    }
+
+    [Fact]
+    public async Task DownloadUrl_InvisibleTicket_IsNotFoundBeforeStorageKeyValidation()
+    {
+        _ticketQueries.Setup(q => q.GetByIdAsync(_ticketId, It.IsAny<TicketReadScope>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((TicketDto?)null);
+        var useCase = new GetAttachmentDownloadUrlUseCase(_ticketQueries.Object, _storageService.Object, _attachmentStore.Object, _user.Object);
+
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => useCase.ExecuteAsync(new(_ticketId, "tickets/other/secret.pdf")));
+
+        _attachmentStore.VerifyNoOtherCalls();
+        _storageService.VerifyNoOtherCalls();
     }
 
     [Fact]
@@ -60,6 +80,50 @@ public sealed class TicketAttachmentUseCaseTests
 
         await Assert.ThrowsAsync<ServiceUnavailableException>(() =>
             useCase.ExecuteAsync(new(_ticketId, validKey)));
+    }
+
+    [Theory]
+    [InlineData(TicketStatus.Closed)]
+    [InlineData(TicketStatus.Cancelled)]
+    public async Task GenerateUpload_TerminalTicket_RejectsBeforeStorage(TicketStatus status)
+    {
+        SetupTicketStatus(status);
+        var useCase = new GenerateAttachmentUploadUrlUseCase(_ticketQueries.Object, _storageService.Object,
+            _attachmentStore.Object, _clock.Object, _user.Object);
+
+        await Assert.ThrowsAsync<ArgumentException>(() => useCase.ExecuteAsync(new(_ticketId, new("evidence.pdf", 1024, "application/pdf"))));
+
+        _storageService.VerifyNoOtherCalls();
+        _attachmentStore.VerifyNoOtherCalls();
+    }
+
+    [Theory]
+    [InlineData(TicketStatus.Closed)]
+    [InlineData(TicketStatus.Cancelled)]
+    public async Task ConfirmUpload_TerminalTicket_RejectsBeforeGrantLookup(TicketStatus status)
+    {
+        SetupTicketStatus(status);
+        var useCase = new ConfirmAttachmentUploadUseCase(_ticketQueries.Object, _attachmentStore.Object,
+            _storageService.Object, _user.Object, _clock.Object);
+
+        await Assert.ThrowsAsync<ArgumentException>(() => useCase.ExecuteAsync(new(_ticketId,
+            new ConfirmAttachmentUploadRequest("evidence.png", 1024, "image/png", $"tickets/{_ticketId}/attachments/existing"))));
+
+        _attachmentStore.VerifyNoOtherCalls();
+        _storageService.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task ConfirmUpload_TerminalTicket_RejectsEvenWhenAlreadyConfirmed()
+    {
+        SetupTicketStatus(TicketStatus.Closed);
+        var useCase = new ConfirmAttachmentUploadUseCase(_ticketQueries.Object, _attachmentStore.Object,
+            _storageService.Object, _user.Object, _clock.Object);
+
+        await Assert.ThrowsAsync<ArgumentException>(() => useCase.ExecuteAsync(new(_ticketId,
+            new ConfirmAttachmentUploadRequest("evidence.png", 1024, "image/png", $"tickets/{_ticketId}/attachments/existing"))));
+
+        _attachmentStore.VerifyNoOtherCalls();
     }
 
     [Fact]

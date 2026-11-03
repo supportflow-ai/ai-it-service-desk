@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using ServiceDesk.Application.Identity.Ports;
@@ -9,7 +10,7 @@ namespace ServiceDesk.Infrastructure.Identity;
 
 internal sealed class IdentityAccountGateway(UserManager<IdentityUser> users, ApplicationDbContext context) : IUserAccountGateway
 {
-    public async Task<AccountCreation> CreateRequesterAsync(string email, string password, CancellationToken cancellationToken)
+    public async Task<AccountCreation> CreateRequesterAsync(string email, string password, string? fullName, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         if (string.IsNullOrWhiteSpace(email) || string.IsNullOrEmpty(password))
@@ -22,6 +23,11 @@ internal sealed class IdentityAccountGateway(UserManager<IdentityUser> users, Ap
         if (!created.Succeeded) return new(null, created.Errors.Select(e => e.Description).ToArray());
         var assigned = await users.AddToRoleAsync(user, RoleNames.Requester);
         if (!assigned.Succeeded) return new(null, assigned.Errors.Select(e => e.Description).ToArray());
+        if (!string.IsNullOrWhiteSpace(fullName))
+        {
+            var claim = await users.AddClaimAsync(user, new Claim(ClaimTypes.Name, fullName.Trim()));
+            if (!claim.Succeeded) return new(null, claim.Errors.Select(e => e.Description).ToArray());
+        }
         var result = await ToUserAsync(user);
         await transaction.CommitAsync(cancellationToken);
         return new(result, []);
@@ -111,6 +117,7 @@ internal sealed class IdentityAccountGateway(UserManager<IdentityUser> users, Ap
 
     private async Task<UserInfo> ToUserAsync(IdentityUser user) => new()
     {
-        UserId = user.Id, Email = user.Email!, Roles = (await users.GetRolesAsync(user)).ToArray()
+        UserId = user.Id, Email = user.Email!, FullName = (await users.GetClaimsAsync(user)).FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value,
+        Roles = (await users.GetRolesAsync(user)).ToArray()
     };
 }

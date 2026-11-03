@@ -50,6 +50,8 @@ internal sealed class GenerateAttachmentUploadUrlUseCase(
 
         var ticket = await ticketQueries.GetByIdAsync(command.TicketId, scope, cancellationToken);
         if (ticket == null) throw new KeyNotFoundException("Ticket not found.");
+        if (ticket.Status is (int)TicketStatus.Closed or (int)TicketStatus.Cancelled)
+            throw new ArgumentException("Không thể tải tệp lên vé đã kết thúc.");
 
         const int expirySeconds = 3600;
         var upload = AttachmentUploadGrant.CreatePending(command.TicketId, actorId, Path.GetFileName(req.FileName),

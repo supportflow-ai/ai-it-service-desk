@@ -17,7 +17,7 @@ public sealed class IdentityUseCaseTests
     public async Task Registration_DoesNotForwardClientRole_AndPreservesFullName()
     {
         var user = User;
-        _accounts.Setup(a => a.CreateRequesterAsync(user.Email, "Test@1234", It.IsAny<CancellationToken>())).ReturnsAsync(new AccountCreation(user, []));
+        _accounts.Setup(a => a.CreateRequesterAsync(user.Email, "Test@1234", "Example", It.IsAny<CancellationToken>())).ReturnsAsync(new AccountCreation(user, []));
         _tokens.Setup(t => t.GenerateToken(It.Is<UserInfo>(u => u.FullName == "Example" && u.Roles.SequenceEqual(new[] { RoleNames.Requester })))).Returns("token");
         var result = await new RegisterUserUseCase(_accounts.Object, _tokens.Object).ExecuteAsync(new()
             { Email = user.Email, Password = "Test@1234", Role = RoleNames.Admin, FullName = "Example" });
@@ -28,7 +28,7 @@ public sealed class IdentityUseCaseTests
     [Fact]
     public async Task FailedRegistration_DoesNotIssueToken()
     {
-        _accounts.Setup(a => a.CreateRequesterAsync("x", "y", It.IsAny<CancellationToken>())).ReturnsAsync(new AccountCreation(null, ["Email is already registered."]));
+        _accounts.Setup(a => a.CreateRequesterAsync("x", "y", null, It.IsAny<CancellationToken>())).ReturnsAsync(new AccountCreation(null, ["Email is already registered."]));
         var result = await new RegisterUserUseCase(_accounts.Object, _tokens.Object).ExecuteAsync(new() { Email = "x", Password = "y" });
         Assert.False(result.Succeeded); Assert.Equal("Email is already registered.", Assert.Single(result.Errors));
         _tokens.VerifyNoOtherCalls();

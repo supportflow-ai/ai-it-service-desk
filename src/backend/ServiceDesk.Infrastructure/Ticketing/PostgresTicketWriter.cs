@@ -110,8 +110,14 @@ internal sealed class PostgresTicketWriter(ApplicationDbContext context) : ITick
 
     public uint GetRevision(Ticket ticket)
     {
-        try { return _context.Entry(ticket).Property<uint>("xmin").CurrentValue; }
-        catch { return 0; }
+        try
+        {
+            return _context.Entry(ticket).Property<uint>("xmin").CurrentValue;
+        }
+        catch (Exception exception)
+        {
+            throw new InvalidOperationException("Cannot read concurrency revision from ticket.", exception);
+        }
     }
 
     public async Task<TicketDto> UpdateTicketAsync(Ticket ticket, CancellationToken cancellationToken)
