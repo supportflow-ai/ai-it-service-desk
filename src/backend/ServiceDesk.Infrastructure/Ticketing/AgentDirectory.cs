@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using ServiceDesk.Application.Ticketing.Ports;
 using ServiceDesk.Domain.Identity;
@@ -24,6 +25,10 @@ internal sealed class AgentDirectory(ApplicationDbContext context) : IAgentDirec
         var userIdStr = userId.ToString();
         var user = await context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userIdStr, cancellationToken);
         if (user is null) return "Người dùng";
-        return !string.IsNullOrWhiteSpace(user.UserName) ? user.UserName : (!string.IsNullOrWhiteSpace(user.Email) ? user.Email : "Người dùng");
+        var name = await context.UserClaims.AsNoTracking()
+            .Where(c => c.UserId == userIdStr && c.ClaimType == ClaimTypes.Name)
+            .Select(c => c.ClaimValue)
+            .FirstOrDefaultAsync(cancellationToken);
+        return !string.IsNullOrWhiteSpace(name) ? name : "Người dùng";
     }
 }

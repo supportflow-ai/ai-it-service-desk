@@ -28,15 +28,15 @@ internal sealed class GetAttachmentDownloadUrlUseCase(
         if (string.IsNullOrWhiteSpace(query.StorageKey))
             throw new ArgumentException("Storage key is required.");
 
-        var expectedPrefix = $"tickets/{query.TicketId}/";
-        if (!query.StorageKey.StartsWith(expectedPrefix, StringComparison.OrdinalIgnoreCase))
-            throw new UnauthorizedAccessException("Tệp đính kèm không thuộc về yêu cầu này.");
-
         var isStaff = currentUser.IsInRole(RoleNames.Agent) || currentUser.IsInRole(RoleNames.Admin);
         var scope = isStaff ? (TicketReadScope)new TicketReadScope.AllTickets() : new TicketReadScope.OwnTickets(actorId);
 
         var ticket = await ticketQueries.GetByIdAsync(query.TicketId, scope, cancellationToken);
         if (ticket == null) throw new KeyNotFoundException("Ticket not found.");
+
+        var expectedPrefix = $"tickets/{query.TicketId}/";
+        if (!query.StorageKey.StartsWith(expectedPrefix, StringComparison.OrdinalIgnoreCase))
+            throw new UnauthorizedAccessException("Tệp đính kèm không thuộc về yêu cầu này.");
 
         if (!await attachmentStore.ExistsAsync(query.TicketId, query.StorageKey, cancellationToken))
             throw new KeyNotFoundException("Attachment not found.");

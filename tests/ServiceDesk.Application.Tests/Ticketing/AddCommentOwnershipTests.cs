@@ -43,6 +43,31 @@ public sealed class AddCommentOwnershipTests
         _timelineStore.Verify(store => store.AddAsync(It.IsAny<TicketComment>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
+    [Theory]
+    [InlineData(TicketStatus.Closed)]
+    [InlineData(TicketStatus.Cancelled)]
+    public async Task Requester_CannotCommentOnTerminalTicket(TicketStatus status)
+    {
+        var ticket = CreateTicket(_actorId);
+        if (status == TicketStatus.Closed)
+        {
+            ticket.Claim(_actorId, _now.UtcDateTime);
+            ticket.Resolve(_now.UtcDateTime);
+            ticket.Close(_now.UtcDateTime);
+        }
+        else
+        {
+            ticket.Cancel(_now.UtcDateTime);
+        }
+        _user.SetupGet(user => user.Roles).Returns([RoleNames.Requester]);
+        _writer.Setup(writer => writer.GetForUpdateAsync(ticket.Id, It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
+
+        await Assert.ThrowsAsync<ArgumentException>(() => CreateUseCase().ExecuteAsync(new(ticket.Id, "Blocked comment")));
+
+        _agentDirectory.VerifyNoOtherCalls();
+        _timelineStore.VerifyNoOtherCalls();
+    }
+
     [Fact]
     public async Task Requester_CanCommentOnOwnTicket()
     {

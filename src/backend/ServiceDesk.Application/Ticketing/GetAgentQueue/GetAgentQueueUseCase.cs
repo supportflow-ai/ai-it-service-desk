@@ -7,7 +7,7 @@ using ServiceDesk.Domain.Identity;
 namespace ServiceDesk.Application.Ticketing.GetAgentQueue;
 
 /// <summary>Truy vấn danh sách vé trong hàng đợi Agent.</summary>
-public sealed record GetAgentQueueQuery(int? Status = null, string? CategoryId = null, string? Scope = null, int Page = 1, int PageSize = 10);
+public sealed record GetAgentQueueQuery(int? Status = null, string? CategoryId = null, string? Scope = null, int Page = 1, int PageSize = 10, string? Priority = null, bool SortByPriority = false);
 
 /// <summary>Hợp đồng use case lấy danh sách vé trong hàng đợi của Agent.</summary>
 public interface IGetAgentQueue
@@ -39,6 +39,6 @@ internal sealed class GetAgentQueueUseCase(ITicketQueries queries, ICurrentUser 
             throw new ArgumentException("page must be at least 1 and pageSize must be between 1 and 100");
         }
 
-        return queries.GetAgentQueueAsync(actorId, query.Status, query.CategoryId, query.Scope, query.Page, query.PageSize, cancellationToken);
+        return queries.GetAgentQueueAsync(actorId, query.Status, query.CategoryId, query.Scope, query.Priority, query.SortByPriority, query.Page, query.PageSize, cancellationToken);
     }
 }

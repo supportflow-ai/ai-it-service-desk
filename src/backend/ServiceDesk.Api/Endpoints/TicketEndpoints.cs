@@ -93,9 +93,11 @@ public static class TicketEndpoints
             int pageSize = 10,
             int? status = null,
             string? category = null,
-            string? scope = null) =>
+            string? scope = null,
+            string? priority = null,
+            bool sortByPriority = false) =>
         {
-            var tickets = await getAgentQueue.ExecuteAsync(new(status, category, scope, page, pageSize), ct);
+            var tickets = await getAgentQueue.ExecuteAsync(new(status, category, scope, page, pageSize, priority, sortByPriority), ct);
             return Results.Ok(tickets);
         })
         .WithName("GetAgentQueue")

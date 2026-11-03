@@ -1,5 +1,4 @@
 using ServiceDesk.Application.Common.Interfaces;
-using ServiceDesk.Application.Identity.Contracts;
 using ServiceDesk.Application.Identity.Ports;
 using ServiceDesk.Domain.Identity;
 
@@ -7,14 +6,16 @@ namespace ServiceDesk.Application.Identity.GetUsersByRole;
 
 public record GetUsersByRoleQuery(string Role);
 
+public sealed record UserDirectoryEntry(string UserId, string? FullName);
+
 public interface IGetUsersByRole
 {
-    Task<IReadOnlyList<UserInfo>> ExecuteAsync(GetUsersByRoleQuery query, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<UserDirectoryEntry>> ExecuteAsync(GetUsersByRoleQuery query, CancellationToken cancellationToken = default);
 }
 
 internal sealed class GetUsersByRoleUseCase(IUserAccountGateway userGateway, ICurrentUser currentUser) : IGetUsersByRole
 {
-    public async Task<IReadOnlyList<UserInfo>> ExecuteAsync(GetUsersByRoleQuery query, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<UserDirectoryEntry>> ExecuteAsync(GetUsersByRoleQuery query, CancellationToken cancellationToken = default)
     {
         var isStaff = currentUser.IsInRole(RoleNames.Agent) || currentUser.IsInRole(RoleNames.Admin);
         if (!isStaff)
@@ -23,11 +24,11 @@ internal sealed class GetUsersByRoleUseCase(IUserAccountGateway userGateway, ICu
         }
 
         ArgumentNullException.ThrowIfNull(query);
-        if (string.IsNullOrWhiteSpace(query.Role))
-        {
-            throw new ArgumentException("Role is required.");
-        }
+        var role = query.Role.Equals(RoleNames.Agent, StringComparison.OrdinalIgnoreCase) ? RoleNames.Agent
+            : query.Role.Equals(RoleNames.Admin, StringComparison.OrdinalIgnoreCase) ? RoleNames.Admin
+            : throw new ArgumentException("Only agents or admins can be queried.");
 
-        return await userGateway.GetUsersInRoleAsync(query.Role, cancellationToken);
+        var users = await userGateway.GetUsersInRoleAsync(role, cancellationToken);
+        return users.Select(user => new UserDirectoryEntry(user.UserId, user.FullName)).ToArray();
     }
 }

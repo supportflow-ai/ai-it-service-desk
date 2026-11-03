@@ -27,12 +27,14 @@ public sealed class CommentAuthorizationTests
     }
 
     [Theory]
-    [InlineData("Requester", true)]
-    [InlineData("Agent", false)]
-    [InlineData("Admin", false)]
-    [InlineData("Requester,Agent", false)]
-    [InlineData("Requester,Admin", false)]
-    public async Task AuthorizedActor_CanCommentWithinExistingScope(string roleList, bool ownsTicket)
+    [InlineData("Requester", true, "Requester")]
+    [InlineData("Agent", false, "Agent")]
+    [InlineData("Admin", false, "Admin")]
+    [InlineData("Requester,Agent", false, "Agent")]
+    [InlineData("Requester,Admin", false, "Admin")]
+    [InlineData("Agent,Admin", false, "Admin")]
+    [InlineData("Requester,Agent,Admin", false, "Admin")]
+    public async Task AuthorizedActor_CanCommentWithinExistingScope(string roleList, bool ownsTicket, string expectedRole)
     {
         SetRoles(roleList);
         var ticket = CreateTicket(ownsTicket ? _actor : Guid.NewGuid());
@@ -52,6 +54,7 @@ public sealed class CommentAuthorizationTests
         Assert.Equal(_actor, saved.AuthorId);
         Assert.False(saved.IsInternal);
         Assert.Equal(_now.UtcDateTime, saved.CreatedAt);
+        Assert.Equal(expectedRole, saved.AuthorRole);
         Assert.Equal(saved.Id, result.Id);
         _writer.VerifyAll();
         _directory.VerifyAll();

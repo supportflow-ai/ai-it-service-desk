@@ -153,9 +153,13 @@ public class Ticket
     {
         if (Status == TicketStatus.Closed || Status == TicketStatus.Cancelled)
             throw new InvalidOperationException($"Cannot unassign ticket in status {Status}");
+        if (AssignedToId == null)
+            throw new InvalidOperationException("Ticket is not assigned.");
+        if (Status != TicketStatus.Assigned)
+            throw new InvalidOperationException($"Cannot unassign ticket in status {Status}. Only Assigned tickets can be unassigned.");
         AssignedToId = null;
         AssignedAt = null;
-        if (Status == TicketStatus.Assigned) Status = TicketStatus.Submitted;
+        Status = TicketStatus.Submitted;
         UpdatedAt = now;
     }
 
@@ -175,11 +179,6 @@ public class Ticket
         Status = TicketStatus.InProgress;
         UpdatedAt = now;
     }
-
-    /// <summary>
-    /// Tương thích ngược: Tiếp nhận xử lý vé không truyền ID cụ thể.
-    /// </summary>
-    public void Claim(DateTime now) => Claim(Guid.NewGuid(), now);
 
     /// <summary>
     /// Đánh dấu vé đã được giải quyết xong (InProgress -> Resolved).

@@ -102,10 +102,12 @@ public class TicketTests
     {
         var ticket = CreateValidTicket();
         var now = DateTime.UtcNow;
+        var agentId = Guid.NewGuid();
 
-        ticket.Claim(now);
+        ticket.Claim(agentId, now);
 
         ticket.Status.Should().Be(TicketStatus.InProgress);
+        ticket.AssignedToId.Should().Be(agentId);
         ticket.UpdatedAt.Should().Be(now);
     }
 
@@ -113,9 +115,10 @@ public class TicketTests
     public void Claim_NonSubmittedTicket_Throws()
     {
         var ticket = CreateValidTicket();
-        ticket.Claim(DateTime.UtcNow);
+        var agentId = Guid.NewGuid();
+        ticket.Claim(agentId, DateTime.UtcNow);
 
-        var act = () => ticket.Claim(DateTime.UtcNow);
+        var act = () => ticket.Claim(agentId, DateTime.UtcNow);
         act.Should().Throw<InvalidOperationException>();
     }
 
@@ -124,8 +127,9 @@ public class TicketTests
     {
         var ticket = CreateValidTicket();
         var now = DateTime.UtcNow;
+        var agentId = Guid.NewGuid();
 
-        ticket.Claim(now);
+        ticket.Claim(agentId, now);
         ticket.Resolve(now);
         ticket.Status.Should().Be(TicketStatus.Resolved);
 
@@ -152,7 +156,7 @@ public class TicketTests
     public void Cancel_NonSubmittedTicket_Throws()
     {
         var ticket = CreateValidTicket();
-        ticket.Claim(DateTime.UtcNow);
+        ticket.Claim(Guid.NewGuid(), DateTime.UtcNow);
 
         var act = () => ticket.Cancel(DateTime.UtcNow);
         act.Should().Throw<InvalidOperationException>();

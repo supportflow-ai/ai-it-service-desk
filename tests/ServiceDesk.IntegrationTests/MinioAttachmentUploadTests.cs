@@ -15,10 +15,10 @@ public sealed class MinioAttachmentUploadTests
     [Fact]
     public async Task SignedPolicyEnforcesSizeAndCopyIsNotWritableByOldUploadForm()
     {
-        await using var container = new ContainerBuilder("minio/minio:RELEASE.2024-10-13T13-34-11Z")
+        await using var container = new ContainerBuilder("bitnamilegacy/minio:2025.7.23-debian-12-r3")
             .WithEnvironment("MINIO_ROOT_USER", "synthetic-user")
             .WithEnvironment("MINIO_ROOT_PASSWORD", "synthetic-only-password")
-            .WithPortBinding(9000, true).WithCommand("server", "/data")
+            .WithPortBinding(9000, true)
             .WithWaitStrategy(Wait.ForUnixContainer().UntilHttpRequestIsSucceeded(request =>
                 request.ForPort(9000).ForPath("/minio/health/ready"))).Build();
         using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(2));
@@ -36,7 +36,8 @@ public sealed class MinioAttachmentUploadTests
         var upload = await adapter.CreateUploadAsync(options.Bucket, "uploads/pending/test-object", "text/plain", 5, 60, timeout.Token);
         using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
 
-        using (var exact = await Post(http, upload, "hello", timeout.Token)) Assert.True(exact.IsSuccessStatusCode);
+        using (var exact = await Post(http, upload, "hello", timeout.Token))
+            Assert.True(exact.IsSuccessStatusCode, await exact.Content.ReadAsStringAsync(timeout.Token));
         var stored = await adapter.StatAsync(options.Bucket, "uploads/pending/test-object", timeout.Token);
         Assert.NotNull(stored);
         Assert.Equal(5, stored.Size);
@@ -52,6 +53,7 @@ public sealed class MinioAttachmentUploadTests
     {
         using var form = new MultipartFormDataContent();
         foreach (var field in upload.FormData) form.Add(new StringContent(field.Value), field.Key);
+        form.Add(new StringContent("text/plain"), "Content-Type");
         var file = new ByteArrayContent(System.Text.Encoding.UTF8.GetBytes(value));
         file.Headers.ContentType = new MediaTypeHeaderValue("text/plain");
         form.Add(file, "file", "example.txt");

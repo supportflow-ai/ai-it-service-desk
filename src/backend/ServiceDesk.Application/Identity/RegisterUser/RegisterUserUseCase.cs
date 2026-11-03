@@ -19,7 +19,7 @@ internal sealed class RegisterUserUseCase(IUserAccountGateway accounts, IAccessT
     public async Task<AuthResult> ExecuteAsync(RegisterRequest request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
-        var result = await accounts.CreateRequesterAsync(request.Email, request.Password, cancellationToken);
+        var result = await accounts.CreateRequesterAsync(request.Email, request.Password, request.FullName, cancellationToken);
         if (result.User is null) return AuthResult.Failed(result.Errors);
         var user = result.User with { FullName = request.FullName };
         return AuthResult.Success(tokens.GenerateToken(user), user);
