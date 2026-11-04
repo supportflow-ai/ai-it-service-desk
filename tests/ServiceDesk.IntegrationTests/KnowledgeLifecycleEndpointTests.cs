@@ -54,6 +54,20 @@ public class KnowledgeLifecycleEndpointTests : IClassFixture<ServiceDeskWebAppli
         var searchResult = await searchRes.Content.ReadFromJsonAsync<PagedArticleResult>();
         searchResult!.Items.Should().BeEmpty();
 
+        // Agent B searches keyword -> 200 OK, items count == 0 (Agent B cannot see Agent A's draft)
+        SetAuth(agentBToken);
+        var searchBRes = await _client.GetAsync($"/api/knowledge/articles/search?query={uniqueKey}");
+        searchBRes.StatusCode.Should().Be(HttpStatusCode.OK);
+        var searchBResult = await searchBRes.Content.ReadFromJsonAsync<PagedArticleResult>();
+        searchBResult!.Items.Should().BeEmpty();
+
+        // Agent A searches keyword -> 200 OK, draft is returned in items (Agent A can see own draft)
+        SetAuth(agentAToken);
+        var searchARes = await _client.GetAsync($"/api/knowledge/articles/search?query={uniqueKey}");
+        searchARes.StatusCode.Should().Be(HttpStatusCode.OK);
+        var searchAResult = await searchARes.Content.ReadFromJsonAsync<PagedArticleResult>();
+        searchAResult!.Items.Should().ContainSingle(a => a.Id == draft.Id);
+
         // 4. Agent B tries to update Agent A's draft -> 403 Forbidden (KB-04)
         SetAuth(agentBToken);
         var updateBRes = await _client.PutAsJsonAsync($"/api/knowledge/articles/{draft.Id}/draft",
@@ -194,6 +208,56 @@ public class KnowledgeLifecycleEndpointTests : IClassFixture<ServiceDeskWebAppli
         var pubAgainRes = await _client.PostAsJsonAsync($"/api/knowledge/articles/{draft.Id}/publish?expectedRevision={published!.Revision}",
             new PublishArticleRequest(published.Revision));
         pubAgainRes.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity, await pubAgainRes.Content.ReadAsStringAsync());
+
+        _client.DefaultRequestHeaders.Authorization = null;
+    }
+
+    [Fact]
+    public async Task Operations_WithoutExpectedRevision_Return400BadRequest()
+    {
+        var agentToken = await RegisterAndPromoteRoleAsync("Agent");
+        SetAuth(agentToken);
+
+        var createRes = await _client.PostAsJsonAsync("/api/knowledge/articles",
+            new CreateDraftArticleRequest("Revision Validation Article", "Content at least 10 chars", ["revision"]));
+        createRes.StatusCode.Should().Be(HttpStatusCode.Created);
+        var draft = await createRes.Content.ReadFromJsonAsync<ArticleDto>();
+        draft.Should().NotBeNull();
+
+        // Agent A calls PUT /api/knowledge/articles/{draft.Id}/draft with 0 expectedRevision -> 400 BadRequest
+        var updateZeroRes = await _client.PutAsJsonAsync($"/api/knowledge/articles/{draft!.Id}/draft",
+            new UpdateDraftArticleRequest("T", "Content at least 10 chars", ["tag"], 0));
+        updateZeroRes.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        // Agent A calls PUT /api/knowledge/articles/{draft.Id}/draft with no expectedRevision -> 400 BadRequest
+        var updateNoneRes = await _client.PutAsJsonAsync($"/api/knowledge/articles/{draft.Id}/draft",
+            new UpdateDraftArticleRequest("T", "Content at least 10 chars", ["tag"]));
+        updateNoneRes.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        // Agent A calls POST /api/knowledge/articles/{draft.Id}/publish without expectedRevision -> 400 BadRequest
+        var pubNoneRes = await _client.PostAsJsonAsync($"/api/knowledge/articles/{draft.Id}/publish",
+            new PublishArticleRequest());
+        pubNoneRes.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        // Agent A calls POST /api/knowledge/articles/{draft.Id}/publish?expectedRevision=0 -> 400 BadRequest
+        var pubZeroRes = await _client.PostAsJsonAsync($"/api/knowledge/articles/{draft.Id}/publish?expectedRevision=0",
+            new PublishArticleRequest(0));
+        pubZeroRes.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        // Agent A publishes draft with valid expectedRevision = draft.Revision -> 200 OK
+        var pubValidRes = await _client.PostAsJsonAsync($"/api/knowledge/articles/{draft.Id}/publish?expectedRevision={draft.Revision}",
+            new PublishArticleRequest(draft.Revision));
+        pubValidRes.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        // Agent A calls POST /api/knowledge/articles/{draft.Id}/archive without expectedRevision -> 400 BadRequest
+        var archNoneRes = await _client.PostAsJsonAsync($"/api/knowledge/articles/{draft.Id}/archive",
+            new ArchiveArticleRequest());
+        archNoneRes.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        // Agent A calls POST /api/knowledge/articles/{draft.Id}/archive?expectedRevision=0 -> 400 BadRequest
+        var archZeroRes = await _client.PostAsJsonAsync($"/api/knowledge/articles/{draft.Id}/archive?expectedRevision=0",
+            new ArchiveArticleRequest(0));
+        archZeroRes.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
         _client.DefaultRequestHeaders.Authorization = null;
     }
