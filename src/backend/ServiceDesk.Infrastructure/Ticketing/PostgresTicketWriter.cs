@@ -110,8 +110,14 @@ internal sealed class PostgresTicketWriter(ApplicationDbContext context) : ITick
 
     public uint GetRevision(Ticket ticket)
     {
-        try { return _context.Entry(ticket).Property<uint>("xmin").CurrentValue; }
-        catch { return 0; }
+        try
+        {
+            return _context.Entry(ticket).Property<uint>("xmin").CurrentValue;
+        }
+        catch (Exception exception)
+        {
+            throw new InvalidOperationException("Cannot read concurrency revision from ticket.", exception);
+        }
     }
 
     public async Task<TicketDto> UpdateTicketAsync(Ticket ticket, CancellationToken cancellationToken)
@@ -125,5 +131,18 @@ internal sealed class PostgresTicketWriter(ApplicationDbContext context) : ITick
         {
             throw new Application.Common.ConcurrencyConflictException();
         }
+    }
+
+    public Task<TicketDto> UpdateTicketWithAuditAsync(Ticket ticket, TicketComment timelineEntry, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(ticket);
+        ArgumentNullException.ThrowIfNull(timelineEntry);
+        if (timelineEntry.TicketId != ticket.Id)
+            throw new ArgumentException("Sự kiện timeline phải thuộc cùng ticket.", nameof(timelineEntry));
+
+        // Một SaveChanges lưu cả UPDATE ticket và INSERT timeline trong transaction tự động của EF Core.
+        // Nếu một lệnh thất bại hoặc revision xung đột, toàn bộ lần ghi được rollback.
+        _context.TicketComments.Add(timelineEntry);
+        return UpdateTicketAsync(ticket, cancellationToken);
     }
 }

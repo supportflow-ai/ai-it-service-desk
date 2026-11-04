@@ -4,6 +4,7 @@ using ServiceDesk.Application.Ticketing.Authorization;
 using ServiceDesk.Application.Ticketing.Contracts;
 using ServiceDesk.Application.Ticketing.Ports;
 using ServiceDesk.Domain.Identity;
+using ServiceDesk.Domain.Ticketing;
 
 namespace ServiceDesk.Application.Ticketing.GenerateAttachmentUploadUrl;
 
@@ -17,6 +18,8 @@ public interface IGenerateAttachmentUploadUrl
 internal sealed class GenerateAttachmentUploadUrlUseCase(
     ITicketQueries ticketQueries,
     IObjectStorageService storageService,
+    ITicketAttachmentStore attachmentStore,
+    IClock clock,
     ICurrentUser currentUser) : IGenerateAttachmentUploadUrl
 {
     private static readonly HashSet<string> AllowedExtensions = new(StringComparer.OrdinalIgnoreCase)
@@ -47,18 +50,22 @@ internal sealed class GenerateAttachmentUploadUrlUseCase(
 
         var ticket = await ticketQueries.GetByIdAsync(command.TicketId, scope, cancellationToken);
         if (ticket == null) throw new KeyNotFoundException("Ticket not found.");
+        if (ticket.Status is (int)TicketStatus.Closed or (int)TicketStatus.Cancelled)
+            throw new ArgumentException("Không thể tải tệp lên vé đã kết thúc.");
 
-        var storageKey = $"tickets/{command.TicketId}/{Guid.NewGuid()}_{Path.GetFileName(req.FileName)}";
         const int expirySeconds = 3600;
+        var upload = AttachmentUploadGrant.CreatePending(command.TicketId, actorId, Path.GetFileName(req.FileName),
+            req.FileSizeBytes, req.ContentType, clock.UtcNow.UtcDateTime.AddSeconds(expirySeconds));
 
         try
         {
-            var uploadUrl = await storageService.GetPresignedUploadUrlAsync("servicedesk", storageKey, expirySeconds, cancellationToken);
-            return new UploadUrlResult(uploadUrl, storageKey, expirySeconds);
+            var signed = await storageService.CreateUploadAsync(storageService.DefaultBucket, upload.StorageKey, upload.ContentType, upload.FileSizeBytes, expirySeconds, cancellationToken);
+            await attachmentStore.CreateUploadGrantAsync(upload, cancellationToken);
+            return new UploadUrlResult(signed.Url, upload.StorageKey, expirySeconds, signed.FormData);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException and not ArgumentException)
         {
-            throw new ServiceUnavailableException($"Dịch vụ lưu trữ tệp (MinIO) hiện không khả dụng: {ex.Message}");
+            throw new ServiceUnavailableException("Dịch vụ lưu trữ tệp hiện không khả dụng.");
         }
     }
 }

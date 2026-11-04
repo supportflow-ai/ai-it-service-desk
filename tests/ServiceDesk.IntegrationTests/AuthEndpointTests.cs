@@ -34,6 +34,7 @@ public class AuthEndpointTests : IClassFixture<ServiceDeskWebApplicationFactory>
         var body = await response.Content.ReadFromJsonAsync<AuthResponse>();
         body!.Token.Should().NotBeNullOrEmpty();
         body.User!.Email.Should().Be(email);
+        body.User.FullName.Should().Be("Test User");
     }
 
     [Fact]
@@ -99,7 +100,7 @@ public class AuthEndpointTests : IClassFixture<ServiceDeskWebApplicationFactory>
     public async Task Me_WithValidToken_ReturnsUserInfo()
     {
         var email = $"me_{Guid.NewGuid():N}@example.com";
-        var registerResp = await _client.PostAsJsonAsync("/api/auth/register", new { email, password = "Test@1234" });
+        var registerResp = await _client.PostAsJsonAsync("/api/auth/register", new { email, password = "Test@1234", fullName = "Test User" });
         var registerBody = await registerResp.Content.ReadFromJsonAsync<AuthResponse>();
         var token = registerBody!.Token!;
 
@@ -111,6 +112,7 @@ public class AuthEndpointTests : IClassFixture<ServiceDeskWebApplicationFactory>
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await response.Content.ReadFromJsonAsync<UserInfoResponse>();
         body!.Email.Should().Be(email);
+        body.FullName.Should().Be("Test User");
 
         _client.DefaultRequestHeaders.Authorization = null;
     }

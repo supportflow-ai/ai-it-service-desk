@@ -38,7 +38,18 @@ public sealed class GetUsersByRoleUseCaseTests
         var result = await useCase.ExecuteAsync(new(RoleNames.Agent));
 
         Assert.Equal(2, result.Count);
+        Assert.All(result, user => Assert.False(string.IsNullOrWhiteSpace(user.FullName)));
         _userGateway.VerifyAll();
+    }
+
+    [Fact]
+    public async Task Execute_RejectsRequesterRole()
+    {
+        _user.Setup(u => u.IsInRole(RoleNames.Agent)).Returns(true);
+        var useCase = new GetUsersByRoleUseCase(_userGateway.Object, _user.Object);
+
+        await Assert.ThrowsAsync<ArgumentException>(() => useCase.ExecuteAsync(new(RoleNames.Requester)));
+        _userGateway.Verify(g => g.GetUsersInRoleAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]

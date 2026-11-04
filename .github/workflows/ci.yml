@@ -4,6 +4,11 @@ on:
     branches: [main, dev, staging, 'codex/**']
   pull_request:
   workflow_dispatch:
+    inputs:
+      publish_images:
+        description: 'Phát hành image SHA lên GHCR sau khi toàn bộ kiểm tra đạt'
+        type: boolean
+        default: false
 permissions:
   contents: read
 concurrency:
@@ -51,3 +56,64 @@ jobs:
         run: docker build -f src/backend/ServiceDesk.Worker/Dockerfile -t servicedesk-worker:ci .
       - name: Build database tool image
         run: docker build -f src/backend/ServiceDesk.Database/Dockerfile -t servicedesk-database:ci .
+
+  publish:
+    name: Phát hành image bất biến
+    needs: backend
+    if: github.event_name == 'workflow_dispatch' && inputs.publish_images && github.repository_owner == 'supportflow-ai' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        include:
+          - image: servicedesk-api
+            dockerfile: src/backend/ServiceDesk.Api/Dockerfile
+          - image: servicedesk-worker
+            dockerfile: src/backend/ServiceDesk.Worker/Dockerfile
+          - image: servicedesk-database
+            dockerfile: src/backend/ServiceDesk.Database/Dockerfile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build và push
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: ghcr.io/supportflow-ai/${{ matrix.image }}:sha-${{ github.sha }}
+          provenance: mode=max
+          sbom: true
+      - name: Ghi bằng chứng digest
+        env:
+          IMAGE: ${{ matrix.image }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+          SOURCE_SHA: ${{ github.sha }}
+          SOURCE_REPOSITORY: ${{ github.repository }}
+        run: |
+          python3 - <<'PY'
+          import json, os, pathlib, re
+          digest = os.environ["DIGEST"]
+          if not re.fullmatch(r"sha256:[0-9a-f]{64}", digest):
+              raise SystemExit("Thiếu digest hợp lệ; không tạo bằng chứng phát hành.")
+          image = os.environ["IMAGE"]
+          output = pathlib.Path("artifacts") / (image + ".json")
+          output.parent.mkdir(exist_ok=True)
+          output.write_text(json.dumps({
+              "repository": os.environ["SOURCE_REPOSITORY"],
+              "commit": os.environ["SOURCE_SHA"],
+              "images": {image: "ghcr.io/supportflow-ai/" + image + "@" + digest}
+          }, indent=2) + "\n", encoding="utf-8")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ghcr-${{ matrix.image }}-${{ github.sha }}
+          path: artifacts/*.json

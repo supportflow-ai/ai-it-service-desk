@@ -10,6 +10,10 @@ public sealed class MinioOptions
     /// <summary>Endpoint dịch vụ MinIO (ví dụ localhost:9000).</summary>
     public string Endpoint { get; set; } = string.Empty;
 
+    /// <summary>URL công khai có scheme để ký URL trình duyệt, ví dụ https://files.example.com.</summary>
+    public string PublicEndpoint { get; set; } = string.Empty;
+    public string Region { get; set; } = "us-east-1";
+
     /// <summary>Access Key tài khoản lưu trữ.</summary>
     public string AccessKey { get; set; } = string.Empty;
 

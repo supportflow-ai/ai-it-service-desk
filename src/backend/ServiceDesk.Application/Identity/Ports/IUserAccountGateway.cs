@@ -11,7 +11,7 @@ public sealed record AccountCreation(UserInfo? User, IReadOnlyList<string> Error
 public interface IUserAccountGateway
 {
     /// <summary>Tạo tài khoản người dùng mới với vai trò mặc định là Requester.</summary>
-    Task<AccountCreation> CreateRequesterAsync(string email, string password, CancellationToken cancellationToken);
+    Task<AccountCreation> CreateRequesterAsync(string email, string password, string? fullName, CancellationToken cancellationToken);
 
     /// <summary>Kiểm tra thông tin đăng nhập và mật khẩu của người dùng.</summary>
     Task<UserInfo?> CheckPasswordAsync(string email, string password, CancellationToken cancellationToken);

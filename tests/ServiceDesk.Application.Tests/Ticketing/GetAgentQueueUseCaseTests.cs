@@ -27,13 +27,29 @@ public sealed class GetAgentQueueUseCaseTests
         _user.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(false);
 
         var pagedResult = new PagedTicketResult([], 1, 10, 0);
-        _queries.Setup(q => q.GetAgentQueueAsync(It.IsAny<Guid>(), null, null, "unassigned", 1, 10, It.IsAny<CancellationToken>()))
+        _queries.Setup(q => q.GetAgentQueueAsync(It.IsAny<Guid>(), null, null, "unassigned", null, false, 1, 10, It.IsAny<CancellationToken>()))
             .ReturnsAsync(pagedResult);
 
         var useCase = new GetAgentQueueUseCase(_queries.Object, _user.Object);
         var result = await useCase.ExecuteAsync(new(Scope: "unassigned"));
 
         Assert.NotNull(result);
+        _queries.VerifyAll();
+    }
+
+    [Fact]
+    public async Task Execute_WithPriority_PassesFilterAndSortToQuery()
+    {
+        _user.SetupGet(u => u.Roles).Returns([RoleNames.Agent]);
+        _user.Setup(u => u.IsInRole(RoleNames.Agent)).Returns(true);
+        _user.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(false);
+        var result = new PagedTicketResult([], 1, 10, 0);
+        _queries.Setup(q => q.GetAgentQueueAsync(It.IsAny<Guid>(), null, null, null, "P1", true, 1, 10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(result);
+
+        var useCase = new GetAgentQueueUseCase(_queries.Object, _user.Object);
+        await useCase.ExecuteAsync(new(Priority: "P1", SortByPriority: true));
+
         _queries.VerifyAll();
     }
 

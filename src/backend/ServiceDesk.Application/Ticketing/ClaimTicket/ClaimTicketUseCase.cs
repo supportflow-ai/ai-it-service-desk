@@ -25,7 +25,6 @@ public interface IClaimTicket
 /// </summary>
 internal sealed class ClaimTicketUseCase(
     ITicketWriter writer,
-    ITicketTimelineStore timelineStore,
     ICurrentUser currentUser,
     IClock clock) : IClaimTicket
 {
@@ -46,13 +45,21 @@ internal sealed class ClaimTicketUseCase(
             throw new KeyNotFoundException("Ticket not found.");
         }
 
-        if (command.ExpectedRevision.HasValue && command.ExpectedRevision.Value > 0)
+        if (ticket.Status == TicketStatus.Assigned && ticket.AssignedToId != actorId &&
+            !currentUser.IsInRole(RoleNames.Admin))
         {
-            var currentRev = writer.GetRevision(ticket);
-            if (currentRev != 0 && currentRev != command.ExpectedRevision.Value)
-            {
-                throw new ConcurrencyConflictException("Dữ liệu đã bị thay đổi bởi người khác hoặc phiên làm việc đã cũ. Vui lòng tải lại trang.");
-            }
+            throw new UnauthorizedAccessException("Vé đã được phân công cho kỹ thuật viên khác.");
+        }
+
+        if (!command.ExpectedRevision.HasValue || command.ExpectedRevision.Value == 0)
+        {
+            throw new ArgumentException("Expected revision is required.");
+        }
+
+        var currentRev = writer.GetRevision(ticket);
+        if (currentRev != command.ExpectedRevision.Value)
+        {
+            throw new ConcurrencyConflictException("Dữ liệu đã bị thay đổi bởi người khác hoặc phiên làm việc đã cũ. Vui lòng tải lại trang.");
         }
 
         var now = clock.UtcNow.UtcDateTime;
@@ -65,9 +72,7 @@ internal sealed class ClaimTicketUseCase(
             throw new ArgumentException(ex.Message);
         }
 
-        var updated = await writer.UpdateTicketAsync(ticket, cancellationToken);
         var audit = TicketComment.CreatePublic(ticket.Id, actorId, "Hệ thống", "System", "Kỹ thuật viên đã tiếp nhận xử lý yêu cầu.", now);
-        await timelineStore.AddAsync(audit, cancellationToken);
-        return updated;
+        return await writer.UpdateTicketWithAuditAsync(ticket, audit, cancellationToken);
     }
 }

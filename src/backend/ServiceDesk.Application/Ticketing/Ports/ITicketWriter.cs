@@ -18,6 +18,9 @@ public interface ITicketWriter
     /// <summary>Lưu các thay đổi của ticket vào cơ sở dữ liệu.</summary>
     Task<TicketDto> UpdateTicketAsync(Ticket ticket, CancellationToken cancellationToken);
 
+    /// <summary>Lưu ticket và audit trong cùng một lần lưu nguyên tử.</summary>
+    Task<TicketDto> UpdateTicketWithAuditAsync(Ticket ticket, TicketComment audit, CancellationToken cancellationToken);
+
     /// <summary>Lấy số phiên bản đồng thời hiện tại (concurrency revision) của ticket.</summary>
     uint GetRevision(Ticket ticket);
 }

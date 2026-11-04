@@ -84,12 +84,12 @@ public static class AuthEndpoints
         {
             var targetRole = string.IsNullOrWhiteSpace(role) ? RoleNames.Agent : role;
             var users = await getUsersByRole.ExecuteAsync(new(targetRole), ct);
-            return Results.Ok(users);
+            return Results.Ok(users.Select(user => new { user.UserId, user.FullName }));
         })
         .AddEndpointFilter<LegacyErrorFilter>()
         .WithName("GetUsers")
         .RequireAuthorization(PolicyNames.RequireAgent)
-        .Produces<IReadOnlyList<UserInfo>>(StatusCodes.Status200OK)
+        .Produces<IReadOnlyList<object>>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status401Unauthorized)
         .Produces(StatusCodes.Status403Forbidden);
 

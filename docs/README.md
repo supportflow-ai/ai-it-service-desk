@@ -6,6 +6,8 @@ Trạng thái: hiện hành cho kho backend. Cập nhật: 2026-10-20. Phần m�
 
 [Báo cáo rà soát toàn bộ tài liệu](reviews/documentation-audit-20261020.md) ghi các nguồn xung đột, phần đã xử lý và các điểm cần đồng bộ trước khi chốt.
 
+[Đợt củng cố SupportFlow 03/11/2026](runbooks/supportflow-hardening-phase-1.md) ghi thay đổi quyền bình luận, lưu nguyên tử ticket–timeline và các kiểm thử cần chạy trên mã mới.
+
 Đọc [bảng mốc mã nguồn](architecture/source-baseline.md) trước khi chạy: nhánh chuẩn hóa được chuẩn bị trên dev sau PR #29, gồm mã 12 luồng, bản chuẩn API và công cụ Python tương ứng. Kết quả kiểm thử cần gắn với đúng HEAD.
 
 Đọc theo thứ tự: [AGENTS.md](../AGENTS.md) → [kiến trúc hiện hành](architecture/backend-modules-and-use-cases.md) → [hợp đồng đang triển khai](architecture/current-backend-contract.md) → tài liệu của nhiệm vụ. [Hướng dẫn môi trường](runbooks/environment-runbook.md) là nguồn lệnh chạy local và thao tác database.
@@ -34,6 +36,8 @@ Không có quy tắc “mọi tệp trong architecture luôn thắng OpenAPI”.
 - Không sao chép toàn bộ tài liệu thành một gói ngữ cảnh mới. Dùng chỉ mục này và liên kết để tránh các bản nội dung lệch nhau.
 
 ## Kiểm tra tài liệu
+
+Các đợt đang triển khai: [quyền bình luận và ticket–audit](runbooks/supportflow-hardening-phase-1.md), [attachment, contract, HTTP AI và phát hành](runbooks/supportflow-hardening-phase-2-6.md). Những hướng dẫn này ghi rõ phạm vi working tree và phần chưa nghiệm thu.
 
 Chạy từ gốc repo, dùng Python theo workflow (Linux/macOS có thể cần `python3`):
 

@@ -25,7 +25,6 @@ public interface ICancelTicket
 /// </summary>
 internal sealed class CancelTicketUseCase(
     ITicketWriter writer,
-    ITicketTimelineStore timelineStore,
     ICurrentUser currentUser,
     IClock clock) : ICancelTicket
 {
@@ -40,13 +39,15 @@ internal sealed class CancelTicketUseCase(
             throw new KeyNotFoundException("Ticket not found or outside access scope.");
         }
 
-        if (command.ExpectedRevision.HasValue && command.ExpectedRevision.Value > 0)
+        if (!command.ExpectedRevision.HasValue || command.ExpectedRevision.Value == 0)
         {
-            var currentRev = writer.GetRevision(ticket);
-            if (currentRev != 0 && currentRev != command.ExpectedRevision.Value)
-            {
-                throw new ConcurrencyConflictException("Dữ liệu đã bị thay đổi bởi người khác hoặc phiên làm việc đã cũ. Vui lòng tải lại trang.");
-            }
+            throw new ArgumentException("Expected revision is required.");
+        }
+
+        var currentRev = writer.GetRevision(ticket);
+        if (currentRev != command.ExpectedRevision.Value)
+        {
+            throw new ConcurrencyConflictException("Dữ liệu đã bị thay đổi bởi người khác hoặc phiên làm việc đã cũ. Vui lòng tải lại trang.");
         }
 
         var now = clock.UtcNow.UtcDateTime;
@@ -59,9 +60,7 @@ internal sealed class CancelTicketUseCase(
             throw new ArgumentException(ex.Message);
         }
 
-        var updated = await writer.UpdateTicketAsync(ticket, cancellationToken);
         var audit = TicketComment.CreatePublic(ticket.Id, actorId, "Hệ thống", "System", "Yêu cầu đã được hủy bỏ.", now);
-        await timelineStore.AddAsync(audit, cancellationToken);
-        return updated;
+        return await writer.UpdateTicketWithAuditAsync(ticket, audit, cancellationToken);
     }
 }

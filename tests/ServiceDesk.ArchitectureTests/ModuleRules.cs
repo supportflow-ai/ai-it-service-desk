@@ -40,10 +40,27 @@ internal static class ModuleRules
         "ServiceDesk.Application.Ticketing.Contracts.ConfirmAttachmentUploadRequest",
         "ServiceDesk.Application.Ticketing.Contracts.TicketAttachmentDto",
         "ServiceDesk.Application.Identity.GetUsersByRole.IGetUsersByRole", "ServiceDesk.Application.Identity.GetUsersByRole.GetUsersByRoleQuery",
+        "ServiceDesk.Application.Identity.GetUsersByRole.UserDirectoryEntry",
         "ServiceDesk.Application.Common.ConcurrencyConflictException",
         "ServiceDesk.Application.Common.ServiceUnavailableException",
         "ServiceDesk.Application.Ticketing.Idempotency.IdempotencyConflictException",
-        "ServiceDesk.Application.Ticketing.Idempotency.IdempotencyInProgressException"
+        "ServiceDesk.Application.Ticketing.Idempotency.IdempotencyInProgressException",
+        "ServiceDesk.Domain.Knowledge.ArticleStatus",
+        "ServiceDesk.Application.Knowledge.Contracts.ArticleDto",
+        "ServiceDesk.Application.Knowledge.Contracts.ArticleDraftDto",
+        "ServiceDesk.Application.Knowledge.Contracts.PagedArticleResult",
+        "ServiceDesk.Application.Knowledge.CreateDraftArticle.ICreateDraftArticle",
+        "ServiceDesk.Application.Knowledge.CreateDraftArticle.CreateDraftArticleCommand",
+        "ServiceDesk.Application.Knowledge.UpdateDraftArticle.IUpdateDraftArticle",
+        "ServiceDesk.Application.Knowledge.UpdateDraftArticle.UpdateDraftArticleCommand",
+        "ServiceDesk.Application.Knowledge.PublishArticle.IPublishArticle",
+        "ServiceDesk.Application.Knowledge.PublishArticle.PublishArticleCommand",
+        "ServiceDesk.Application.Knowledge.ArchiveArticle.IArchiveArticle",
+        "ServiceDesk.Application.Knowledge.ArchiveArticle.ArchiveArticleCommand",
+        "ServiceDesk.Application.Knowledge.GetArticleDetail.IGetArticleDetail",
+        "ServiceDesk.Application.Knowledge.GetArticleDetail.GetArticleDetailQuery",
+        "ServiceDesk.Application.Knowledge.SearchKnowledge.ISearchKnowledge",
+        "ServiceDesk.Application.Knowledge.SearchKnowledge.SearchKnowledgeQuery"
     };
 
     private static readonly HashSet<string> Composition = new(StringComparer.Ordinal)
@@ -63,6 +80,9 @@ internal static class ModuleRules
         "ServiceDesk.Infrastructure.Persistence.Migrations.RestoreIdentitySchema",
         "ServiceDesk.Infrastructure.Persistence.Migrations.FixTicketNumberWidth",
         "ServiceDesk.Infrastructure.Persistence.Migrations.AddTicketAssignmentPriorityAndCollaboration",
+        "ServiceDesk.Infrastructure.Persistence.Migrations.AddAttachmentUploadGrant",
+        "ServiceDesk.Infrastructure.Persistence.Migrations.LinkAttachmentUploadGrant",
+        "ServiceDesk.Infrastructure.Persistence.Migrations.AddKnowledgeArticles",
         "ServiceDesk.Infrastructure.Persistence.Migrations.ApplicationDbContextModelSnapshot"
     };
 
@@ -79,7 +99,7 @@ internal static class ModuleRules
         if (name.StartsWith("<>z__ReadOnlyArray", StringComparison.Ordinal) ||
             name.StartsWith("<>z__ReadOnlySingleElementList", StringComparison.Ordinal)) return "Shared";
         foreach (var layer in new[] { "Domain", "Application", "Infrastructure" })
-            foreach (var module in new[] { "Identity", "Ticketing", "AIAssistance", "AI" })
+            foreach (var module in new[] { "Identity", "Ticketing", "AIAssistance", "AI", "Knowledge" })
                 if (name.StartsWith($"ServiceDesk.{layer}.{module}.", StringComparison.Ordinal))
                     return module == "AI" ? "AIAssistance" : module;
         foreach (var prefix in new[] { "ServiceDesk.Domain.Common.", "ServiceDesk.Application.Common.",
@@ -112,7 +132,7 @@ internal static class ModuleRules
                 var allowed = source switch
                 {
                     "Composition" => true,
-                    "Provisioning" => other is "Provisioning" or "Shared" or "Ticketing" or "Identity",
+                    "Provisioning" => other is "Provisioning" or "Shared" or "Ticketing" or "Identity" or "Knowledge",
                     "Shared" => other == "Shared",
                     "Presentation" => other is "Presentation" or "Shared" || published,
                     _ => other == source || other == "Shared" || published ||

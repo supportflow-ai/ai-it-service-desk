@@ -86,6 +86,14 @@ public class ServiceDeskWebApplicationFactory : WebApplicationFactory<ServiceDes
     /// </summary>
     private sealed class TestObjectStorageService : IObjectStorageService
     {
+        public string DefaultBucket => "servicedesk-test";
+        public Task<PresignedUpload> CreateUploadAsync(string bucket, string key, string contentType, long size, int expirySeconds, CancellationToken cancellationToken = default)
+            => Task.FromResult(new PresignedUpload($"https://test-storage/{bucket}", new Dictionary<string, string> { ["key"] = key }));
+        public Task<StoredObject?> StatAsync(string bucket, string key, CancellationToken cancellationToken = default)
+            => Task.FromResult<StoredObject?>(null);
+        public Task CopyAsync(string bucket, string source, string destination, string expectedETag, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task DeleteAsync(string bucket, string key, CancellationToken cancellationToken = default) => Task.CompletedTask;
+
         public Task<string> GetPresignedUploadUrlAsync(
             string bucketName, string objectName, int expiryInSeconds = 3600,
             CancellationToken cancellationToken = default)
@@ -95,6 +103,10 @@ public class ServiceDeskWebApplicationFactory : WebApplicationFactory<ServiceDes
             string bucketName, string objectName, int expiryInSeconds = 3600,
             CancellationToken cancellationToken = default)
             => Task.FromResult($"https://test-storage/{bucketName}/{objectName}");
+
+        public Task<ObjectStorageObjectInfo> StatObjectAsync(
+            string bucketName, string objectName, CancellationToken cancellationToken = default)
+            => throw new FileNotFoundException("Test storage không có object đã tải lên.");
 
         public Task<bool> BucketExistsAsync(
             string bucketName, CancellationToken cancellationToken = default)

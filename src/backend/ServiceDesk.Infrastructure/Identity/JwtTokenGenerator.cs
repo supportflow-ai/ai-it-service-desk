@@ -37,6 +37,11 @@ internal sealed class JwtTokenGenerator : IAccessTokenIssuer
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
 
+        if (!string.IsNullOrWhiteSpace(user.FullName))
+        {
+            claims.Add(new Claim(ClaimTypes.Name, user.FullName));
+        }
+
         foreach (var role in user.Roles)
         {
             claims.Add(new Claim(ClaimTypes.Role, role));

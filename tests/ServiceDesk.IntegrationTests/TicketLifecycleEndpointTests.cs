@@ -34,7 +34,8 @@ public class TicketLifecycleEndpointTests : IClassFixture<ServiceDeskWebApplicat
         {
             title = "Updated Title",
             description = "Updated description at least 10 chars",
-            categoryId = TicketCategories.HW
+            categoryId = TicketCategories.HW,
+            expectedRevision = ticket.Revision
         });
 
         updateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -53,7 +54,7 @@ public class TicketLifecycleEndpointTests : IClassFixture<ServiceDeskWebApplicat
 
         var ticket = await CreateTicketAsync();
 
-        var cancelResponse = await _client.PostAsync($"/api/tickets/{ticket.Id}/cancel", null);
+        var cancelResponse = await _client.PostAsync($"/api/tickets/{ticket.Id}/cancel?expectedRevision={ticket.Revision}", null);
         cancelResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var cancelled = await cancelResponse.Content.ReadFromJsonAsync<TicketDto>();
@@ -76,32 +77,33 @@ public class TicketLifecycleEndpointTests : IClassFixture<ServiceDeskWebApplicat
 
         // 3. Agent claims ticket
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", agentToken);
-        var claimRes = await _client.PostAsync($"/api/tickets/{ticket.Id}/claim", null);
+        var claimRes = await _client.PostAsync($"/api/tickets/{ticket.Id}/claim?expectedRevision={ticket.Revision}", null);
         claimRes.StatusCode.Should().Be(HttpStatusCode.OK);
         var inProgressTicket = await claimRes.Content.ReadFromJsonAsync<TicketDto>();
         inProgressTicket!.Status.Should().Be((int)TicketStatus.InProgress);
 
         // 4. Agent resolves ticket
-        var resolveRes = await _client.PostAsync($"/api/tickets/{ticket.Id}/resolve", null);
+        var resolveRes = await _client.PostAsync($"/api/tickets/{ticket.Id}/resolve?expectedRevision={inProgressTicket.Revision}", null);
         resolveRes.StatusCode.Should().Be(HttpStatusCode.OK);
         var resolvedTicket = await resolveRes.Content.ReadFromJsonAsync<TicketDto>();
         resolvedTicket!.Status.Should().Be((int)TicketStatus.Resolved);
 
         // 5. Requester reopens ticket
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", requesterToken);
-        var reopenRes = await _client.PostAsync($"/api/tickets/{ticket.Id}/reopen", null);
+        var reopenRes = await _client.PostAsync($"/api/tickets/{ticket.Id}/reopen?expectedRevision={resolvedTicket.Revision}", null);
         reopenRes.StatusCode.Should().Be(HttpStatusCode.OK);
         var reopenedTicket = await reopenRes.Content.ReadFromJsonAsync<TicketDto>();
         reopenedTicket!.Status.Should().Be((int)TicketStatus.InProgress);
 
         // 6. Agent resolves ticket again
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", agentToken);
-        var resolveAgain = await _client.PostAsync($"/api/tickets/{ticket.Id}/resolve", null);
+        var resolveAgain = await _client.PostAsync($"/api/tickets/{ticket.Id}/resolve?expectedRevision={reopenedTicket.Revision}", null);
         resolveAgain.StatusCode.Should().Be(HttpStatusCode.OK);
+        var resolvedAgainTicket = await resolveAgain.Content.ReadFromJsonAsync<TicketDto>();
 
         // 7. Requester closes ticket
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", requesterToken);
-        var closeRes = await _client.PostAsync($"/api/tickets/{ticket.Id}/close", null);
+        var closeRes = await _client.PostAsync($"/api/tickets/{ticket.Id}/close?expectedRevision={resolvedAgainTicket!.Revision}", null);
         closeRes.StatusCode.Should().Be(HttpStatusCode.OK);
         var closedTicket = await closeRes.Content.ReadFromJsonAsync<TicketDto>();
         closedTicket!.Status.Should().Be((int)TicketStatus.Closed);
