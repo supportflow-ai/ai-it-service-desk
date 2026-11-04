@@ -65,11 +65,13 @@ public static class KnowledgeEndpoints
         // PUT /api/knowledge/articles/{id}/draft: Cập nhật bản nháp bài viết (Agent/Admin)
         group.MapPut("/{id:guid}/draft", async (
             Guid id,
+            [FromQuery] uint? expectedRevision,
             [FromBody] UpdateDraftArticleRequest request,
             IUpdateDraftArticle updateDraft,
             CancellationToken ct) =>
         {
-            var res = await updateDraft.ExecuteAsync(new UpdateDraftArticleCommand(id, request.Title, request.Content, request.Tags, request.ExpectedRevision), ct);
+            var effectiveRevision = request.ExpectedRevision ?? expectedRevision;
+            var res = await updateDraft.ExecuteAsync(new UpdateDraftArticleCommand(id, request.Title, request.Content, request.Tags, effectiveRevision), ct);
             return Results.Ok(res);
         })
         .WithName("UpdateDraftArticle")

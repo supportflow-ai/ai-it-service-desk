@@ -75,7 +75,7 @@ public sealed class DraftArticleUseCaseTests
             .ReturnsAsync((Article?)null);
 
         var useCase = new UpdateDraftArticleUseCase(_writer.Object, _user.Object, _clock.Object);
-        var command = new UpdateDraftArticleCommand(Guid.NewGuid(), "Tiêu đề mới", "Nội dung bài viết mới cập nhật");
+        var command = new UpdateDraftArticleCommand(Guid.NewGuid(), "Tiêu đề mới", "Nội dung bài viết mới cập nhật", ExpectedRevision: 1u);
 
         await Assert.ThrowsAsync<KeyNotFoundException>(() => useCase.ExecuteAsync(command));
     }
@@ -92,7 +92,7 @@ public sealed class DraftArticleUseCaseTests
             .ReturnsAsync(article);
 
         var useCase = new UpdateDraftArticleUseCase(_writer.Object, _user.Object, _clock.Object);
-        var command = new UpdateDraftArticleCommand(article.Id, "Tiêu đề bị sửa", "Nội dung cố tình bị sửa");
+        var command = new UpdateDraftArticleCommand(article.Id, "Tiêu đề bị sửa", "Nội dung cố tình bị sửa", ExpectedRevision: 1u);
 
         var ex = await Assert.ThrowsAsync<UnauthorizedAccessException>(() => useCase.ExecuteAsync(command));
         Assert.Contains("Chỉ tác giả hoặc quản trị viên mới có quyền chỉnh sửa bản nháp.", ex.Message);
@@ -110,10 +110,10 @@ public sealed class DraftArticleUseCaseTests
             .ReturnsAsync(article);
         _writer.Setup(w => w.UpdateArticleAsync(article, It.IsAny<uint?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((Article a, uint? _, CancellationToken _) => a);
-        _writer.Setup(w => w.GetRevision(article)).Returns(2u);
+        _writer.SetupSequence(w => w.GetRevision(article)).Returns(1u).Returns(2u);
 
         var useCase = new UpdateDraftArticleUseCase(_writer.Object, _user.Object, _clock.Object);
-        var command = new UpdateDraftArticleCommand(article.Id, "Tiêu đề Admin sửa", "Nội dung được Admin hiệu chỉnh", ["admin-tag"]);
+        var command = new UpdateDraftArticleCommand(article.Id, "Tiêu đề Admin sửa", "Nội dung được Admin hiệu chỉnh", ["admin-tag"], ExpectedRevision: 1u);
 
         var result = await useCase.ExecuteAsync(command);
 
@@ -154,9 +154,10 @@ public sealed class DraftArticleUseCaseTests
         article.Publish(_authorId, _now.UtcDateTime);
         _writer.Setup(w => w.GetForUpdateAsync(article.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(article);
+        _writer.Setup(w => w.GetRevision(article)).Returns(1u);
 
         var useCase = new UpdateDraftArticleUseCase(_writer.Object, _user.Object, _clock.Object);
-        var command = new UpdateDraftArticleCommand(article.Id, "Tiêu đề mới", "Nội dung mới sau khi xuất bản");
+        var command = new UpdateDraftArticleCommand(article.Id, "Tiêu đề mới", "Nội dung mới sau khi xuất bản", ExpectedRevision: 1u);
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => useCase.ExecuteAsync(command));
     }
@@ -173,10 +174,31 @@ public sealed class DraftArticleUseCaseTests
         article.Archive(_now.UtcDateTime);
         _writer.Setup(w => w.GetForUpdateAsync(article.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(article);
+        _writer.Setup(w => w.GetRevision(article)).Returns(1u);
 
         var useCase = new UpdateDraftArticleUseCase(_writer.Object, _user.Object, _clock.Object);
-        var command = new UpdateDraftArticleCommand(article.Id, "Tiêu đề mới", "Nội dung mới sau khi lưu trữ");
+        var command = new UpdateDraftArticleCommand(article.Id, "Tiêu đề mới", "Nội dung mới sau khi lưu trữ", ExpectedRevision: 1u);
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => useCase.ExecuteAsync(command));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData(0u)]
+    public async Task UpdateDraft_WhenExpectedRevisionMissingOrZero_ThrowsArgumentException(uint? revision)
+    {
+        _user.Setup(u => u.IsInRole(RoleNames.Agent)).Returns(true);
+        _user.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(false);
+        _user.SetupGet(u => u.UserId).Returns(_authorId.ToString());
+
+        var article = Article.CreateDraft(_authorId, "Tiêu đề gốc", "Nội dung gốc bài viết", null, _now.UtcDateTime);
+        _writer.Setup(w => w.GetForUpdateAsync(article.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(article);
+
+        var useCase = new UpdateDraftArticleUseCase(_writer.Object, _user.Object, _clock.Object);
+        var command = new UpdateDraftArticleCommand(article.Id, "Tiêu đề mới", "Nội dung bài viết mới cập nhật", null, ExpectedRevision: revision);
+
+        var ex = await Assert.ThrowsAsync<ArgumentException>(() => useCase.ExecuteAsync(command));
+        Assert.Equal("Expected revision is required.", ex.Message);
     }
 }

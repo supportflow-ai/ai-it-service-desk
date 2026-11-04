@@ -32,12 +32,14 @@ internal sealed class ArchiveArticleUseCase(
             throw new UnauthorizedAccessException("Chỉ tác giả hoặc quản trị viên mới có quyền lưu trữ bài viết.");
         }
 
-        if (command.ExpectedRevision.HasValue && command.ExpectedRevision.Value > 0)
+        if (!command.ExpectedRevision.HasValue || command.ExpectedRevision.Value == 0)
         {
-            if (writer.GetRevision(article) != command.ExpectedRevision.Value)
-            {
-                throw new ConcurrencyConflictException("Phiên bản bài viết đã thay đổi. Vui lòng tải lại.");
-            }
+            throw new ArgumentException("Expected revision is required.");
+        }
+
+        if (writer.GetRevision(article) != command.ExpectedRevision.Value)
+        {
+            throw new ConcurrencyConflictException("Phiên bản bài viết đã thay đổi. Vui lòng tải lại.");
         }
 
         article.Archive(clock.UtcNow.UtcDateTime);

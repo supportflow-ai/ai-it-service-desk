@@ -30,7 +30,7 @@ public sealed class ArchiveArticleUseCaseTests
         _user.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(false);
 
         var useCase = new ArchiveArticleUseCase(_writer.Object, _user.Object, _clock.Object);
-        var command = new ArchiveArticleCommand(Guid.NewGuid());
+        var command = new ArchiveArticleCommand(Guid.NewGuid(), ExpectedRevision: 1u);
 
         var ex = await Assert.ThrowsAsync<UnauthorizedAccessException>(() => useCase.ExecuteAsync(command));
         Assert.Contains("Chỉ kỹ thuật viên hoặc quản trị viên mới có thể lưu trữ bài viết.", ex.Message);
@@ -50,10 +50,10 @@ public sealed class ArchiveArticleUseCaseTests
             .ReturnsAsync(article);
         _writer.Setup(w => w.UpdateArticleAsync(article, It.IsAny<uint?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((Article a, uint? _, CancellationToken _) => a);
-        _writer.Setup(w => w.GetRevision(article)).Returns(3u);
+        _writer.SetupSequence(w => w.GetRevision(article)).Returns(1u).Returns(3u);
 
         var useCase = new ArchiveArticleUseCase(_writer.Object, _user.Object, _clock.Object);
-        var command = new ArchiveArticleCommand(article.Id);
+        var command = new ArchiveArticleCommand(article.Id, ExpectedRevision: 1u);
 
         var result = await useCase.ExecuteAsync(command);
 
@@ -63,7 +63,7 @@ public sealed class ArchiveArticleUseCaseTests
         Assert.Equal(3u, result.Revision);
         Assert.Single(result.Tags);
         Assert.Contains("tag1", result.Tags);
-        _writer.Verify(w => w.UpdateArticleAsync(article, null, It.IsAny<CancellationToken>()), Times.Once);
+        _writer.Verify(w => w.UpdateArticleAsync(article, 1u, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -80,7 +80,7 @@ public sealed class ArchiveArticleUseCaseTests
             .ReturnsAsync(article);
 
         var useCase = new ArchiveArticleUseCase(_writer.Object, _user.Object, _clock.Object);
-        var command = new ArchiveArticleCommand(article.Id);
+        var command = new ArchiveArticleCommand(article.Id, ExpectedRevision: 1u);
 
         var ex = await Assert.ThrowsAsync<UnauthorizedAccessException>(() => useCase.ExecuteAsync(command));
         Assert.Contains("Chỉ tác giả hoặc quản trị viên mới có quyền lưu trữ bài viết.", ex.Message);
@@ -95,7 +95,7 @@ public sealed class ArchiveArticleUseCaseTests
             .ReturnsAsync((Article?)null);
 
         var useCase = new ArchiveArticleUseCase(_writer.Object, _user.Object, _clock.Object);
-        var command = new ArchiveArticleCommand(Guid.NewGuid());
+        var command = new ArchiveArticleCommand(Guid.NewGuid(), ExpectedRevision: 1u);
 
         await Assert.ThrowsAsync<KeyNotFoundException>(() => useCase.ExecuteAsync(command));
     }
@@ -130,11 +130,34 @@ public sealed class ArchiveArticleUseCaseTests
         var article = Article.CreateDraft(_authorId, "Tiêu đề bài viết", "Nội dung bài viết hợp lệ từ 10 ký tự", null, _now.UtcDateTime);
         _writer.Setup(w => w.GetForUpdateAsync(article.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(article);
+        _writer.Setup(w => w.GetRevision(article)).Returns(1u);
 
         var useCase = new ArchiveArticleUseCase(_writer.Object, _user.Object, _clock.Object);
-        var command = new ArchiveArticleCommand(article.Id);
+        var command = new ArchiveArticleCommand(article.Id, ExpectedRevision: 1u);
 
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => useCase.ExecuteAsync(command));
         Assert.Contains("Chỉ có thể lưu trữ bài viết đang ở trạng thái đã xuất bản.", ex.Message);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData(0u)]
+    public async Task Archive_WhenExpectedRevisionMissingOrZero_ThrowsArgumentException(uint? revision)
+    {
+        _user.Setup(u => u.IsInRole(RoleNames.Agent)).Returns(true);
+        _user.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(false);
+        _user.SetupGet(u => u.UserId).Returns(_authorId.ToString());
+
+        var article = Article.CreateDraft(_authorId, "Tiêu đề bài viết", "Nội dung bài viết hợp lệ từ 10 ký tự", null, _now.UtcDateTime);
+        article.Publish(_agentId, _now.UtcDateTime);
+
+        _writer.Setup(w => w.GetForUpdateAsync(article.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(article);
+
+        var useCase = new ArchiveArticleUseCase(_writer.Object, _user.Object, _clock.Object);
+        var command = new ArchiveArticleCommand(article.Id, ExpectedRevision: revision);
+
+        var ex = await Assert.ThrowsAsync<ArgumentException>(() => useCase.ExecuteAsync(command));
+        Assert.Equal("Expected revision is required.", ex.Message);
     }
 }
