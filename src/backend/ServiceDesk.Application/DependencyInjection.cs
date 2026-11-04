@@ -24,6 +24,7 @@ using ServiceDesk.Application.Ticketing.ConfirmAttachmentUpload;
 using ServiceDesk.Application.Ticketing.GetTicketAttachments;
 using ServiceDesk.Application.Knowledge.CreateDraftArticle;
 using ServiceDesk.Application.Knowledge.UpdateDraftArticle;
+using ServiceDesk.Application.Knowledge.PublishArticle;
 
 namespace ServiceDesk.Application;
 
@@ -78,6 +79,7 @@ public static class DependencyInjection
     {
         services.AddScoped<ICreateDraftArticle, CreateDraftArticleUseCase>();
         services.AddScoped<IUpdateDraftArticle, UpdateDraftArticleUseCase>();
+        services.AddScoped<IPublishArticle, PublishArticleUseCase>();
         return services;
     }
 }

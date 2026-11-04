@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using ServiceDesk.Application.Knowledge.Contracts;
 using ServiceDesk.Application.Knowledge.CreateDraftArticle;
 using ServiceDesk.Application.Knowledge.UpdateDraftArticle;
+using ServiceDesk.Application.Knowledge.PublishArticle;
 using ServiceDesk.Domain.Identity;
 
 namespace ServiceDesk.Api.Endpoints;
@@ -11,6 +12,9 @@ public record CreateDraftArticleRequest(string Title, string Content, IReadOnlyL
 
 /// <summary>Request body cập nhật bản nháp bài viết tri thức.</summary>
 public record UpdateDraftArticleRequest(string Title, string Content, IReadOnlyList<string>? Tags = null, uint? ExpectedRevision = null);
+
+/// <summary>Request body xuất bản bài viết tri thức.</summary>
+public record PublishArticleRequest(uint? ExpectedRevision = null);
 
 /// <summary>
 /// Định nghĩa các API endpoints cho phân hệ tri thức (Knowledge Base).
@@ -49,6 +53,27 @@ public static class KnowledgeEndpoints
             return Results.Ok(res);
         })
         .WithName("UpdateDraftArticle")
+        .RequireAuthorization(PolicyNames.RequireAgent)
+        .Produces<ArticleDto>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status403Forbidden)
+        .Produces(StatusCodes.Status404NotFound)
+        .Produces(StatusCodes.Status409Conflict);
+
+        // POST /api/knowledge/articles/{id}/publish: Xuất bản bài viết từ bản nháp (Agent/Admin)
+        group.MapPost("/{id:guid}/publish", async (
+            Guid id,
+            [FromQuery] uint? expectedRevision,
+            [FromBody] PublishArticleRequest? request,
+            IPublishArticle publishArticle,
+            CancellationToken ct) =>
+        {
+            var effectiveRevision = request?.ExpectedRevision ?? expectedRevision;
+            var res = await publishArticle.ExecuteAsync(new PublishArticleCommand(id, effectiveRevision), ct);
+            return Results.Ok(res);
+        })
+        .WithName("PublishArticle")
         .RequireAuthorization(PolicyNames.RequireAgent)
         .Produces<ArticleDto>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status400BadRequest)
