@@ -22,6 +22,8 @@ using ServiceDesk.Application.Ticketing.GenerateAttachmentUploadUrl;
 using ServiceDesk.Application.Ticketing.GetAttachmentDownloadUrl;
 using ServiceDesk.Application.Ticketing.ConfirmAttachmentUpload;
 using ServiceDesk.Application.Ticketing.GetTicketAttachments;
+using ServiceDesk.Application.Knowledge.CreateDraftArticle;
+using ServiceDesk.Application.Knowledge.UpdateDraftArticle;
 
 namespace ServiceDesk.Application;
 
@@ -33,7 +35,10 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
-        return services.AddTicketingApplication().AddIdentityApplication();
+        return services
+            .AddTicketingApplication()
+            .AddIdentityApplication()
+            .AddKnowledgeApplication();
     }
 
     public static IServiceCollection AddTicketingApplication(this IServiceCollection services)
@@ -66,6 +71,13 @@ public static class DependencyInjection
         services.AddScoped<ILoginUser, LoginUserUseCase>();
         services.AddScoped<IGetCurrentUser, GetCurrentUserUseCase>();
         services.AddScoped<IGetUsersByRole, GetUsersByRoleUseCase>();
+        return services;
+    }
+
+    public static IServiceCollection AddKnowledgeApplication(this IServiceCollection services)
+    {
+        services.AddScoped<ICreateDraftArticle, CreateDraftArticleUseCase>();
+        services.AddScoped<IUpdateDraftArticle, UpdateDraftArticleUseCase>();
         return services;
     }
 }
