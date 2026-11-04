@@ -26,6 +26,8 @@ using ServiceDesk.Application.Knowledge.CreateDraftArticle;
 using ServiceDesk.Application.Knowledge.UpdateDraftArticle;
 using ServiceDesk.Application.Knowledge.PublishArticle;
 using ServiceDesk.Application.Knowledge.ArchiveArticle;
+using ServiceDesk.Application.Knowledge.GetArticleDetail;
+using ServiceDesk.Application.Knowledge.SearchKnowledge;
 
 namespace ServiceDesk.Application;
 
@@ -82,6 +84,8 @@ public static class DependencyInjection
         services.AddScoped<IUpdateDraftArticle, UpdateDraftArticleUseCase>();
         services.AddScoped<IPublishArticle, PublishArticleUseCase>();
         services.AddScoped<IArchiveArticle, ArchiveArticleUseCase>();
+        services.AddScoped<IGetArticleDetail, GetArticleDetailUseCase>();
+        services.AddScoped<ISearchKnowledge, SearchKnowledgeUseCase>();
         return services;
     }
 }

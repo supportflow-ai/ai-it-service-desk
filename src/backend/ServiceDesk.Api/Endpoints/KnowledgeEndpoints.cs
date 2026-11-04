@@ -4,7 +4,10 @@ using ServiceDesk.Application.Knowledge.CreateDraftArticle;
 using ServiceDesk.Application.Knowledge.UpdateDraftArticle;
 using ServiceDesk.Application.Knowledge.PublishArticle;
 using ServiceDesk.Application.Knowledge.ArchiveArticle;
+using ServiceDesk.Application.Knowledge.GetArticleDetail;
+using ServiceDesk.Application.Knowledge.SearchKnowledge;
 using ServiceDesk.Domain.Identity;
+using ServiceDesk.Domain.Knowledge;
 
 namespace ServiceDesk.Api.Endpoints;
 
@@ -106,6 +109,61 @@ public static class KnowledgeEndpoints
         .Produces(StatusCodes.Status403Forbidden)
         .Produces(StatusCodes.Status404NotFound)
         .Produces(StatusCodes.Status409Conflict);
+
+        // GET /api/knowledge/articles/{id}: Chi tiết bài viết tri thức (Requester/Agent/Admin)
+        group.MapGet("/{id:guid}", async (
+            Guid id,
+            IGetArticleDetail getArticleDetail,
+            CancellationToken ct) =>
+        {
+            var res = await getArticleDetail.ExecuteAsync(new GetArticleDetailQuery(id), ct);
+            if (res == null)
+            {
+                return Results.NotFound(new { error = "Không tìm thấy bài viết." });
+            }
+            return Results.Ok(res);
+        })
+        .WithName("GetArticleDetail")
+        .RequireAuthorization(PolicyNames.RequireRequester)
+        .Produces<ArticleDto>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status404NotFound);
+
+        // GET /api/knowledge/articles/search: Tìm kiếm bài viết tri thức (Requester/Agent/Admin)
+        group.MapGet("/search", async (
+            [FromQuery] string? query,
+            [FromQuery] string? tag,
+            [FromQuery] ArticleStatus? status,
+            ISearchKnowledge searchKnowledge,
+            CancellationToken ct,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10) =>
+        {
+            var res = await searchKnowledge.ExecuteAsync(new SearchKnowledgeQuery(query, tag, status, page, pageSize), ct);
+            return Results.Ok(res);
+        })
+        .WithName("SearchKnowledgeArticles")
+        .RequireAuthorization(PolicyNames.RequireRequester)
+        .Produces<PagedArticleResult>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status401Unauthorized);
+
+        // GET /api/knowledge/articles: Danh sách / tìm kiếm bài viết tri thức (alias)
+        group.MapGet("/", async (
+            [FromQuery] string? query,
+            [FromQuery] string? tag,
+            [FromQuery] ArticleStatus? status,
+            ISearchKnowledge searchKnowledge,
+            CancellationToken ct,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10) =>
+        {
+            var res = await searchKnowledge.ExecuteAsync(new SearchKnowledgeQuery(query, tag, status, page, pageSize), ct);
+            return Results.Ok(res);
+        })
+        .WithName("ListKnowledgeArticles")
+        .RequireAuthorization(PolicyNames.RequireRequester)
+        .Produces<PagedArticleResult>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status401Unauthorized);
 
         return app;
     }

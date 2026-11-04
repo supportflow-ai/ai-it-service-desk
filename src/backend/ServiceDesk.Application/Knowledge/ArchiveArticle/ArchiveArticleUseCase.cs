@@ -26,6 +26,12 @@ internal sealed class ArchiveArticleUseCase(
             throw new KeyNotFoundException("Không tìm thấy bài viết.");
         }
 
+        var callerId = Guid.Parse(currentUser.UserId!);
+        if (!currentUser.IsInRole(RoleNames.Admin) && !article.IsAuthor(callerId))
+        {
+            throw new UnauthorizedAccessException("Chỉ tác giả hoặc quản trị viên mới có quyền lưu trữ bài viết.");
+        }
+
         if (command.ExpectedRevision.HasValue && command.ExpectedRevision.Value > 0)
         {
             if (writer.GetRevision(article) != command.ExpectedRevision.Value)

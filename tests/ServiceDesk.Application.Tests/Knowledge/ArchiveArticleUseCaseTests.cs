@@ -41,6 +41,7 @@ public sealed class ArchiveArticleUseCaseTests
     {
         _user.Setup(u => u.IsInRole(RoleNames.Agent)).Returns(true);
         _user.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(false);
+        _user.SetupGet(u => u.UserId).Returns(_authorId.ToString());
 
         var article = Article.CreateDraft(_authorId, "Tiêu đề bài viết", "Nội dung bài viết hợp lệ từ 10 ký tự", ["tag1"], _now.UtcDateTime);
         article.Publish(_agentId, _now.UtcDateTime);
@@ -66,6 +67,26 @@ public sealed class ArchiveArticleUseCaseTests
     }
 
     [Fact]
+    public async Task Archive_WhenUserIsNonAuthorAgent_ThrowsUnauthorizedAccessException()
+    {
+        _user.Setup(u => u.IsInRole(RoleNames.Agent)).Returns(true);
+        _user.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(false);
+        _user.SetupGet(u => u.UserId).Returns(_agentId.ToString());
+
+        var article = Article.CreateDraft(_authorId, "Tiêu đề bài viết", "Nội dung bài viết hợp lệ từ 10 ký tự", null, _now.UtcDateTime);
+        article.Publish(_authorId, _now.UtcDateTime);
+
+        _writer.Setup(w => w.GetForUpdateAsync(article.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(article);
+
+        var useCase = new ArchiveArticleUseCase(_writer.Object, _user.Object, _clock.Object);
+        var command = new ArchiveArticleCommand(article.Id);
+
+        var ex = await Assert.ThrowsAsync<UnauthorizedAccessException>(() => useCase.ExecuteAsync(command));
+        Assert.Contains("Chỉ tác giả hoặc quản trị viên mới có quyền lưu trữ bài viết.", ex.Message);
+    }
+
+    [Fact]
     public async Task Archive_WhenArticleDoesNotExist_ThrowsKeyNotFoundException()
     {
         _user.Setup(u => u.IsInRole(RoleNames.Agent)).Returns(true);
@@ -84,6 +105,7 @@ public sealed class ArchiveArticleUseCaseTests
     {
         _user.Setup(u => u.IsInRole(RoleNames.Agent)).Returns(true);
         _user.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(false);
+        _user.SetupGet(u => u.UserId).Returns(_authorId.ToString());
 
         var article = Article.CreateDraft(_authorId, "Tiêu đề bài viết", "Nội dung bài viết hợp lệ từ 10 ký tự", null, _now.UtcDateTime);
         article.Publish(_agentId, _now.UtcDateTime);
@@ -103,6 +125,7 @@ public sealed class ArchiveArticleUseCaseTests
     {
         _user.Setup(u => u.IsInRole(RoleNames.Agent)).Returns(true);
         _user.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(false);
+        _user.SetupGet(u => u.UserId).Returns(_authorId.ToString());
 
         var article = Article.CreateDraft(_authorId, "Tiêu đề bài viết", "Nội dung bài viết hợp lệ từ 10 ký tự", null, _now.UtcDateTime);
         _writer.Setup(w => w.GetForUpdateAsync(article.Id, It.IsAny<CancellationToken>()))

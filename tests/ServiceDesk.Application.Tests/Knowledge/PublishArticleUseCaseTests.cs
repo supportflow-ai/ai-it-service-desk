@@ -43,7 +43,7 @@ public sealed class PublishArticleUseCaseTests
         _user.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(false);
         _user.SetupGet(u => u.UserId).Returns(_agentId.ToString());
 
-        var article = Article.CreateDraft(_authorId, "Tiêu đề bài viết", "Nội dung bài viết hợp lệ từ 10 ký tự", ["tag1"], _now.UtcDateTime);
+        var article = Article.CreateDraft(_agentId, "Tiêu đề bài viết", "Nội dung bài viết hợp lệ từ 10 ký tự", ["tag1"], _now.UtcDateTime);
         _writer.Setup(w => w.GetForUpdateAsync(article.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(article);
         _writer.Setup(w => w.UpdateArticleAsync(article, It.IsAny<uint?>(), It.IsAny<CancellationToken>()))
@@ -72,6 +72,24 @@ public sealed class PublishArticleUseCaseTests
     }
 
     [Fact]
+    public async Task Publish_WhenUserIsNonAuthorAgent_ThrowsUnauthorizedAccessException()
+    {
+        _user.Setup(u => u.IsInRole(RoleNames.Agent)).Returns(true);
+        _user.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(false);
+        _user.SetupGet(u => u.UserId).Returns(_agentId.ToString());
+
+        var article = Article.CreateDraft(_authorId, "Tiêu đề bài viết", "Nội dung bài viết hợp lệ từ 10 ký tự", null, _now.UtcDateTime);
+        _writer.Setup(w => w.GetForUpdateAsync(article.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(article);
+
+        var useCase = new PublishArticleUseCase(_writer.Object, _user.Object, _clock.Object);
+        var command = new PublishArticleCommand(article.Id);
+
+        var ex = await Assert.ThrowsAsync<UnauthorizedAccessException>(() => useCase.ExecuteAsync(command));
+        Assert.Contains("Chỉ tác giả hoặc quản trị viên mới có quyền xuất bản bài viết.", ex.Message);
+    }
+
+    [Fact]
     public async Task Publish_WhenArticleDoesNotExist_ThrowsKeyNotFoundException()
     {
         _user.Setup(u => u.IsInRole(RoleNames.Agent)).Returns(true);
@@ -92,7 +110,7 @@ public sealed class PublishArticleUseCaseTests
         _user.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(false);
         _user.SetupGet(u => u.UserId).Returns(_agentId.ToString());
 
-        var article = Article.CreateDraft(_authorId, "Tiêu đề bài viết", "Nội dung bài viết hợp lệ từ 10 ký tự", null, _now.UtcDateTime);
+        var article = Article.CreateDraft(_agentId, "Tiêu đề bài viết", "Nội dung bài viết hợp lệ từ 10 ký tự", null, _now.UtcDateTime);
         _writer.Setup(w => w.GetForUpdateAsync(article.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(article);
         _writer.Setup(w => w.GetRevision(article)).Returns(10u);
@@ -110,7 +128,7 @@ public sealed class PublishArticleUseCaseTests
         _user.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(false);
         _user.SetupGet(u => u.UserId).Returns(_agentId.ToString());
 
-        var article = Article.CreateDraft(_authorId, "Tiêu đề bài viết", "Nội dung bài viết hợp lệ từ 10 ký tự", null, _now.UtcDateTime);
+        var article = Article.CreateDraft(_agentId, "Tiêu đề bài viết", "Nội dung bài viết hợp lệ từ 10 ký tự", null, _now.UtcDateTime);
         article.Publish(_agentId, _now.UtcDateTime);
         _writer.Setup(w => w.GetForUpdateAsync(article.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(article);
