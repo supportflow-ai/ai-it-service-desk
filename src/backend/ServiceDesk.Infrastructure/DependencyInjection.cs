@@ -7,10 +7,12 @@ using Minio;
 using ServiceDesk.Application.AIAssistance.Ports;
 using ServiceDesk.Application.Common.Interfaces;
 using ServiceDesk.Application.Identity.Ports;
+using ServiceDesk.Application.Knowledge.Ports;
 using ServiceDesk.Application.Ticketing.Ports;
 using ServiceDesk.Infrastructure.AI;
 using ServiceDesk.Infrastructure.Clock;
 using ServiceDesk.Infrastructure.Identity;
+using ServiceDesk.Infrastructure.Knowledge;
 using ServiceDesk.Infrastructure.Options;
 using ServiceDesk.Infrastructure.Persistence;
 using ServiceDesk.Infrastructure.Storage;
@@ -38,6 +40,8 @@ public static class DependencyInjection
         services.AddScoped<ITicketTimelineStore, PostgresTicketTimelineStore>();
         services.AddScoped<ITicketAttachmentStore, PostgresTicketAttachmentStore>();
         services.AddScoped<IAgentDirectory, AgentDirectory>();
+        services.AddScoped<IKnowledgeWriter, PostgresKnowledgeWriter>();
+        services.AddScoped<IKnowledgeQueries, PostgresKnowledgeQueries>();
         return services;
     }
 
