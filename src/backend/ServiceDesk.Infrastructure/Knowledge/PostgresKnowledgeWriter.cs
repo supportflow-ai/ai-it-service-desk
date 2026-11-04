@@ -41,6 +41,15 @@ internal sealed class PostgresKnowledgeWriter(ApplicationDbContext context) : IK
 
     public async Task<Article> UpdateArticleAsync(Article article, uint? expectedRevision = null, CancellationToken cancellationToken = default)
     {
+        foreach (var version in article.Versions)
+        {
+            var entry = _context.Entry(version);
+            if (entry.State is EntityState.Modified or EntityState.Detached)
+            {
+                entry.State = EntityState.Added;
+            }
+        }
+
         try
         {
             await _context.SaveChangesAsync(cancellationToken);
