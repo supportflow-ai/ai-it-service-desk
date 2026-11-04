@@ -3,6 +3,7 @@ using ServiceDesk.Application.Knowledge.Contracts;
 using ServiceDesk.Application.Knowledge.CreateDraftArticle;
 using ServiceDesk.Application.Knowledge.UpdateDraftArticle;
 using ServiceDesk.Application.Knowledge.PublishArticle;
+using ServiceDesk.Application.Knowledge.ArchiveArticle;
 using ServiceDesk.Domain.Identity;
 
 namespace ServiceDesk.Api.Endpoints;
@@ -15,6 +16,9 @@ public record UpdateDraftArticleRequest(string Title, string Content, IReadOnlyL
 
 /// <summary>Request body xuất bản bài viết tri thức.</summary>
 public record PublishArticleRequest(uint? ExpectedRevision = null);
+
+/// <summary>Request body lưu trữ bài viết tri thức.</summary>
+public record ArchiveArticleRequest(uint? ExpectedRevision = null);
 
 /// <summary>
 /// Định nghĩa các API endpoints cho phân hệ tri thức (Knowledge Base).
@@ -74,6 +78,27 @@ public static class KnowledgeEndpoints
             return Results.Ok(res);
         })
         .WithName("PublishArticle")
+        .RequireAuthorization(PolicyNames.RequireAgent)
+        .Produces<ArticleDto>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status403Forbidden)
+        .Produces(StatusCodes.Status404NotFound)
+        .Produces(StatusCodes.Status409Conflict);
+
+        // POST /api/knowledge/articles/{id}/archive: Lưu trữ bài viết (Agent/Admin)
+        group.MapPost("/{id:guid}/archive", async (
+            Guid id,
+            [FromQuery] uint? expectedRevision,
+            [FromBody] ArchiveArticleRequest? request,
+            IArchiveArticle archiveArticle,
+            CancellationToken ct) =>
+        {
+            var effectiveRevision = request?.ExpectedRevision ?? expectedRevision;
+            var res = await archiveArticle.ExecuteAsync(new ArchiveArticleCommand(id, effectiveRevision), ct);
+            return Results.Ok(res);
+        })
+        .WithName("ArchiveArticle")
         .RequireAuthorization(PolicyNames.RequireAgent)
         .Produces<ArticleDto>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status400BadRequest)
