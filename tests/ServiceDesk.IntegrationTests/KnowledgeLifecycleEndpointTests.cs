@@ -91,9 +91,9 @@ public class KnowledgeLifecycleEndpointTests : IClassFixture<ServiceDeskWebAppli
 
         // 9. Agent A publishes draft with expectedRevision = updatedDraft.Revision -> 200 OK
         SetAuth(agentAToken);
-        var pubARes = await _client.PostAsJsonAsync($"/api/knowledge/articles/{draft.Id}/publish",
+        var pubARes = await _client.PostAsJsonAsync($"/api/knowledge/articles/{draft.Id}/publish?expectedRevision={updatedDraft.Revision}",
             new PublishArticleRequest(updatedDraft.Revision));
-        pubARes.StatusCode.Should().Be(HttpStatusCode.OK);
+        pubARes.StatusCode.Should().Be(HttpStatusCode.OK, await pubARes.Content.ReadAsStringAsync());
         var published = await pubARes.Content.ReadFromJsonAsync<ArticleDto>();
         published!.Status.Should().Be(ArticleStatus.Published);
         published.Version.Should().Be(1);
@@ -101,34 +101,34 @@ public class KnowledgeLifecycleEndpointTests : IClassFixture<ServiceDeskWebAppli
         // 10. Requester reads article by Id -> 200 OK (Title and Content match)
         SetAuth(requesterToken);
         var readPubRes = await _client.GetAsync($"/api/knowledge/articles/{draft.Id}");
-        readPubRes.StatusCode.Should().Be(HttpStatusCode.OK);
+        readPubRes.StatusCode.Should().Be(HttpStatusCode.OK, await readPubRes.Content.ReadAsStringAsync());
         var readArticle = await readPubRes.Content.ReadFromJsonAsync<ArticleDto>();
         readArticle!.Title.Should().Be(updatedTitle);
         readArticle.Content.Should().Be(updatedContent);
 
         // 11. Requester searches keyword -> 200 OK, article is returned in items
         var searchPubRes = await _client.GetAsync($"/api/knowledge/articles/search?query={uniqueKey}");
-        searchPubRes.StatusCode.Should().Be(HttpStatusCode.OK);
+        searchPubRes.StatusCode.Should().Be(HttpStatusCode.OK, await searchPubRes.Content.ReadAsStringAsync());
         var searchPubResult = await searchPubRes.Content.ReadFromJsonAsync<PagedArticleResult>();
         searchPubResult!.Items.Should().ContainSingle(a => a.Id == draft.Id);
 
         // 12. Agent B tries to archive -> 403 Forbidden
         SetAuth(agentBToken);
-        var archBRes = await _client.PostAsJsonAsync($"/api/knowledge/articles/{draft.Id}/archive",
+        var archBRes = await _client.PostAsJsonAsync($"/api/knowledge/articles/{draft.Id}/archive?expectedRevision={published.Revision}",
             new ArchiveArticleRequest(published.Revision));
-        archBRes.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        archBRes.StatusCode.Should().Be(HttpStatusCode.Forbidden, await archBRes.Content.ReadAsStringAsync());
 
         // 13. Requester tries to archive -> 403 Forbidden
         SetAuth(requesterToken);
-        var archReqRes = await _client.PostAsJsonAsync($"/api/knowledge/articles/{draft.Id}/archive",
+        var archReqRes = await _client.PostAsJsonAsync($"/api/knowledge/articles/{draft.Id}/archive?expectedRevision={published.Revision}",
             new ArchiveArticleRequest(published.Revision));
-        archReqRes.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        archReqRes.StatusCode.Should().Be(HttpStatusCode.Forbidden, await archReqRes.Content.ReadAsStringAsync());
 
         // 14. Agent A archives article with expectedRevision = published.Revision -> 200 OK
         SetAuth(agentAToken);
-        var archARes = await _client.PostAsJsonAsync($"/api/knowledge/articles/{draft.Id}/archive",
+        var archARes = await _client.PostAsJsonAsync($"/api/knowledge/articles/{draft.Id}/archive?expectedRevision={published.Revision}",
             new ArchiveArticleRequest(published.Revision));
-        archARes.StatusCode.Should().Be(HttpStatusCode.OK);
+        archARes.StatusCode.Should().Be(HttpStatusCode.OK, await archARes.Content.ReadAsStringAsync());
         var archived = await archARes.Content.ReadFromJsonAsync<ArticleDto>();
         archived!.Status.Should().Be(ArticleStatus.Archived);
 
@@ -180,20 +180,20 @@ public class KnowledgeLifecycleEndpointTests : IClassFixture<ServiceDeskWebAppli
         var draft = await createRes.Content.ReadFromJsonAsync<ArticleDto>();
 
         // Agent tries to archive a draft -> 422 Unprocessable Entity
-        var archRes = await _client.PostAsJsonAsync($"/api/knowledge/articles/{draft!.Id}/archive",
+        var archRes = await _client.PostAsJsonAsync($"/api/knowledge/articles/{draft!.Id}/archive?expectedRevision={draft.Revision}",
             new ArchiveArticleRequest(draft.Revision));
-        archRes.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        archRes.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity, await archRes.Content.ReadAsStringAsync());
 
         // Agent publishes draft -> 200 OK
-        var pubRes = await _client.PostAsJsonAsync($"/api/knowledge/articles/{draft.Id}/publish",
+        var pubRes = await _client.PostAsJsonAsync($"/api/knowledge/articles/{draft.Id}/publish?expectedRevision={draft.Revision}",
             new PublishArticleRequest(draft.Revision));
-        pubRes.StatusCode.Should().Be(HttpStatusCode.OK);
+        pubRes.StatusCode.Should().Be(HttpStatusCode.OK, await pubRes.Content.ReadAsStringAsync());
         var published = await pubRes.Content.ReadFromJsonAsync<ArticleDto>();
 
         // Agent tries to publish already published article -> 422 Unprocessable Entity
-        var pubAgainRes = await _client.PostAsJsonAsync($"/api/knowledge/articles/{draft.Id}/publish",
-            new PublishArticleRequest(published!.Revision));
-        pubAgainRes.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        var pubAgainRes = await _client.PostAsJsonAsync($"/api/knowledge/articles/{draft.Id}/publish?expectedRevision={published!.Revision}",
+            new PublishArticleRequest(published.Revision));
+        pubAgainRes.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity, await pubAgainRes.Content.ReadAsStringAsync());
 
         _client.DefaultRequestHeaders.Authorization = null;
     }

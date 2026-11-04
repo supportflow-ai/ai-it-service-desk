@@ -31,7 +31,20 @@ public static class KnowledgeEndpoints
 {
     public static IEndpointRouteBuilder MapKnowledgeEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/knowledge/articles").WithTags("Knowledge").AddEndpointFilter<LegacyErrorFilter>();
+        var group = app.MapGroup("/api/knowledge/articles")
+            .WithTags("Knowledge")
+            .AddEndpointFilter<LegacyErrorFilter>()
+            .AddEndpointFilter(async (ctx, next) =>
+            {
+                try
+                {
+                    return await next(ctx);
+                }
+                catch (InvalidOperationException ex)
+                {
+                    return Results.UnprocessableEntity(new { error = ex.Message });
+                }
+            });
 
         // POST /api/knowledge/articles: Tạo bản nháp bài viết mới (Agent/Admin)
         group.MapPost("/", async (

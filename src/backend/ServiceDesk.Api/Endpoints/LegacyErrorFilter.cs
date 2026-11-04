@@ -12,7 +12,6 @@ namespace ServiceDesk.Api.Endpoints;
 /// - ServiceUnavailableException -> 503 Service Unavailable
 /// - IdempotencyInProgressException -> 503 Service Unavailable (kèm Retry-After)
 /// - ArgumentException -> 400 Bad Request
-/// - InvalidOperationException -> 422 Unprocessable Entity
 /// </summary>
 public sealed class LegacyErrorFilter : IEndpointFilter
 {
@@ -33,6 +32,5 @@ public sealed class LegacyErrorFilter : IEndpointFilter
             return Results.Json(new { error = ex.Message }, statusCode: StatusCodes.Status503ServiceUnavailable);
         }
         catch (ArgumentException ex) { return Results.BadRequest(new { error = ex.Message }); }
-        catch (InvalidOperationException ex) { return Results.UnprocessableEntity(new { error = ex.Message }); }
     }
 }

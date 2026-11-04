@@ -41,14 +41,10 @@ internal sealed class PostgresKnowledgeWriter(ApplicationDbContext context) : IK
 
     public async Task<Article> UpdateArticleAsync(Article article, uint? expectedRevision = null, CancellationToken cancellationToken = default)
     {
-        if (expectedRevision.HasValue && expectedRevision.Value > 0)
-        {
-            _context.Entry(article).Property<uint>("xmin").OriginalValue = expectedRevision.Value;
-        }
-
         try
         {
             await _context.SaveChangesAsync(cancellationToken);
+            await _context.Entry(article).ReloadAsync(cancellationToken);
             return article;
         }
         catch (DbUpdateConcurrencyException ex)
