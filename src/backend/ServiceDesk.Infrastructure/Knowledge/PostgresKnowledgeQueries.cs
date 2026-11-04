@@ -74,11 +74,19 @@ internal sealed class PostgresKnowledgeQueries(ApplicationDbContext context) : I
         string? query,
         string? tag,
         ArticleStatus? status,
+        KnowledgeReadScope scope,
         int page,
         int pageSize,
         CancellationToken cancellationToken = default)
     {
         var queryable = _context.Articles.AsNoTracking();
+
+        queryable = scope switch
+        {
+            KnowledgeReadScope.Staff => queryable,
+            KnowledgeReadScope.Author author => queryable.Where(a => a.Status == ArticleStatus.Published || a.AuthorId == author.AuthorId),
+            _ => queryable.Where(a => a.Status == ArticleStatus.Published)
+        };
 
         if (status.HasValue)
         {
