@@ -78,6 +78,7 @@ public sealed class SearchAndReadArticleUseCaseTests
         _user.Setup(u => u.IsInRole(RoleNames.Agent)).Returns(true);
         _user.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(false);
         _user.SetupGet(u => u.UserId).Returns(_agentId.ToString());
+        _user.SetupGet(u => u.IsAuthenticated).Returns(true);
 
         var expectedDto = CreateSampleDto(_articleId, ArticleStatus.Draft, _agentId);
         _queries.Setup(q => q.GetByIdAsync(_articleId, It.Is<KnowledgeReadScope>(s => s is KnowledgeReadScope.Author && ((KnowledgeReadScope.Author)s).AuthorId == _agentId), It.IsAny<CancellationToken>()))
@@ -140,6 +141,7 @@ public sealed class SearchAndReadArticleUseCaseTests
         _user.Setup(u => u.IsInRole(RoleNames.Agent)).Returns(true);
         _user.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(false);
         _user.SetupGet(u => u.UserId).Returns(_agentId.ToString());
+        _user.SetupGet(u => u.IsAuthenticated).Returns(true);
 
         var pagedResult = new PagedArticleResult([], 2, 20, 0, 0);
         _queries.Setup(q => q.SearchStaffAsync("printer", "hardware", ArticleStatus.Draft, It.IsAny<KnowledgeReadScope.Author>(), 2, 20, It.IsAny<CancellationToken>()))
@@ -179,6 +181,7 @@ public sealed class SearchAndReadArticleUseCaseTests
     {
         _user.Setup(u => u.IsInRole(RoleNames.Agent)).Returns(true);
         _user.SetupGet(u => u.UserId).Returns(_agentId.ToString());
+        _user.SetupGet(u => u.IsAuthenticated).Returns(true);
 
         var pagedResult = new PagedArticleResult([], 1, 100, 0, 0);
         _queries.Setup(q => q.SearchStaffAsync(null, null, null, It.IsAny<KnowledgeReadScope>(), 1, 100, It.IsAny<CancellationToken>()))
@@ -199,6 +202,7 @@ public sealed class SearchAndReadArticleUseCaseTests
         _user.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(false);
         _user.Setup(u => u.IsInRole(RoleNames.Agent)).Returns(true);
         _user.SetupGet(u => u.UserId).Returns(_agentId.ToString());
+        _user.SetupGet(u => u.IsAuthenticated).Returns(true);
 
         var pagedResult = new PagedArticleResult([], 1, 10, 0, 0);
         _queries.Setup(q => q.SearchStaffAsync(It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<ArticleStatus?>(), It.IsAny<KnowledgeReadScope>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
