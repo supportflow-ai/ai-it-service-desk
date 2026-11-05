@@ -142,6 +142,7 @@ app.MapAuthEndpoints();
 app.MapDiagnosticEndpoints();
 app.MapTicketEndpoints();
 app.MapKnowledgeEndpoints();
+app.MapDepartmentEndpoints();
 
 // Endpoints kiểm tra sức khỏe
 app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false });

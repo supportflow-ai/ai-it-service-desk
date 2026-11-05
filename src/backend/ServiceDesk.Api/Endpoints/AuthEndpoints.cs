@@ -3,6 +3,12 @@ using ServiceDesk.Application.Identity.RegisterUser;
 using ServiceDesk.Application.Identity.LoginUser;
 using ServiceDesk.Application.Identity.GetCurrentUser;
 using ServiceDesk.Application.Identity.GetUsersByRole;
+using ServiceDesk.Application.Identity.RefreshAuth;
+using ServiceDesk.Application.Identity.RevokeToken;
+using ServiceDesk.Application.Identity.ChangePassword;
+using ServiceDesk.Application.Identity.ForgotPassword;
+using ServiceDesk.Application.Identity.ResetPassword;
+using ServiceDesk.Application.Identity.AssignUserRoles;
 using ServiceDesk.Application.Identity.Contracts;
 using ServiceDesk.Domain.Identity;
 
@@ -32,13 +38,14 @@ public static class AuthEndpoints
             return Results.Created("/api/auth/me", new
             {
                 token = result.Token,
+                refreshToken = result.RefreshToken,
                 user = result.User
             });
         })
         .WithName("Register")
         .AllowAnonymous();
 
-        // POST /api/auth/login: Đăng nhập hệ thống bằng email và mật khẩu (trả về JWT Bearer Token)
+        // POST /api/auth/login: Đăng nhập hệ thống bằng email và mật khẩu (trả về JWT Bearer Token & Refresh Token)
         group.MapPost("/login", async (
             [FromBody] LoginRequest request,
             ILoginUser loginUser,
@@ -53,10 +60,92 @@ public static class AuthEndpoints
             return Results.Ok(new
             {
                 token = result.Token,
+                refreshToken = result.RefreshToken,
                 user = result.User
             });
         })
         .WithName("Login")
+        .AllowAnonymous();
+
+        // POST /api/auth/refresh: Làm mới Access Token bằng Refresh Token
+        group.MapPost("/refresh", async (
+            [FromBody] RefreshAuthRequest request,
+            IRefreshAuth refreshAuth,
+            CancellationToken ct) =>
+        {
+            var result = await refreshAuth.ExecuteAsync(request, ct);
+            if (!result.Succeeded)
+            {
+                return Results.Json(new { error = result.Errors.FirstOrDefault() ?? "Unauthorized" }, statusCode: StatusCodes.Status401Unauthorized);
+            }
+
+            return Results.Ok(new
+            {
+                token = result.Token,
+                refreshToken = result.RefreshToken,
+                user = result.User
+            });
+        })
+        .WithName("RefreshToken")
+        .AllowAnonymous();
+
+        // POST /api/auth/revoke: Thu hồi Refresh Token (Đăng xuất)
+        group.MapPost("/revoke", async (
+            [FromBody] RevokeTokenRequest request,
+            IRevokeToken revokeToken,
+            CancellationToken ct) =>
+        {
+            await revokeToken.ExecuteAsync(request, ct);
+            return Results.NoContent();
+        })
+        .WithName("RevokeToken")
+        .AllowAnonymous();
+
+        // POST /api/auth/change-password: Đổi mật khẩu tài khoản đang đăng nhập
+        group.MapPost("/change-password", async (
+            [FromBody] ChangePasswordRequest request,
+            IChangePassword changePassword,
+            CancellationToken ct) =>
+        {
+            var result = await changePassword.ExecuteAsync(request, ct);
+            if (!result.Succeeded)
+            {
+                return Results.BadRequest(new { errors = result.Errors });
+            }
+
+            return Results.Ok(new { message = "Đổi mật khẩu thành công." });
+        })
+        .AddEndpointFilter<LegacyErrorFilter>()
+        .WithName("ChangePassword")
+        .RequireAuthorization();
+
+        // POST /api/auth/forgot-password: Yêu cầu gửi OTP đặt lại mật khẩu
+        group.MapPost("/forgot-password", async (
+            [FromBody] ForgotPasswordRequest request,
+            IForgotPassword forgotPassword,
+            CancellationToken ct) =>
+        {
+            await forgotPassword.ExecuteAsync(request, ct);
+            return Results.Ok(new { message = "Nếu email tồn tại trong hệ thống, mã OTP đã được gửi." });
+        })
+        .WithName("ForgotPassword")
+        .AllowAnonymous();
+
+        // POST /api/auth/reset-password: Đặt lại mật khẩu bằng mã OTP
+        group.MapPost("/reset-password", async (
+            [FromBody] ResetPasswordRequest request,
+            IResetPassword resetPassword,
+            CancellationToken ct) =>
+        {
+            var result = await resetPassword.ExecuteAsync(request, ct);
+            if (!result.Succeeded)
+            {
+                return Results.BadRequest(new { errors = result.Errors });
+            }
+
+            return Results.Ok(new { message = "Đặt lại mật khẩu thành công." });
+        })
+        .WithName("ResetPassword")
         .AllowAnonymous();
 
         // GET /api/auth/me: Lấy thông tin tài khoản và danh sách vai trò (roles) của người dùng đang đăng nhập
@@ -90,6 +179,29 @@ public static class AuthEndpoints
         .WithName("GetUsers")
         .RequireAuthorization(PolicyNames.RequireAgent)
         .Produces<IReadOnlyList<object>>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status403Forbidden);
+
+        // PUT /api/users/{id}/roles: Quản trị viên phân quyền cho người dùng
+        app.MapPut("/api/users/{id:guid}/roles", async (
+            Guid id,
+            [FromBody] AssignRolesRequest request,
+            [FromServices] IAssignUserRoles assignRoles,
+            CancellationToken ct) =>
+        {
+            var result = await assignRoles.ExecuteAsync(id, request, ct);
+            if (!result.Succeeded)
+            {
+                return Results.BadRequest(new { errors = result.Errors });
+            }
+
+            return Results.Ok(new { message = "Cập nhật vai trò thành công." });
+        })
+        .AddEndpointFilter<LegacyErrorFilter>()
+        .WithName("AssignUserRoles")
+        .RequireAuthorization(PolicyNames.RequireAdmin)
+        .Produces(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest)
         .Produces(StatusCodes.Status401Unauthorized)
         .Produces(StatusCodes.Status403Forbidden);
 

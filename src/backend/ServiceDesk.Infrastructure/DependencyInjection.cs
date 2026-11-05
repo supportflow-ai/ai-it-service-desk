@@ -42,6 +42,9 @@ public static class DependencyInjection
         services.AddScoped<IAgentDirectory, AgentDirectory>();
         services.AddScoped<IKnowledgeWriter, PostgresKnowledgeWriter>();
         services.AddScoped<IKnowledgeQueries, PostgresKnowledgeQueries>();
+        services.AddScoped<IRefreshTokenStore, PostgresRefreshTokenStore>();
+        services.AddScoped<IOtpCodeStore, PostgresOtpCodeStore>();
+        services.AddScoped<IDepartmentQueries, PostgresDepartmentQueries>();
         return services;
     }
 
