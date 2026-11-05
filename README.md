@@ -1,5 +1,7 @@
 # AI IT Service Desk — Backend
 
+Cập nhật local 05/11/2026: [pipeline Knowledge Published](docs/runbooks/knowledge-index-pipeline.md) bổ sung snapshot/re-publish, job bền vững, worker và pgvector cho TC-346–TC-350. Xem runbook để cấu hình, demo, migration và giới hạn; chưa xác nhận rollout.
+
 Backend .NET của SupportFlow AI, tổ chức theo Clean Architecture và các mô-đun Identity, Ticketing, AIAssistance. Kho này sở hữu API, nghiệp vụ, truy cập dữ liệu, tiến trình nền, migration và kiểm thử backend.
 
 Mốc tài liệu: đối chiếu mã `dev` tại `47634bc8162c13bd6ae024233ec24a0076738c51`, sau PR #28 và #29; cập nhật 2026-10-20. Mốc này mô tả mã nguồn, không thay bằng chứng nghiệm thu. Xem [quy chuẩn tài liệu](docs/process/documentation-standard.md) và [bảng thuật ngữ](docs/process/technical-glossary.md).

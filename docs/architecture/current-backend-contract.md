@@ -1,5 +1,7 @@
 # Hợp đồng backend đang triển khai
 
+Bổ sung local 05/11/2026: [contract Knowledge indexing](../runbooks/knowledge-index-pipeline.md#api-và-demo) thêm re-publish, rebuild và trạng thái indexing. Ba endpoint cùng quyền tác giả Agent/Admin và kiểm tra revision; OpenAPI baseline cập nhật trong cùng thay đổi. Các mốc tháng 10 bên dưới không bao gồm phần bổ sung này.
+
 Cập nhật 03/11/2026: các bảng dưới đây giữ mốc đối chiếu tháng 10 đã ghi ở phần trạng thái. Với comment, attachment, revision và adapter AI trong working tree đang sửa, đọc [phần bổ sung hiện tại](../runbooks/supportflow-hardening-phase-2-6.md). Chưa dùng tài liệu này để xác nhận phiên bản VPS hoặc một bản phát hành mới.
 
 Trạng thái: mô tả hiện hành, đối chiếu mã `dev` tại `47634bc8162c13bd6ae024233ec24a0076738c51`, sau PR #28 và #29; cập nhật 2026-10-20. Mốc nguồn có thể mới hơn nhánh local của người đọc; đối chiếu commit trước khi chạy. Cập nhật tài liệu không thay API, quyền hoặc dữ liệu, không xác nhận đã nghiệm thu các hành vi còn lỗi. Quyết định kiến trúc: [ADR-014](../adr/ADR-014-feature-use-cases-and-published-contracts.md). Chính sách cần chốt: [bảng quyết định](pending-business-decisions.md).
