@@ -1,8 +1,25 @@
 # Hợp đồng backend đang triển khai
 
-Cập nhật 03/11/2026: các bảng dưới đây giữ mốc đối chiếu tháng 10 đã ghi ở phần trạng thái. Với comment, attachment, revision và adapter AI trong working tree đang sửa, đọc [phần bổ sung hiện tại](../runbooks/supportflow-hardening-phase-2-6.md). Chưa dùng tài liệu này để xác nhận phiên bản VPS hoặc một bản phát hành mới.
+## Đối chiếu liên kho ngày 05/11/2026
 
-Trạng thái: mô tả hiện hành, đối chiếu mã `dev` tại `47634bc8162c13bd6ae024233ec24a0076738c51`, sau PR #28 và #29; cập nhật 2026-10-20. Mốc nguồn có thể mới hơn nhánh local của người đọc; đối chiếu commit trước khi chạy. Cập nhật tài liệu không thay API, quyền hoặc dữ liệu, không xác nhận đã nghiệm thu các hành vi còn lỗi. Quyết định kiến trúc: [ADR-014](../adr/ADR-014-feature-use-cases-and-published-contracts.md). Chính sách cần chốt: [bảng quyết định](pending-business-decisions.md).
+Đối chiếu mã backend tại [`main@bf38ef9`](https://github.com/supportflow-ai/ai-it-service-desk/commit/bf38ef903f46f6ea21f80da44c11d437391a9efb) và frontend tại [`main@ade7af4`](https://github.com/supportflow-ai/ai-it-service-desk-web/commit/ade7af4e1b88e7834c8d9b225f68eb7ebd75f9fe). Phạm vi MVP gồm Identity và Ticketing. Knowledge đã có API và giao diện. Phạm vi sản phẩm cần được chủ dự án xem xét riêng. Mốc này mô tả mã và hợp đồng trong Git. Kết quả demo cần ghi thêm môi trường và bằng chứng chạy thực tế.
+
+| Điểm tích hợp | Hành vi tại mốc backend |
+| --- | --- |
+| Phạm vi đọc | Requester đọc phiếu của mình. Agent và Admin có phạm vi đọc toàn hệ thống. Quyền ghi còn phụ thuộc lệnh, chủ phiếu và trạng thái |
+| Danh bạ để phân công | `GET /api/users?role=Agent` trả `userId` và `fullName`. Bộ đọc của Frontend dùng hai trường này, với `fullName` có thể rỗng |
+| Vòng đời phiếu | API có hàng đợi, phân công và hủy phân công. Agent và Admin có thể nhận xử lý theo điều kiện của use case. Domain chỉ hủy phân công khi phiếu còn `Assigned` và có người phụ trách |
+| Kiểm soát ghi đồng thời | Các lệnh sửa, phân công và chuyển trạng thái bắt buộc `expectedRevision` dương trong runtime. `update` và `assign` nhận revision trong body, các lệnh còn lại nhận qua query. Revision cũ trả `409` |
+| Bình luận và tệp | Backend lọc ghi chú nội bộ khỏi timeline của Requester. Tệp dùng grant tải lên, xác nhận với backend, sau đó mới có trong danh sách |
+| Phân loại AI | Backend công bố hợp đồng S2S v1 và có adapter HTTP. Chu trình phân loại ticket và duyệt gợi ý đầu cuối thuộc giai đoạn sau |
+
+Khi đổi API, cập nhật [OpenAPI backend](../../contracts/backend/openapi-baseline.json) và kiểm thử hợp đồng tại cùng mốc, rồi phối hợp ghim phiên bản ở kho Frontend. Với phân loại AI, Backend công bố [hợp đồng v1](../../contracts/ai/v1/openapi.yaml) và AI Service ghim bản sao theo checksum. [Đối chiếu Frontend](https://github.com/supportflow-ai/ai-it-service-desk-web/blob/main/docs/architecture/api-baseline.md) · [Đối chiếu AI Service](https://github.com/supportflow-ai/ai-service/blob/main/docs/backend-alignment.md)
+
+## Mốc đối chiếu trước đó
+
+Bản bổ sung ngày 03/11/2026 mô tả comment, attachment, revision và adapter AI trong [đợt củng cố khi đang triển khai](../runbooks/supportflow-hardening-phase-2-6.md). Các bảng bên dưới giữ mốc đối chiếu tháng 10 để truy vết.
+
+Mốc lịch sử là `dev@47634bc8162c13bd6ae024233ec24a0076738c51`, sau PR #28 và #29, cập nhật ngày 20/10/2026. [ADR-014](../adr/ADR-014-feature-use-cases-and-published-contracts.md) · [Bảng quyết định nghiệp vụ](pending-business-decisions.md)
 
 ## HTTP và danh tính
 
