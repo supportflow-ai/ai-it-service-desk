@@ -115,6 +115,73 @@ internal sealed class IdentityAccountGateway(UserManager<IdentityUser> users, Ap
         return result;
     }
 
+    public async Task<IdentityOperationResult> ChangePasswordAsync(string userId, string currentPassword, string newPassword, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var user = await users.FindByIdAsync(userId);
+        if (user is null)
+        {
+            return IdentityOperationResult.Failed("User not found.");
+        }
+
+        var result = await users.ChangePasswordAsync(user, currentPassword, newPassword);
+        return result.Succeeded
+            ? IdentityOperationResult.Success()
+            : IdentityOperationResult.Failed(result.Errors.Select(e => e.Description));
+    }
+
+    public async Task<IdentityOperationResult> ResetPasswordWithOtpAsync(string email, string newPassword, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var user = await users.FindByEmailAsync(email);
+        if (user is null)
+        {
+            return IdentityOperationResult.Failed("User not found.");
+        }
+
+        var resetToken = await users.GeneratePasswordResetTokenAsync(user);
+        var result = await users.ResetPasswordAsync(user, resetToken, newPassword);
+        return result.Succeeded
+            ? IdentityOperationResult.Success()
+            : IdentityOperationResult.Failed(result.Errors.Select(e => e.Description));
+    }
+
+    public async Task<IdentityOperationResult> AssignRolesAsync(string userId, IReadOnlyList<string> roles, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var user = await users.FindByIdAsync(userId);
+        if (user is null)
+        {
+            return IdentityOperationResult.Failed("User not found.");
+        }
+
+        await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+        var currentRoles = await users.GetRolesAsync(user);
+        var toRemove = currentRoles.Except(roles, StringComparer.OrdinalIgnoreCase).ToList();
+        var toAdd = roles.Except(currentRoles, StringComparer.OrdinalIgnoreCase).ToList();
+
+        if (toRemove.Count > 0)
+        {
+            var removeResult = await users.RemoveFromRolesAsync(user, toRemove);
+            if (!removeResult.Succeeded)
+            {
+                return IdentityOperationResult.Failed(removeResult.Errors.Select(e => e.Description));
+            }
+        }
+
+        if (toAdd.Count > 0)
+        {
+            var addResult = await users.AddToRolesAsync(user, toAdd);
+            if (!addResult.Succeeded)
+            {
+                return IdentityOperationResult.Failed(addResult.Errors.Select(e => e.Description));
+            }
+        }
+
+        await transaction.CommitAsync(cancellationToken);
+        return IdentityOperationResult.Success();
+    }
+
     private async Task<UserInfo> ToUserAsync(IdentityUser user) => new()
     {
         UserId = user.Id, Email = user.Email!, FullName = (await users.GetClaimsAsync(user)).FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value,

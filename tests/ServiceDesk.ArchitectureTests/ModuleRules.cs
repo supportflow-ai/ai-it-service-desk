@@ -60,7 +60,23 @@ internal static class ModuleRules
         "ServiceDesk.Application.Knowledge.GetArticleDetail.IGetArticleDetail",
         "ServiceDesk.Application.Knowledge.GetArticleDetail.GetArticleDetailQuery",
         "ServiceDesk.Application.Knowledge.SearchKnowledge.ISearchKnowledge",
-        "ServiceDesk.Application.Knowledge.SearchKnowledge.SearchKnowledgeQuery"
+        "ServiceDesk.Application.Knowledge.SearchKnowledge.SearchKnowledgeQuery",
+        "ServiceDesk.Application.Identity.RefreshAuth.IRefreshAuth",
+        "ServiceDesk.Application.Identity.Contracts.RefreshAuthRequest",
+        "ServiceDesk.Application.Identity.RevokeToken.IRevokeToken",
+        "ServiceDesk.Application.Identity.Contracts.RevokeTokenRequest",
+        "ServiceDesk.Application.Identity.GetDepartments.IGetDepartments",
+        "ServiceDesk.Application.Identity.GetDepartments.GetDepartmentsQuery",
+        "ServiceDesk.Application.Identity.Contracts.DepartmentDto",
+        "ServiceDesk.Application.Identity.ChangePassword.IChangePassword",
+        "ServiceDesk.Application.Identity.Contracts.ChangePasswordRequest",
+        "ServiceDesk.Application.Identity.ForgotPassword.IForgotPassword",
+        "ServiceDesk.Application.Identity.Contracts.ForgotPasswordRequest",
+        "ServiceDesk.Application.Identity.ResetPassword.IResetPassword",
+        "ServiceDesk.Application.Identity.Contracts.ResetPasswordRequest",
+        "ServiceDesk.Application.Identity.AssignUserRoles.IAssignUserRoles",
+        "ServiceDesk.Application.Identity.Contracts.AssignRolesRequest",
+        "ServiceDesk.Application.Identity.Contracts.IdentityOperationResult"
     };
 
     private static readonly HashSet<string> Composition = new(StringComparer.Ordinal)

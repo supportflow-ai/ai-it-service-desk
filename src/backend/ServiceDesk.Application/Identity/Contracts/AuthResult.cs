@@ -11,16 +11,20 @@ public sealed record AuthResult
     /// <summary>Mã truy cập JWT Bearer Token khi thành công.</summary>
     public string? Token { get; init; }
 
+    /// <summary>Mã làm mới Refresh Token khi thành công.</summary>
+    public string? RefreshToken { get; init; }
+
     /// <summary>Danh sách lỗi mô tả nếu thao tác thất bại.</summary>
     public IReadOnlyList<string> Errors { get; init; } = [];
 
     /// <summary>Thông tin người dùng sau khi xác thực thành công.</summary>
     public UserInfo? User { get; init; }
 
-    public static AuthResult Success(string token, UserInfo user) => new()
+    public static AuthResult Success(string token, UserInfo user, string? refreshToken = null) => new()
     {
         Succeeded = true,
         Token = token,
+        RefreshToken = refreshToken,
         User = user
     };
 
