@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using ServiceDesk.Domain.Identity;
 using ServiceDesk.Domain.Knowledge;
 using ServiceDesk.Domain.Ticketing;
 using ServiceDesk.Infrastructure.Ticketing;
@@ -12,6 +13,7 @@ namespace ServiceDesk.Infrastructure.Persistence;
 /// - Kế thừa IdentityDbContext để quản lý bảng người dùng và vai trò của ASP.NET Core Identity.
 /// - Quản lý các DbSet cho Tickets và TicketIdempotencyRecords.
 /// - Quản lý các DbSet cho Knowledge Base Articles, Tags và Versions.
+/// - Quản lý các DbSet cho Departments, RefreshTokens và OtpCodes.
 /// - Tự động nạp cấu hình EntityTypeConfiguration từ assembly qua OnModelCreating.
 /// </summary>
 public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : IdentityDbContext<IdentityUser>(options)
@@ -25,6 +27,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Article> Articles { get; set; }
     public DbSet<ArticleTag> ArticleTags { get; set; }
     public DbSet<ArticleVersion> ArticleVersions { get; set; }
+
+    public DbSet<Department> Departments { get; set; }
+    public DbSet<RefreshToken> RefreshTokens { get; set; }
+    public DbSet<OtpCode> OtpCodes { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
