@@ -26,7 +26,7 @@ namespace ServiceDesk.IntegrationTests;
 /// </summary>
 public sealed class TicketIdempotencyPostgresFixture : IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:17-alpine")
+    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder(PostgresTestImages.Pgvector)
         .WithDatabase("ticket_idempotency_tests").WithUsername("test").WithPassword("test").Build();
 
     public string ConnectionString => _postgres.GetConnectionString();

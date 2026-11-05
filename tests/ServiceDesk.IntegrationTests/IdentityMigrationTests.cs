@@ -16,7 +16,7 @@ public sealed class IdentityMigrationTests
     [Fact]
     public async Task TicketOnlyDatabase_UpgradesIdentity_AndRollbackReapplyPreservesData()
     {
-        await using var postgres = new PostgreSqlBuilder("postgres:17-alpine").Build();
+        await using var postgres = new PostgreSqlBuilder(PostgresTestImages.Pgvector).Build();
         await postgres.StartAsync();
         await using var context = new ApplicationDbContext(
             new DbContextOptionsBuilder<ApplicationDbContext>().UseNpgsql(postgres.GetConnectionString()).Options);

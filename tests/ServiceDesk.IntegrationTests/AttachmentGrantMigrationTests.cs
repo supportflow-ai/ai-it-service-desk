@@ -15,7 +15,7 @@ public sealed class AttachmentGrantMigrationTests
     [Fact]
     public async Task UpgradePreservesLegacyFilesAndLinksOnlyUnambiguousConsumedGrants()
     {
-        await using var postgres = new PostgreSqlBuilder("postgres:17-alpine")
+        await using var postgres = new PostgreSqlBuilder(PostgresTestImages.Pgvector)
             .WithDatabase("attachment_grant_upgrade_tests").WithUsername("test").WithPassword("test").Build();
         using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(2));
         await postgres.StartAsync(timeout.Token);

@@ -262,6 +262,65 @@ public class KnowledgeLifecycleEndpointTests : IClassFixture<ServiceDeskWebAppli
         _client.DefaultRequestHeaders.Authorization = null;
     }
 
+    [Fact]
+    public async Task RepublishAndRebuildEnforceOwnershipRevisionAndCurrentVersion()
+    {
+        var author = await RegisterAndPromoteRoleAsync("Agent");
+        var other = await RegisterAndPromoteRoleAsync("Agent");
+        var requester = await RegisterAndGetTokenAsync();
+        var admin = await RegisterAndPromoteRoleAsync("Admin");
+        SetAuth(author);
+        var created = await _client.PostAsJsonAsync("/api/knowledge/articles",
+            new CreateDraftArticleRequest("Index lifecycle", "First published snapshot.", ["vpn"]));
+        created.EnsureSuccessStatusCode();
+        var draft = (await created.Content.ReadFromJsonAsync<ArticleDto>())!;
+        var path = $"/api/knowledge/articles/{draft.Id}";
+        var publishedResponse = await _client.PostAsJsonAsync(path + "/publish", new PublishArticleRequest(draft.Revision));
+        publishedResponse.EnsureSuccessStatusCode();
+        var published = (await publishedResponse.Content.ReadFromJsonAsync<ArticleDto>())!;
+        var republish = new RepublishArticleRequest("Index V2", "Second published snapshot.", ["vpn", "network"], published.Revision);
+        var rebuild = new RebuildArticleIndexRequest(Guid.NewGuid(), published.Revision);
+        foreach (var token in new[] { other, requester })
+        {
+            SetAuth(token);
+            (await _client.PostAsJsonAsync(path + "/republish", republish)).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+            (await _client.PostAsJsonAsync(path + "/index/rebuild", rebuild)).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+            (await _client.GetAsync(path + "/index")).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        }
+        SetAuth(author);
+        (await _client.PostAsJsonAsync(path + "/republish", republish with { ExpectedRevision = 0 }))
+            .StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await _client.PostAsJsonAsync(path + "/republish", republish with { ExpectedRevision = uint.MaxValue }))
+            .StatusCode.Should().Be(HttpStatusCode.Conflict);
+        var v2Response = await _client.PostAsJsonAsync(path + "/republish", republish);
+        v2Response.StatusCode.Should().Be(HttpStatusCode.OK, await v2Response.Content.ReadAsStringAsync());
+        var v2 = (await v2Response.Content.ReadFromJsonAsync<ArticleDto>())!;
+        v2.Version.Should().Be(2);
+        v2.Tags.Should().BeEquivalentTo(["vpn", "network"]);
+        (await _client.PostAsJsonAsync(path + "/index/rebuild", rebuild)).StatusCode.Should().Be(HttpStatusCode.Conflict);
+        SetAuth(admin);
+        rebuild = rebuild with { ExpectedRevision = v2.Revision };
+        var first = await _client.PostAsJsonAsync(path + "/index/rebuild", rebuild);
+        first.StatusCode.Should().Be(HttpStatusCode.Accepted, await first.Content.ReadAsStringAsync());
+        var replay = await _client.PostAsJsonAsync(path + "/index/rebuild", rebuild);
+        replay.StatusCode.Should().Be(HttpStatusCode.Accepted);
+        (await replay.Content.ReadAsStringAsync()).Should().Be(await first.Content.ReadAsStringAsync());
+        var status = await _client.GetFromJsonAsync<ServiceDesk.Application.Knowledge.Indexing.KnowledgeIndexStatusDto>(path + "/index");
+        status!.VersionNumber.Should().Be(2);
+        status.Status.Should().Be("Pending");
+        status.ActiveIndexSetId.Should().BeNull();
+        SetAuth(requester);
+        var visible = await _client.GetFromJsonAsync<ArticleDto>(path);
+        visible!.Version.Should().Be(2);
+        visible.Content.Should().Be(v2.Content);
+        SetAuth(author);
+        (await _client.PostAsJsonAsync(path + "/archive", new ArchiveArticleRequest(v2.Revision))).EnsureSuccessStatusCode();
+        (await _client.PostAsJsonAsync(path + "/index/rebuild", rebuild)).StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await _client.PostAsJsonAsync(path + "/republish", republish with { ExpectedRevision = v2.Revision }))
+            .StatusCode.Should().BeOneOf(HttpStatusCode.Conflict, HttpStatusCode.UnprocessableEntity);
+        _client.DefaultRequestHeaders.Authorization = null;
+    }
+
     private void SetAuth(string token)
     {
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);

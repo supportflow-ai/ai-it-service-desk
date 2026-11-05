@@ -60,7 +60,15 @@ internal static class ModuleRules
         "ServiceDesk.Application.Knowledge.GetArticleDetail.IGetArticleDetail",
         "ServiceDesk.Application.Knowledge.GetArticleDetail.GetArticleDetailQuery",
         "ServiceDesk.Application.Knowledge.SearchKnowledge.ISearchKnowledge",
-        "ServiceDesk.Application.Knowledge.SearchKnowledge.SearchKnowledgeQuery"
+        "ServiceDesk.Application.Knowledge.SearchKnowledge.SearchKnowledgeQuery",
+        "ServiceDesk.Application.Knowledge.RepublishArticle.IRepublishArticle",
+        "ServiceDesk.Application.Knowledge.RepublishArticle.RepublishArticleCommand",
+        "ServiceDesk.Application.Knowledge.RebuildArticleIndex.IRebuildArticleIndex",
+        "ServiceDesk.Application.Knowledge.RebuildArticleIndex.RebuildArticleIndexCommand",
+        "ServiceDesk.Application.Knowledge.RebuildArticleIndex.RebuildArticleIndexResult",
+        "ServiceDesk.Application.Knowledge.GetArticleIndexStatus.IGetArticleIndexStatus",
+        "ServiceDesk.Application.Knowledge.GetArticleIndexStatus.GetArticleIndexStatusQuery",
+        "ServiceDesk.Application.Knowledge.Indexing.KnowledgeIndexStatusDto"
     };
 
     private static readonly HashSet<string> Composition = new(StringComparer.Ordinal)
@@ -83,6 +91,7 @@ internal static class ModuleRules
         "ServiceDesk.Infrastructure.Persistence.Migrations.AddAttachmentUploadGrant",
         "ServiceDesk.Infrastructure.Persistence.Migrations.LinkAttachmentUploadGrant",
         "ServiceDesk.Infrastructure.Persistence.Migrations.AddKnowledgeArticles",
+        "ServiceDesk.Infrastructure.Persistence.Migrations.AddKnowledgeIndexPipeline",
         "ServiceDesk.Infrastructure.Persistence.Migrations.ApplicationDbContextModelSnapshot"
     };
 

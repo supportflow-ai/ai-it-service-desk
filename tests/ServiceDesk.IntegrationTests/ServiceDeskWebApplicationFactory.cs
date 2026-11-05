@@ -19,7 +19,7 @@ namespace ServiceDesk.IntegrationTests;
 /// </summary>
 public class ServiceDeskWebApplicationFactory : WebApplicationFactory<ServiceDesk.Api.Program>, IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:17-alpine")
+    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder(PostgresTestImages.Pgvector)
         .WithDatabase("servicedesk_test")
         .WithUsername("test")
         .WithPassword("test")
