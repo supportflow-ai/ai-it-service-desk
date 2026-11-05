@@ -86,6 +86,7 @@ internal sealed class ConfirmAttachmentUploadUseCase(
     {
         if (value is null) throw new ArgumentException("Chưa tìm thấy tệp đã tải lên.");
         if (value.Size != upload.FileSizeBytes || value.Size <= 0 || value.Size > 10 * 1024 * 1024 ||
+            string.IsNullOrWhiteSpace(value.ContentType) ||
             !string.Equals(value.ContentType.Split(';')[0].Trim(), upload.ContentType.Split(';')[0].Trim(), StringComparison.OrdinalIgnoreCase))
             throw new ArgumentException("Kích thước hoặc loại tệp thực tế không khớp yêu cầu upload.");
     }

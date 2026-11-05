@@ -44,6 +44,7 @@ public sealed class DraftArticleUseCaseTests
         _user.Setup(u => u.IsInRole(RoleNames.Agent)).Returns(true);
         _user.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(false);
         _user.SetupGet(u => u.UserId).Returns(_authorId.ToString());
+        _user.SetupGet(u => u.IsAuthenticated).Returns(true);
 
         _writer.Setup(w => w.CreateDraftAsync(It.IsAny<Article>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((Article a, CancellationToken _) => a);
@@ -86,6 +87,7 @@ public sealed class DraftArticleUseCaseTests
         _user.Setup(u => u.IsInRole(RoleNames.Agent)).Returns(true);
         _user.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(false);
         _user.SetupGet(u => u.UserId).Returns(_otherAgentId.ToString());
+        _user.SetupGet(u => u.IsAuthenticated).Returns(true);
 
         var article = Article.CreateDraft(_authorId, "Tiêu đề gốc", "Nội dung gốc bài viết", null, _now.UtcDateTime);
         _writer.Setup(w => w.GetForUpdateAsync(article.Id, It.IsAny<CancellationToken>()))
@@ -104,6 +106,7 @@ public sealed class DraftArticleUseCaseTests
         _user.Setup(u => u.IsInRole(RoleNames.Agent)).Returns(false);
         _user.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(true);
         _user.SetupGet(u => u.UserId).Returns(_adminId.ToString());
+        _user.SetupGet(u => u.IsAuthenticated).Returns(true);
 
         var article = Article.CreateDraft(_authorId, "Tiêu đề gốc", "Nội dung gốc bài viết", null, _now.UtcDateTime);
         _writer.Setup(w => w.GetForUpdateAsync(article.Id, It.IsAny<CancellationToken>()))
@@ -131,6 +134,7 @@ public sealed class DraftArticleUseCaseTests
         _user.Setup(u => u.IsInRole(RoleNames.Agent)).Returns(true);
         _user.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(false);
         _user.SetupGet(u => u.UserId).Returns(_authorId.ToString());
+        _user.SetupGet(u => u.IsAuthenticated).Returns(true);
 
         var article = Article.CreateDraft(_authorId, "Tiêu đề gốc", "Nội dung gốc bài viết", null, _now.UtcDateTime);
         _writer.Setup(w => w.GetForUpdateAsync(article.Id, It.IsAny<CancellationToken>()))
@@ -149,6 +153,7 @@ public sealed class DraftArticleUseCaseTests
         _user.Setup(u => u.IsInRole(RoleNames.Agent)).Returns(true);
         _user.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(false);
         _user.SetupGet(u => u.UserId).Returns(_authorId.ToString());
+        _user.SetupGet(u => u.IsAuthenticated).Returns(true);
 
         var article = Article.CreateDraft(_authorId, "Tiêu đề gốc", "Nội dung gốc bài viết", null, _now.UtcDateTime);
         article.Publish(_authorId, _now.UtcDateTime);
@@ -168,6 +173,7 @@ public sealed class DraftArticleUseCaseTests
         _user.Setup(u => u.IsInRole(RoleNames.Agent)).Returns(true);
         _user.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(false);
         _user.SetupGet(u => u.UserId).Returns(_authorId.ToString());
+        _user.SetupGet(u => u.IsAuthenticated).Returns(true);
 
         var article = Article.CreateDraft(_authorId, "Tiêu đề gốc", "Nội dung gốc bài viết", null, _now.UtcDateTime);
         article.Publish(_authorId, _now.UtcDateTime);
@@ -190,6 +196,7 @@ public sealed class DraftArticleUseCaseTests
         _user.Setup(u => u.IsInRole(RoleNames.Agent)).Returns(true);
         _user.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(false);
         _user.SetupGet(u => u.UserId).Returns(_authorId.ToString());
+        _user.SetupGet(u => u.IsAuthenticated).Returns(true);
 
         var article = Article.CreateDraft(_authorId, "Tiêu đề gốc", "Nội dung gốc bài viết", null, _now.UtcDateTime);
         _writer.Setup(w => w.GetForUpdateAsync(article.Id, It.IsAny<CancellationToken>()))

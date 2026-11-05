@@ -24,4 +24,13 @@ public interface IUserAccountGateway
 
     /// <summary>Lấy danh sách người dùng theo vai trò cụ thể.</summary>
     Task<IReadOnlyList<UserInfo>> GetUsersInRoleAsync(string roleName, CancellationToken cancellationToken);
+
+    /// <summary>Đổi mật khẩu người dùng.</summary>
+    Task<IdentityOperationResult> ChangePasswordAsync(string userId, string currentPassword, string newPassword, CancellationToken cancellationToken);
+
+    /// <summary>Đặt lại mật khẩu người dùng (sau khi đã xác thực OTP thành công).</summary>
+    Task<IdentityOperationResult> ResetPasswordWithOtpAsync(string email, string newPassword, CancellationToken cancellationToken);
+
+    /// <summary>Gán danh sách vai trò cho người dùng (Admin).</summary>
+    Task<IdentityOperationResult> AssignRolesAsync(string userId, IReadOnlyList<string> roles, CancellationToken cancellationToken);
 }

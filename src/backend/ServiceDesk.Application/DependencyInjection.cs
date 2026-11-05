@@ -3,6 +3,13 @@ using ServiceDesk.Application.Identity.RegisterUser;
 using ServiceDesk.Application.Identity.LoginUser;
 using ServiceDesk.Application.Identity.GetCurrentUser;
 using ServiceDesk.Application.Identity.GetUsersByRole;
+using ServiceDesk.Application.Identity.RefreshAuth;
+using ServiceDesk.Application.Identity.RevokeToken;
+using ServiceDesk.Application.Identity.GetDepartments;
+using ServiceDesk.Application.Identity.ChangePassword;
+using ServiceDesk.Application.Identity.ForgotPassword;
+using ServiceDesk.Application.Identity.ResetPassword;
+using ServiceDesk.Application.Identity.AssignUserRoles;
 using ServiceDesk.Application.Ticketing.CreateTicket;
 using ServiceDesk.Application.Ticketing.GetMyTickets;
 using ServiceDesk.Application.Ticketing.GetTicketDetail;
@@ -75,6 +82,13 @@ public static class DependencyInjection
         services.AddScoped<ILoginUser, LoginUserUseCase>();
         services.AddScoped<IGetCurrentUser, GetCurrentUserUseCase>();
         services.AddScoped<IGetUsersByRole, GetUsersByRoleUseCase>();
+        services.AddScoped<IRefreshAuth, RefreshAuthUseCase>();
+        services.AddScoped<IRevokeToken, RevokeTokenUseCase>();
+        services.AddScoped<IGetDepartments, GetDepartmentsUseCase>();
+        services.AddScoped<IChangePassword, ChangePasswordUseCase>();
+        services.AddScoped<IForgotPassword, ForgotPasswordUseCase>();
+        services.AddScoped<IResetPassword, ResetPasswordUseCase>();
+        services.AddScoped<IAssignUserRoles, AssignUserRolesUseCase>();
         return services;
     }
 

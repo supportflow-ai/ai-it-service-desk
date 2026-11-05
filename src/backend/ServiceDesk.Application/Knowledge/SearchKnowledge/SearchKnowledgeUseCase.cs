@@ -1,5 +1,6 @@
 namespace ServiceDesk.Application.Knowledge.SearchKnowledge;
 
+using ServiceDesk.Application.Common;
 using ServiceDesk.Application.Common.Interfaces;
 using ServiceDesk.Application.Knowledge.Authorization;
 using ServiceDesk.Application.Knowledge.Contracts;
@@ -24,7 +25,7 @@ internal sealed class SearchKnowledgeUseCase(
 
         if (currentUser.IsInRole(RoleNames.Agent))
         {
-            var authorId = Guid.Parse(currentUser.UserId!);
+            var authorId = AuthenticatedActor.RequireId(currentUser);
             return queries.SearchStaffAsync(query.Query, query.Tag, query.Status, new KnowledgeReadScope.Author(authorId), page, pageSize, cancellationToken);
         }
 

@@ -50,6 +50,15 @@ public sealed class AttachmentConfirmationSecurityTests
     }
 
     [Fact]
+    public async Task MissingStoredContentType_IsRejectedWithoutConfirming()
+    {
+        _storage.Setup(value => value.StatAsync("configured-bucket", _upload.StorageKey, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new StoredObject(1024, null!, "etag"));
+        await Assert.ThrowsAsync<ArgumentException>(() => Confirm().ExecuteAsync(new(_ticket, Request())));
+        _store.Verify(value => value.ConfirmAsync(It.IsAny<Guid>(), It.IsAny<TicketAttachment>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
     public async Task MetadataCannotBeReplacedAtConfirmation()
     {
         await Assert.ThrowsAsync<ArgumentException>(() => Confirm().ExecuteAsync(new(_ticket, Request() with { FileSizeBytes = 2048 })));
