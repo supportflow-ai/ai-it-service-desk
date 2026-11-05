@@ -1,5 +1,6 @@
 namespace ServiceDesk.Application.Knowledge.GetArticleDetail;
 
+using ServiceDesk.Application.Common;
 using ServiceDesk.Application.Common.Interfaces;
 using ServiceDesk.Application.Knowledge.Authorization;
 using ServiceDesk.Application.Knowledge.Contracts;
@@ -21,7 +22,7 @@ internal sealed class GetArticleDetailUseCase(
         }
         else if (currentUser.IsInRole(RoleNames.Agent))
         {
-            scope = new KnowledgeReadScope.Author(Guid.Parse(currentUser.UserId!));
+            scope = new KnowledgeReadScope.Author(AuthenticatedActor.RequireId(currentUser));
         }
         else
         {

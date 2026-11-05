@@ -42,6 +42,7 @@ public sealed class ArchiveArticleUseCaseTests
         _user.Setup(u => u.IsInRole(RoleNames.Agent)).Returns(true);
         _user.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(false);
         _user.SetupGet(u => u.UserId).Returns(_authorId.ToString());
+        _user.SetupGet(u => u.IsAuthenticated).Returns(true);
 
         var article = Article.CreateDraft(_authorId, "Tiêu đề bài viết", "Nội dung bài viết hợp lệ từ 10 ký tự", ["tag1"], _now.UtcDateTime);
         article.Publish(_agentId, _now.UtcDateTime);
@@ -72,6 +73,7 @@ public sealed class ArchiveArticleUseCaseTests
         _user.Setup(u => u.IsInRole(RoleNames.Agent)).Returns(true);
         _user.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(false);
         _user.SetupGet(u => u.UserId).Returns(_agentId.ToString());
+        _user.SetupGet(u => u.IsAuthenticated).Returns(true);
 
         var article = Article.CreateDraft(_authorId, "Tiêu đề bài viết", "Nội dung bài viết hợp lệ từ 10 ký tự", null, _now.UtcDateTime);
         article.Publish(_authorId, _now.UtcDateTime);
@@ -106,6 +108,7 @@ public sealed class ArchiveArticleUseCaseTests
         _user.Setup(u => u.IsInRole(RoleNames.Agent)).Returns(true);
         _user.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(false);
         _user.SetupGet(u => u.UserId).Returns(_authorId.ToString());
+        _user.SetupGet(u => u.IsAuthenticated).Returns(true);
 
         var article = Article.CreateDraft(_authorId, "Tiêu đề bài viết", "Nội dung bài viết hợp lệ từ 10 ký tự", null, _now.UtcDateTime);
         article.Publish(_agentId, _now.UtcDateTime);
@@ -126,6 +129,7 @@ public sealed class ArchiveArticleUseCaseTests
         _user.Setup(u => u.IsInRole(RoleNames.Agent)).Returns(true);
         _user.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(false);
         _user.SetupGet(u => u.UserId).Returns(_authorId.ToString());
+        _user.SetupGet(u => u.IsAuthenticated).Returns(true);
 
         var article = Article.CreateDraft(_authorId, "Tiêu đề bài viết", "Nội dung bài viết hợp lệ từ 10 ký tự", null, _now.UtcDateTime);
         _writer.Setup(w => w.GetForUpdateAsync(article.Id, It.IsAny<CancellationToken>()))
@@ -147,6 +151,7 @@ public sealed class ArchiveArticleUseCaseTests
         _user.Setup(u => u.IsInRole(RoleNames.Agent)).Returns(true);
         _user.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(false);
         _user.SetupGet(u => u.UserId).Returns(_authorId.ToString());
+        _user.SetupGet(u => u.IsAuthenticated).Returns(true);
 
         var article = Article.CreateDraft(_authorId, "Tiêu đề bài viết", "Nội dung bài viết hợp lệ từ 10 ký tự", null, _now.UtcDateTime);
         article.Publish(_agentId, _now.UtcDateTime);

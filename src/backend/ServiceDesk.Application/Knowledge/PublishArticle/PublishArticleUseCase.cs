@@ -26,7 +26,7 @@ internal sealed class PublishArticleUseCase(
             throw new KeyNotFoundException("Không tìm thấy bài viết.");
         }
 
-        var callerId = Guid.Parse(currentUser.UserId!);
+        var callerId = AuthenticatedActor.RequireId(currentUser);
         if (!currentUser.IsInRole(RoleNames.Admin) && !article.IsAuthor(callerId))
         {
             throw new UnauthorizedAccessException("Chỉ tác giả hoặc quản trị viên mới có quyền xuất bản bài viết.");
@@ -42,7 +42,7 @@ internal sealed class PublishArticleUseCase(
             throw new ConcurrencyConflictException("Phiên bản bài viết đã thay đổi. Vui lòng tải lại.");
         }
 
-        var publisherId = Guid.Parse(currentUser.UserId!);
+        var publisherId = AuthenticatedActor.RequireId(currentUser);
         article.Publish(publisherId, clock.UtcNow.UtcDateTime);
 
         var updated = await writer.UpdateArticleAsync(article, command.ExpectedRevision, cancellationToken);
