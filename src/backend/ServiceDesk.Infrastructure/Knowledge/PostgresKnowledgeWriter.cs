@@ -3,6 +3,7 @@ using ServiceDesk.Application.Common;
 using ServiceDesk.Application.Knowledge.Ports;
 using ServiceDesk.Domain.Knowledge;
 using ServiceDesk.Infrastructure.Persistence;
+using ServiceDesk.Infrastructure.Knowledge.Indexing;
 
 namespace ServiceDesk.Infrastructure.Knowledge;
 
@@ -41,6 +42,7 @@ internal sealed class PostgresKnowledgeWriter(ApplicationDbContext context) : IK
 
     public async Task<Article> UpdateArticleAsync(Article article, uint? expectedRevision = null, CancellationToken cancellationToken = default)
     {
+        var newVersions = new List<ArticleVersion>();
         foreach (var version in article.Versions)
         {
             var entry = _context.Entry(version);
@@ -48,11 +50,30 @@ internal sealed class PostgresKnowledgeWriter(ApplicationDbContext context) : IK
             {
                 entry.State = EntityState.Added;
             }
+            if (entry.State == EntityState.Added) newVersions.Add(version);
         }
 
         try
         {
+            await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+            // Serialize publication before EF can insert a new snapshot ahead of the article UPDATE.
+            var revision = (await _context.Articles.FromSqlInterpolated($"""
+                SELECT *, xmin FROM public.articles WHERE "Id" = {article.Id} FOR UPDATE
+                """).AsNoTracking().Select(a => new { Revision = EF.Property<uint>(a, "xmin") })
+                .ToListAsync(cancellationToken)).SingleOrDefault();
+            var expected = expectedRevision ?? _context.Entry(article).Property<uint>("xmin").OriginalValue;
+            if (revision is null || revision.Revision != expected)
+                throw new ConcurrencyConflictException("Phiên bản bài viết đã thay đổi.");
+            if (expectedRevision.HasValue)
+                _context.Entry(article).Property<uint>("xmin").OriginalValue = expectedRevision.Value;
             await _context.SaveChangesAsync(cancellationToken);
+            foreach (var version in newVersions)
+                await KnowledgeIndexScheduling.ScheduleAsync(_context, article, version, version.Id,
+                    article.UpdatedAt, invalidateActive: true, cancellationToken);
+            if (article.Status == ArticleStatus.Archived)
+                await KnowledgeIndexScheduling.ArchiveAsync(_context, article.Id, article.UpdatedAt, cancellationToken);
+            await _context.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
             await _context.Entry(article).ReloadAsync(cancellationToken);
             return article;
         }

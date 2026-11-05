@@ -8,6 +8,10 @@ using ServiceDesk.Application.Knowledge.GetArticleDetail;
 using ServiceDesk.Application.Knowledge.SearchKnowledge;
 using ServiceDesk.Domain.Identity;
 using ServiceDesk.Domain.Knowledge;
+using ServiceDesk.Application.Knowledge.RepublishArticle;
+using ServiceDesk.Application.Knowledge.RebuildArticleIndex;
+using ServiceDesk.Application.Knowledge.GetArticleIndexStatus;
+using ServiceDesk.Application.Knowledge.Indexing;
 
 namespace ServiceDesk.Api.Endpoints;
 
@@ -22,6 +26,8 @@ public record PublishArticleRequest(uint? ExpectedRevision = null);
 
 /// <summary>Request body lưu trữ bài viết tri thức.</summary>
 public record ArchiveArticleRequest(uint? ExpectedRevision = null);
+public record RepublishArticleRequest(string Title, string Content, IReadOnlyList<string>? Tags = null, uint? ExpectedRevision = null);
+public record RebuildArticleIndexRequest(Guid RequestId, uint? ExpectedRevision = null);
 
 /// <summary>
 /// Định nghĩa các API endpoints cho phân hệ tri thức (Knowledge Base).
@@ -179,6 +185,23 @@ public static class KnowledgeEndpoints
         .RequireAuthorization(PolicyNames.RequireRequester)
         .Produces<PagedArticleResult>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status401Unauthorized);
+
+        group.MapPost("/{id:guid}/republish", async (Guid id, [FromBody] RepublishArticleRequest request,
+            IRepublishArticle useCase, CancellationToken ct) => Results.Ok(await useCase.ExecuteAsync(
+                new RepublishArticleCommand(id, request.Title, request.Content, request.Tags, request.ExpectedRevision), ct)))
+            .WithName("RepublishArticle").RequireAuthorization(PolicyNames.RequireAgent)
+            .Produces<ArticleDto>(200).Produces(400).Produces(401).Produces(403).Produces(404).Produces(409).Produces(422);
+
+        group.MapPost("/{id:guid}/index/rebuild", async (Guid id, [FromBody] RebuildArticleIndexRequest request,
+            IRebuildArticleIndex useCase, CancellationToken ct) => Results.Accepted($"/api/knowledge/articles/{id}/index",
+                await useCase.ExecuteAsync(new RebuildArticleIndexCommand(id, request.RequestId, request.ExpectedRevision), ct)))
+            .WithName("RebuildArticleIndex").RequireAuthorization(PolicyNames.RequireAgent)
+            .Produces<RebuildArticleIndexResult>(202).Produces(400).Produces(401).Produces(403).Produces(404).Produces(409).Produces(422);
+
+        group.MapGet("/{id:guid}/index", async (Guid id, IGetArticleIndexStatus useCase, CancellationToken ct) =>
+                Results.Ok(await useCase.ExecuteAsync(new GetArticleIndexStatusQuery(id), ct)))
+            .WithName("GetArticleIndexStatus").RequireAuthorization(PolicyNames.RequireAgent)
+            .Produces<KnowledgeIndexStatusDto>(200).Produces(401).Produces(403).Produces(404);
 
         return app;
     }

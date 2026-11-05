@@ -106,6 +106,24 @@ public class Article
         UpdatedAt = now;
     }
 
+    public void Republish(string title, string content, IEnumerable<string>? tags, Guid publishedById, DateTime now)
+    {
+        if (Status != ArticleStatus.Published)
+            throw new InvalidOperationException("Chỉ có thể xuất bản lại bài đang được công bố.");
+        if (publishedById == Guid.Empty) throw new ArgumentException("Publisher ID is required.");
+        var nextTitle = ValidateAndNormalizeTitle(title);
+        var nextContent = ValidateAndNormalizeContent(content);
+        var nextTags = NormalizeTags(Id, tags);
+        var nextVersion = checked(Version + 1);
+        Title = nextTitle;
+        Content = nextContent;
+        _tags.Clear();
+        _tags.AddRange(nextTags);
+        Version = nextVersion;
+        PublishedAt = UpdatedAt = now;
+        _versions.Add(new ArticleVersion(Guid.NewGuid(), Id, Version, Title, Content, publishedById, now));
+    }
+
     public bool IsAuthor(Guid userId) => AuthorId == userId;
 
     private static string ValidateAndNormalizeTitle(string title)

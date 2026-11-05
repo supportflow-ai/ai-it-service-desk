@@ -86,6 +86,10 @@ public static class DependencyInjection
         services.AddScoped<IArchiveArticle, ArchiveArticleUseCase>();
         services.AddScoped<IGetArticleDetail, GetArticleDetailUseCase>();
         services.AddScoped<ISearchKnowledge, SearchKnowledgeUseCase>();
+        services.AddScoped<Knowledge.RepublishArticle.IRepublishArticle, Knowledge.RepublishArticle.RepublishArticleUseCase>();
+        services.AddScoped<Knowledge.RebuildArticleIndex.IRebuildArticleIndex, Knowledge.RebuildArticleIndex.RebuildArticleIndexUseCase>();
+        services.AddScoped<Knowledge.GetArticleIndexStatus.IGetArticleIndexStatus, Knowledge.GetArticleIndexStatus.GetArticleIndexStatusUseCase>();
+        services.AddScoped<Knowledge.Indexing.IKnowledgeIndexProcessor, Knowledge.Indexing.KnowledgeIndexProcessor>();
         return services;
     }
 }
