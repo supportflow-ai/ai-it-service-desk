@@ -41,6 +41,6 @@ internal sealed class ArticleVersionConfiguration : IEntityTypeConfiguration<Art
             .HasColumnName("published_at")
             .IsRequired();
 
-        entity.HasIndex(v => new { v.ArticleId, v.VersionNumber });
+        entity.HasIndex(v => new { v.ArticleId, v.VersionNumber }).IsUnique();
     }
 }

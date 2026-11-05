@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using ServiceDesk.Domain.Knowledge;
 using ServiceDesk.Domain.Ticketing;
 using ServiceDesk.Infrastructure.Ticketing;
+using ServiceDesk.Infrastructure.Knowledge.Indexing;
 
 namespace ServiceDesk.Infrastructure.Persistence;
 
@@ -25,11 +26,16 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Article> Articles { get; set; }
     public DbSet<ArticleTag> ArticleTags { get; set; }
     public DbSet<ArticleVersion> ArticleVersions { get; set; }
+    internal DbSet<KnowledgeIndexJob> KnowledgeIndexJobs => Set<KnowledgeIndexJob>();
+    internal DbSet<KnowledgeIndexState> KnowledgeIndexStates => Set<KnowledgeIndexState>();
+    internal DbSet<KnowledgeIndexSet> KnowledgeIndexSets => Set<KnowledgeIndexSet>();
+    internal DbSet<KnowledgeChunk> KnowledgeChunks => Set<KnowledgeChunk>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
         builder.HasDefaultSchema("public");
+        builder.HasPostgresExtension("vector");
         builder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
     }
 }

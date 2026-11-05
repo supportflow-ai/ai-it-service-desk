@@ -21,6 +21,7 @@ namespace ServiceDesk.Infrastructure.Persistence.Migrations
                 .HasAnnotation("ProductVersion", "10.0.13")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
+            NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "vector");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -267,7 +268,8 @@ namespace ServiceDesk.Infrastructure.Persistence.Migrations
                     b.Property<uint>("xmin")
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("xid");
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
 
                     b.HasKey("Id");
 
@@ -333,7 +335,8 @@ namespace ServiceDesk.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ArticleId", "VersionNumber");
+                    b.HasIndex("ArticleId", "VersionNumber")
+                        .IsUnique();
 
                     b.ToTable("article_versions", "public");
                 });
@@ -589,6 +592,207 @@ namespace ServiceDesk.Infrastructure.Persistence.Migrations
                     b.ToTable("ticket_comments", "public");
                 });
 
+            modelBuilder.Entity("ServiceDesk.Infrastructure.Knowledge.Indexing.KnowledgeChunk", b =>
+                {
+                    b.Property<Guid>("IndexSetId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Index")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ChunkId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<int>("EndChar")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("EndLine")
+                        .HasColumnType("integer");
+
+                    b.PrimitiveCollection<string[]>("HeadingPath")
+                        .IsRequired()
+                        .HasColumnType("text[]");
+
+                    b.Property<int>("StartChar")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("StartLine")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("TextHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<int>("TokenCount")
+                        .HasColumnType("integer");
+
+                    b.HasKey("IndexSetId", "Index");
+
+                    b.HasIndex("IndexSetId", "ChunkId")
+                        .IsUnique();
+
+                    b.ToTable("knowledge_chunks", "public", t =>
+                        {
+                            t.HasCheckConstraint("CK_chunk_offsets", "\"StartChar\" >= 0 AND \"EndChar\" > \"StartChar\" AND \"Index\" >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("ServiceDesk.Infrastructure.Knowledge.Indexing.KnowledgeIndexJob", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ArticleId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ArticleVersionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ErrorCode")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<Guid?>("LeaseToken")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("LeaseUntil")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("NextAttemptAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ProfileHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("ProfileId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("SourceHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<int>("VersionNumber")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ArticleId");
+
+                    b.HasIndex("ArticleVersionId", "ProfileHash");
+
+                    b.HasIndex("Status", "NextAttemptAt", "CreatedAt");
+
+                    b.ToTable("knowledge_index_jobs", "public", t =>
+                        {
+                            t.HasCheckConstraint("CK_index_job_status", "\"Status\" IN ('Pending','Running','Succeeded','Failed','Superseded')");
+                        });
+                });
+
+            modelBuilder.Entity("ServiceDesk.Infrastructure.Knowledge.Indexing.KnowledgeIndexSet", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ArticleId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ArticleVersionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("ChunkCount")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Dimension")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("NormalizedContentHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("ProfileHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("ProfileId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("ProfileJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("SourceHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<int>("VersionNumber")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ArticleVersionId");
+
+                    b.HasIndex("ArticleId", "VersionNumber", "ProfileHash");
+
+                    b.ToTable("knowledge_index_sets", "public", t =>
+                        {
+                            t.HasCheckConstraint("CK_index_set_dimension", "\"Dimension\" = 384");
+                        });
+                });
+
+            modelBuilder.Entity("ServiceDesk.Infrastructure.Knowledge.Indexing.KnowledgeIndexState", b =>
+                {
+                    b.Property<Guid>("ArticleId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("ActiveIndexSetId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("RequestedJobId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("ArticleId");
+
+                    b.HasIndex("ActiveIndexSetId");
+
+                    b.HasIndex("RequestedJobId");
+
+                    b.ToTable("knowledge_index_states", "public");
+                });
+
             modelBuilder.Entity("ServiceDesk.Infrastructure.Ticketing.TicketIdempotencyRecord", b =>
                 {
                     b.Property<Guid>("Id")
@@ -708,23 +912,6 @@ namespace ServiceDesk.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("ServiceDesk.Domain.Ticketing.AttachmentUploadGrant", b =>
-                {
-                    b.HasOne("ServiceDesk.Domain.Ticketing.TicketAttachment", null)
-                        .WithMany()
-                        .HasForeignKey("AttachmentId")
-                        .OnDelete(DeleteBehavior.Restrict);
-                });
-
-            modelBuilder.Entity("ServiceDesk.Infrastructure.Ticketing.TicketIdempotencyRecord", b =>
-                {
-                    b.HasOne("ServiceDesk.Domain.Ticketing.Ticket", null)
-                        .WithMany()
-                        .HasForeignKey("TicketId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("ServiceDesk.Domain.Knowledge.ArticleTag", b =>
                 {
                     b.HasOne("ServiceDesk.Domain.Knowledge.Article", null)
@@ -740,6 +927,81 @@ namespace ServiceDesk.Infrastructure.Persistence.Migrations
                         .WithMany("Versions")
                         .HasForeignKey("ArticleId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ServiceDesk.Domain.Ticketing.AttachmentUploadGrant", b =>
+                {
+                    b.HasOne("ServiceDesk.Domain.Ticketing.TicketAttachment", null)
+                        .WithMany()
+                        .HasForeignKey("AttachmentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("ServiceDesk.Infrastructure.Knowledge.Indexing.KnowledgeChunk", b =>
+                {
+                    b.HasOne("ServiceDesk.Infrastructure.Knowledge.Indexing.KnowledgeIndexSet", null)
+                        .WithMany()
+                        .HasForeignKey("IndexSetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ServiceDesk.Infrastructure.Knowledge.Indexing.KnowledgeIndexJob", b =>
+                {
+                    b.HasOne("ServiceDesk.Domain.Knowledge.Article", null)
+                        .WithMany()
+                        .HasForeignKey("ArticleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ServiceDesk.Domain.Knowledge.ArticleVersion", null)
+                        .WithMany()
+                        .HasForeignKey("ArticleVersionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ServiceDesk.Infrastructure.Knowledge.Indexing.KnowledgeIndexSet", b =>
+                {
+                    b.HasOne("ServiceDesk.Domain.Knowledge.ArticleVersion", null)
+                        .WithMany()
+                        .HasForeignKey("ArticleVersionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ServiceDesk.Infrastructure.Knowledge.Indexing.KnowledgeIndexJob", null)
+                        .WithOne()
+                        .HasForeignKey("ServiceDesk.Infrastructure.Knowledge.Indexing.KnowledgeIndexSet", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ServiceDesk.Infrastructure.Knowledge.Indexing.KnowledgeIndexState", b =>
+                {
+                    b.HasOne("ServiceDesk.Infrastructure.Knowledge.Indexing.KnowledgeIndexSet", null)
+                        .WithMany()
+                        .HasForeignKey("ActiveIndexSetId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ServiceDesk.Domain.Knowledge.Article", null)
+                        .WithOne()
+                        .HasForeignKey("ServiceDesk.Infrastructure.Knowledge.Indexing.KnowledgeIndexState", "ArticleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ServiceDesk.Infrastructure.Knowledge.Indexing.KnowledgeIndexJob", null)
+                        .WithMany()
+                        .HasForeignKey("RequestedJobId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("ServiceDesk.Infrastructure.Ticketing.TicketIdempotencyRecord", b =>
+                {
+                    b.HasOne("ServiceDesk.Domain.Ticketing.Ticket", null)
+                        .WithMany()
+                        .HasForeignKey("TicketId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 

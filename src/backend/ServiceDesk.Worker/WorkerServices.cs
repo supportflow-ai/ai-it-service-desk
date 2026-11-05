@@ -17,10 +17,13 @@ public static class WorkerServices
     public static IServiceCollection AddWorkerServices(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddTicketingApplication();
+        services.AddKnowledgeApplication();
         services.AddPersistence(configuration);
         services.AddStorage(configuration);
         services.AddClock();
         services.AddAiAdapters(configuration);
+        services.AddKnowledgeIndexing(configuration);
+        services.AddKnowledgeIndexWorker();
         services.AddScoped<ICurrentUser, AnonymousCurrentUser>();
         return services;
     }

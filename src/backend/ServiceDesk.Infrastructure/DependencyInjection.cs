@@ -13,6 +13,8 @@ using ServiceDesk.Infrastructure.AI;
 using ServiceDesk.Infrastructure.Clock;
 using ServiceDesk.Infrastructure.Identity;
 using ServiceDesk.Infrastructure.Knowledge;
+using ServiceDesk.Infrastructure.Knowledge.Indexing;
+using ServiceDesk.Application.Knowledge.Indexing;
 using ServiceDesk.Infrastructure.Options;
 using ServiceDesk.Infrastructure.Persistence;
 using ServiceDesk.Infrastructure.Storage;
@@ -27,7 +29,7 @@ public static class DependencyInjection
 {
     /// <summary>Đăng ký toàn bộ hạ tầng: Persistence, Identity, Storage, Clock, AI Adapters.</summary>
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration) =>
-        services.AddPersistence(configuration).AddIdentityInfrastructure(configuration).AddStorage(configuration).AddClock().AddAiAdapters(configuration);
+        services.AddPersistence(configuration).AddIdentityInfrastructure(configuration).AddStorage(configuration).AddClock().AddAiAdapters(configuration).AddKnowledgeIndexing(configuration);
 
     /// <summary>Cấu hình cơ sở dữ liệu PostgreSQL (EF Core) và các cổng truy vấn/ghi dữ liệu ticket.</summary>
     public static IServiceCollection AddPersistence(this IServiceCollection services, IConfiguration configuration)
@@ -42,6 +44,7 @@ public static class DependencyInjection
         services.AddScoped<IAgentDirectory, AgentDirectory>();
         services.AddScoped<IKnowledgeWriter, PostgresKnowledgeWriter>();
         services.AddScoped<IKnowledgeQueries, PostgresKnowledgeQueries>();
+        services.AddScoped<IKnowledgeIndexStore, PostgresKnowledgeIndexStore>();
         return services;
     }
 
@@ -118,6 +121,21 @@ public static class DependencyInjection
                 .WithSSL(options.UseSsl).Build();
         });
         services.AddSingleton<IObjectStorageService, MinioObjectStorageService>();
+        return services;
+    }
+
+    public static IServiceCollection AddKnowledgeIndexing(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddOptions<KnowledgeIndexOptions>().Bind(configuration.GetSection(KnowledgeIndexOptions.SectionName))
+            .Validate(x => x.IsValid(), "Cấu hình KnowledgeIndex không hợp lệ.").ValidateOnStart();
+        services.AddHttpClient<IKnowledgeIndexPreparer, HttpKnowledgeIndexPreparer>(c => c.Timeout = Timeout.InfiniteTimeSpan)
+            .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
+        return services;
+    }
+
+    public static IServiceCollection AddKnowledgeIndexWorker(this IServiceCollection services)
+    {
+        services.AddHostedService<KnowledgeIndexWorker>();
         return services;
     }
 }
