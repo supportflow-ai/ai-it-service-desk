@@ -33,7 +33,9 @@ public sealed class ModuleEncapsulationTests
     [Fact]
     public void PublishedContractsExistAndArePublic()
     {
+        // Kiểu do trình biên dịch sinh (kiểu ẩn danh, closure) không có namespace và có thể trùng tên giữa các assembly.
         var types = ModuleAssemblies().SelectMany(assembly => assembly.GetTypes())
+            .Where(t => t.Namespace?.StartsWith("ServiceDesk.", StringComparison.Ordinal) == true)
             .ToDictionary(t => t.FullName!, StringComparer.Ordinal);
         foreach (var name in ModuleRules.Published)
             Assert.True(types.TryGetValue(name, out var type) && type.IsPublic, name);

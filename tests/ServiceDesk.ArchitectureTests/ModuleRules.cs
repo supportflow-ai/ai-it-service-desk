@@ -160,7 +160,7 @@ internal static class ModuleRules
             case "SharedWeb":
                 return other.Kind is "Shared" or "SharedWeb";
             case "HostAdapter":
-                return other.Kind == "Shared";
+                return other.Kind is "Shared" or "HostAdapter";
             case "HostPresentation":
                 return other.Kind is "Shared" or "SharedWeb" or "HostPresentation" || Published.Contains(name);
             case "Platform":
