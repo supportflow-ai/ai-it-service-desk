@@ -2,6 +2,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using ServiceDesk.Infrastructure;
 using ServiceDesk.Modules.AIAssistance;
+using ServiceDesk.Modules.Identity;
 using ServiceDesk.Modules.Ticketing;
 using ServiceDesk.SharedKernel.Application;
 using ServiceDesk.SharedKernel.Application.Abstractions;
@@ -20,6 +21,8 @@ public static class WorkerServices
         services.AddPersistence(configuration);
         services.AddStorage(configuration);
         services.AddClock();
+        // Ticketing tra vai trò/tên hiển thị qua danh bạ người dùng do Identity công bố.
+        services.AddIdentityUserDirectory();
         services.AddTicketingModule();
         services.AddAIAssistanceModule(configuration);
         services.AddScoped<ICurrentUser, AnonymousCurrentUser>();

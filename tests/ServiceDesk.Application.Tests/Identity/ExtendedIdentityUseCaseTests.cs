@@ -34,14 +34,14 @@ public sealed class ExtendedIdentityUseCaseTests
         _clock.SetupGet(c => c.UtcNow).Returns(_now);
     }
 
-    private RefreshToken StoredToken(string userId, DateTime? revokedAt = null, int expiresInDays = 1) => new()
+    private RefreshToken StoredToken(string userId, DateTime? revokedAt = null, int expiresInDays = 1)
     {
-        Id = Guid.NewGuid(),
-        UserId = userId,
-        TokenHash = "oldhash",
-        ExpiresAt = _now.UtcDateTime.AddDays(expiresInDays),
-        RevokedAt = revokedAt
-    };
+        // Phát token sao cho thời điểm hết hạn là _now + expiresInDays.
+        var token = RefreshToken.Issue(userId, "oldhash", _now.UtcDateTime.AddDays(expiresInDays) - RefreshToken.Lifetime);
+        if (revokedAt is not null)
+            token.Revoke(revokedAt.Value);
+        return token;
+    }
 
     private RefreshAuthUseCase Refresh() => new(_refreshTokens.Object, _accounts.Object, _tokens.Object, _clock.Object);
 

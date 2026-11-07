@@ -18,6 +18,7 @@ using ServiceDesk.Modules.Identity.Application.ResetPassword;
 using ServiceDesk.Modules.Identity.Application.RevokeToken;
 using ServiceDesk.Modules.Identity.Infrastructure;
 using ServiceDesk.Modules.Identity.Infrastructure.Options;
+using ServiceDesk.SharedKernel.Application.Abstractions;
 
 namespace ServiceDesk.Modules.Identity;
 
@@ -66,6 +67,16 @@ public static class IdentityModule
     }
 
     /// <summary>
+    /// Đăng ký danh bạ người dùng (<see cref="IUserDirectory"/>) mà module khác dùng để tra vai trò và tên hiển thị.
+    /// Chỉ cần bí danh <see cref="DbContext"/>, không cần UserManager, nên host nền cũng gọi được.
+    /// </summary>
+    public static IServiceCollection AddIdentityUserDirectory(this IServiceCollection services)
+    {
+        services.TryAddScoped<IUserDirectory, IdentityUserDirectory>();
+        return services;
+    }
+
+    /// <summary>
     /// Đăng ký kho người dùng/vai trò ASP.NET Core Identity trên <typeparamref name="TContext"/>,
     /// bí danh <see cref="DbContext"/> cho adapter của module, gateway quản lý tài khoản và kho token/OTP/phòng ban.
     /// </summary>
@@ -85,6 +96,7 @@ public static class IdentityModule
             options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
         }).AddRoles<IdentityRole>().AddEntityFrameworkStores<TContext>().AddDefaultTokenProviders();
         services.TryAddScoped<DbContext>(sp => sp.GetRequiredService<TContext>());
+        services.AddIdentityUserDirectory();
         services.AddScoped<IUserAccountGateway, IdentityAccountGateway>();
         services.AddScoped<IPasswordResetGateway, PasswordResetGateway>();
         services.AddScoped<IRefreshTokenStore, PostgresRefreshTokenStore>();

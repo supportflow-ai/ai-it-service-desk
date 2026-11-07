@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-using System.Text;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using ServiceDesk.Modules.Identity.Application.Contracts;
@@ -28,12 +26,12 @@ internal sealed class PasswordResetGateway(UserManager<IdentityUser> users, DbCo
         var otp = (await context.Set<OtpCode>().FromSqlInterpolated(
                 $"SELECT * FROM public.otp_codes WHERE target = {normalizedEmail} AND purpose = {purpose} AND is_used = false AND expires_at >= {now} ORDER BY created_at DESC LIMIT 1 FOR UPDATE")
             .AsNoTracking().ToListAsync(cancellationToken)).SingleOrDefault();
-        if (otp is null || otp.FailedAttempts >= OtpCode.MaxFailedAttempts)
+        if (otp is null || !otp.IsValid(now))
         {
             return IdentityOperationResult.Failed(InvalidCode);
         }
 
-        if (!CryptographicOperations.FixedTimeEquals(Encoding.ASCII.GetBytes(otp.CodeHash), Encoding.ASCII.GetBytes(codeHash)))
+        if (!otp.Matches(codeHash))
         {
             await context.Database.ExecuteSqlInterpolatedAsync(
                 $"UPDATE public.otp_codes SET failed_attempts = failed_attempts + 1 WHERE id = {otp.Id}", cancellationToken);

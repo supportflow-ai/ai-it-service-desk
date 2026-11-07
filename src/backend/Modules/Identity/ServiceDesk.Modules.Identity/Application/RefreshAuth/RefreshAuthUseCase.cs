@@ -40,14 +40,14 @@ internal sealed class RefreshAuthUseCase(
             return AuthResult.Failed(InvalidToken);
         }
 
-        if (stored.RevokedAt is not null)
+        if (stored.IsRevoked)
         {
             // Token đã bị thay thế hoặc thu hồi nhưng vẫn được dùng lại: coi như bị lộ.
             await refreshTokens.RevokeAllForUserAsync(stored.UserId, now, cancellationToken);
             return AuthResult.Failed(InvalidToken);
         }
 
-        if (stored.ExpiresAt <= now)
+        if (stored.IsExpiredAt(now))
         {
             return AuthResult.Failed(InvalidToken);
         }

@@ -106,12 +106,27 @@ internal sealed class IdentityAccountGateway(UserManager<IdentityUser> users, Db
     {
         cancellationToken.ThrowIfCancellationRequested();
         var roleUsers = await users.GetUsersInRoleAsync(roleName);
-        var result = new List<UserInfo>(roleUsers.Count);
-        foreach (var user in roleUsers)
+        if (roleUsers.Count == 0) return [];
+
+        // Hai truy vấn gom cho cả danh sách thay vì 2 truy vấn cho mỗi người dùng.
+        var ids = roleUsers.Select(u => u.Id).ToArray();
+        var names = (await context.Set<IdentityUserClaim<string>>().AsNoTracking()
+                .Where(c => ids.Contains(c.UserId) && c.ClaimType == ClaimTypes.Name)
+                .Select(c => new { c.UserId, c.ClaimValue })
+                .ToListAsync(cancellationToken))
+            .GroupBy(c => c.UserId, StringComparer.Ordinal)
+            .ToDictionary(g => g.Key, g => g.First().ClaimValue, StringComparer.Ordinal);
+        var roles = (await (from userRole in context.Set<IdentityUserRole<string>>().AsNoTracking()
+                            join role in context.Set<IdentityRole>().AsNoTracking() on userRole.RoleId equals role.Id
+                            where ids.Contains(userRole.UserId) && role.Name != null
+                            select new { userRole.UserId, RoleName = role.Name! })
+                .ToListAsync(cancellationToken))
+            .ToLookup(r => r.UserId, r => r.RoleName, StringComparer.Ordinal);
+
+        return roleUsers.Select(user => new UserInfo
         {
-            result.Add(await ToUserAsync(user));
-        }
-        return result;
+            UserId = user.Id, Email = user.Email!, FullName = names.GetValueOrDefault(user.Id), Roles = roles[user.Id].ToArray()
+        }).ToArray();
     }
 
     public async Task<IdentityOperationResult> ChangePasswordAsync(string userId, string currentPassword, string newPassword, CancellationToken cancellationToken)

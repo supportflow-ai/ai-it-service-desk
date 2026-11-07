@@ -45,6 +45,15 @@ public sealed class BoundaryTests
         }
     }
 
+    [Theory]
+    [InlineData("Ticketing")] [InlineData("Knowledge")] [InlineData("AIAssistance")]
+    public void OnlyIdentityReadsAspNetCoreIdentityTables(string module)
+    {
+        // Module khác tra người dùng qua IUserDirectory do Identity công bố.
+        Assert.True(Types.InAssembly(Assembly.Load($"ServiceDesk.Modules.{module}"))
+            .ShouldNot().HaveDependencyOn("Microsoft.AspNetCore.Identity").GetResult().IsSuccessful, module);
+    }
+
     [Fact]
     public void AiDomainCannotAccessTicketEntitiesOrIdentity()
     {

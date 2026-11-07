@@ -40,7 +40,7 @@ internal sealed class PostgresRefreshTokenStore(DbContext context) : IRefreshTok
             .FirstOrDefaultAsync(r => r.TokenHash == tokenHash && r.RevokedAt == null, cancellationToken);
         if (token is not null)
         {
-            token.RevokedAt = revokedAt;
+            token.Revoke(revokedAt);
             await context.SaveChangesAsync(cancellationToken);
         }
     }
@@ -53,7 +53,7 @@ internal sealed class PostgresRefreshTokenStore(DbContext context) : IRefreshTok
 
         foreach (var t in activeTokens)
         {
-            t.RevokedAt = revokedAt;
+            t.Revoke(revokedAt);
         }
 
         if (activeTokens.Count > 0)
