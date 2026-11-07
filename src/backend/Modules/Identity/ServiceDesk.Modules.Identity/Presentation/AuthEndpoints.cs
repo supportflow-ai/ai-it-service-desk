@@ -53,7 +53,7 @@ public static class AuthEndpoints
             });
         })
         .WithName("Register")
-        .RequireRateLimiting(AuthRateLimiting.PolicyName)
+        .RequireRateLimiting(AuthRateLimiting.IpPolicy)
         .Produces(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status429TooManyRequests)
         .AllowAnonymous();
@@ -78,7 +78,8 @@ public static class AuthEndpoints
             });
         })
         .WithName("Login")
-        .RequireRateLimiting(AuthRateLimiting.PolicyName)
+        .RequireRateLimiting(AuthRateLimiting.IpPolicy)
+        .RequireEmailRateLimit<LoginRequest>(AuthEmailOperation.Login, r => r.Email)
         .Produces(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status429TooManyRequests)
         .AllowAnonymous();
@@ -103,7 +104,7 @@ public static class AuthEndpoints
             });
         })
         .WithName("RefreshToken")
-        .RequireRateLimiting(AuthRateLimiting.PolicyName)
+        .RequireRateLimiting(AuthRateLimiting.RefreshPolicy)
         .Produces(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status429TooManyRequests)
         .AllowAnonymous();
@@ -148,7 +149,8 @@ public static class AuthEndpoints
             return Results.Ok(new { message = "Nếu email tồn tại trong hệ thống, mã OTP đã được gửi." });
         })
         .WithName("ForgotPassword")
-        .RequireRateLimiting(AuthRateLimiting.PolicyName)
+        .RequireRateLimiting(AuthRateLimiting.IpPolicy)
+        .RequireEmailRateLimit<ForgotPasswordRequest>(AuthEmailOperation.ForgotPassword, r => r.Email)
         .Produces(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status429TooManyRequests)
         .AllowAnonymous();
@@ -168,7 +170,8 @@ public static class AuthEndpoints
             return Results.Ok(new { message = "Đặt lại mật khẩu thành công." });
         })
         .WithName("ResetPassword")
-        .RequireRateLimiting(AuthRateLimiting.PolicyName)
+        .RequireRateLimiting(AuthRateLimiting.IpPolicy)
+        .RequireEmailRateLimit<ResetPasswordRequest>(AuthEmailOperation.ResetPassword, r => r.Email)
         .Produces(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status429TooManyRequests)
         .AllowAnonymous();
