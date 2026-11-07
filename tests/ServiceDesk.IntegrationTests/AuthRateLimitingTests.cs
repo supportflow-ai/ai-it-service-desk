@@ -8,9 +8,9 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
-using ServiceDesk.Api.Endpoints;
-using ServiceDesk.Application.Identity.Contracts;
-using ServiceDesk.Application.Identity.ForgotPassword;
+using ServiceDesk.Modules.Identity.Application.Contracts;
+using ServiceDesk.Modules.Identity.Application.ForgotPassword;
+using ServiceDesk.Modules.Identity.Presentation;
 using Xunit;
 
 namespace ServiceDesk.IntegrationTests;

@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
-using ServiceDesk.Application.Common;
-using ServiceDesk.Domain.Ticketing;
-using ServiceDesk.Infrastructure.Ticketing;
+using ServiceDesk.SharedKernel.Application;
+using ServiceDesk.Modules.Ticketing.Domain;
+using ServiceDesk.Modules.Ticketing.Infrastructure;
 using Xunit;
 
 namespace ServiceDesk.IntegrationTests;

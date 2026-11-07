@@ -1,9 +1,10 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using ServiceDesk.Application;
-using ServiceDesk.Application.Common;
-using ServiceDesk.Application.Common.Interfaces;
 using ServiceDesk.Infrastructure;
+using ServiceDesk.Modules.AIAssistance;
+using ServiceDesk.Modules.Ticketing;
+using ServiceDesk.SharedKernel.Application;
+using ServiceDesk.SharedKernel.Application.Abstractions;
 
 namespace ServiceDesk.Worker;
 
@@ -16,11 +17,11 @@ public static class WorkerServices
 {
     public static IServiceCollection AddWorkerServices(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddTicketingApplication();
         services.AddPersistence(configuration);
         services.AddStorage(configuration);
         services.AddClock();
-        services.AddAiAdapters(configuration);
+        services.AddTicketingModule();
+        services.AddAIAssistanceModule(configuration);
         services.AddScoped<ICurrentUser, AnonymousCurrentUser>();
         return services;
     }

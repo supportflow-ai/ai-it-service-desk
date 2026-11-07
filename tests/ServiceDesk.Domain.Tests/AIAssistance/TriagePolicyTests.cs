@@ -1,5 +1,5 @@
-using ServiceDesk.Domain.AIAssistance;
-using ServiceDesk.Domain.Ticketing;
+using ServiceDesk.Modules.AIAssistance.Domain;
+using ServiceDesk.Modules.Ticketing.Domain;
 using FluentAssertions;
 using Xunit;
 

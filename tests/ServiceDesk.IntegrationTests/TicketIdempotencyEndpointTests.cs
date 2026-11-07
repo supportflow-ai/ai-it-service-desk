@@ -13,18 +13,18 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Moq;
-using ServiceDesk.Api.Endpoints;
-using ServiceDesk.Application.Common.Interfaces;
-using ServiceDesk.Application.Ticketing.CreateTicket;
-using ServiceDesk.Application.Ticketing.Contracts;
-using ServiceDesk.Application.Ticketing.Idempotency;
-using ServiceDesk.Application.Ticketing.Ports;
-using ServiceDesk.Domain.Identity;
-using ServiceDesk.Infrastructure.Identity;
+using ServiceDesk.Modules.Ticketing.Presentation;
+using ServiceDesk.SharedKernel.Application.Abstractions;
+using ServiceDesk.Modules.Ticketing.Application.CreateTicket;
+using ServiceDesk.Modules.Ticketing.Application.Contracts;
+using ServiceDesk.Modules.Ticketing.Application.Idempotency;
+using ServiceDesk.Modules.Ticketing.Application.Ports;
+using ServiceDesk.SharedKernel.Authorization;
+using ServiceDesk.Modules.Identity.Infrastructure;
 using ServiceDesk.Infrastructure.Clock;
-using ServiceDesk.Application.Identity.Contracts;
+using ServiceDesk.Modules.Identity.Application.Contracts;
 using ServiceDesk.Api.Identity;
-using ServiceDesk.Infrastructure.Options;
+using ServiceDesk.Modules.Identity.Infrastructure.Options;
 using Xunit;
 
 namespace ServiceDesk.IntegrationTests;
@@ -43,14 +43,14 @@ public class TicketIdempotencyEndpointTests
         builder.Services.AddHttpContextAccessor();
         builder.Services.AddScoped<ICurrentUser, CurrentUser>();
         builder.Services.AddSingleton(service);
-        builder.Services.AddSingleton(Mock.Of<ServiceDesk.Application.Ticketing.GetMyTickets.IGetMyTickets>());
-        builder.Services.AddSingleton(Mock.Of<ServiceDesk.Application.Ticketing.GetTicketDetail.IGetTicketDetail>());
-        builder.Services.AddSingleton(Mock.Of<ServiceDesk.Application.Ticketing.UpdateTicket.IUpdateTicket>());
-        builder.Services.AddSingleton(Mock.Of<ServiceDesk.Application.Ticketing.ClaimTicket.IClaimTicket>());
-        builder.Services.AddSingleton(Mock.Of<ServiceDesk.Application.Ticketing.ResolveTicket.IResolveTicket>());
-        builder.Services.AddSingleton(Mock.Of<ServiceDesk.Application.Ticketing.ReopenTicket.IReopenTicket>());
-        builder.Services.AddSingleton(Mock.Of<ServiceDesk.Application.Ticketing.CloseTicket.ICloseTicket>());
-        builder.Services.AddSingleton(Mock.Of<ServiceDesk.Application.Ticketing.CancelTicket.ICancelTicket>());
+        builder.Services.AddSingleton(Mock.Of<ServiceDesk.Modules.Ticketing.Application.GetMyTickets.IGetMyTickets>());
+        builder.Services.AddSingleton(Mock.Of<ServiceDesk.Modules.Ticketing.Application.GetTicketDetail.IGetTicketDetail>());
+        builder.Services.AddSingleton(Mock.Of<ServiceDesk.Modules.Ticketing.Application.UpdateTicket.IUpdateTicket>());
+        builder.Services.AddSingleton(Mock.Of<ServiceDesk.Modules.Ticketing.Application.ClaimTicket.IClaimTicket>());
+        builder.Services.AddSingleton(Mock.Of<ServiceDesk.Modules.Ticketing.Application.ResolveTicket.IResolveTicket>());
+        builder.Services.AddSingleton(Mock.Of<ServiceDesk.Modules.Ticketing.Application.ReopenTicket.IReopenTicket>());
+        builder.Services.AddSingleton(Mock.Of<ServiceDesk.Modules.Ticketing.Application.CloseTicket.ICloseTicket>());
+        builder.Services.AddSingleton(Mock.Of<ServiceDesk.Modules.Ticketing.Application.CancelTicket.ICancelTicket>());
         builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
         {
             options.TokenValidationParameters = new TokenValidationParameters

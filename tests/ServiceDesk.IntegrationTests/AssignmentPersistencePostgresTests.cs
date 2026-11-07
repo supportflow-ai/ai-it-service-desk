@@ -1,7 +1,7 @@
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
-using ServiceDesk.Domain.Ticketing;
-using ServiceDesk.Infrastructure.Ticketing;
+using ServiceDesk.Modules.Ticketing.Domain;
+using ServiceDesk.Modules.Ticketing.Infrastructure;
 using Xunit;
 
 namespace ServiceDesk.IntegrationTests;

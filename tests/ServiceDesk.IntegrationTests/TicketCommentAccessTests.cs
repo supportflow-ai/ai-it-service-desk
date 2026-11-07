@@ -3,8 +3,8 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
-using ServiceDesk.Application.Identity.Contracts;
-using ServiceDesk.Application.Ticketing.Contracts;
+using ServiceDesk.Modules.Identity.Application.Contracts;
+using ServiceDesk.Modules.Ticketing.Application.Contracts;
 using Xunit;
 
 namespace ServiceDesk.IntegrationTests;

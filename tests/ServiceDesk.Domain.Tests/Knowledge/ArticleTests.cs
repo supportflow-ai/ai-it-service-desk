@@ -1,5 +1,5 @@
 using FluentAssertions;
-using ServiceDesk.Domain.Knowledge;
+using ServiceDesk.Modules.Knowledge.Domain;
 using Xunit;
 
 namespace ServiceDesk.Domain.Tests.Knowledge;

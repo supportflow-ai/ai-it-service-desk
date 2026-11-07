@@ -1,8 +1,8 @@
 using Moq;
-using ServiceDesk.Application.Common.Interfaces;
-using ServiceDesk.Application.Identity.GetCurrentUser;
-using ServiceDesk.Application.Identity.Ports;
-using ServiceDesk.Application.Identity.Contracts;
+using ServiceDesk.SharedKernel.Application.Abstractions;
+using ServiceDesk.Modules.Identity.Application.GetCurrentUser;
+using ServiceDesk.Modules.Identity.Application.Ports;
+using ServiceDesk.Modules.Identity.Application.Contracts;
 using Xunit;
 
 namespace ServiceDesk.Application.Tests.Identity;

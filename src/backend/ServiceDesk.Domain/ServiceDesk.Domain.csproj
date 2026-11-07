@@ -1,9 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-
-  <PropertyGroup>
-    <RootNamespace>ServiceDesk.Domain</RootNamespace>
-  </PropertyGroup>
-
-  <!-- Domain has ZERO dependencies â€” no NuGet packages -->
-
-</Project>

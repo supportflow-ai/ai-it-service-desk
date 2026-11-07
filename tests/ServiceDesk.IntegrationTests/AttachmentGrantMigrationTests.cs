@@ -1,9 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
-using ServiceDesk.Domain.Ticketing;
+using ServiceDesk.Modules.Ticketing.Domain;
 using ServiceDesk.Infrastructure.Persistence;
-using ServiceDesk.Infrastructure.Ticketing;
+using ServiceDesk.Modules.Ticketing.Infrastructure;
 using Testcontainers.PostgreSql;
 using Xunit;
 

@@ -3,9 +3,9 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
-using ServiceDesk.Application.Ticketing.Contracts;
-using ServiceDesk.Application.Ticketing.CreateTicket;
-using ServiceDesk.Domain.Ticketing;
+using ServiceDesk.Modules.Ticketing.Application.Contracts;
+using ServiceDesk.Modules.Ticketing.Application.CreateTicket;
+using ServiceDesk.Modules.Ticketing.Domain;
 using Xunit;
 
 namespace ServiceDesk.IntegrationTests;

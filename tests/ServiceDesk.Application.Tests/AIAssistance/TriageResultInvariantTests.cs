@@ -1,6 +1,6 @@
-using ServiceDesk.Application.AIAssistance.Contracts;
-using ServiceDesk.Domain.AIAssistance;
-using ServiceDesk.Domain.Ticketing;
+using ServiceDesk.Modules.AIAssistance.Application.Contracts;
+using ServiceDesk.Modules.AIAssistance.Domain;
+using ServiceDesk.Modules.Ticketing.Domain;
 using Xunit;
 
 namespace ServiceDesk.Application.Tests.AIAssistance;
