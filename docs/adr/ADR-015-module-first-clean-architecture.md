@@ -52,7 +52,7 @@ Bên trong module, phụ thuộc chỉ đi vào trong: Presentation → Applicat
 Các quyết định đi kèm:
 
 - **Một project cho mỗi module, tầng tách bằng thư mục/namespace.** Ranh giới tầng trong module được kiểm bằng `ServiceDesk.ArchitectureTests` (IL qua Mono.Cecil và NetArchTest), không bằng tham chiếu project. Lý do: bốn module × bốn tầng sẽ thành 16 project nhỏ, tốn công bảo trì csproj/lock file mà không thêm luật nào kiểm thử chưa bắt được.
-- **Một `DbContext` và một chuỗi migration giữ nguyên.** `ApplicationDbContext` vẫn ở `ServiceDesk.Infrastructure.Persistence` để migration đã phát hành không phải đổi. Context gom cấu hình ánh xạ từ assembly của từng module. Adapter trong module nhận `DbContext` (bí danh do host đăng ký) và dùng `Set<T>()`, nên module không phụ thuộc kiểu context cụ thể. Không đổi schema; chỉ cập nhật tên kiểu CLR trong model snapshot.
+- **Một `DbContext` và một chuỗi migration giữ nguyên.** `ApplicationDbContext` vẫn ở `ServiceDesk.Infrastructure.Persistence` để migration đã phát hành không phải đổi. Context gom cấu hình ánh xạ từ assembly của Identity, Ticketing và Knowledge. Adapter trong module nhận `DbContext` (bí danh do host đăng ký) và dùng `Set<T>()`, nên module không phụ thuộc kiểu context cụ thể. Không đổi schema; chỉ cập nhật tên kiểu CLR trong model snapshot.
 - **Module tự đăng ký.** Host gọi `AddInfrastructure`, rồi `AddIdentityModule`, `AddTicketingModule`, `AddKnowledgeModule`, `AddAIAssistanceModule`. Thêm module mới không phải sửa module khác (Open/Closed).
 - **`RoleNames`/`PolicyNames` chuyển vào SharedKernel.** Vai trò là khái niệm phân quyền xuyên module; nhờ vậy Ticketing và Knowledge không còn phải tham chiếu Identity.
 - **Ngoại lệ nghiệp vụ dùng chung.** `ConflictException` (409) và `RetryLaterException` (503 + Retry-After) nằm trong SharedKernel; `ConcurrencyConflictException`, `IdempotencyConflictException`, `IdempotencyInProgressException` kế thừa chúng. Bộ lọc `LegacyErrorFilter` chỉ biết các lớp cơ sở nên không phụ thuộc Ticketing và giữ nguyên mã trạng thái HTTP cũ.
@@ -69,7 +69,7 @@ Các quyết định đi kèm:
 Mất/đánh đổi:
 
 - Trong một module, Domain có thể biên dịch được khi lỡ dùng EF Core; vi phạm chỉ bị chặn khi chạy kiểm thử kiến trúc, không phải lúc biên dịch.
-- Adapter dùng `DbContext` chung vẫn nhìn thấy toàn bộ model; ranh giới dữ liệu giữa module tiếp tục dựa vào kiểm thử kiến trúc. `AgentDirectory` của Ticketing vẫn đọc bảng ASP.NET Core Identity (nợ kỹ thuật đã có từ trước).
+- Adapter dùng `DbContext` chung vẫn nhìn thấy toàn bộ model; ranh giới dữ liệu giữa module tiếp tục dựa vào kiểm thử kiến trúc. Ticketing tra người dùng qua `IUserDirectory` do Identity công bố; kiểm thử kiến trúc chặn module khác phụ thuộc `Microsoft.AspNetCore.Identity`.
 - `ServiceDesk.Infrastructure` tham chiếu module để gom thực thể và cấu hình ánh xạ; đây là tầng ghép persistence, không chứa nghiệp vụ.
 
 ## Kiểm chứng cần có trước khi chấp nhận

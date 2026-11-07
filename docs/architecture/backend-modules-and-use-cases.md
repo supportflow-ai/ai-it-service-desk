@@ -32,6 +32,15 @@ Trong mỗi module: `Presentation` → `Application` → `Domain` và `Infrastru
 
 Danh sách kiểu được phép truy cập xuyên mô-đun và ngoại lệ kỹ thuật nằm trong [ModuleRules](../../tests/ServiceDesk.ArchitectureTests/ModuleRules.cs). Khai báo `public` không tự cấp quyền truy cập. Lớp triển khai nghiệp vụ và bộ tích hợp là `internal`; quyền truy cập nội bộ dành cho kiểm thử được giới hạn theo assembly.
 
+## Cập nhật trên nhánh refactor (2026-11-07)
+
+Phần này mô tả mã trên nhánh `refactor/backend-module-first` (PR #50 vào `dev`); các mục bên dưới vẫn giữ mốc đối chiếu cũ.
+
+- Identity có Domain riêng: `RefreshToken` (`Issue`, `Revoke`, `IsActiveAt`), `OtpCode` (`Issue`, `IsValid`, `Matches`) và `Department`; ba bảng `refresh_tokens`, `otp_codes`, `departments` ánh xạ trong `Infrastructure/Configurations` của module. Luồng refresh, revoke, đổi/quên/đặt lại mật khẩu, gán vai trò và phòng ban được mô tả ở [hợp đồng hiện hành](current-backend-contract.md#identity-sau-pr-47-48-và-nhánh-refactor).
+- Identity công bố `IUserDirectory` trong SharedKernel. `AgentDirectory` của Ticketing tra vai trò và tên hiển thị qua cổng này, không đọc bảng ASP.NET Core Identity; kiểm thử kiến trúc chặn Ticketing, Knowledge, AIAssistance phụ thuộc `Microsoft.AspNetCore.Identity`.
+- Tám lệnh ghi Ticketing dùng chung `TicketCommandGuard` (kiểm revision, đổi vi phạm quy tắc Domain thành lỗi 400, lưu kèm audit của hệ thống) và `TicketPermissions` (Agent/Admin, chủ sở hữu hoặc Admin). Kiểm quyền và tải ticket vẫn ở từng use case; thông điệp, thứ tự kiểm và mã HTTP không đổi.
+- Endpoint Ticketing tách thành các tệp partial theo nhóm trong `Presentation`; thứ tự đăng ký giữ nguyên nên OpenAPI không đổi.
+
 ## Mười hai luồng đã triển khai
 
 Đây là số luồng nghiệp vụ, không phải tổng số đường dẫn chẩn đoán hoặc kiểm tra sức khỏe.

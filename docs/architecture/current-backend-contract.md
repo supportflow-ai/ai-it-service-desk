@@ -29,6 +29,23 @@ Application từ chối actor chưa xác thực, ID không phải GUID hợp l�
 
 Nguồn: [AuthEndpoints](../../src/backend/Modules/Identity/ServiceDesk.Modules.Identity/Presentation/AuthEndpoints.cs), [TicketEndpoints](../../src/backend/Modules/Ticketing/ServiceDesk.Modules.Ticketing/Presentation/TicketEndpoints.cs), [GetTicketDetail](../../src/backend/Modules/Ticketing/ServiceDesk.Modules.Ticketing/Application/GetTicketDetail/GetTicketDetailUseCase.cs), [GetCurrentUser](../../src/backend/Modules/Identity/ServiceDesk.Modules.Identity/Application/GetCurrentUser/GetCurrentUserUseCase.cs).
 
+## Identity sau PR #47, #48 và nhánh refactor
+
+Cập nhật 2026-11-07, đối chiếu nhánh `refactor/backend-module-first` (PR #50 vào `dev`). Mã ở [AuthEndpoints](../../src/backend/Modules/Identity/ServiceDesk.Modules.Identity/Presentation/AuthEndpoints.cs) và [DepartmentEndpoints](../../src/backend/Modules/Identity/ServiceDesk.Modules.Identity/Presentation/DepartmentEndpoints.cs).
+
+| Thao tác | Đường dẫn | Quyền | Hành vi |
+| --- | --- | --- | --- |
+| Làm mới phiên | `POST /api/auth/refresh` | Ẩn danh, có rate limit | Thu hồi token cũ bằng một lệnh cập nhật có điều kiện rồi cấp token mới. Token đã thu hồi bị gửi lại, hoặc hai request cùng token chạy song song, thì mọi refresh token của người dùng bị thu hồi. |
+| Đăng xuất | `POST /api/auth/revoke` | Ẩn danh | Thu hồi refresh token được gửi; luôn trả 204. |
+| Đổi mật khẩu | `POST /api/auth/change-password` | Đã đăng nhập | Thành công thì thu hồi mọi refresh token của người đó. |
+| Quên mật khẩu | `POST /api/auth/forgot-password` | Ẩn danh, có rate limit | Luôn trả cùng một thông điệp. Chỉ phát mã khi email tồn tại và chưa quá 5 mã trong một giờ; mã mới vô hiệu mã cũ, chỉ lưu giá trị băm. Kênh gửi chưa được chọn: adapter hiện tại (`NoOpOtpSender`) chỉ ghi cảnh báo, không gửi mã. |
+| Đặt lại mật khẩu | `POST /api/auth/reset-password` | Ẩn danh, có rate limit | Một giao dịch khóa dòng mã (`FOR UPDATE`). Sai mã tăng `failed_attempts`; sau 5 lần sai mã bị từ chối kể cả khi đúng. Đúng mã thì đổi mật khẩu, đánh dấu đã dùng và thu hồi mọi refresh token; mật khẩu mới không hợp lệ thì rollback, mã vẫn dùng được. |
+| Danh sách người dùng theo vai trò | `GET /api/users?role=` | Agent hoặc Admin (`RequireAgent`) | Mặc định vai trò Agent; trả `UserId`, `FullName`. |
+| Gán vai trò | `PUT /api/users/{id}/roles` | Admin | Thành công thì thu hồi refresh token của người được gán. Không cho gỡ Admin của quản trị viên cuối cùng. Access token đã phát vẫn mang vai trò cũ tới khi hết hạn (`Jwt:ExpiryMinutes`). |
+| Phòng ban | `GET /api/departments` | Đã đăng nhập | Danh sách phòng ban. |
+
+Đăng ký, đăng nhập, làm mới phiên, quên và đặt lại mật khẩu dùng chính sách `auth-sensitive`: tối đa 10 request mỗi 60 giây cho một địa chỉ IP, vượt ngưỡng trả 429. Cấu hình ở mục `RateLimiting:Auth` (`Enabled`, `PermitLimit`, `WindowSeconds`). Request không có địa chỉ IP không bị giới hạn. Sau reverse proxy, địa chỉ lấy từ Forwarded Headers. Các ngưỡng 10/60 giây, 5 lần sai và 5 mã mỗi giờ là giá trị mặc định chưa được nhóm chốt.
+
 ## Các thao tác vòng đời sau PR #28
 
 Sáu thao tác mới đều dùng POST. Chỉ `update` nhận nội dung JSON; các thao tác còn lại nhận ID trên đường dẫn. Điều kiện chuyển trạng thái nằm trong `Ticket`, quyền nằm trong từng luồng Application. Agent đọc được một phiếu không tự có quyền cập nhật, mở lại, đóng hoặc hủy phiếu của người khác.
