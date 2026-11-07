@@ -58,26 +58,39 @@ public sealed class IdentityHardeningPostgresTests(ServiceDeskWebApplicationFact
 
     private async Task<bool> PasswordWorksAsync(string email, string password)
     {
+        // Kiểm mật khẩu trực tiếp, không đăng nhập: không tạo refresh token làm sai các phép đếm phiên.
         await using var scope = factory.Services.CreateAsyncScope();
-        return await scope.ServiceProvider.GetRequiredService<IUserAccountGateway>().CheckPasswordAsync(email, password, default) is not null;
+        var users = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+        return await users.CheckPasswordAsync((await users.FindByEmailAsync(email))!, password);
     }
 
     [Fact]
-    public async Task ConcurrentRotationOfOneRefreshTokenRevokesItExactlyOnce()
+    public async Task ConcurrentRotationOfOneRefreshTokenSucceedsExactlyOnce()
     {
-        var token = RefreshToken.Issue(Guid.NewGuid().ToString(), Hash(Guid.NewGuid().ToString()), DateTime.UtcNow);
-        await using (var scope = factory.Services.CreateAsyncScope())
-            await scope.ServiceProvider.GetRequiredService<IRefreshTokenStore>().SaveTokenAsync(token);
+        var userId = await UserIdAsync(await CreateUserAsync("rotate-once"));
+        var token = await SeedTokenAsync(userId);
 
         async Task<bool> RotateAsync()
         {
             await using var scope = factory.Services.CreateAsyncScope();
-            return await scope.ServiceProvider.GetRequiredService<IRefreshTokenStore>().TryRevokeAsync(token.Id, DateTime.UtcNow);
+            return await scope.ServiceProvider.GetRequiredService<IRefreshTokenStore>()
+                .TryRotateAsync(token.Id, token.Rotate(Hash(Guid.NewGuid().ToString()), DateTime.UtcNow), DateTime.UtcNow);
         }
 
         var results = await Task.WhenAll(Enumerable.Range(0, 8).Select(_ => RotateAsync()));
 
         Assert.Single(results, won => won);
+        Assert.Equal(1, await ActiveRefreshTokensAsync(userId));
+    }
+
+    private async Task<RefreshToken> SeedTokenAsync(string userId)
+    {
+        var token = RefreshToken.Issue(userId, Hash(Guid.NewGuid().ToString()), DateTime.UtcNow);
+        await using var scope = factory.Services.CreateAsyncScope();
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        context.RefreshTokens.Add(token);
+        await context.SaveChangesAsync();
+        return token;
     }
 
     [Fact]
@@ -98,11 +111,7 @@ public sealed class IdentityHardeningPostgresTests(ServiceDeskWebApplicationFact
     {
         var email = await CreateUserAsync("otp-success");
         var userId = await UserIdAsync(email);
-        await using (var scope = factory.Services.CreateAsyncScope())
-        {
-            await scope.ServiceProvider.GetRequiredService<IRefreshTokenStore>()
-                .SaveTokenAsync(RefreshToken.Issue(userId, Hash(Guid.NewGuid().ToString()), DateTime.UtcNow));
-        }
+        await SeedTokenAsync(userId);
         await IssueOtpAsync(email, "654321");
 
         Assert.True(await ResetAsync(email, "654321", "Changed@1234"));
@@ -368,13 +377,16 @@ public sealed class IdentityHardeningPostgresTests(ServiceDeskWebApplicationFact
     /// Mô phỏng một giao dịch đang tạo refresh token (đăng nhập hoặc xoay vòng) giữ khóa người dùng; thao tác thu hồi
     /// chạy song song phải chờ nó commit rồi thu hồi luôn token mới.
     /// </summary>
-    private async Task RevocationWaitsForAnInFlightSessionAsync(string userId, Func<IServiceProvider, Task> revoke)
+    private Task RevocationWaitsForAnInFlightSessionAsync(string userId, Func<IServiceProvider, Task> revoke) =>
+        RevocationWaitsForAnInFlightSessionAsync(userId, RefreshToken.Issue(userId, Hash(Guid.NewGuid().ToString()), DateTime.UtcNow), revoke);
+
+    private async Task RevocationWaitsForAnInFlightSessionAsync(string userId, RefreshToken inFlight, Func<IServiceProvider, Task> revoke)
     {
         await using var holder = factory.Services.CreateAsyncScope();
         var context = holder.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         await using var transaction = await context.Database.BeginTransactionAsync();
         await context.Database.ExecuteSqlInterpolatedAsync($"SELECT 1 FROM public.\"AspNetUsers\" WHERE \"Id\" = {userId} FOR UPDATE");
-        context.RefreshTokens.Add(RefreshToken.Issue(userId, Hash(Guid.NewGuid().ToString()), DateTime.UtcNow));
+        context.RefreshTokens.Add(inFlight);
         await context.SaveChangesAsync();
 
         async Task RunAsync()
@@ -411,12 +423,50 @@ public sealed class IdentityHardeningPostgresTests(ServiceDeskWebApplicationFact
     }
 
     [Fact]
-    public async Task ReuseDetectionRevokesASessionCreatedConcurrently()
+    public async Task ReuseDetectionRevokesAReplacementCreatedConcurrently()
     {
-        var email = await CreateUserAsync("lock-reuse");
+        var userId = await UserIdAsync(await CreateUserAsync("lock-reuse"));
+        var current = await SeedTokenAsync(userId);
+        await RevocationWaitsForAnInFlightSessionAsync(userId, current.Rotate(Hash(Guid.NewGuid().ToString()), DateTime.UtcNow), services =>
+            services.GetRequiredService<IRefreshTokenStore>().RevokeFamilyAsync(userId, current.FamilyId, DateTime.UtcNow));
+    }
+
+    [Fact]
+    public async Task LogoutWithTheOldTokenRevokesAReplacementCreatedConcurrently()
+    {
+        var userId = await UserIdAsync(await CreateUserAsync("lock-logout"));
+        var raw = Guid.NewGuid().ToString();
+        var current = RefreshToken.Issue(userId, Hash(raw), DateTime.UtcNow);
+        await using (var seed = factory.Services.CreateAsyncScope())
+        {
+            var context = seed.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            context.RefreshTokens.Add(current);
+            await context.SaveChangesAsync();
+        }
+
+        await RevocationWaitsForAnInFlightSessionAsync(userId, current.Rotate(Hash(Guid.NewGuid().ToString()), DateTime.UtcNow), services =>
+            services.GetRequiredService<IRefreshTokenStore>().RevokeSessionByTokenAsync(Hash(raw), DateTime.UtcNow));
+    }
+
+    [Fact]
+    public async Task LogoutAfterRotationWithTheStaleTokenEndsTheSessionButKeepsOtherDevices()
+    {
+        var email = await CreateUserAsync("logout-stale");
         var userId = await UserIdAsync(email);
-        await RevocationWaitsForAnInFlightSessionAsync(userId, services =>
-            services.GetRequiredService<IRefreshTokenStore>().RevokeAllForUserAsync(userId, DateTime.UtcNow));
+        using var client = factory.CreateClient();
+        var otherDevice = await LoginForRefreshTokenAsync(client, email);
+        var first = await LoginForRefreshTokenAsync(client, email);
+        var rotated = await client.PostAsJsonAsync("/api/auth/refresh", new { refreshToken = first });
+        Assert.Equal(HttpStatusCode.OK, rotated.StatusCode);
+        using var body = JsonDocument.Parse(await rotated.Content.ReadAsStringAsync());
+        var second = body.RootElement.GetProperty("refreshToken").GetString()!;
+
+        // Client đăng xuất bằng token cũ (chưa kịp lưu token mới): token mới cũng phải mất hiệu lực.
+        Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsJsonAsync("/api/auth/revoke", new { refreshToken = first })).StatusCode);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, (await client.PostAsJsonAsync("/api/auth/refresh", new { refreshToken = second })).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await client.PostAsJsonAsync("/api/auth/refresh", new { refreshToken = otherDevice })).StatusCode);
+        Assert.Equal(1, await ActiveRefreshTokensAsync(userId));
     }
 
     [Fact]

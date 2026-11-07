@@ -24,6 +24,6 @@ internal sealed class RevokeTokenUseCase(
 
         var now = clock.UtcNow.UtcDateTime;
         var tokenHash = TokenHasher.Hash(request.RefreshToken.Trim());
-        await refreshTokens.RevokeTokenAsync(tokenHash, now, cancellationToken);
+        await refreshTokens.RevokeSessionByTokenAsync(tokenHash, now, cancellationToken);
     }
 }

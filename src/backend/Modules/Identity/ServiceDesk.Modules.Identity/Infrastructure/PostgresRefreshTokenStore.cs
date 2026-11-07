@@ -4,45 +4,29 @@ using ServiceDesk.Modules.Identity.Domain;
 
 namespace ServiceDesk.Modules.Identity.Infrastructure;
 
+/// <summary>
+/// Kho refresh token trên PostgreSQL. Mọi thao tác ghi lấy <see cref="UserSessionLock"/> trước trong giao dịch của mình;
+/// câu UPDATE thu hồi vì vậy luôn bắt đầu sau khi mọi token đang được tạo cho người dùng đã commit.
+/// </summary>
 internal sealed class PostgresRefreshTokenStore(DbContext context) : IRefreshTokenStore
 {
-    public async Task SaveTokenAsync(RefreshToken token, CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(token);
-        context.Set<RefreshToken>().Add(token);
-        await context.SaveChangesAsync(cancellationToken);
-    }
-
-    public Task<RefreshToken?> FindActiveByHashAsync(string tokenHash, DateTime now, CancellationToken cancellationToken = default)
-    {
-        return context.Set<RefreshToken>()
-            .FirstOrDefaultAsync(r => r.TokenHash == tokenHash && r.RevokedAt == null && r.ExpiresAt > now, cancellationToken);
-    }
-
     public Task<RefreshToken?> FindByHashAsync(string tokenHash, CancellationToken cancellationToken = default)
     {
         return context.Set<RefreshToken>().AsNoTracking()
             .FirstOrDefaultAsync(r => r.TokenHash == tokenHash, cancellationToken);
     }
 
-    public async Task<bool> TryRevokeAsync(Guid tokenId, DateTime revokedAt, CancellationToken cancellationToken = default)
-    {
-        // Một câu UPDATE có điều kiện: chỉ một request thắng khi nhiều request dùng cùng token.
-        var affected = await context.Set<RefreshToken>()
-            .Where(r => r.Id == tokenId && r.RevokedAt == null)
-            .ExecuteUpdateAsync(setters => setters.SetProperty(r => r.RevokedAt, revokedAt), cancellationToken);
-        return affected == 1;
-    }
-
     public async Task<bool> TryRotateAsync(Guid currentTokenId, RefreshToken replacement, DateTime now,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(replacement);
-        // UPDATE giữ khóa dòng tới khi commit: request khác cùng token phải chờ, rồi thấy 0 dòng và thu hồi
-        // toàn bộ phiên sau khi token mới đã được commit, nên token mới không thể lọt qua bước thu hồi đó.
         await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
         await UserSessionLock.LockAsync(context, replacement.UserId, cancellationToken);
-        if (!await TryRevokeAsync(currentTokenId, now, cancellationToken))
+        // UPDATE có điều kiện: chỉ một request thắng khi nhiều request dùng cùng token.
+        var revoked = await context.Set<RefreshToken>()
+            .Where(r => r.Id == currentTokenId && r.RevokedAt == null)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(r => r.RevokedAt, now), cancellationToken);
+        if (revoked != 1)
         {
             return false;
         }
@@ -53,25 +37,27 @@ internal sealed class PostgresRefreshTokenStore(DbContext context) : IRefreshTok
         return true;
     }
 
-    public async Task RevokeTokenAsync(string tokenHash, DateTime revokedAt, CancellationToken cancellationToken = default)
+    public async Task RevokeFamilyAsync(string userId, Guid familyId, DateTime revokedAt, CancellationToken cancellationToken = default)
     {
-        var token = await context.Set<RefreshToken>()
-            .FirstOrDefaultAsync(r => r.TokenHash == tokenHash && r.RevokedAt == null, cancellationToken);
-        if (token is not null)
-        {
-            token.Revoke(revokedAt);
-            await context.SaveChangesAsync(cancellationToken);
-        }
-    }
-
-    public async Task RevokeAllForUserAsync(string userId, DateTime revokedAt, CancellationToken cancellationToken = default)
-    {
-        // Lấy khóa phiên trước: câu UPDATE chạy sau mọi giao dịch đang tạo token cho người dùng này.
         await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
         await UserSessionLock.LockAsync(context, userId, cancellationToken);
-        await context.Set<RefreshToken>()
-            .Where(r => r.UserId == userId && r.RevokedAt == null)
-            .ExecuteUpdateAsync(setters => setters.SetProperty(r => r.RevokedAt, revokedAt), cancellationToken);
+        await RevokeFamilyInTransactionAsync(familyId, revokedAt, cancellationToken);
         await transaction.CommitAsync(cancellationToken);
     }
+
+    public async Task RevokeSessionByTokenAsync(string tokenHash, DateTime revokedAt, CancellationToken cancellationToken = default)
+    {
+        var token = await FindByHashAsync(tokenHash, cancellationToken);
+        if (token is null)
+        {
+            return;
+        }
+
+        await RevokeFamilyAsync(token.UserId, token.FamilyId, revokedAt, cancellationToken);
+    }
+
+    private Task<int> RevokeFamilyInTransactionAsync(Guid familyId, DateTime revokedAt, CancellationToken cancellationToken) =>
+        context.Set<RefreshToken>()
+            .Where(r => r.FamilyId == familyId && r.RevokedAt == null)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(r => r.RevokedAt, revokedAt), cancellationToken);
 }

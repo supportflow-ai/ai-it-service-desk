@@ -13,9 +13,6 @@ public interface IUserAccountGateway
     /// <summary>Tạo tài khoản người dùng mới với vai trò mặc định là Requester.</summary>
     Task<AccountCreation> CreateRequesterAsync(string email, string password, string? fullName, CancellationToken cancellationToken);
 
-    /// <summary>Kiểm tra thông tin đăng nhập và mật khẩu của người dùng.</summary>
-    Task<UserInfo?> CheckPasswordAsync(string email, string password, CancellationToken cancellationToken);
-
     /// <summary>
     /// Kiểm mật khẩu và, khi đúng, lưu refresh token mới trong cùng giao dịch giữ khóa người dùng.
     /// Trả null khi sai thông tin hoặc tài khoản đang bị khóa.
@@ -24,9 +21,6 @@ public interface IUserAccountGateway
 
     /// <summary>Tìm kiếm thông tin người dùng theo Id.</summary>
     Task<UserInfo?> FindByIdAsync(string userId, CancellationToken cancellationToken);
-
-    /// <summary>Kiểm tra xem người dùng có tồn tại và thuộc vai trò Agent hay không.</summary>
-    Task<bool> IsAgentAsync(Guid userId, CancellationToken cancellationToken);
 
     /// <summary>Lấy danh sách người dùng theo vai trò cụ thể.</summary>
     Task<IReadOnlyList<UserInfo>> GetUsersInRoleAsync(string roleName, CancellationToken cancellationToken);

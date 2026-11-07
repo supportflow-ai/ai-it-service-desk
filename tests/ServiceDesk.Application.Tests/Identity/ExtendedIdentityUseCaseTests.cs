@@ -61,10 +61,9 @@ public sealed class ExtendedIdentityUseCaseTests
         Assert.True(result.Succeeded);
         Assert.Equal("new-jwt-token", result.Token);
         Assert.False(string.IsNullOrWhiteSpace(result.RefreshToken));
-        _refreshTokens.Verify(r => r.TryRotateAsync(stored.Id, It.Is<RefreshToken>(t => t.UserId == userId && t.ExpiresAt == _now.UtcDateTime.AddDays(7)),
-            _now.UtcDateTime, It.IsAny<CancellationToken>()), Times.Once);
-        _refreshTokens.Verify(r => r.SaveTokenAsync(It.IsAny<RefreshToken>(), It.IsAny<CancellationToken>()), Times.Never);
-        _refreshTokens.Verify(r => r.RevokeAllForUserAsync(It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Never);
+        _refreshTokens.Verify(r => r.TryRotateAsync(stored.Id, It.Is<RefreshToken>(t => t.UserId == userId && t.FamilyId == stored.FamilyId &&
+            t.Id != stored.Id && t.ExpiresAt == _now.UtcDateTime.AddDays(7)), _now.UtcDateTime, It.IsAny<CancellationToken>()), Times.Once);
+        _refreshTokens.Verify(r => r.RevokeFamilyAsync(It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -79,17 +78,17 @@ public sealed class ExtendedIdentityUseCaseTests
     }
 
     [Fact]
-    public async Task RefreshAuth_WithRevokedToken_TreatsAsReuseAndRevokesAllSessions()
+    public async Task RefreshAuth_WithRevokedToken_TreatsAsReuseAndRevokesItsSessionFamily()
     {
         var userId = Guid.NewGuid().ToString();
-        _refreshTokens.Setup(r => r.FindByHashAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(StoredToken(userId, revokedAt: _now.UtcDateTime.AddMinutes(-1)));
+        var replayed = StoredToken(userId, revokedAt: _now.UtcDateTime.AddMinutes(-1));
+        _refreshTokens.Setup(r => r.FindByHashAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(replayed);
 
         var result = await Refresh().ExecuteAsync(new RefreshAuthRequest("replayed-token"));
 
         Assert.False(result.Succeeded);
-        _refreshTokens.Verify(r => r.RevokeAllForUserAsync(userId, _now.UtcDateTime, It.IsAny<CancellationToken>()), Times.Once);
-        _refreshTokens.Verify(r => r.SaveTokenAsync(It.IsAny<RefreshToken>(), It.IsAny<CancellationToken>()), Times.Never);
+        _refreshTokens.Verify(r => r.RevokeFamilyAsync(userId, replayed.FamilyId, _now.UtcDateTime, It.IsAny<CancellationToken>()), Times.Once);
+        _refreshTokens.Verify(r => r.TryRotateAsync(It.IsAny<Guid>(), It.IsAny<RefreshToken>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -105,8 +104,7 @@ public sealed class ExtendedIdentityUseCaseTests
         var result = await Refresh().ExecuteAsync(new RefreshAuthRequest("raced-token"));
 
         Assert.False(result.Succeeded);
-        _refreshTokens.Verify(r => r.SaveTokenAsync(It.IsAny<RefreshToken>(), It.IsAny<CancellationToken>()), Times.Never);
-        _refreshTokens.Verify(r => r.RevokeAllForUserAsync(userId, _now.UtcDateTime, It.IsAny<CancellationToken>()), Times.Once);
+        _refreshTokens.Verify(r => r.RevokeFamilyAsync(userId, stored.FamilyId, _now.UtcDateTime, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -128,7 +126,7 @@ public sealed class ExtendedIdentityUseCaseTests
         var useCase = new RevokeTokenUseCase(_refreshTokens.Object, _clock.Object);
         await useCase.ExecuteAsync(new RevokeTokenRequest("token-to-revoke"));
 
-        _refreshTokens.Verify(r => r.RevokeTokenAsync(It.IsAny<string>(), _now.UtcDateTime, It.IsAny<CancellationToken>()), Times.Once);
+        _refreshTokens.Verify(r => r.RevokeSessionByTokenAsync(It.IsAny<string>(), _now.UtcDateTime, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]

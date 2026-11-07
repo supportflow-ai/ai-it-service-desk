@@ -23,7 +23,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // --- Composition root: hạ tầng dùng chung rồi từng module tự đăng ký phần của mình ---
 builder.Services.AddInfrastructure(builder.Configuration);
-builder.Services.AddIdentityModule(builder.Configuration);
+builder.Services.AddIdentityModule(builder.Configuration).AddIdentityStores();
 builder.Services.AddTicketingModule();
 builder.Services.AddKnowledgeModule();
 builder.Services.AddAIAssistanceModule(builder.Configuration);

@@ -31,12 +31,12 @@ Nguồn: [AuthEndpoints](../../src/backend/Modules/Identity/ServiceDesk.Modules.
 
 ## Identity sau PR #47, #48 và nhánh refactor
 
-Cập nhật 2026-11-07, đối chiếu PR #50, #51 và #52 vào `dev`. Mã ở [AuthEndpoints](../../src/backend/Modules/Identity/ServiceDesk.Modules.Identity/Presentation/AuthEndpoints.cs) và [DepartmentEndpoints](../../src/backend/Modules/Identity/ServiceDesk.Modules.Identity/Presentation/DepartmentEndpoints.cs).
+Cập nhật 2026-11-07, đối chiếu PR #50 đến #53 vào `dev`. Mã ở [AuthEndpoints](../../src/backend/Modules/Identity/ServiceDesk.Modules.Identity/Presentation/AuthEndpoints.cs) và [DepartmentEndpoints](../../src/backend/Modules/Identity/ServiceDesk.Modules.Identity/Presentation/DepartmentEndpoints.cs).
 
 | Thao tác | Đường dẫn | Quyền | Hành vi |
 | --- | --- | --- | --- |
-| Làm mới phiên | `POST /api/auth/refresh` | Ẩn danh, có rate limit | Thu hồi token cũ bằng một lệnh cập nhật có điều kiện và lưu token mới trong cùng giao dịch. Token đã thu hồi bị gửi lại, hoặc hai request cùng token chạy song song, thì mọi refresh token của người dùng bị thu hồi, kể cả token vừa cấp cho request thắng. |
-| Đăng xuất | `POST /api/auth/revoke` | Ẩn danh | Thu hồi refresh token được gửi; luôn trả 204. |
+| Làm mới phiên | `POST /api/auth/refresh` | Ẩn danh, có rate limit | Thu hồi token cũ bằng một lệnh cập nhật có điều kiện và lưu token mới trong cùng giao dịch. Token đã thu hồi bị gửi lại, hoặc hai request cùng token chạy song song, thì cả chuỗi phiên của token đó (mọi token sinh từ cùng một lần đăng nhập, cột `family_id`) bị thu hồi, kể cả token vừa cấp cho request thắng; phiên trên thiết bị khác giữ nguyên. |
+| Đăng xuất | `POST /api/auth/revoke` | Ẩn danh | Thu hồi cả chuỗi phiên của refresh token được gửi, kể cả khi token đó đã được xoay vòng hoặc một lần làm mới đang chạy song song; token không tồn tại thì bỏ qua. Luôn trả 204. Access token đã phát vẫn hiệu lực tới khi hết hạn. |
 | Đổi mật khẩu | `POST /api/auth/change-password` | Đã đăng nhập | Đổi mật khẩu và thu hồi mọi refresh token của người đó trong cùng giao dịch. |
 | Quên mật khẩu | `POST /api/auth/forgot-password` | Ẩn danh, có rate limit | Chỉ đưa email vào hàng đợi trong bộ nhớ rồi trả ngay cùng một thông điệp, nên nội dung và thời gian phản hồi không phụ thuộc email có tồn tại. Xử lý nền: chỉ phát mã khi email tồn tại và chưa có 5 mã trong một giờ; đếm, vô hiệu mã cũ và thêm mã chạy tuần tự theo email (khóa tư vấn PostgreSQL) nên luôn còn đúng một mã hiệu lực. Có `Email:Smtp:Host` thì gửi qua SMTP; chưa cấu hình thì `NoOpOtpSender` chỉ ghi cảnh báo. Log chỉ ghi loại lỗi, không ghi email hay mã. Hàng đợi mất khi tiến trình dừng; người dùng gửi lại yêu cầu. |
 | Đặt lại mật khẩu | `POST /api/auth/reset-password` | Ẩn danh, có rate limit | Một giao dịch khóa dòng mã (`FOR UPDATE`). Sai mã tăng `failed_attempts`; sau 5 lần sai mã bị từ chối kể cả khi đúng. Đúng mã thì đổi mật khẩu, đánh dấu đã dùng và thu hồi mọi refresh token; mật khẩu mới không hợp lệ thì rollback, mã vẫn dùng được. |
@@ -46,7 +46,7 @@ Cập nhật 2026-11-07, đối chiếu PR #50, #51 và #52 vào `dev`. Mã ở 
 
 Đăng ký, đăng nhập, làm mới phiên, quên và đặt lại mật khẩu dùng chính sách `auth-sensitive`: tối đa 10 request mỗi 60 giây cho một địa chỉ IP, vượt ngưỡng trả 429 (đã khai báo trong OpenAPI). Cấu hình ở mục `RateLimiting:Auth` (`Enabled`, `PermitLimit`, `WindowSeconds`). Request không có địa chỉ IP không bị giới hạn. Sau reverse proxy, địa chỉ lấy từ Forwarded Headers. Các ngưỡng 10/60 giây, 5 lần sai và 5 mã mỗi giờ là giá trị mặc định chưa được nhóm chốt.
 
-Mọi thao tác tạo hoặc thu hồi refresh token (đăng nhập, làm mới phiên, đổi/đặt lại mật khẩu, đổi vai trò, thu hồi toàn bộ khi phát hiện token bị dùng lại) lấy khóa dòng người dùng (`AspNetUsers ... FOR UPDATE`) trước trong giao dịch của mình. Lệnh thu hồi vì vậy luôn chạy sau khi token mới đã commit; đăng nhập kiểm mật khẩu và lưu refresh token trong cùng một giao dịch. Đổi vai trò cũng đổi security stamp.
+Mọi thao tác tạo hoặc thu hồi refresh token (đăng nhập, làm mới phiên, đăng xuất, đổi/đặt lại mật khẩu, đổi vai trò, thu hồi chuỗi phiên khi phát hiện token bị dùng lại) lấy khóa dòng người dùng (`AspNetUsers ... FOR UPDATE`) trước trong giao dịch của mình. Lệnh thu hồi vì vậy luôn chạy sau khi token mới đã commit; đăng nhập kiểm mật khẩu và lưu refresh token trong cùng một giao dịch. Đổi vai trò cũng đổi security stamp.
 
 Bộ lọc lỗi `LegacyErrorFilter` giữ mã 400/403/404/409/503. Thông điệp của `ArgumentException` và `UnauthorizedAccessException` chỉ được trả khi mã ServiceDesk ném ra; lỗi cùng loại từ .NET hoặc thư viện trả thông điệp chung ("Yêu cầu không hợp lệ.", "Bạn không có quyền thực hiện thao tác này.") và chỉ ghi chi tiết vào log. Knowledge chỉ trả 422 kèm thông điệp cho `InvalidOperationException` ném từ `ServiceDesk.Modules.Knowledge.Domain`; ngoại lệ cùng loại từ adapter hay thư viện thành lỗi 500 chung.
 

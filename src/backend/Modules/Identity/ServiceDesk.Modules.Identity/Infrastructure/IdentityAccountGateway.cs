@@ -34,9 +34,6 @@ internal sealed class IdentityAccountGateway(UserManager<IdentityUser> users, Db
         return new(result, []);
     }
 
-    public Task<UserInfo?> CheckPasswordAsync(string email, string password, CancellationToken cancellationToken) =>
-        VerifyPasswordAsync(email, password, onVerified: null, cancellationToken);
-
     public async Task<PasswordSignIn?> SignInAsync(string email, string password, DateTime now, CancellationToken cancellationToken)
     {
         string? rawRefreshToken = null;
@@ -52,7 +49,7 @@ internal sealed class IdentityAccountGateway(UserManager<IdentityUser> users, Db
         return user is null || rawRefreshToken is null ? null : new PasswordSignIn(user, rawRefreshToken);
     }
 
-    private async Task<UserInfo?> VerifyPasswordAsync(string email, string password, Func<IdentityUser, Task>? onVerified,
+    private async Task<UserInfo?> VerifyPasswordAsync(string email, string password, Func<IdentityUser, Task> onVerified,
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -89,7 +86,7 @@ internal sealed class IdentityAccountGateway(UserManager<IdentityUser> users, Db
         var reset = await users.ResetAccessFailedCountAsync(user);
         EnsureSecurityWrite(reset);
         if (await users.IsLockedOutAsync(user)) return null;
-        if (onVerified is not null) await onVerified(user);
+        await onVerified(user);
         var result = await ToUserAsync(user);
         cancellationToken.ThrowIfCancellationRequested();
         await transaction.CommitAsync(cancellationToken);
@@ -106,22 +103,6 @@ internal sealed class IdentityAccountGateway(UserManager<IdentityUser> users, Db
         cancellationToken.ThrowIfCancellationRequested();
         var user = await users.FindByIdAsync(userId);
         return user is null ? null : await ToUserAsync(user);
-    }
-
-    public async Task<bool> IsAgentAsync(Guid userId, CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        var user = await users.FindByIdAsync(userId.ToString());
-        if (user is null) return false;
-        return await users.IsInRoleAsync(user, RoleNames.Agent);
-    }
-
-    public async Task<string> GetDisplayNameAsync(Guid userId, CancellationToken cancellationToken = default)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        var user = await users.FindByIdAsync(userId.ToString());
-        if (user is null) return "Người dùng";
-        return !string.IsNullOrWhiteSpace(user.UserName) ? user.UserName : (!string.IsNullOrWhiteSpace(user.Email) ? user.Email : "Người dùng");
     }
 
     public async Task<IReadOnlyList<UserInfo>> GetUsersInRoleAsync(string roleName, CancellationToken cancellationToken)

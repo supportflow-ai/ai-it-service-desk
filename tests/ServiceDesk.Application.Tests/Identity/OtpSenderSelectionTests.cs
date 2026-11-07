@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using ServiceDesk.Modules.Identity;
@@ -68,5 +69,18 @@ public sealed class OtpSenderSelectionTests
         Assert.Contains("123456", message.Body, StringComparison.Ordinal);
         Assert.Contains("09:15 UTC 07/11/2026", message.Body, StringComparison.Ordinal);
         Assert.False(message.IsBodyHtml);
+    }
+
+    [Fact]
+    public void FullResetQueueReportsTheDroppedRequest()
+    {
+        var queue = new PasswordResetQueue(NullLogger<PasswordResetQueue>.Instance, capacity: 2);
+
+        Assert.True(queue.TryEnqueue("a@test.invalid"));
+        Assert.True(queue.TryEnqueue("b@test.invalid"));
+        Assert.False(queue.TryEnqueue("c@test.invalid"));
+        Assert.True(queue.Reader.TryRead(out var first));
+        Assert.Equal("a@test.invalid", first);
+        Assert.True(queue.TryEnqueue("c@test.invalid"));
     }
 }

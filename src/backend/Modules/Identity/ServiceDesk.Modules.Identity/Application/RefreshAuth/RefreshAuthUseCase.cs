@@ -42,8 +42,8 @@ internal sealed class RefreshAuthUseCase(
 
         if (stored.IsRevoked)
         {
-            // Token đã bị thay thế hoặc thu hồi nhưng vẫn được dùng lại: coi như bị lộ.
-            await refreshTokens.RevokeAllForUserAsync(stored.UserId, now, cancellationToken);
+            // Token đã bị thay thế hoặc thu hồi nhưng vẫn được dùng lại: coi như bị lộ, thu hồi cả chuỗi phiên của nó.
+            await refreshTokens.RevokeFamilyAsync(stored.UserId, stored.FamilyId, now, cancellationToken);
             return AuthResult.Failed(InvalidToken);
         }
 
@@ -58,11 +58,11 @@ internal sealed class RefreshAuthUseCase(
             return AuthResult.Failed("User account no longer exists.");
         }
 
-        var (next, rawRefreshToken) = RefreshTokenIssuer.Issue(user.UserId, now, stored.DeviceInfo, stored.IpAddress);
+        var (next, rawRefreshToken) = RefreshTokenIssuer.Rotate(stored, now);
         if (!await refreshTokens.TryRotateAsync(stored.Id, next, now, cancellationToken))
         {
-            // Một request khác vừa dùng cùng token: coi như bị lộ, thu hồi mọi phiên (kể cả token request kia vừa nhận).
-            await refreshTokens.RevokeAllForUserAsync(stored.UserId, now, cancellationToken);
+            // Một request khác vừa dùng cùng token: coi như bị lộ, thu hồi cả chuỗi phiên (kể cả token request kia vừa nhận).
+            await refreshTokens.RevokeFamilyAsync(stored.UserId, stored.FamilyId, now, cancellationToken);
             return AuthResult.Failed(InvalidToken);
         }
 
