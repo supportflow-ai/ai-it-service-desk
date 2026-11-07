@@ -56,6 +56,7 @@ Các quyết định đi kèm:
 - **Module tự đăng ký.** Host gọi `AddInfrastructure` (chỉ hạ tầng dùng chung, không đăng ký module), rồi `AddIdentityModule(...).AddIdentityStores()`, `AddTicketingModule`, `AddKnowledgeModule`, `AddAIAssistanceModule`. `AddIdentityStores` truyền `ApplicationDbContext` cho phần lưu trữ của Identity vì module không biết kiểu context cụ thể. Thêm module mới không phải sửa module khác (Open/Closed).
 - **`RoleNames`/`PolicyNames` chuyển vào SharedKernel.** Vai trò là khái niệm phân quyền xuyên module; nhờ vậy Ticketing và Knowledge không còn phải tham chiếu Identity.
 - **Ngoại lệ nghiệp vụ dùng chung.** `ConflictException` (409) và `RetryLaterException` (503 + Retry-After) nằm trong SharedKernel; `ConcurrencyConflictException`, `IdempotencyConflictException`, `IdempotencyInProgressException` kế thừa chúng. Bộ lọc `LegacyErrorFilter` chỉ biết các lớp cơ sở nên không phụ thuộc Ticketing và giữ nguyên mã trạng thái HTTP cũ.
+- **Phiên đăng nhập là trách nhiệm của Identity.** Tạo và thu hồi refresh token đi qua khóa dòng người dùng; đăng xuất và phát hiện token bị dùng lại thu hồi theo chuỗi phiên (`family_id`). Quy tắc chi tiết nằm ở [hợp đồng Identity](../architecture/current-backend-contract.md#identity-sau-pr-47-48-và-nhánh-refactor); module khác không đọc hay ghi bảng phiên.
 - **Không đổi hợp đồng HTTP, hợp đồng AI v1, tên bảng, migration hay hành vi nghiệp vụ.** Đường dẫn route, tên schema OpenAPI và thứ tự đăng ký endpoint giữ nguyên.
 
 ## Hệ quả
