@@ -2,6 +2,8 @@
 
 ## Trạng thái
 
+Chú thích 2026-11-07: [ADR-015](ADR-015-module-first-clean-architecture.md) (đang Đề xuất trên nhánh `refactor/backend-module-first`) đổi tổ chức project sang module trước, Clean bên trong module. Khi ADR-015 được chấp nhận, phần mô tả project/thư mục dưới đây chỉ còn giá trị lịch sử; luật phụ thuộc giữa các tầng giữ nguyên.
+
 Đã chấp nhận. Bản diễn giải tiếng Việt cập nhật 2026-10-20; giữ quyết định phân tầng ban đầu.
 
 Bổ sung phạm vi ngày 2026-10-19: bốn dự án dưới đây mô tả bốn tầng ban đầu. Worker và Database là chương trình/công cụ bổ sung; Application được dùng các giao diện hỗ trợ đăng ký phụ thuộc. Cấu trúc sáu dự án, thư mục theo tính năng và giao diện công khai được làm rõ trong [ADR-011](ADR-011-backend-module-boundaries.md), [ADR-014](ADR-014-feature-use-cases-and-published-contracts.md).

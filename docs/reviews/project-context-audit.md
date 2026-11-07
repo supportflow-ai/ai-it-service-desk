@@ -51,7 +51,7 @@ Không đọc `.env` thật. Không kiểm tra trực tiếp Jira/Confluence, tr
 | AI | NoOp; hợp đồng v1; hash `ai-input-v2`; chưa có adapter gọi mạng hoặc lưu entity AI vào DB |
 | CI | GitHub Actions kiểm tra/build image; không phát hành image hoặc triển khai production |
 
-Nguồn chính: [ADR-014](../adr/ADR-014-feature-use-cases-and-published-contracts.md), [module/use case](../architecture/backend-modules-and-use-cases.md), [TicketStatus](../../src/backend/ServiceDesk.Domain/Ticketing/TicketStatus.cs), [Ticket](../../src/backend/ServiceDesk.Domain/Ticketing/Ticket.cs), [TicketDto](../../src/backend/ServiceDesk.Application/Ticketing/Contracts/TicketDto.cs), [GetTicketDetail](../../src/backend/ServiceDesk.Application/Ticketing/GetTicketDetail/GetTicketDetailUseCase.cs), [workflow](../../.github/workflows/ci.yml).
+Nguồn chính: [ADR-014](../adr/ADR-014-feature-use-cases-and-published-contracts.md), [module/use case](../architecture/backend-modules-and-use-cases.md), [TicketStatus](https://github.com/supportflow-ai/ai-it-service-desk/blob/bf38ef903f46f6ea21f80da44c11d437391a9efb/src/backend/ServiceDesk.Domain/Ticketing/TicketStatus.cs), [Ticket](https://github.com/supportflow-ai/ai-it-service-desk/blob/bf38ef903f46f6ea21f80da44c11d437391a9efb/src/backend/ServiceDesk.Domain/Ticketing/Ticket.cs), [TicketDto](https://github.com/supportflow-ai/ai-it-service-desk/blob/bf38ef903f46f6ea21f80da44c11d437391a9efb/src/backend/ServiceDesk.Application/Ticketing/Contracts/TicketDto.cs), [GetTicketDetail](https://github.com/supportflow-ai/ai-it-service-desk/blob/bf38ef903f46f6ea21f80da44c11d437391a9efb/src/backend/ServiceDesk.Application/Ticketing/GetTicketDetail/GetTicketDetailUseCase.cs), [workflow](../../.github/workflows/ci.yml).
 
 ## 3. Các phát hiện cần xử lý
 
@@ -69,7 +69,7 @@ P1: có thể dẫn đến triển khai sai hợp đồng, sai dữ liệu hoặ
 
 ### CTX-02 — P1: hợp đồng cũ yêu cầu đổi nghĩa enum và phá hợp đồng HTTP hiện tại
 
-**Bằng chứng:** [hợp đồng lifecycle cũ](../architecture/03-ticket-lifecycle-and-visibility-baseline.md), dòng 23–48, yêu cầu bảng trạng thái 0–8 và chuỗi JSON, loại Cancelled. Mã hiện tại trong [TicketStatus](../../src/backend/ServiceDesk.Domain/Ticketing/TicketStatus.cs), dòng 5–15, giữ các nghĩa 0–6 và thêm 7–9; [TicketDto](../../src/backend/ServiceDesk.Application/Ticketing/Contracts/TicketDto.cs), dòng 9, dùng `int Status`.
+**Bằng chứng:** [hợp đồng lifecycle cũ](../architecture/03-ticket-lifecycle-and-visibility-baseline.md), dòng 23–48, yêu cầu bảng trạng thái 0–8 và chuỗi JSON, loại Cancelled. Mã hiện tại trong [TicketStatus](https://github.com/supportflow-ai/ai-it-service-desk/blob/bf38ef903f46f6ea21f80da44c11d437391a9efb/src/backend/ServiceDesk.Domain/Ticketing/TicketStatus.cs), dòng 5–15, giữ các nghĩa 0–6 và thêm 7–9; [TicketDto](https://github.com/supportflow-ai/ai-it-service-desk/blob/bf38ef903f46f6ea21f80da44c11d437391a9efb/src/backend/ServiceDesk.Application/Ticketing/Contracts/TicketDto.cs), dòng 9, dùng `int Status`.
 
 [Hợp đồng field cũ](../architecture/02-ticket-domain-and-field-contract.md), dòng 22, 32–37, 69 và 82–113, còn yêu cầu `/api/v1`, tạo Draft, category GUID tùy chọn, tiêu đề tối đa 200, mã `TK-YYYY-00000` và Submit riêng. Những điều này khác [ADR-014](../adr/ADR-014-feature-use-cases-and-published-contracts.md), dòng 10–14, và mã đang chạy.
 
@@ -89,7 +89,7 @@ P1: có thể dẫn đến triển khai sai hợp đồng, sai dữ liệu hoặ
 
 **Bằng chứng:** [ma trận RBAC cũ](../architecture/01-rbac-and-api-permission-matrix.md), dòng 46, cho đặt predicate Ticket trong `Application/Common/Security` hoặc `Infrastructure/Identity`; đoạn mẫu dùng Ticket, team, assignee và Lead. Trong khi [ModuleRules](../../tests/ServiceDesk.ArchitectureTests/ModuleRules.cs) cấm shared code truy cập entity module; [ADR-014](../adr/ADR-014-feature-use-cases-and-published-contracts.md) giao phạm vi truy cập cho Application của module.
 
-Hai bộ ma trận mô tả Agent theo team/assignment, còn [GetTicketDetail](../../src/backend/ServiceDesk.Application/Ticketing/GetTicketDetail/GetTicketDetailUseCase.cs), dòng 22–23, dùng AllTickets cho Agent/Admin. ADR-014 nói rõ chưa có cách ly theo team. `RoleNames.Lead` trong ví dụ chưa phải role được triển khai.
+Hai bộ ma trận mô tả Agent theo team/assignment, còn [GetTicketDetail](https://github.com/supportflow-ai/ai-it-service-desk/blob/bf38ef903f46f6ea21f80da44c11d437391a9efb/src/backend/ServiceDesk.Application/Ticketing/GetTicketDetail/GetTicketDetailUseCase.cs), dòng 22–23, dùng AllTickets cho Agent/Admin. ADR-014 nói rõ chưa có cách ly theo team. `RoleNames.Lead` trong ví dụ chưa phải role được triển khai.
 
 **Tác động:** có thể đưa nghiệp vụ Ticketing vào Common/Identity, hoặc nhầm rằng team authorization đã tồn tại. Cũng có thể tự ý thu hẹp quyền khi chỉ được giao củng cố kiến trúc.
 

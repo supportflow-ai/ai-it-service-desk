@@ -10,6 +10,8 @@ Trạng thái: hiện hành cho kho backend. Cập nhật: 2026-10-20. Phần m�
 
 Đọc [bảng mốc mã nguồn](architecture/source-baseline.md) trước khi chạy: nhánh chuẩn hóa được chuẩn bị trên dev sau PR #29, gồm mã 12 luồng, bản chuẩn API và công cụ Python tương ứng. Kết quả kiểm thử cần gắn với đúng HEAD.
 
+Nhánh `refactor/backend-module-first` (2026-11-07) đổi tổ chức mã sang module trước, Clean bên trong module theo [ADR-015](adr/ADR-015-module-first-clean-architecture.md). Bằng chứng, đề xuất và hồ sơ lịch sử vẫn ghi đường dẫn `src/backend/ServiceDesk.Domain|Application/...` của mốc cũ; dùng chúng để truy vết, không dùng làm vị trí đặt mã mới.
+
 Đọc theo thứ tự: [AGENTS.md](../AGENTS.md) → [kiến trúc hiện hành](architecture/backend-modules-and-use-cases.md) → [hợp đồng đang triển khai](architecture/current-backend-contract.md) → tài liệu của nhiệm vụ. [Hướng dẫn môi trường](runbooks/environment-runbook.md) là nguồn lệnh chạy local và thao tác database.
 
 ## Chọn đúng loại nguồn
@@ -17,7 +19,7 @@ Trạng thái: hiện hành cho kho backend. Cập nhật: 2026-10-20. Phần m�
 | Loại | Nguồn | Cách sử dụng |
 | --- | --- | --- |
 | Cách làm việc | AGENTS, [Git/Jira](process/pr-branch-jira-convention.md), [DoR/DoD](process/definition-of-ready-done.md) | Phạm vi thao tác, ngôn ngữ, kiểm chứng và bàn giao |
-| Quyết định kiến trúc | [Danh mục ADR](adr/README.md), đặc biệt ADR-011–014 | Ranh giới và quyết định còn hiệu lực; đọc cả phần bổ sung/thay thế của ADR cũ |
+| Quyết định kiến trúc | [Danh mục ADR](adr/README.md), đặc biệt ADR-011–015 | Ranh giới và quyết định còn hiệu lực; đọc cả phần bổ sung/thay thế của ADR cũ |
 | Hành vi đang triển khai | [Hợp đồng backend](architecture/current-backend-contract.md), mã nguồn, [baseline HTTP](../contracts/backend/openapi-baseline.json) và kiểm thử | Đối chiếu tương thích tại cùng SHA; mã hiện tại không tự chứng minh mọi yêu cầu sản phẩm đã đúng |
 | Nghiệp vụ tương lai | [Bảng quyết định còn mở](architecture/pending-business-decisions.md), các đề xuất trong [chỉ mục kiến trúc](architecture/README.md) | Đầu vào cho quyết định tiếp theo; không tự mở rộng nhiệm vụ |
 | Vận hành | [Môi trường](runbooks/environment-runbook.md), [kiểm chứng](runbooks/backend-hardening-verification.md), [triển khai](runbooks/backend-refactor-rollout.md), [CI](runbooks/github-actions.md) | Chạy đúng môi trường và phạm vi được giao |

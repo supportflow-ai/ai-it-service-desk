@@ -88,17 +88,22 @@ Có thể phát triển backend trực tiếp trên máy với PostgreSQL đư�
 
 ```text
 src/backend/
-  ServiceDesk.Domain/          # Thực thể, kiểu giá trị, quy tắc nghiệp vụ
-  ServiceDesk.Application/     # Luồng xử lý, quyền, DTO, cổng giao tiếp
-  ServiceDesk.Infrastructure/  # EF/PostgreSQL, Identity, MinIO, AI không gọi dịch vụ thật
-  ServiceDesk.Api/             # HTTP, JWT, chuyển đổi danh tính và lắp ghép dịch vụ
-  ServiceDesk.Worker/          # Chương trình xử lý nền
-  ServiceDesk.Database/        # Công cụ migration và khởi tạo có chủ đích
-tests/                        # Domain, Application, Architecture, Integration
-contracts/                    # Baseline HTTP và AI classification v1
+  BuildingBlocks/
+    ServiceDesk.SharedKernel/      # Vai trò, actor hiện tại, đồng hồ, cổng lưu trữ, ngoại lệ nghiệp vụ dùng chung
+    ServiceDesk.SharedKernel.Web/  # Thành phần HTTP dùng chung cho endpoint (bộ lọc lỗi)
+  Modules/
+    Identity/ Ticketing/ Knowledge/ AIAssistance/
+      ServiceDesk.Modules.<Module>/
+        Domain/  Application/  Infrastructure/  Presentation/  <Module>Module.cs
+  ServiceDesk.Infrastructure/      # Hạ tầng dùng chung: ApplicationDbContext, migration, bảo trì DB, MinIO, đồng hồ
+  ServiceDesk.Api/                 # Host HTTP: ghép module, JWT, middleware, health
+  ServiceDesk.Worker/              # Chương trình xử lý nền
+  ServiceDesk.Database/            # Công cụ migration và khởi tạo có chủ đích
+tests/                             # Domain, Application, Architecture, Integration
+contracts/                         # Baseline HTTP và AI classification v1
 ```
 
-Domain độc lập với nền tảng kỹ thuật; Application phụ thuộc Domain. Infrastructure triển khai giao diện do Application sở hữu. API/Worker lắp ghép các mô-đun cần dùng. Hàm xử lý HTTP không truy cập DbContext; Worker không sử dụng HttpContext hoặc danh tính người dùng ngầm định. Xem [ADR-011](docs/adr/ADR-011-backend-module-boundaries.md) và [ADR-014](docs/adr/ADR-014-feature-use-cases-and-published-contracts.md).
+Module là ranh giới ngoài cùng; bên trong mỗi module là Clean Architecture: Presentation → Application → Domain và Infrastructure → Application → Domain. Domain/Application không dùng EF Core, Npgsql hay ASP.NET Core. Mỗi module tự đăng ký DI và endpoint qua lớp `<Module>Module`; API/Worker chỉ ghép module. Giữa các module chỉ dùng kiểu đã công bố. Hàm xử lý HTTP không truy cập DbContext; Worker không sử dụng HttpContext hoặc danh tính người dùng ngầm định. Xem [ADR-015](docs/adr/ADR-015-module-first-clean-architecture.md), [ADR-011](docs/adr/ADR-011-backend-module-boundaries.md) và [ADR-014](docs/adr/ADR-014-feature-use-cases-and-published-contracts.md).
 
 Application tổ chức theo mô-đun và tính năng. Hiện có 12 luồng xử lý: Identity có RegisterUser/LoginUser/GetCurrentUser; Ticketing có CreateTicket/GetMyTickets/GetTicketDetail/UpdateTicket/ClaimTicket/ResolveTicket/ReopenTicket/CloseTicket/CancelTicket. Hàm xử lý HTTP gọi giao diện nghiệp vụ; lớp triển khai là `internal`. Các giao diện công khai và cổng tích hợp được kiểm tra riêng bằng kiểm thử kiến trúc. [Tài liệu mô-đun và luồng xử lý](docs/architecture/backend-modules-and-use-cases.md) mô tả trách nhiệm, giao dịch và phạm vi quyền hiện tại.
 
@@ -121,7 +126,7 @@ dotnet test src/backend/ServiceDesk.sln -c Release --no-build --filter "Category
 dotnet test src/backend/ServiceDesk.sln -c Release --no-build --filter "Category=Integration"
 ```
 
-Integration tests dùng PostgreSQL 17 Testcontainers và cần Docker đang hoạt động. Application unit tests không cần EF Core/Infrastructure/database.
+Integration tests dùng PostgreSQL 17 Testcontainers và cần Docker đang hoạt động. Application unit tests không cần database: chúng tham chiếu project module nhưng thay cổng dữ liệu bằng mock.
 
 Các kiểm tra snapshot xác nhận đợt củng cố không cần migration mới. Xem [runbook kiểm chứng](docs/runbooks/backend-hardening-verification.md) để kiểm tra đúng commit và phân biệt test offline với PostgreSQL thật.
 

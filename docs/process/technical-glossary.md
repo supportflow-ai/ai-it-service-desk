@@ -13,6 +13,9 @@ Trạng thái: hướng dẫn hiện hành; cập nhật 2026-10-20. Áp dụng 
 | Use case | Luồng xử lý nghiệp vụ |
 | Published contracts | Giao diện và kiểu dữ liệu được phép công khai giữa các mô-đun |
 | Port / adapter | Cổng giao tiếp / bộ tích hợp triển khai cổng |
+| Shared kernel | Phần mã dùng chung tối thiểu giữa các mô-đun (`ServiceDesk.SharedKernel`); không chứa nghiệp vụ riêng của mô-đun nào |
+| Composition root | Nơi ghép các mô-đun khi khởi động (`Program.cs` của API, `WorkerServices` của Worker) |
+| Module entry | Lớp `<Module>Module` đăng ký dịch vụ của một mô-đun |
 | Actor / claims | Người hoặc tiến trình thực hiện thao tác / thông tin danh tính trong token |
 | Authentication / authorization | Xác thực danh tính / kiểm tra quyền truy cập |
 | Scope | Phạm vi truy cập |
