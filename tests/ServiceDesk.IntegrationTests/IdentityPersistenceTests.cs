@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using ServiceDesk.Application.Identity.Ports;
-using ServiceDesk.Domain.Identity;
+using ServiceDesk.Modules.Identity.Application.Ports;
+using ServiceDesk.SharedKernel.Authorization;
 using ServiceDesk.Infrastructure.Persistence;
 using Xunit;
 namespace ServiceDesk.IntegrationTests;

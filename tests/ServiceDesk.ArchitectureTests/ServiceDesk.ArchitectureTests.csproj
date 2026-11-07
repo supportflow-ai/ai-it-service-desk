@@ -7,12 +7,16 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../src/backend/ServiceDesk.Database/ServiceDesk.Database.csproj" />
-    <ProjectReference Include="../../src/backend/ServiceDesk.Worker/ServiceDesk.Worker.csproj" />
     <ProjectReference Include="..\..\src\backend\ServiceDesk.Api\ServiceDesk.Api.csproj" />
-    <ProjectReference Include="..\..\src\backend\ServiceDesk.Application\ServiceDesk.Application.csproj" />
-    <ProjectReference Include="..\..\src\backend\ServiceDesk.Domain\ServiceDesk.Domain.csproj" />
+    <ProjectReference Include="..\..\src\backend\ServiceDesk.Database\ServiceDesk.Database.csproj" />
     <ProjectReference Include="..\..\src\backend\ServiceDesk.Infrastructure\ServiceDesk.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\backend\ServiceDesk.Worker\ServiceDesk.Worker.csproj" />
+    <ProjectReference Include="..\..\src\backend\BuildingBlocks\ServiceDesk.SharedKernel\ServiceDesk.SharedKernel.csproj" />
+    <ProjectReference Include="..\..\src\backend\BuildingBlocks\ServiceDesk.SharedKernel.Web\ServiceDesk.SharedKernel.Web.csproj" />
+    <ProjectReference Include="..\..\src\backend\Modules\AIAssistance\ServiceDesk.Modules.AIAssistance\ServiceDesk.Modules.AIAssistance.csproj" />
+    <ProjectReference Include="..\..\src\backend\Modules\Identity\ServiceDesk.Modules.Identity\ServiceDesk.Modules.Identity.csproj" />
+    <ProjectReference Include="..\..\src\backend\Modules\Knowledge\ServiceDesk.Modules.Knowledge\ServiceDesk.Modules.Knowledge.csproj" />
+    <ProjectReference Include="..\..\src\backend\Modules\Ticketing\ServiceDesk.Modules.Ticketing\ServiceDesk.Modules.Ticketing.csproj" />
   </ItemGroup>
 
   <ItemGroup>

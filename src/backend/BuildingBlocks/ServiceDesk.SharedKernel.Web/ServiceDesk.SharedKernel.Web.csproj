@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Thành phần HTTP dùng chung cho tầng Presentation của các module (bộ lọc lỗi). -->
+  <PropertyGroup>
+    <RootNamespace>ServiceDesk.SharedKernel.Web</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ServiceDesk.SharedKernel\ServiceDesk.SharedKernel.csproj" />
+  </ItemGroup>
+
+</Project>

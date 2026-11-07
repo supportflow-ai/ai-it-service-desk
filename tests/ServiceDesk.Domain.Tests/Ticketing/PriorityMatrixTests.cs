@@ -1,4 +1,4 @@
-using ServiceDesk.Domain.Ticketing;
+using ServiceDesk.Modules.Ticketing.Domain;
 using FluentAssertions;
 using Xunit;
 

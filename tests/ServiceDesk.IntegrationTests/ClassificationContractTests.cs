@@ -1,8 +1,8 @@
 using System.Text.Json;
-using ServiceDesk.Infrastructure.AI.Contracts.V1;
-using ServiceDesk.Application.AIAssistance.Ports;
-using ServiceDesk.Application.AIAssistance.Contracts;
-using ServiceDesk.Domain.AIAssistance;
+using ServiceDesk.Modules.AIAssistance.Infrastructure.Contracts.V1;
+using ServiceDesk.Modules.AIAssistance.Application.Ports;
+using ServiceDesk.Modules.AIAssistance.Application.Contracts;
+using ServiceDesk.Modules.AIAssistance.Domain;
 using Xunit;
 namespace ServiceDesk.IntegrationTests;
 

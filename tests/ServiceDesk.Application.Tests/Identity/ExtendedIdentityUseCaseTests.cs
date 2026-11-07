@@ -1,16 +1,17 @@
 using System.Security.Claims;
 using Moq;
-using ServiceDesk.Application.Common.Interfaces;
-using ServiceDesk.Application.Identity.AssignUserRoles;
-using ServiceDesk.Application.Identity.ChangePassword;
-using ServiceDesk.Application.Identity.Contracts;
-using ServiceDesk.Application.Identity.ForgotPassword;
-using ServiceDesk.Application.Identity.GetDepartments;
-using ServiceDesk.Application.Identity.Ports;
-using ServiceDesk.Application.Identity.RefreshAuth;
-using ServiceDesk.Application.Identity.ResetPassword;
-using ServiceDesk.Application.Identity.RevokeToken;
-using ServiceDesk.Domain.Identity;
+using ServiceDesk.SharedKernel.Application.Abstractions;
+using ServiceDesk.Modules.Identity.Application.AssignUserRoles;
+using ServiceDesk.Modules.Identity.Application.ChangePassword;
+using ServiceDesk.Modules.Identity.Application.Contracts;
+using ServiceDesk.Modules.Identity.Application.ForgotPassword;
+using ServiceDesk.Modules.Identity.Application.GetDepartments;
+using ServiceDesk.Modules.Identity.Application.Ports;
+using ServiceDesk.Modules.Identity.Application.RefreshAuth;
+using ServiceDesk.Modules.Identity.Application.ResetPassword;
+using ServiceDesk.Modules.Identity.Application.RevokeToken;
+using ServiceDesk.SharedKernel.Authorization;
+using ServiceDesk.Modules.Identity.Domain;
 using Xunit;
 
 namespace ServiceDesk.Application.Tests.Identity;
@@ -24,6 +25,8 @@ public sealed class ExtendedIdentityUseCaseTests
     private readonly Mock<IAccessTokenIssuer> _tokens = new();
     private readonly Mock<ICurrentUser> _currentUser = new();
     private readonly Mock<IClock> _clock = new();
+    private readonly Mock<IPasswordResetGateway> _passwordReset = new();
+    private readonly Mock<IOtpSender> _otpSender = new();
     private readonly DateTimeOffset _now = new(2026, 11, 6, 12, 0, 0, TimeSpan.Zero);
 
     public ExtendedIdentityUseCaseTests()
@@ -31,46 +34,92 @@ public sealed class ExtendedIdentityUseCaseTests
         _clock.SetupGet(c => c.UtcNow).Returns(_now);
     }
 
+    private RefreshToken StoredToken(string userId, DateTime? revokedAt = null, int expiresInDays = 1)
+    {
+        // Phát token sao cho thời điểm hết hạn là _now + expiresInDays.
+        var token = RefreshToken.Issue(userId, "oldhash", _now.UtcDateTime.AddDays(expiresInDays) - RefreshToken.Lifetime);
+        if (revokedAt is not null)
+            token.Revoke(revokedAt.Value);
+        return token;
+    }
+
+    private RefreshAuthUseCase Refresh() => new(_refreshTokens.Object, _accounts.Object, _tokens.Object, _clock.Object);
+
     [Fact]
     public async Task RefreshAuth_WithValidToken_RotatesAndReturnsNewTokens()
     {
         var userId = Guid.NewGuid().ToString();
         var user = new UserInfo { UserId = userId, Email = "user@test.com", Roles = [RoleNames.Requester] };
-        var activeToken = new RefreshToken
-        {
-            Id = Guid.NewGuid(),
-            UserId = userId,
-            TokenHash = "oldhash",
-            ExpiresAt = _now.UtcDateTime.AddDays(1)
-        };
-
-        _refreshTokens.Setup(r => r.FindActiveByHashAsync(It.IsAny<string>(), _now.UtcDateTime, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(activeToken);
-        _accounts.Setup(a => a.FindByIdAsync(userId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(user);
+        var stored = StoredToken(userId);
+        _refreshTokens.Setup(r => r.FindByHashAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(stored);
+        _refreshTokens.Setup(r => r.TryRevokeAsync(stored.Id, _now.UtcDateTime, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        _accounts.Setup(a => a.FindByIdAsync(userId, It.IsAny<CancellationToken>())).ReturnsAsync(user);
         _tokens.Setup(t => t.GenerateToken(user)).Returns("new-jwt-token");
 
-        var useCase = new RefreshAuthUseCase(_refreshTokens.Object, _accounts.Object, _tokens.Object, _clock.Object);
-        var result = await useCase.ExecuteAsync(new RefreshAuthRequest("raw-refresh-token"));
+        var result = await Refresh().ExecuteAsync(new RefreshAuthRequest("raw-refresh-token"));
 
         Assert.True(result.Succeeded);
         Assert.Equal("new-jwt-token", result.Token);
         Assert.False(string.IsNullOrWhiteSpace(result.RefreshToken));
-        _refreshTokens.Verify(r => r.RevokeTokenAsync(It.IsAny<string>(), _now.UtcDateTime, It.IsAny<CancellationToken>()), Times.Once);
-        _refreshTokens.Verify(r => r.SaveTokenAsync(It.Is<RefreshToken>(t => t.UserId == userId), It.IsAny<CancellationToken>()), Times.Once);
+        _refreshTokens.Verify(r => r.TryRevokeAsync(stored.Id, _now.UtcDateTime, It.IsAny<CancellationToken>()), Times.Once);
+        _refreshTokens.Verify(r => r.SaveTokenAsync(It.Is<RefreshToken>(t => t.UserId == userId && t.ExpiresAt == _now.UtcDateTime.AddDays(7)),
+            It.IsAny<CancellationToken>()), Times.Once);
+        _refreshTokens.Verify(r => r.RevokeAllForUserAsync(It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
-    public async Task RefreshAuth_WithInvalidToken_ReturnsFailed()
+    public async Task RefreshAuth_WithUnknownToken_ReturnsFailed()
     {
-        _refreshTokens.Setup(r => r.FindActiveByHashAsync(It.IsAny<string>(), _now.UtcDateTime, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((RefreshToken?)null);
+        _refreshTokens.Setup(r => r.FindByHashAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync((RefreshToken?)null);
 
-        var useCase = new RefreshAuthUseCase(_refreshTokens.Object, _accounts.Object, _tokens.Object, _clock.Object);
-        var result = await useCase.ExecuteAsync(new RefreshAuthRequest("invalid-token"));
+        var result = await Refresh().ExecuteAsync(new RefreshAuthRequest("invalid-token"));
 
         Assert.False(result.Succeeded);
         Assert.Equal("Invalid or expired refresh token.", Assert.Single(result.Errors));
+    }
+
+    [Fact]
+    public async Task RefreshAuth_WithRevokedToken_TreatsAsReuseAndRevokesAllSessions()
+    {
+        var userId = Guid.NewGuid().ToString();
+        _refreshTokens.Setup(r => r.FindByHashAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(StoredToken(userId, revokedAt: _now.UtcDateTime.AddMinutes(-1)));
+
+        var result = await Refresh().ExecuteAsync(new RefreshAuthRequest("replayed-token"));
+
+        Assert.False(result.Succeeded);
+        _refreshTokens.Verify(r => r.RevokeAllForUserAsync(userId, _now.UtcDateTime, It.IsAny<CancellationToken>()), Times.Once);
+        _refreshTokens.Verify(r => r.SaveTokenAsync(It.IsAny<RefreshToken>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task RefreshAuth_WhenConcurrentRequestRevokedFirst_IssuesNothing()
+    {
+        var userId = Guid.NewGuid().ToString();
+        var stored = StoredToken(userId);
+        _refreshTokens.Setup(r => r.FindByHashAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(stored);
+        _refreshTokens.Setup(r => r.TryRevokeAsync(stored.Id, _now.UtcDateTime, It.IsAny<CancellationToken>())).ReturnsAsync(false);
+        _accounts.Setup(a => a.FindByIdAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new UserInfo { UserId = userId, Email = "user@test.com", Roles = [RoleNames.Requester] });
+
+        var result = await Refresh().ExecuteAsync(new RefreshAuthRequest("raced-token"));
+
+        Assert.False(result.Succeeded);
+        _refreshTokens.Verify(r => r.SaveTokenAsync(It.IsAny<RefreshToken>(), It.IsAny<CancellationToken>()), Times.Never);
+        _refreshTokens.Verify(r => r.RevokeAllForUserAsync(userId, _now.UtcDateTime, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task RefreshAuth_WithExpiredToken_ReturnsFailedWithoutRotation()
+    {
+        var userId = Guid.NewGuid().ToString();
+        _refreshTokens.Setup(r => r.FindByHashAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(StoredToken(userId, expiresInDays: -1));
+
+        var result = await Refresh().ExecuteAsync(new RefreshAuthRequest("expired-token"));
+
+        Assert.False(result.Succeeded);
+        _refreshTokens.Verify(r => r.TryRevokeAsync(It.IsAny<Guid>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -99,8 +148,10 @@ public sealed class ExtendedIdentityUseCaseTests
         Assert.Equal("IT", result[0].Code);
     }
 
+    private ChangePasswordUseCase ChangePassword() => new(_accounts.Object, _refreshTokens.Object, _currentUser.Object, _clock.Object);
+
     [Fact]
-    public async Task ChangePassword_WhenAuthenticated_CallsAccountGateway()
+    public async Task ChangePassword_WhenSucceeded_RevokesAllRefreshTokens()
     {
         var userId = Guid.NewGuid();
         _currentUser.SetupGet(u => u.IsAuthenticated).Returns(true);
@@ -108,72 +159,133 @@ public sealed class ExtendedIdentityUseCaseTests
         _accounts.Setup(a => a.ChangePasswordAsync(userId.ToString(), "oldpass", "newpass", It.IsAny<CancellationToken>()))
             .ReturnsAsync(IdentityOperationResult.Success());
 
-        var useCase = new ChangePasswordUseCase(_accounts.Object, _currentUser.Object);
-        var result = await useCase.ExecuteAsync(new ChangePasswordRequest("oldpass", "newpass"));
+        var result = await ChangePassword().ExecuteAsync(new ChangePasswordRequest("oldpass", "newpass"));
 
         Assert.True(result.Succeeded);
+        _refreshTokens.Verify(r => r.RevokeAllForUserAsync(userId.ToString(), _now.UtcDateTime, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
-    public async Task ForgotPassword_GeneratesAndSavesOtpCode()
+    public async Task ChangePassword_WhenFailed_KeepsSessions()
     {
-        var useCase = new ForgotPasswordUseCase(_otpStore.Object, _clock.Object);
-        var result = await useCase.ExecuteAsync(new ForgotPasswordRequest("user@test.com"));
+        var userId = Guid.NewGuid();
+        _currentUser.SetupGet(u => u.IsAuthenticated).Returns(true);
+        _currentUser.SetupGet(u => u.UserId).Returns(userId.ToString());
+        _accounts.Setup(a => a.ChangePasswordAsync(userId.ToString(), "wrong", "newpass", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(IdentityOperationResult.Failed("Incorrect password."));
+
+        var result = await ChangePassword().ExecuteAsync(new ChangePasswordRequest("wrong", "newpass"));
+
+        Assert.False(result.Succeeded);
+        _refreshTokens.Verify(r => r.RevokeAllForUserAsync(It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    private ForgotPasswordUseCase ForgotPassword() => new(_accounts.Object, _otpStore.Object, _otpSender.Object, _clock.Object);
+
+    [Fact]
+    public async Task ForgotPassword_ForKnownEmail_IssuesHashedCodeAndSendsIt()
+    {
+        _accounts.Setup(a => a.EmailExistsAsync("user@test.com", It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        string? sentCode = null;
+        _otpSender.Setup(s => s.SendPasswordResetCodeAsync("user@test.com", It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+            .Callback<string, string, DateTime, CancellationToken>((_, code, _, _) => sentCode = code)
+            .Returns(Task.CompletedTask);
+
+        var result = await ForgotPassword().ExecuteAsync(new ForgotPasswordRequest(" User@Test.com "));
 
         Assert.True(result.Succeeded);
-        _otpStore.Verify(s => s.SaveOtpAsync(It.Is<OtpCode>(o => o.Target == "user@test.com" && o.Purpose == "ResetPassword"), It.IsAny<CancellationToken>()), Times.Once);
+        Assert.NotNull(sentCode);
+        Assert.Matches("^[0-9]{6}$", sentCode);
+        _otpStore.Verify(s => s.IssueAsync(It.Is<OtpCode>(o => o.Target == "user@test.com" && o.Purpose == OtpCode.ResetPasswordPurpose &&
+            o.CodeHash != sentCode && o.ExpiresAt == _now.UtcDateTime.AddMinutes(15) && o.FailedAttempts == 0), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
-    public async Task ResetPassword_WithValidOtp_ResetsPasswordAndRevokesTokens()
+    public async Task ForgotPassword_ForUnknownEmail_ReturnsSuccessWithoutIssuingCode()
     {
-        var email = "user@test.com";
-        var validOtp = new OtpCode
-        {
-            Id = Guid.NewGuid(),
-            Target = email,
-            Purpose = "ResetPassword",
-            ExpiresAt = _now.UtcDateTime.AddMinutes(5)
-        };
-        var user = new UserInfo { UserId = Guid.NewGuid().ToString(), Email = email, Roles = [RoleNames.Requester] };
+        _accounts.Setup(a => a.EmailExistsAsync("nobody@test.com", It.IsAny<CancellationToken>())).ReturnsAsync(false);
 
-        _otpStore.Setup(s => s.FindValidOtpAsync(email, "ResetPassword", It.IsAny<string>(), _now.UtcDateTime, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(validOtp);
-        _accounts.Setup(a => a.ResetPasswordWithOtpAsync(email, "newpass", It.IsAny<CancellationToken>()))
+        var result = await ForgotPassword().ExecuteAsync(new ForgotPasswordRequest("nobody@test.com"));
+
+        Assert.True(result.Succeeded);
+        _otpStore.Verify(s => s.IssueAsync(It.IsAny<OtpCode>(), It.IsAny<CancellationToken>()), Times.Never);
+        _otpSender.Verify(s => s.SendPasswordResetCodeAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ForgotPassword_OverHourlyLimit_ReturnsSuccessWithoutIssuingCode()
+    {
+        _accounts.Setup(a => a.EmailExistsAsync("user@test.com", It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        _otpStore.Setup(s => s.CountIssuedSinceAsync("user@test.com", OtpCode.ResetPasswordPurpose, _now.UtcDateTime.AddHours(-1), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(OtpCode.MaxIssuedPerHour);
+
+        var result = await ForgotPassword().ExecuteAsync(new ForgotPasswordRequest("user@test.com"));
+
+        Assert.True(result.Succeeded);
+        _otpStore.Verify(s => s.IssueAsync(It.IsAny<OtpCode>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ResetPassword_DelegatesNormalizedEmailAndHashedCodeToGateway()
+    {
+        _passwordReset.Setup(g => g.ResetWithOtpAsync("user@test.com", It.IsAny<string>(), "NewPass123", _now.UtcDateTime, It.IsAny<CancellationToken>()))
             .ReturnsAsync(IdentityOperationResult.Success());
-        _accounts.Setup(a => a.CheckPasswordAsync(email, "newpass", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(user);
 
-        var useCase = new ResetPasswordUseCase(_otpStore.Object, _accounts.Object, _refreshTokens.Object, _clock.Object);
-        var result = await useCase.ExecuteAsync(new ResetPasswordRequest(email, "123456", "newpass"));
+        var useCase = new ResetPasswordUseCase(_passwordReset.Object, _clock.Object);
+        var result = await useCase.ExecuteAsync(new ResetPasswordRequest(" User@Test.com ", " 123456 ", "NewPass123"));
 
         Assert.True(result.Succeeded);
-        _otpStore.Verify(s => s.MarkUsedAsync(validOtp.Id, It.IsAny<CancellationToken>()), Times.Once);
-        _refreshTokens.Verify(r => r.RevokeAllForUserAsync(user.UserId, _now.UtcDateTime, It.IsAny<CancellationToken>()), Times.Once);
+        _passwordReset.Verify(g => g.ResetWithOtpAsync("user@test.com", It.Is<string>(h => h != "123456" && h.Length == 64), "NewPass123",
+            _now.UtcDateTime, It.IsAny<CancellationToken>()), Times.Once);
     }
+
+    [Fact]
+    public async Task ResetPassword_WithMissingFields_DoesNotCallGateway()
+    {
+        var useCase = new ResetPasswordUseCase(_passwordReset.Object, _clock.Object);
+        var result = await useCase.ExecuteAsync(new ResetPasswordRequest("user@test.com", "", "NewPass123"));
+
+        Assert.False(result.Succeeded);
+        _passwordReset.Verify(g => g.ResetWithOtpAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    private AssignUserRolesUseCase AssignRoles() => new(_accounts.Object, _refreshTokens.Object, _currentUser.Object, _clock.Object);
 
     [Fact]
     public async Task AssignUserRoles_WhenNotAdmin_ThrowsUnauthorizedAccessException()
     {
         _currentUser.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(false);
 
-        var useCase = new AssignUserRolesUseCase(_accounts.Object, _currentUser.Object);
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
-            useCase.ExecuteAsync(Guid.NewGuid(), new AssignRolesRequest([RoleNames.Agent])));
+            AssignRoles().ExecuteAsync(Guid.NewGuid(), new AssignRolesRequest([RoleNames.Agent])));
     }
 
     [Fact]
-    public async Task AssignUserRoles_WhenAdminWithValidRoles_CallsGateway()
+    public async Task AssignUserRoles_WhenAdminWithValidRoles_CallsGatewayAndRevokesTargetSessions()
     {
         var targetId = Guid.NewGuid();
         _currentUser.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(true);
         _accounts.Setup(a => a.AssignRolesAsync(targetId.ToString(), It.IsAny<IReadOnlyList<string>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(IdentityOperationResult.Success());
 
-        var useCase = new AssignUserRolesUseCase(_accounts.Object, _currentUser.Object);
-        var result = await useCase.ExecuteAsync(targetId, new AssignRolesRequest([RoleNames.Agent, RoleNames.Requester]));
+        var result = await AssignRoles().ExecuteAsync(targetId, new AssignRolesRequest([RoleNames.Agent, RoleNames.Requester]));
 
         Assert.True(result.Succeeded);
         _accounts.Verify(a => a.AssignRolesAsync(targetId.ToString(), It.Is<IReadOnlyList<string>>(r => r.Contains(RoleNames.Agent)), It.IsAny<CancellationToken>()), Times.Once);
+        _refreshTokens.Verify(r => r.RevokeAllForUserAsync(targetId.ToString(), _now.UtcDateTime, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task AssignUserRoles_WhenGatewayRejects_KeepsSessions()
+    {
+        var targetId = Guid.NewGuid();
+        _currentUser.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(true);
+        _accounts.Setup(a => a.AssignRolesAsync(targetId.ToString(), It.IsAny<IReadOnlyList<string>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(IdentityOperationResult.Failed("Không thể gỡ vai trò Admin của quản trị viên cuối cùng."));
+
+        var result = await AssignRoles().ExecuteAsync(targetId, new AssignRolesRequest([RoleNames.Requester]));
+
+        Assert.False(result.Succeeded);
+        _refreshTokens.Verify(r => r.RevokeAllForUserAsync(It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 }

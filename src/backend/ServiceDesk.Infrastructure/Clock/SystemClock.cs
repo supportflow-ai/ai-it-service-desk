@@ -1,4 +1,4 @@
-using ServiceDesk.Application.Common.Interfaces;
+using ServiceDesk.SharedKernel.Application.Abstractions;
 
 namespace ServiceDesk.Infrastructure.Clock;
 

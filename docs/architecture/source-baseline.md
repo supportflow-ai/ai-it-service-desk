@@ -18,6 +18,10 @@ Nhánh `codex/docs-vi-rebaseline` được chuẩn bị trên `dev@47634bc8162c1
 
 Bản local `codex/backend-clean-architecture@334485d` được dùng trong lần rà soát ban đầu chỉ có sáu luồng; khác biệt này và cách khắc phục được lưu trong [báo cáo rà soát](../reviews/documentation-audit-20261020.md). Dùng nhánh đã đồng bộ để kiểm chứng phần vòng đời mới.
 
+## Nhánh tái tổ chức theo module (2026-11-07)
+
+Nhánh `refactor/backend-module-first` dựa trên `dev@0f189b5` chuyển mã sang `src/backend/Modules/<Module>` và `src/backend/BuildingBlocks` theo [ADR-015](../adr/ADR-015-module-first-clean-architecture.md). Việc di chuyển không đổi API, dữ liệu hay hành vi nghiệp vụ; các sửa bảo mật Identity đi trước ở commit riêng. Kết quả kiểm thử gắn với SHA của lần chạy CI ghi trong PR #50. Liên kết tương đối trong tài liệu hiện hành trỏ tới vị trí mới; tài liệu bằng chứng giữ đường dẫn của mốc cũ.
+
 ## PR #29 có thay đổi gì liên quan tài liệu
 
 PR #29 bổ sung/Việt hóa chú thích mã và đổi một số chuỗi thông báo lỗi, lý do AI không khả dụng, mô tả Swagger và thông báo vận hành. Ba khoảng cách về quyền nhận xử lý, thứ tự kiểm tra ở giải quyết phiếu và ánh xạ lỗi ghi đồng thời vẫn được ghi trong hợp đồng hiện hành.

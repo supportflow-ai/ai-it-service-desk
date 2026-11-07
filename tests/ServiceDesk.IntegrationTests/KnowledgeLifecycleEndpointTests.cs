@@ -3,9 +3,9 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
-using ServiceDesk.Api.Endpoints;
-using ServiceDesk.Application.Knowledge.Contracts;
-using ServiceDesk.Domain.Knowledge;
+using ServiceDesk.Modules.Knowledge.Presentation;
+using ServiceDesk.Modules.Knowledge.Application.Contracts;
+using ServiceDesk.Modules.Knowledge.Domain;
 using Xunit;
 
 namespace ServiceDesk.IntegrationTests;

@@ -1,12 +1,12 @@
 using Moq;
-using ServiceDesk.Application.Common.Interfaces;
-using ServiceDesk.Application.Identity.Ports;
-using ServiceDesk.Application.Ticketing.AssignTicket;
-using ServiceDesk.Application.Ticketing.Contracts;
-using ServiceDesk.Application.Ticketing.Ports;
-using ServiceDesk.Application.Ticketing.UnassignTicket;
-using ServiceDesk.Domain.Identity;
-using ServiceDesk.Domain.Ticketing;
+using ServiceDesk.SharedKernel.Application.Abstractions;
+using ServiceDesk.Modules.Identity.Application.Ports;
+using ServiceDesk.Modules.Ticketing.Application.AssignTicket;
+using ServiceDesk.Modules.Ticketing.Application.Contracts;
+using ServiceDesk.Modules.Ticketing.Application.Ports;
+using ServiceDesk.Modules.Ticketing.Application.UnassignTicket;
+using ServiceDesk.SharedKernel.Authorization;
+using ServiceDesk.Modules.Ticketing.Domain;
 using Xunit;
 
 namespace ServiceDesk.Application.Tests.Ticketing;

@@ -1,22 +1,23 @@
 using System.Reflection;
 using NetArchTest.Rules;
-using ServiceDesk.Application.Identity.RegisterUser;
-using ServiceDesk.Application.Ticketing.CreateTicket;
-using ServiceDesk.Domain.AIAssistance;
 using ServiceDesk.Infrastructure.Persistence;
+using ServiceDesk.Modules.AIAssistance.Domain;
+using ServiceDesk.Modules.Identity;
+using ServiceDesk.Modules.Identity.Application.RegisterUser;
+using ServiceDesk.Modules.Ticketing;
+using ServiceDesk.Modules.Ticketing.Application.CreateTicket;
 using Xunit;
 namespace ServiceDesk.ArchitectureTests;
 
 public sealed class BoundaryTests
 {
     [Fact]
-    public void ApplicationUseCasesBelongToApplicationAssembly()
+    public void UseCasesBelongToTheirModuleAndNotToSharedInfrastructure()
     {
-        var application = typeof(ServiceDesk.Application.DependencyInjection).Assembly;
-        Assert.Same(application, typeof(ICreateTicket).Assembly);
-        Assert.Same(application, typeof(IRegisterUser).Assembly);
+        Assert.Same(typeof(TicketingModule).Assembly, typeof(ICreateTicket).Assembly);
+        Assert.Same(typeof(IdentityModule).Assembly, typeof(IRegisterUser).Assembly);
         Assert.DoesNotContain(typeof(ApplicationDbContext).Assembly.GetTypes(),
-            type => type.Namespace?.StartsWith("ServiceDesk.Application", StringComparison.Ordinal) == true);
+            type => type.Namespace?.StartsWith("ServiceDesk.Modules", StringComparison.Ordinal) == true);
     }
 
     [Theory]
@@ -24,21 +25,39 @@ public sealed class BoundaryTests
     [InlineData("Microsoft.AspNetCore")] [InlineData("ServiceDesk.Infrastructure")]
     public void ApplicationCannotDependOnFrameworkAdapters(string forbidden)
     {
-        Assert.True(Types.InAssembly(typeof(ICreateTicket).Assembly).ShouldNot().HaveDependencyOn(forbidden).GetResult().IsSuccessful);
+        foreach (var module in ModuleRules.Modules)
+            Assert.True(Types.InAssembly(Assembly.Load($"ServiceDesk.Modules.{module}")).That()
+                .ResideInNamespace($"ServiceDesk.Modules.{module}.Application")
+                .ShouldNot().HaveDependencyOn(forbidden).GetResult().IsSuccessful, $"{module}: {forbidden}");
     }
 
     [Fact]
     public void EndpointsCannotAccessInfrastructureOrEf()
     {
         foreach (var forbidden in new[] { "ServiceDesk.Infrastructure", "Microsoft.EntityFrameworkCore", "Npgsql" })
+        {
             Assert.True(Types.InAssembly(typeof(ServiceDesk.Api.Program).Assembly).That()
                 .ResideInNamespace("ServiceDesk.Api.Endpoints").ShouldNot().HaveDependencyOn(forbidden).GetResult().IsSuccessful);
+            foreach (var module in ModuleRules.Modules)
+                Assert.True(Types.InAssembly(Assembly.Load($"ServiceDesk.Modules.{module}")).That()
+                    .ResideInNamespace($"ServiceDesk.Modules.{module}.Presentation")
+                    .ShouldNot().HaveDependencyOn(forbidden).GetResult().IsSuccessful, $"{module}: {forbidden}");
+        }
+    }
+
+    [Theory]
+    [InlineData("Ticketing")] [InlineData("Knowledge")] [InlineData("AIAssistance")]
+    public void OnlyIdentityReadsAspNetCoreIdentityTables(string module)
+    {
+        // Module khác tra người dùng qua IUserDirectory do Identity công bố.
+        Assert.True(Types.InAssembly(Assembly.Load($"ServiceDesk.Modules.{module}"))
+            .ShouldNot().HaveDependencyOn("Microsoft.AspNetCore.Identity").GetResult().IsSuccessful, module);
     }
 
     [Fact]
     public void AiDomainCannotAccessTicketEntitiesOrIdentity()
     {
-        foreach (var forbidden in new[] { "ServiceDesk.Domain.Ticketing.Ticket", "ServiceDesk.Domain.Identity" })
+        foreach (var forbidden in new[] { "ServiceDesk.Modules.Ticketing.Domain.Ticket", "ServiceDesk.SharedKernel.Authorization" })
         {
             // AI policies may consume only the published Ticketing value types, never the Ticket aggregate.
             var types = new[] { typeof(AIAnalysis), typeof(AISuggestion), typeof(TriagePolicy) };

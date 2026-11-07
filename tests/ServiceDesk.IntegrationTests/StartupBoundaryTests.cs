@@ -5,7 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Moq;
-using ServiceDesk.Infrastructure.Options;
+using ServiceDesk.Modules.Identity.Infrastructure.Options;
 using ServiceDesk.Infrastructure.Persistence;
 using Xunit;
 namespace ServiceDesk.IntegrationTests;

@@ -7,7 +7,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\backend\ServiceDesk.Application\ServiceDesk.Application.csproj" />
+    <ProjectReference Include="..\..\src\backend\BuildingBlocks\ServiceDesk.SharedKernel\ServiceDesk.SharedKernel.csproj" />
+    <ProjectReference Include="..\..\src\backend\Modules\AIAssistance\ServiceDesk.Modules.AIAssistance\ServiceDesk.Modules.AIAssistance.csproj" />
+    <ProjectReference Include="..\..\src\backend\Modules\Identity\ServiceDesk.Modules.Identity\ServiceDesk.Modules.Identity.csproj" />
+    <ProjectReference Include="..\..\src\backend\Modules\Knowledge\ServiceDesk.Modules.Knowledge\ServiceDesk.Modules.Knowledge.csproj" />
+    <ProjectReference Include="..\..\src\backend\Modules\Ticketing\ServiceDesk.Modules.Ticketing\ServiceDesk.Modules.Ticketing.csproj" />
   </ItemGroup>
 
   <ItemGroup>

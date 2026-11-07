@@ -1,7 +1,7 @@
-using ServiceDesk.Application.AIAssistance.Ports;
-using ServiceDesk.Application.AIAssistance.Contracts;
-using ServiceDesk.Domain.AIAssistance;
-using ServiceDesk.Domain.Ticketing;
+using ServiceDesk.Modules.AIAssistance.Application.Ports;
+using ServiceDesk.Modules.AIAssistance.Application.Contracts;
+using ServiceDesk.Modules.AIAssistance.Domain;
+using ServiceDesk.Modules.Ticketing.Domain;
 using FluentAssertions;
 using Xunit;
 
@@ -13,7 +13,7 @@ public class NoOpClassificationServiceTests
     public async Task ClassifyAsync_ShouldReturnUnavailable_NotThrow()
     {
         // Arrange â€” use Infrastructure NoOp via interface
-        ITicketClassificationService service = new Infrastructure.AI.NoOpTicketClassificationService();
+        ITicketClassificationService service = new ServiceDesk.Modules.AIAssistance.Infrastructure.NoOpTicketClassificationService();
         var request = new TriageRequest
         {
             TicketId = Guid.NewGuid(),
@@ -35,7 +35,7 @@ public class NoOpClassificationServiceTests
     [Fact]
     public async Task ClassifyAsync_ShouldPropagateCancellationToken()
     {
-        ITicketClassificationService service = new Infrastructure.AI.NoOpTicketClassificationService();
+        ITicketClassificationService service = new ServiceDesk.Modules.AIAssistance.Infrastructure.NoOpTicketClassificationService();
         using var cts = new CancellationTokenSource();
         var request = new TriageRequest
         {

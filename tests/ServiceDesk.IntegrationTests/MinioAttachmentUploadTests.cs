@@ -49,7 +49,7 @@ public sealed class MinioAttachmentUploadTests
     }
 
     private static async Task<HttpResponseMessage> Post(HttpClient client,
-        ServiceDesk.Application.Common.Interfaces.PresignedUpload upload, string value, CancellationToken cancellationToken)
+        ServiceDesk.SharedKernel.Application.Abstractions.PresignedUpload upload, string value, CancellationToken cancellationToken)
     {
         using var form = new MultipartFormDataContent();
         foreach (var field in upload.FormData) form.Add(new StringContent(field.Value), field.Key);

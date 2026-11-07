@@ -8,14 +8,14 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Options;
 using Npgsql;
-using ServiceDesk.Application.Ticketing.CreateTicket;
-using ServiceDesk.Application.Ticketing.Contracts;
-using ServiceDesk.Application.Ticketing.Idempotency;
-using ServiceDesk.Infrastructure.Identity;
+using ServiceDesk.Modules.Ticketing.Application.CreateTicket;
+using ServiceDesk.Modules.Ticketing.Application.Contracts;
+using ServiceDesk.Modules.Ticketing.Application.Idempotency;
+using ServiceDesk.Modules.Identity.Infrastructure;
 using ServiceDesk.Infrastructure.Clock;
-using ServiceDesk.Application.Identity.Contracts;
+using ServiceDesk.Modules.Identity.Application.Contracts;
 using ServiceDesk.Api.Identity;
-using ServiceDesk.Infrastructure.Options;
+using ServiceDesk.Modules.Identity.Infrastructure.Options;
 using Xunit;
 
 namespace ServiceDesk.IntegrationTests;
@@ -33,8 +33,8 @@ public sealed class TicketIdempotencyPostgresTests : IClassFixture<TicketIdempot
             .UseNpgsql(_fixture.ConnectionString).AddInterceptors(new CancelAfterInsert(cancellation)).Options;
         await using (var context = new ServiceDesk.Infrastructure.Persistence.ApplicationDbContext(options))
         {
-            var ticket = ServiceDesk.Domain.Ticketing.Ticket.Create(requester, Payload.Title, Payload.Description, Payload.CategoryId, DateTime.UtcNow);
-            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => new ServiceDesk.Infrastructure.Ticketing.PostgresTicketWriter(context)
+            var ticket = ServiceDesk.Modules.Ticketing.Domain.Ticket.Create(requester, Payload.Title, Payload.Description, Payload.CategoryId, DateTime.UtcNow);
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => new ServiceDesk.Modules.Ticketing.Infrastructure.PostgresTicketWriter(context)
                 .CreateAsync(ticket, fingerprint, cancellation.Token));
         }
         await AssertCounts(requester, 0, 0);

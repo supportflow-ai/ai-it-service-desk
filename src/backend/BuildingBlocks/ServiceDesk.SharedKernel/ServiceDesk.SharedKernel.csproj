@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Shared Kernel: kiểu dùng chung giữa các module (vai trò, actor hiện tại, đồng hồ, cổng lưu trữ, ngoại lệ nghiệp vụ).
+       Không có package NuGet và không phụ thuộc framework web hay persistence. -->
+  <PropertyGroup>
+    <RootNamespace>ServiceDesk.SharedKernel</RootNamespace>
+  </PropertyGroup>
+
+</Project>

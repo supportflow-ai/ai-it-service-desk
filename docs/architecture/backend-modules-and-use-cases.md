@@ -6,17 +6,18 @@ Trạng thái: mô tả hiện hành. Đối chiếu mã `dev` tại `47634bc816
 
 Mười hai luồng trong tài liệu thuộc mốc dev đã ghim; bản local trước PR #28 chỉ có sáu luồng. Đối chiếu [bảng mốc nguồn](source-baseline.md) trước khi chạy hoặc đọc liên kết mã tương đối.
 
+Cập nhật 2026-11-07 (đề xuất, nhánh `refactor/backend-module-first`): tổ chức project đổi sang module trước, Clean bên trong module theo [ADR-015](../adr/ADR-015-module-first-clean-architecture.md). Luồng nghiệp vụ, quyền và giao dịch bên dưới không đổi.
+
 ```mermaid
 flowchart TD
-    Hosts["API và Worker"] --> Application["Application"]
-    Hosts --> Infrastructure["Infrastructure"]
+    Hosts["API và Worker"] --> Modules["ServiceDesk.Modules.* (Identity, Ticketing, Knowledge, AIAssistance)"]
+    Hosts --> Infrastructure["ServiceDesk.Infrastructure (DbContext, migration, MinIO, đồng hồ)"]
     Database["Công cụ Database"] --> Infrastructure
-    Infrastructure --> Application
-    Infrastructure --> Domain["Domain"]
-    Application --> Domain
+    Infrastructure --> Modules
+    Modules --> SharedKernel["SharedKernel / SharedKernel.Web"]
 ```
 
-API/Worker tham chiếu Infrastructure để lắp ghép dịch vụ. Đăng ký kiểm tra PostgreSQL sẵn sàng thuộc Infrastructure. Hàm xử lý HTTP gọi giao diện nghiệp vụ và DTO được công khai. Application chỉ tham chiếu Domain và các giao diện hỗ trợ đăng ký phụ thuộc; không sử dụng EF Core hoặc ngữ cảnh HTTP.
+Trong mỗi module: `Presentation` → `Application` → `Domain` và `Infrastructure` → `Application` → `Domain`. API/Worker gọi `Add<Module>Module` để module tự đăng ký use case và adapter; đăng ký kiểm tra PostgreSQL sẵn sàng thuộc `ServiceDesk.Infrastructure`. Hàm xử lý HTTP nằm trong `Presentation` của module và chỉ gọi giao diện nghiệp vụ. Application không sử dụng EF Core hoặc ngữ cảnh HTTP.
 
 ## Trách nhiệm từng mô-đun
 
@@ -24,11 +25,21 @@ API/Worker tham chiếu Infrastructure để lắp ghép dịch vụ. Đăng ký
 | --- | --- | --- |
 | Identity | Đăng ký, mật khẩu, vai trò, bảo vệ đăng nhập và truy vấn hồ sơ bản thân | Ba giao diện nghiệp vụ, dữ liệu yêu cầu/kết quả; tên vai trò và quy tắc HTTP |
 | Ticketing | Kiểm tra phiếu, quyền chủ sở hữu, phạm vi truy vấn, phân trang, tạo phiếu nguyên tử và các thao tác vòng đời | Chín giao diện nghiệp vụ, lệnh/truy vấn, DTO phiếu và trang; các kiểu danh mục, mức ảnh hưởng, mức khẩn cấp |
+| Knowledge | Bài viết tri thức: tạo/sửa bản nháp, xuất bản, lưu trữ, xem chi tiết và tìm kiếm theo quyền đọc | Sáu giao diện nghiệp vụ, lệnh/truy vấn, DTO bài viết và trang; trạng thái bài viết |
 | AIAssistance | Đầu vào/kết quả phân loại, độ tin cậy, bất biến đề xuất và chuyển đổi hợp đồng AI | Cổng phân loại/biểu diễn vectơ; các kiểu Ticketing được cho phép rõ ràng |
 
-`Common` chứa giao diện danh tính hiện tại, đồng hồ, lưu trữ và kiểm tra định danh dùng chung. Nó không chứa thực thể phiếu hoặc kho dữ liệu của mô-đun khác. Ánh xạ EF thuộc `Infrastructure.Ticketing`. Một `DbContext` dùng chung giữ các bảng và mô hình hiện có.
+`ServiceDesk.SharedKernel` chứa giao diện danh tính hiện tại, đồng hồ, lưu trữ, tên vai trò/chính sách và ngoại lệ nghiệp vụ dùng chung. Nó không chứa thực thể phiếu hoặc kho dữ liệu của mô-đun nào. Ánh xạ EF thuộc `Infrastructure/Configurations` của từng module. Một `ApplicationDbContext` dùng chung gom cấu hình từ các module và giữ các bảng, migration hiện có.
 
 Danh sách kiểu được phép truy cập xuyên mô-đun và ngoại lệ kỹ thuật nằm trong [ModuleRules](../../tests/ServiceDesk.ArchitectureTests/ModuleRules.cs). Khai báo `public` không tự cấp quyền truy cập. Lớp triển khai nghiệp vụ và bộ tích hợp là `internal`; quyền truy cập nội bộ dành cho kiểm thử được giới hạn theo assembly.
+
+## Cập nhật trên nhánh refactor (2026-11-07)
+
+Phần này mô tả mã trên nhánh `refactor/backend-module-first` (PR #50 vào `dev`); các mục bên dưới vẫn giữ mốc đối chiếu cũ.
+
+- Identity có Domain riêng: `RefreshToken` (`Issue`, `Revoke`, `IsActiveAt`), `OtpCode` (`Issue`, `IsValid`, `Matches`) và `Department`; ba bảng `refresh_tokens`, `otp_codes`, `departments` ánh xạ trong `Infrastructure/Configurations` của module. Luồng refresh, revoke, đổi/quên/đặt lại mật khẩu, gán vai trò và phòng ban được mô tả ở [hợp đồng hiện hành](current-backend-contract.md#identity-sau-pr-47-48-và-nhánh-refactor).
+- Identity công bố `IUserDirectory` trong SharedKernel. `AgentDirectory` của Ticketing tra vai trò và tên hiển thị qua cổng này, không đọc bảng ASP.NET Core Identity; kiểm thử kiến trúc chặn Ticketing, Knowledge, AIAssistance phụ thuộc `Microsoft.AspNetCore.Identity`.
+- Tám lệnh ghi Ticketing dùng chung `TicketCommandGuard` (kiểm revision, đổi vi phạm quy tắc Domain thành lỗi 400, lưu kèm audit của hệ thống) và `TicketPermissions` (Agent/Admin, chủ sở hữu hoặc Admin). Kiểm quyền và tải ticket vẫn ở từng use case; thông điệp, thứ tự kiểm và mã HTTP không đổi.
+- Endpoint Ticketing tách thành các tệp partial theo nhóm trong `Presentation`; thứ tự đăng ký giữ nguyên nên OpenAPI không đổi.
 
 ## Mười hai luồng đã triển khai
 

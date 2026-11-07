@@ -1,14 +1,14 @@
 using Moq;
-using ServiceDesk.Application.Common.Interfaces;
-using ServiceDesk.Application.Identity.Ports;
-using ServiceDesk.Application.Ticketing.AddComment;
-using ServiceDesk.Application.Ticketing.AddInternalNote;
-using ServiceDesk.Application.Ticketing.Authorization;
-using ServiceDesk.Application.Ticketing.Contracts;
-using ServiceDesk.Application.Ticketing.GetTicketTimeline;
-using ServiceDesk.Application.Ticketing.Ports;
-using ServiceDesk.Domain.Identity;
-using ServiceDesk.Domain.Ticketing;
+using ServiceDesk.SharedKernel.Application.Abstractions;
+using ServiceDesk.Modules.Identity.Application.Ports;
+using ServiceDesk.Modules.Ticketing.Application.AddComment;
+using ServiceDesk.Modules.Ticketing.Application.AddInternalNote;
+using ServiceDesk.Modules.Ticketing.Application.Authorization;
+using ServiceDesk.Modules.Ticketing.Application.Contracts;
+using ServiceDesk.Modules.Ticketing.Application.GetTicketTimeline;
+using ServiceDesk.Modules.Ticketing.Application.Ports;
+using ServiceDesk.SharedKernel.Authorization;
+using ServiceDesk.Modules.Ticketing.Domain;
 using Xunit;
 
 namespace ServiceDesk.Application.Tests.Ticketing;

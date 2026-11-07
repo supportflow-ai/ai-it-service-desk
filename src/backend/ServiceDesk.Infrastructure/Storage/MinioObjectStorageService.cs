@@ -4,7 +4,7 @@ using Minio;
 using Minio.DataModel;
 using Minio.DataModel.Args;
 using Minio.Exceptions;
-using ServiceDesk.Application.Common.Interfaces;
+using ServiceDesk.SharedKernel.Application.Abstractions;
 using ServiceDesk.Infrastructure.Options;
 
 namespace ServiceDesk.Infrastructure.Storage;

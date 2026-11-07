@@ -1,5 +1,5 @@
 using FluentAssertions;
-using ServiceDesk.Domain.Ticketing;
+using ServiceDesk.Modules.Ticketing.Domain;
 using Xunit;
 
 namespace ServiceDesk.Domain.Tests.Ticketing;

@@ -1,10 +1,11 @@
 using Moq;
-using ServiceDesk.Application.Common.Interfaces;
-using ServiceDesk.Application.Identity.RegisterUser;
-using ServiceDesk.Application.Identity.LoginUser;
-using ServiceDesk.Application.Identity.Ports;
-using ServiceDesk.Application.Identity.Contracts;
-using ServiceDesk.Domain.Identity;
+using ServiceDesk.SharedKernel.Application.Abstractions;
+using ServiceDesk.Modules.Identity.Application.RegisterUser;
+using ServiceDesk.Modules.Identity.Application.LoginUser;
+using ServiceDesk.Modules.Identity.Application.Ports;
+using ServiceDesk.Modules.Identity.Application.Contracts;
+using ServiceDesk.SharedKernel.Authorization;
+using ServiceDesk.Modules.Identity.Domain;
 using Xunit;
 
 namespace ServiceDesk.Application.Tests.Identity;
