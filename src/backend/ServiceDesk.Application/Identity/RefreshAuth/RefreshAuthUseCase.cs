@@ -1,9 +1,7 @@
-using System.Security.Cryptography;
 using ServiceDesk.Application.Common.Interfaces;
 using ServiceDesk.Application.Identity.Common;
 using ServiceDesk.Application.Identity.Contracts;
 using ServiceDesk.Application.Identity.Ports;
-using ServiceDesk.Domain.Identity;
 
 namespace ServiceDesk.Application.Identity.RefreshAuth;
 
@@ -12,12 +10,20 @@ public interface IRefreshAuth
     Task<AuthResult> ExecuteAsync(RefreshAuthRequest request, CancellationToken cancellationToken = default);
 }
 
+/// <summary>
+/// Xoay vòng refresh token:
+/// - Token đã thu hồi mà vẫn bị gửi lại được coi là bị lộ: thu hồi mọi token của người dùng.
+/// - Thu hồi token cũ bằng lệnh cập nhật có điều kiện; request đến sau với cùng token bị từ chối.
+/// - Cấp access token theo vai trò hiện tại trong cơ sở dữ liệu.
+/// </summary>
 internal sealed class RefreshAuthUseCase(
     IRefreshTokenStore refreshTokens,
     IUserAccountGateway accounts,
     IAccessTokenIssuer tokens,
     IClock clock) : IRefreshAuth
 {
+    private const string InvalidToken = "Invalid or expired refresh token.";
+
     public async Task<AuthResult> ExecuteAsync(RefreshAuthRequest request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -28,35 +34,40 @@ internal sealed class RefreshAuthUseCase(
 
         var now = clock.UtcNow.UtcDateTime;
         var tokenHash = TokenHasher.Hash(request.RefreshToken.Trim());
-        var activeToken = await refreshTokens.FindActiveByHashAsync(tokenHash, now, cancellationToken);
-        if (activeToken is null)
+        var stored = await refreshTokens.FindByHashAsync(tokenHash, cancellationToken);
+        if (stored is null)
         {
-            return AuthResult.Failed("Invalid or expired refresh token.");
+            return AuthResult.Failed(InvalidToken);
         }
 
-        var user = await accounts.FindByIdAsync(activeToken.UserId, cancellationToken);
+        if (stored.RevokedAt is not null)
+        {
+            // Token đã bị thay thế hoặc thu hồi nhưng vẫn được dùng lại: coi như bị lộ.
+            await refreshTokens.RevokeAllForUserAsync(stored.UserId, now, cancellationToken);
+            return AuthResult.Failed(InvalidToken);
+        }
+
+        if (stored.ExpiresAt <= now)
+        {
+            return AuthResult.Failed(InvalidToken);
+        }
+
+        var user = await accounts.FindByIdAsync(stored.UserId, cancellationToken);
         if (user is null)
         {
             return AuthResult.Failed("User account no longer exists.");
         }
 
-        // Revoke current token (rotation)
-        await refreshTokens.RevokeTokenAsync(tokenHash, now, cancellationToken);
-
-        // Issue new refresh token
-        var newRawRefreshToken = Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(64));
-        var newEntity = new RefreshToken
+        if (!await refreshTokens.TryRevokeAsync(stored.Id, now, cancellationToken))
         {
-            Id = Guid.NewGuid(),
-            UserId = user.UserId,
-            TokenHash = TokenHasher.Hash(newRawRefreshToken),
-            CreatedAt = now,
-            ExpiresAt = now.AddDays(7),
-            DeviceInfo = activeToken.DeviceInfo,
-            IpAddress = activeToken.IpAddress
-        };
-        await refreshTokens.SaveTokenAsync(newEntity, cancellationToken);
+            // Một request khác vừa dùng cùng token: không cấp thêm phiên.
+            await refreshTokens.RevokeAllForUserAsync(stored.UserId, now, cancellationToken);
+            return AuthResult.Failed(InvalidToken);
+        }
 
-        return AuthResult.Success(tokens.GenerateToken(user), user, newRawRefreshToken);
+        var (next, rawRefreshToken) = RefreshTokenIssuer.Issue(user.UserId, now, stored.DeviceInfo, stored.IpAddress);
+        await refreshTokens.SaveTokenAsync(next, cancellationToken);
+
+        return AuthResult.Success(tokens.GenerateToken(user), user, rawRefreshToken);
     }
 }

@@ -100,6 +100,7 @@ internal static class ModuleRules
         "ServiceDesk.Infrastructure.Persistence.Migrations.LinkAttachmentUploadGrant",
         "ServiceDesk.Infrastructure.Persistence.Migrations.AddKnowledgeArticles",
         "ServiceDesk.Infrastructure.Persistence.Migrations.AddIdentityManagementAndDepartments",
+        "ServiceDesk.Infrastructure.Persistence.Migrations.AddOtpFailedAttempts",
         "ServiceDesk.Infrastructure.Persistence.Migrations.ApplicationDbContextModelSnapshot"
     };
 

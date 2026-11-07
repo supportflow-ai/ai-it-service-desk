@@ -20,6 +20,21 @@ internal sealed class PostgresRefreshTokenStore(ApplicationDbContext context) : 
             .FirstOrDefaultAsync(r => r.TokenHash == tokenHash && r.RevokedAt == null && r.ExpiresAt > now, cancellationToken);
     }
 
+    public Task<RefreshToken?> FindByHashAsync(string tokenHash, CancellationToken cancellationToken = default)
+    {
+        return context.RefreshTokens.AsNoTracking()
+            .FirstOrDefaultAsync(r => r.TokenHash == tokenHash, cancellationToken);
+    }
+
+    public async Task<bool> TryRevokeAsync(Guid tokenId, DateTime revokedAt, CancellationToken cancellationToken = default)
+    {
+        // Một câu UPDATE có điều kiện: chỉ một request thắng khi nhiều request dùng cùng token.
+        var affected = await context.RefreshTokens
+            .Where(r => r.Id == tokenId && r.RevokedAt == null)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(r => r.RevokedAt, revokedAt), cancellationToken);
+        return affected == 1;
+    }
+
     public async Task RevokeTokenAsync(string tokenHash, DateTime revokedAt, CancellationToken cancellationToken = default)
     {
         var token = await context.RefreshTokens

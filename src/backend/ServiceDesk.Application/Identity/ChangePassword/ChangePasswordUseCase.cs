@@ -10,19 +10,28 @@ public interface IChangePassword
     Task<IdentityOperationResult> ExecuteAsync(ChangePasswordRequest request, CancellationToken cancellationToken = default);
 }
 
+/// <summary>Đổi mật khẩu của người đang đăng nhập; thành công thì thu hồi mọi refresh token để đăng xuất các phiên khác.</summary>
 internal sealed class ChangePasswordUseCase(
     IUserAccountGateway accounts,
-    ICurrentUser currentUser) : IChangePassword
+    IRefreshTokenStore refreshTokens,
+    ICurrentUser currentUser,
+    IClock clock) : IChangePassword
 {
-    public Task<IdentityOperationResult> ExecuteAsync(ChangePasswordRequest request, CancellationToken cancellationToken = default)
+    public async Task<IdentityOperationResult> ExecuteAsync(ChangePasswordRequest request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
         var actorId = AuthenticatedActor.RequireId(currentUser);
         if (string.IsNullOrWhiteSpace(request.CurrentPassword) || string.IsNullOrWhiteSpace(request.NewPassword))
         {
-            return Task.FromResult(IdentityOperationResult.Failed("Current password and new password are required."));
+            return IdentityOperationResult.Failed("Current password and new password are required.");
         }
 
-        return accounts.ChangePasswordAsync(actorId.ToString(), request.CurrentPassword, request.NewPassword, cancellationToken);
+        var result = await accounts.ChangePasswordAsync(actorId.ToString(), request.CurrentPassword, request.NewPassword, cancellationToken);
+        if (result.Succeeded)
+        {
+            await refreshTokens.RevokeAllForUserAsync(actorId.ToString(), clock.UtcNow.UtcDateTime, cancellationToken);
+        }
+
+        return result;
     }
 }

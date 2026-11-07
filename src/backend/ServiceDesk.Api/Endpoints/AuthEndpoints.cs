@@ -43,6 +43,7 @@ public static class AuthEndpoints
             });
         })
         .WithName("Register")
+        .RequireRateLimiting(AuthRateLimiting.PolicyName)
         .AllowAnonymous();
 
         // POST /api/auth/login: Đăng nhập hệ thống bằng email và mật khẩu (trả về JWT Bearer Token & Refresh Token)
@@ -65,6 +66,7 @@ public static class AuthEndpoints
             });
         })
         .WithName("Login")
+        .RequireRateLimiting(AuthRateLimiting.PolicyName)
         .AllowAnonymous();
 
         // POST /api/auth/refresh: Làm mới Access Token bằng Refresh Token
@@ -87,6 +89,7 @@ public static class AuthEndpoints
             });
         })
         .WithName("RefreshToken")
+        .RequireRateLimiting(AuthRateLimiting.PolicyName)
         .AllowAnonymous();
 
         // POST /api/auth/revoke: Thu hồi Refresh Token (Đăng xuất)
@@ -129,6 +132,7 @@ public static class AuthEndpoints
             return Results.Ok(new { message = "Nếu email tồn tại trong hệ thống, mã OTP đã được gửi." });
         })
         .WithName("ForgotPassword")
+        .RequireRateLimiting(AuthRateLimiting.PolicyName)
         .AllowAnonymous();
 
         // POST /api/auth/reset-password: Đặt lại mật khẩu bằng mã OTP
@@ -146,6 +150,7 @@ public static class AuthEndpoints
             return Results.Ok(new { message = "Đặt lại mật khẩu thành công." });
         })
         .WithName("ResetPassword")
+        .RequireRateLimiting(AuthRateLimiting.PolicyName)
         .AllowAnonymous();
 
         // GET /api/auth/me: Lấy thông tin tài khoản và danh sách vai trò (roles) của người dùng đang đăng nhập

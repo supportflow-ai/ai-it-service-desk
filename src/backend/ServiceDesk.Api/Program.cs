@@ -19,6 +19,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddAuthRateLimiting(builder.Configuration);
 builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 
 // --- Cấu hình xác thực người dùng (JWT Bearer Authentication) ---
@@ -134,6 +135,7 @@ else
 
 app.UseStatusCodePages();
 app.UseCors();
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 

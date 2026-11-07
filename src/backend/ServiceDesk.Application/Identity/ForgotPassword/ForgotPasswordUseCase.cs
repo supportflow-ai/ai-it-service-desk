@@ -12,8 +12,16 @@ public interface IForgotPassword
     Task<IdentityOperationResult> ExecuteAsync(ForgotPasswordRequest request, CancellationToken cancellationToken = default);
 }
 
+/// <summary>
+/// Phát mã OTP đặt lại mật khẩu:
+/// - Luôn trả thành công để không lộ email nào đã đăng ký.
+/// - Chỉ phát mã khi email tồn tại và chưa vượt <see cref="OtpCode.MaxIssuedPerHour"/> mã trong một giờ.
+/// - Mã mới vô hiệu các mã cũ; chỉ giá trị băm được lưu, mã gốc chỉ đi qua cổng gửi.
+/// </summary>
 internal sealed class ForgotPasswordUseCase(
+    IUserAccountGateway accounts,
     IOtpCodeStore otpStore,
+    IOtpSender sender,
     IClock clock) : IForgotPassword
 {
     public async Task<IdentityOperationResult> ExecuteAsync(ForgotPasswordRequest request, CancellationToken cancellationToken = default)
@@ -25,23 +33,24 @@ internal sealed class ForgotPasswordUseCase(
         }
 
         var normalizedEmail = request.Email.Trim().ToLowerInvariant();
-        var rawOtp = RandomNumberGenerator.GetInt32(100000, 1000000).ToString();
         var now = clock.UtcNow.UtcDateTime;
-
-        var otpEntity = new OtpCode
+        if (!await accounts.EmailExistsAsync(normalizedEmail, cancellationToken))
         {
-            Id = Guid.NewGuid(),
-            Target = normalizedEmail,
-            CodeHash = TokenHasher.Hash(rawOtp),
-            Purpose = "ResetPassword",
-            CreatedAt = now,
-            ExpiresAt = now.AddMinutes(15),
-            IsUsed = false
-        };
+            return IdentityOperationResult.Success();
+        }
 
-        await otpStore.SaveOtpAsync(otpEntity, cancellationToken);
+        var issuedLastHour = await otpStore.CountIssuedSinceAsync(
+            normalizedEmail, OtpCode.ResetPasswordPurpose, now.AddHours(-1), cancellationToken);
+        if (issuedLastHour >= OtpCode.MaxIssuedPerHour)
+        {
+            return IdentityOperationResult.Success();
+        }
 
-        // Always return success to protect user enumeration
+        var rawOtp = RandomNumberGenerator.GetInt32(100000, 1000000).ToString(System.Globalization.CultureInfo.InvariantCulture);
+        var otp = OtpCode.Issue(normalizedEmail, OtpCode.ResetPasswordPurpose, TokenHasher.Hash(rawOtp), now);
+        await otpStore.IssueAsync(otp, cancellationToken);
+        await sender.SendPasswordResetCodeAsync(normalizedEmail, rawOtp, otp.ExpiresAt, cancellationToken);
+
         return IdentityOperationResult.Success();
     }
 }

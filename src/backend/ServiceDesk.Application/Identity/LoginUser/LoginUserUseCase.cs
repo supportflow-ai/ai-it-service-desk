@@ -1,9 +1,7 @@
-using System.Security.Cryptography;
 using ServiceDesk.Application.Common.Interfaces;
 using ServiceDesk.Application.Identity.Common;
 using ServiceDesk.Application.Identity.Contracts;
 using ServiceDesk.Application.Identity.Ports;
-using ServiceDesk.Domain.Identity;
 
 namespace ServiceDesk.Application.Identity.LoginUser;
 
@@ -34,17 +32,8 @@ internal sealed class LoginUserUseCase(
             return AuthResult.Failed("Invalid email or password.");
         }
 
-        var rawRefreshToken = Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(64));
-        var now = clock.UtcNow.UtcDateTime;
-        var refreshTokenEntity = new RefreshToken
-        {
-            Id = Guid.NewGuid(),
-            UserId = user.UserId,
-            TokenHash = TokenHasher.Hash(rawRefreshToken),
-            CreatedAt = now,
-            ExpiresAt = now.AddDays(7)
-        };
-        await refreshTokens.SaveTokenAsync(refreshTokenEntity, cancellationToken);
+        var (refreshToken, rawRefreshToken) = RefreshTokenIssuer.Issue(user.UserId, clock.UtcNow.UtcDateTime);
+        await refreshTokens.SaveTokenAsync(refreshToken, cancellationToken);
 
         return AuthResult.Success(tokens.GenerateToken(user), user, rawRefreshToken);
     }

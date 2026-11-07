@@ -130,20 +130,10 @@ internal sealed class IdentityAccountGateway(UserManager<IdentityUser> users, Ap
             : IdentityOperationResult.Failed(result.Errors.Select(e => e.Description));
     }
 
-    public async Task<IdentityOperationResult> ResetPasswordWithOtpAsync(string email, string newPassword, CancellationToken cancellationToken)
+    public async Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var user = await users.FindByEmailAsync(email);
-        if (user is null)
-        {
-            return IdentityOperationResult.Failed("User not found.");
-        }
-
-        var resetToken = await users.GeneratePasswordResetTokenAsync(user);
-        var result = await users.ResetPasswordAsync(user, resetToken, newPassword);
-        return result.Succeeded
-            ? IdentityOperationResult.Success()
-            : IdentityOperationResult.Failed(result.Errors.Select(e => e.Description));
+        return !string.IsNullOrWhiteSpace(email) && await users.FindByEmailAsync(email) is not null;
     }
 
     public async Task<IdentityOperationResult> AssignRolesAsync(string userId, IReadOnlyList<string> roles, CancellationToken cancellationToken)
@@ -157,6 +147,13 @@ internal sealed class IdentityAccountGateway(UserManager<IdentityUser> users, Ap
 
         await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
         var currentRoles = await users.GetRolesAsync(user);
+        if (currentRoles.Contains(RoleNames.Admin, StringComparer.OrdinalIgnoreCase) &&
+            !roles.Contains(RoleNames.Admin, StringComparer.OrdinalIgnoreCase) &&
+            (await users.GetUsersInRoleAsync(RoleNames.Admin)).Count <= 1)
+        {
+            return IdentityOperationResult.Failed("Không thể gỡ vai trò Admin của quản trị viên cuối cùng.");
+        }
+
         var toRemove = currentRoles.Except(roles, StringComparer.OrdinalIgnoreCase).ToList();
         var toAdd = roles.Except(currentRoles, StringComparer.OrdinalIgnoreCase).ToList();
 

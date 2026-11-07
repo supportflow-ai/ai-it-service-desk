@@ -29,7 +29,7 @@ public interface IUserAccountGateway
     Task<IdentityOperationResult> ChangePasswordAsync(string userId, string currentPassword, string newPassword, CancellationToken cancellationToken);
 
     /// <summary>Đặt lại mật khẩu người dùng (sau khi đã xác thực OTP thành công).</summary>
-    Task<IdentityOperationResult> ResetPasswordWithOtpAsync(string email, string newPassword, CancellationToken cancellationToken);
+    Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken);
 
     /// <summary>Gán danh sách vai trò cho người dùng (Admin).</summary>
     Task<IdentityOperationResult> AssignRolesAsync(string userId, IReadOnlyList<string> roles, CancellationToken cancellationToken);

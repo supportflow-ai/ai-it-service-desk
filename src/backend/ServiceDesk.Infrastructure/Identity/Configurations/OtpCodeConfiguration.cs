@@ -18,6 +18,7 @@ internal sealed class OtpCodeConfiguration : IEntityTypeConfiguration<OtpCode>
         entity.Property(o => o.ExpiresAt).HasColumnName("expires_at").IsRequired();
         entity.Property(o => o.CreatedAt).HasColumnName("created_at").IsRequired();
         entity.Property(o => o.IsUsed).HasColumnName("is_used").IsRequired();
+        entity.Property(o => o.FailedAttempts).HasColumnName("failed_attempts").IsRequired();
 
         entity.HasIndex(o => new { o.Target, o.Purpose, o.IsUsed });
     }

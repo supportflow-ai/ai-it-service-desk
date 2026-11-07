@@ -64,6 +64,7 @@ public static class DependencyInjection
             options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
         }).AddRoles<IdentityRole>().AddEntityFrameworkStores<ApplicationDbContext>().AddDefaultTokenProviders();
         services.AddScoped<IUserAccountGateway, IdentityAccountGateway>();
+        services.AddScoped<IPasswordResetGateway, PasswordResetGateway>();
         return services;
     }
 
@@ -72,6 +73,7 @@ public static class DependencyInjection
     {
         services.AddIdentityStores();
         services.AddSingleton<IAccessTokenIssuer, JwtTokenGenerator>();
+        services.AddSingleton<IOtpSender, NoOpOtpSender>();
         services.AddOptions<JwtOptions>().Bind(configuration.GetSection(JwtOptions.SectionName)).ValidateOnStart();
         services.AddSingleton<IValidateOptions<JwtOptions>, JwtOptionsValidator>();
         return services;
