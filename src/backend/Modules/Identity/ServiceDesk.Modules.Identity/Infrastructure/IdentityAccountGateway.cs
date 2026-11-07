@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using ServiceDesk.Modules.Identity.Application.Ports;
+using ServiceDesk.Modules.Identity.Application.Common;
 using ServiceDesk.Modules.Identity.Application.Contracts;
 using ServiceDesk.Modules.Identity.Domain;
 using ServiceDesk.SharedKernel.Authorization;
@@ -33,7 +34,26 @@ internal sealed class IdentityAccountGateway(UserManager<IdentityUser> users, Db
         return new(result, []);
     }
 
-    public async Task<UserInfo?> CheckPasswordAsync(string email, string password, CancellationToken cancellationToken)
+    public Task<UserInfo?> CheckPasswordAsync(string email, string password, CancellationToken cancellationToken) =>
+        VerifyPasswordAsync(email, password, onVerified: null, cancellationToken);
+
+    public async Task<PasswordSignIn?> SignInAsync(string email, string password, DateTime now, CancellationToken cancellationToken)
+    {
+        string? rawRefreshToken = null;
+        // Lưu refresh token trong cùng giao dịch đang giữ khóa dòng người dùng: đổi/đặt lại mật khẩu hoặc đổi vai trò
+        // chạy song song phải chờ, rồi thu hồi luôn token này; không còn khe giữa kiểm mật khẩu và lưu token.
+        var user = await VerifyPasswordAsync(email, password, async verified =>
+        {
+            var (token, raw) = RefreshTokenIssuer.Issue(verified.Id, now);
+            context.Set<RefreshToken>().Add(token);
+            await context.SaveChangesAsync(cancellationToken);
+            rawRefreshToken = raw;
+        }, cancellationToken);
+        return user is null || rawRefreshToken is null ? null : new PasswordSignIn(user, rawRefreshToken);
+    }
+
+    private async Task<UserInfo?> VerifyPasswordAsync(string email, string password, Func<IdentityUser, Task>? onVerified,
+        CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         if (string.IsNullOrWhiteSpace(email) || string.IsNullOrEmpty(password)) return null;
@@ -69,6 +89,7 @@ internal sealed class IdentityAccountGateway(UserManager<IdentityUser> users, Db
         var reset = await users.ResetAccessFailedCountAsync(user);
         EnsureSecurityWrite(reset);
         if (await users.IsLockedOutAsync(user)) return null;
+        if (onVerified is not null) await onVerified(user);
         var result = await ToUserAsync(user);
         cancellationToken.ThrowIfCancellationRequested();
         await transaction.CommitAsync(cancellationToken);
@@ -141,6 +162,7 @@ internal sealed class IdentityAccountGateway(UserManager<IdentityUser> users, Db
         }
 
         await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+        await UserSessionLock.LockAsync(context, user.Id, cancellationToken);
         var result = await users.ChangePasswordAsync(user, currentPassword, newPassword);
         if (!result.Succeeded)
         {
@@ -174,6 +196,7 @@ internal sealed class IdentityAccountGateway(UserManager<IdentityUser> users, Db
         await context.Database.ExecuteSqlInterpolatedAsync(
             $"SELECT 1 FROM public.\"AspNetRoles\" WHERE \"NormalizedName\" = {RoleNames.Admin.ToUpperInvariant()} FOR UPDATE",
             cancellationToken);
+        await UserSessionLock.LockAsync(context, user.Id, cancellationToken);
         var currentRoles = await users.GetRolesAsync(user);
         if (currentRoles.Contains(RoleNames.Admin, StringComparer.OrdinalIgnoreCase) &&
             !roles.Contains(RoleNames.Admin, StringComparer.OrdinalIgnoreCase) &&
@@ -203,6 +226,8 @@ internal sealed class IdentityAccountGateway(UserManager<IdentityUser> users, Db
             }
         }
 
+        // Đổi security stamp để mọi cookie/token dựa trên stamp cũ cũng mất hiệu lực, giống đổi mật khẩu.
+        EnsureSecurityWrite(await users.UpdateSecurityStampAsync(user));
         await RevokeSessionsAsync(user.Id, revokeSessionsAt, cancellationToken);
         await transaction.CommitAsync(cancellationToken);
         return IdentityOperationResult.Success();

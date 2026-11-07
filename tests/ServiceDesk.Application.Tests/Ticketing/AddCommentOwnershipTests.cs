@@ -68,6 +68,31 @@ public sealed class AddCommentOwnershipTests
         _timelineStore.VerifyNoOtherCalls();
     }
 
+    [Theory]
+    [InlineData(TicketStatus.Closed)]
+    [InlineData(TicketStatus.Cancelled)]
+    public async Task Requester_GetsNotFoundForAnotherRequestersTerminalTicket(TicketStatus status)
+    {
+        var otherOwner = Guid.NewGuid();
+        var ticket = CreateTicket(otherOwner);
+        if (status == TicketStatus.Closed)
+        {
+            ticket.Claim(Guid.NewGuid(), _now.UtcDateTime);
+            ticket.Resolve(_now.UtcDateTime);
+            ticket.Close(_now.UtcDateTime);
+        }
+        else
+        {
+            ticket.Cancel(_now.UtcDateTime);
+        }
+        _user.SetupGet(user => user.Roles).Returns([RoleNames.Requester]);
+        _writer.Setup(writer => writer.GetForUpdateAsync(ticket.Id, It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
+
+        // Không lộ ticket tồn tại hay đã kết thúc: giống hệt ID không tồn tại.
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => CreateUseCase().ExecuteAsync(new(ticket.Id, "Probe")));
+        _timelineStore.VerifyNoOtherCalls();
+    }
+
     [Fact]
     public async Task Requester_CanCommentOnOwnTicket()
     {

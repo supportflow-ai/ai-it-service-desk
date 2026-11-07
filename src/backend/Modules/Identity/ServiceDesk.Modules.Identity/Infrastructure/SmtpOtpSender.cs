@@ -8,8 +8,8 @@ using ServiceDesk.Modules.Identity.Infrastructure.Options;
 namespace ServiceDesk.Modules.Identity.Infrastructure;
 
 /// <summary>
-/// Gửi mã OTP đặt lại mật khẩu qua SMTP. Lỗi gửi chỉ được ghi log (không ghi mã, không ghi email) và không ném ra,
-/// để phản hồi của "quên mật khẩu" giống nhau dù email có tồn tại hay không.
+/// Gửi mã OTP đặt lại mật khẩu qua SMTP (chạy nền từ hàng đợi quên mật khẩu). Lỗi gửi chỉ ghi loại lỗi và mã trạng thái
+/// SMTP; không ghi exception vì thông điệp của nó có thể chứa địa chỉ người nhận.
 /// </summary>
 internal sealed class SmtpOtpSender(IOptions<SmtpEmailOptions> options, ILogger<SmtpOtpSender> logger) : IOtpSender
 {
@@ -33,7 +33,8 @@ internal sealed class SmtpOtpSender(IOptions<SmtpEmailOptions> options, ILogger<
         }
         catch (Exception ex) when (ex is SmtpException or InvalidOperationException or IOException)
         {
-            logger.LogError(ex, "Gửi mã OTP đặt lại mật khẩu qua SMTP thất bại.");
+            logger.LogError("Gửi mã OTP đặt lại mật khẩu qua SMTP thất bại ({ErrorType}, {SmtpStatus}).",
+                ex.GetType().Name, (ex as SmtpException)?.StatusCode);
         }
     }
 }

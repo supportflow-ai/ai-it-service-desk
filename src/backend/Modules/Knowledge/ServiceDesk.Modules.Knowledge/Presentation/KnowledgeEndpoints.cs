@@ -39,6 +39,8 @@ public record ArchiveArticleRequest(uint? ExpectedRevision = null);
 /// </summary>
 public static class KnowledgeEndpoints
 {
+    private const string DomainNamespace = "ServiceDesk.Modules.Knowledge.Domain";
+
     public static IEndpointRouteBuilder MapKnowledgeEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/knowledge/articles")
@@ -50,7 +52,9 @@ public static class KnowledgeEndpoints
                 {
                     return await next(ctx);
                 }
-                catch (InvalidOperationException ex)
+                // Chỉ vi phạm quy tắc trạng thái của bài viết (Knowledge.Domain) thành 422 kèm thông điệp;
+                // InvalidOperationException từ adapter, EF Core hay thư viện để lại cho lỗi 500 chung, không lộ thông điệp.
+                catch (InvalidOperationException ex) when (ExceptionOrigin.IsRaisedIn(ex, DomainNamespace))
                 {
                     return Results.UnprocessableEntity(new { error = ex.Message });
                 }

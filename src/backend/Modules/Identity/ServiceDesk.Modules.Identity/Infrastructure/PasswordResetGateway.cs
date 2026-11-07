@@ -45,6 +45,7 @@ internal sealed class PasswordResetGateway(UserManager<IdentityUser> users, DbCo
             return IdentityOperationResult.Failed(InvalidCode);
         }
 
+        await UserSessionLock.LockAsync(context, user.Id, cancellationToken);
         var resetToken = await users.GeneratePasswordResetTokenAsync(user);
         var reset = await users.ResetPasswordAsync(user, resetToken, newPassword);
         if (!reset.Succeeded)

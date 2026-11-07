@@ -48,8 +48,8 @@ public sealed class IdentityUseCaseTests
     [Fact]
     public async Task FailedOrLockedLogin_DoesNotIssueToken()
     {
-        _accounts.Setup(a => a.CheckPasswordAsync("x", "y", It.IsAny<CancellationToken>())).ReturnsAsync((UserInfo?)null);
-        var result = await new LoginUserUseCase(_accounts.Object, _tokens.Object, _refreshTokens.Object, _clock.Object).ExecuteAsync(new() { Email = "x", Password = "y" });
+        _accounts.Setup(a => a.SignInAsync("x", "y", It.IsAny<DateTime>(), It.IsAny<CancellationToken>())).ReturnsAsync((PasswordSignIn?)null);
+        var result = await new LoginUserUseCase(_accounts.Object, _tokens.Object, _clock.Object).ExecuteAsync(new() { Email = "x", Password = "y" });
         Assert.False(result.Succeeded); Assert.Equal("Invalid email or password.", Assert.Single(result.Errors));
         _tokens.VerifyNoOtherCalls();
     }
@@ -58,11 +58,12 @@ public sealed class IdentityUseCaseTests
     public async Task ValidLogin_IssuesTokenAndRefreshTokenForGatewayIdentity()
     {
         var user = User;
-        _accounts.Setup(a => a.CheckPasswordAsync(user.Email, "password", It.IsAny<CancellationToken>())).ReturnsAsync(user);
+        _accounts.Setup(a => a.SignInAsync(user.Email, "password", It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new PasswordSignIn(user, "raw-refresh"));
         _tokens.Setup(t => t.GenerateToken(user)).Returns("token");
-        var result = await new LoginUserUseCase(_accounts.Object, _tokens.Object, _refreshTokens.Object, _clock.Object).ExecuteAsync(new() { Email = user.Email, Password = "password" });
+        var result = await new LoginUserUseCase(_accounts.Object, _tokens.Object, _clock.Object).ExecuteAsync(new() { Email = user.Email, Password = "password" });
         Assert.True(result.Succeeded); Assert.Same(user, result.User); Assert.Equal("token", result.Token);
-        Assert.False(string.IsNullOrWhiteSpace(result.RefreshToken));
-        _refreshTokens.Verify(r => r.SaveTokenAsync(It.Is<RefreshToken>(t => t.UserId == user.UserId), It.IsAny<CancellationToken>()), Times.Once);
+        Assert.Equal("raw-refresh", result.RefreshToken);
+        _refreshTokens.VerifyNoOtherCalls();
     }
 }

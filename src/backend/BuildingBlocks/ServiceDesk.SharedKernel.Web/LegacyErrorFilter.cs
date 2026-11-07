@@ -28,8 +28,6 @@ public sealed class LegacyErrorFilter : IEndpointFilter
     /// <summary>Thông điệp 403 khi lỗi truy cập không đến từ quy tắc nghiệp vụ.</summary>
     public const string GenericForbiddenMessage = "Bạn không có quyền thực hiện thao tác này.";
 
-    private const string ApplicationAssemblyPrefix = "ServiceDesk.";
-
     public async ValueTask<object?> InvokeAsync(EndpointFilterInvocationContext context, EndpointFilterDelegate next)
     {
         ArgumentNullException.ThrowIfNull(context);
@@ -53,17 +51,9 @@ public sealed class LegacyErrorFilter : IEndpointFilter
         catch (ArgumentException ex) { return Results.BadRequest(new { error = PublicMessage(context, ex, GenericBadRequestMessage) }); }
     }
 
-    /// <summary>Ngoại lệ được ném trực tiếp từ một assembly ServiceDesk (không phải .NET hay thư viện).</summary>
-    public static bool IsRaisedByApplication(Exception exception)
-    {
-        ArgumentNullException.ThrowIfNull(exception);
-        var assembly = exception.TargetSite?.DeclaringType?.Assembly.GetName().Name;
-        return assembly is not null && assembly.StartsWith(ApplicationAssemblyPrefix, StringComparison.Ordinal);
-    }
-
     private static string PublicMessage(EndpointFilterInvocationContext context, Exception exception, string fallback)
     {
-        if (IsRaisedByApplication(exception)) return exception.Message;
+        if (ExceptionOrigin.IsRaisedByApplication(exception)) return exception.Message;
 
         context.HttpContext.RequestServices?.GetService<ILoggerFactory>()?.CreateLogger<LegacyErrorFilter>()
             .LogWarning(exception, "Ngoại lệ {ExceptionType} từ thư viện được trả về dạng thông điệp chung.", exception.GetType().Name);

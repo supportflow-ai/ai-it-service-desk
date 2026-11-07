@@ -41,6 +41,7 @@ internal sealed class PostgresRefreshTokenStore(DbContext context) : IRefreshTok
         // UPDATE giữ khóa dòng tới khi commit: request khác cùng token phải chờ, rồi thấy 0 dòng và thu hồi
         // toàn bộ phiên sau khi token mới đã được commit, nên token mới không thể lọt qua bước thu hồi đó.
         await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+        await UserSessionLock.LockAsync(context, replacement.UserId, cancellationToken);
         if (!await TryRevokeAsync(currentTokenId, now, cancellationToken))
         {
             return false;
@@ -65,9 +66,12 @@ internal sealed class PostgresRefreshTokenStore(DbContext context) : IRefreshTok
 
     public async Task RevokeAllForUserAsync(string userId, DateTime revokedAt, CancellationToken cancellationToken = default)
     {
-        // Một câu UPDATE: thu hồi cả token được commit ngay trước đó, không đọc rồi ghi.
+        // Lấy khóa phiên trước: câu UPDATE chạy sau mọi giao dịch đang tạo token cho người dùng này.
+        await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+        await UserSessionLock.LockAsync(context, userId, cancellationToken);
         await context.Set<RefreshToken>()
             .Where(r => r.UserId == userId && r.RevokedAt == null)
             .ExecuteUpdateAsync(setters => setters.SetProperty(r => r.RevokedAt, revokedAt), cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
     }
 }
