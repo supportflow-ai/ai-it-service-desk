@@ -31,20 +31,22 @@ Nguồn: [AuthEndpoints](../../src/backend/Modules/Identity/ServiceDesk.Modules.
 
 ## Identity sau PR #47, #48 và nhánh refactor
 
-Cập nhật 2026-11-07, đối chiếu nhánh `refactor/backend-module-first` (PR #50 vào `dev`). Mã ở [AuthEndpoints](../../src/backend/Modules/Identity/ServiceDesk.Modules.Identity/Presentation/AuthEndpoints.cs) và [DepartmentEndpoints](../../src/backend/Modules/Identity/ServiceDesk.Modules.Identity/Presentation/DepartmentEndpoints.cs).
+Cập nhật 2026-11-07, đối chiếu PR #50 và PR #51 vào `dev`. Mã ở [AuthEndpoints](../../src/backend/Modules/Identity/ServiceDesk.Modules.Identity/Presentation/AuthEndpoints.cs) và [DepartmentEndpoints](../../src/backend/Modules/Identity/ServiceDesk.Modules.Identity/Presentation/DepartmentEndpoints.cs).
 
 | Thao tác | Đường dẫn | Quyền | Hành vi |
 | --- | --- | --- | --- |
-| Làm mới phiên | `POST /api/auth/refresh` | Ẩn danh, có rate limit | Thu hồi token cũ bằng một lệnh cập nhật có điều kiện rồi cấp token mới. Token đã thu hồi bị gửi lại, hoặc hai request cùng token chạy song song, thì mọi refresh token của người dùng bị thu hồi. |
+| Làm mới phiên | `POST /api/auth/refresh` | Ẩn danh, có rate limit | Thu hồi token cũ bằng một lệnh cập nhật có điều kiện và lưu token mới trong cùng giao dịch. Token đã thu hồi bị gửi lại, hoặc hai request cùng token chạy song song, thì mọi refresh token của người dùng bị thu hồi, kể cả token vừa cấp cho request thắng. |
 | Đăng xuất | `POST /api/auth/revoke` | Ẩn danh | Thu hồi refresh token được gửi; luôn trả 204. |
-| Đổi mật khẩu | `POST /api/auth/change-password` | Đã đăng nhập | Thành công thì thu hồi mọi refresh token của người đó. |
-| Quên mật khẩu | `POST /api/auth/forgot-password` | Ẩn danh, có rate limit | Luôn trả cùng một thông điệp. Chỉ phát mã khi email tồn tại và chưa quá 5 mã trong một giờ; mã mới vô hiệu mã cũ, chỉ lưu giá trị băm. Kênh gửi chưa được chọn: adapter hiện tại (`NoOpOtpSender`) chỉ ghi cảnh báo, không gửi mã. |
+| Đổi mật khẩu | `POST /api/auth/change-password` | Đã đăng nhập | Đổi mật khẩu và thu hồi mọi refresh token của người đó trong cùng giao dịch. |
+| Quên mật khẩu | `POST /api/auth/forgot-password` | Ẩn danh, có rate limit | Luôn trả cùng một thông điệp. Chỉ phát mã khi email tồn tại và chưa quá 5 mã trong một giờ; mã mới vô hiệu mã cũ, chỉ lưu giá trị băm. Có `Email:Smtp:Host` thì gửi mã qua SMTP (`SmtpOtpSender`); chưa cấu hình thì `NoOpOtpSender` chỉ ghi cảnh báo, không gửi. Lỗi gửi chỉ ghi log, phản hồi không đổi. |
 | Đặt lại mật khẩu | `POST /api/auth/reset-password` | Ẩn danh, có rate limit | Một giao dịch khóa dòng mã (`FOR UPDATE`). Sai mã tăng `failed_attempts`; sau 5 lần sai mã bị từ chối kể cả khi đúng. Đúng mã thì đổi mật khẩu, đánh dấu đã dùng và thu hồi mọi refresh token; mật khẩu mới không hợp lệ thì rollback, mã vẫn dùng được. |
 | Danh sách người dùng theo vai trò | `GET /api/users?role=` | Agent hoặc Admin (`RequireAgent`) | Mặc định vai trò Agent; trả `UserId`, `FullName`. |
-| Gán vai trò | `PUT /api/users/{id}/roles` | Admin | Thành công thì thu hồi refresh token của người được gán. Không cho gỡ Admin của quản trị viên cuối cùng. Access token đã phát vẫn mang vai trò cũ tới khi hết hạn (`Jwt:ExpiryMinutes`). |
+| Gán vai trò | `PUT /api/users/{id}/roles` | Admin | Đổi vai trò và thu hồi refresh token của người được gán trong cùng giao dịch. Không cho gỡ Admin của quản trị viên cuối cùng; các lần gán vai trò khóa dòng vai trò Admin nên hai yêu cầu đồng thời không thể gỡ hai Admin cuối. Access token đã phát vẫn mang vai trò cũ tới khi hết hạn (`Jwt:ExpiryMinutes`). |
 | Phòng ban | `GET /api/departments` | Đã đăng nhập | Danh sách phòng ban. |
 
-Đăng ký, đăng nhập, làm mới phiên, quên và đặt lại mật khẩu dùng chính sách `auth-sensitive`: tối đa 10 request mỗi 60 giây cho một địa chỉ IP, vượt ngưỡng trả 429. Cấu hình ở mục `RateLimiting:Auth` (`Enabled`, `PermitLimit`, `WindowSeconds`). Request không có địa chỉ IP không bị giới hạn. Sau reverse proxy, địa chỉ lấy từ Forwarded Headers. Các ngưỡng 10/60 giây, 5 lần sai và 5 mã mỗi giờ là giá trị mặc định chưa được nhóm chốt.
+Đăng ký, đăng nhập, làm mới phiên, quên và đặt lại mật khẩu dùng chính sách `auth-sensitive`: tối đa 10 request mỗi 60 giây cho một địa chỉ IP, vượt ngưỡng trả 429 (đã khai báo trong OpenAPI). Cấu hình ở mục `RateLimiting:Auth` (`Enabled`, `PermitLimit`, `WindowSeconds`). Request không có địa chỉ IP không bị giới hạn. Sau reverse proxy, địa chỉ lấy từ Forwarded Headers. Các ngưỡng 10/60 giây, 5 lần sai và 5 mã mỗi giờ là giá trị mặc định chưa được nhóm chốt.
+
+Bộ lọc lỗi `LegacyErrorFilter` giữ mã 400/403/404/409/503. Thông điệp của `ArgumentException` và `UnauthorizedAccessException` chỉ được trả khi mã ServiceDesk ném ra; lỗi cùng loại từ .NET hoặc thư viện trả thông điệp chung ("Yêu cầu không hợp lệ.", "Bạn không có quyền thực hiện thao tác này.") và chỉ ghi chi tiết vào log.
 
 ## Các thao tác vòng đời sau PR #28
 

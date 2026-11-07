@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using ServiceDesk.Modules.Identity.Application.Ports;
 using ServiceDesk.Modules.Identity.Application.Contracts;
+using ServiceDesk.Modules.Identity.Domain;
 using ServiceDesk.SharedKernel.Authorization;
 
 namespace ServiceDesk.Modules.Identity.Infrastructure;
@@ -129,28 +130,8 @@ internal sealed class IdentityAccountGateway(UserManager<IdentityUser> users, Db
         }).ToArray();
     }
 
-    public async Task<IdentityOperationResult> ChangePasswordAsync(string userId, string currentPassword, string newPassword, CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        var user = await users.FindByIdAsync(userId);
-        if (user is null)
-        {
-            return IdentityOperationResult.Failed("User not found.");
-        }
-
-        var result = await users.ChangePasswordAsync(user, currentPassword, newPassword);
-        return result.Succeeded
-            ? IdentityOperationResult.Success()
-            : IdentityOperationResult.Failed(result.Errors.Select(e => e.Description));
-    }
-
-    public async Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        return !string.IsNullOrWhiteSpace(email) && await users.FindByEmailAsync(email) is not null;
-    }
-
-    public async Task<IdentityOperationResult> AssignRolesAsync(string userId, IReadOnlyList<string> roles, CancellationToken cancellationToken)
+    public async Task<IdentityOperationResult> ChangePasswordAsync(string userId, string currentPassword, string newPassword,
+        DateTime revokeSessionsAt, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         var user = await users.FindByIdAsync(userId);
@@ -160,6 +141,39 @@ internal sealed class IdentityAccountGateway(UserManager<IdentityUser> users, Db
         }
 
         await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+        var result = await users.ChangePasswordAsync(user, currentPassword, newPassword);
+        if (!result.Succeeded)
+        {
+            return IdentityOperationResult.Failed(result.Errors.Select(e => e.Description));
+        }
+
+        await RevokeSessionsAsync(user.Id, revokeSessionsAt, cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+        return IdentityOperationResult.Success();
+    }
+
+    public async Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return !string.IsNullOrWhiteSpace(email) && await users.FindByEmailAsync(email) is not null;
+    }
+
+    public async Task<IdentityOperationResult> AssignRolesAsync(string userId, IReadOnlyList<string> roles, DateTime revokeSessionsAt,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var user = await users.FindByIdAsync(userId);
+        if (user is null)
+        {
+            return IdentityOperationResult.Failed("User not found.");
+        }
+
+        await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+        // Khóa dòng vai trò Admin: mọi lần gán vai trò chờ nhau tại đây, nên phép đếm Admin bên dưới luôn thấy
+        // kết quả của lần trước và hai yêu cầu đồng thời không thể cùng gỡ hai Admin cuối cùng.
+        await context.Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT 1 FROM public.\"AspNetRoles\" WHERE \"NormalizedName\" = {RoleNames.Admin.ToUpperInvariant()} FOR UPDATE",
+            cancellationToken);
         var currentRoles = await users.GetRolesAsync(user);
         if (currentRoles.Contains(RoleNames.Admin, StringComparer.OrdinalIgnoreCase) &&
             !roles.Contains(RoleNames.Admin, StringComparer.OrdinalIgnoreCase) &&
@@ -189,9 +203,16 @@ internal sealed class IdentityAccountGateway(UserManager<IdentityUser> users, Db
             }
         }
 
+        await RevokeSessionsAsync(user.Id, revokeSessionsAt, cancellationToken);
         await transaction.CommitAsync(cancellationToken);
         return IdentityOperationResult.Success();
     }
+
+    /// <summary>Thu hồi mọi refresh token còn hiệu lực của người dùng trong giao dịch hiện tại.</summary>
+    private Task<int> RevokeSessionsAsync(string userId, DateTime revokedAt, CancellationToken cancellationToken) =>
+        context.Set<RefreshToken>()
+            .Where(r => r.UserId == userId && r.RevokedAt == null)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(r => r.RevokedAt, revokedAt), cancellationToken);
 
     private async Task<UserInfo> ToUserAsync(IdentityUser user) => new()
     {

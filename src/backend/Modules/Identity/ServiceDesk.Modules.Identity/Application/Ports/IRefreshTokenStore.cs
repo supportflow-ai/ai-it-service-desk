@@ -18,6 +18,13 @@ public interface IRefreshTokenStore
     /// </summary>
     Task<bool> TryRevokeAsync(Guid tokenId, DateTime revokedAt, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Xoay vòng trong một giao dịch: thu hồi có điều kiện token cũ rồi lưu <paramref name="replacement"/>.
+    /// Trả về false (không lưu gì) khi token cũ đã bị thu hồi. Vì token mới chỉ thấy được cùng lúc với việc thu hồi
+    /// token cũ, request thua cuộc đua luôn thu hồi toàn bộ phiên sau khi token mới đã tồn tại.
+    /// </summary>
+    Task<bool> TryRotateAsync(Guid currentTokenId, RefreshToken replacement, DateTime now, CancellationToken cancellationToken = default);
+
     Task RevokeTokenAsync(string tokenHash, DateTime revokedAt, CancellationToken cancellationToken = default);
 
     Task RevokeAllForUserAsync(string userId, DateTime revokedAt, CancellationToken cancellationToken = default);

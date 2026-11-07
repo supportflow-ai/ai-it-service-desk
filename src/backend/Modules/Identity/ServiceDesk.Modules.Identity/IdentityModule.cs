@@ -54,13 +54,24 @@ public static class IdentityModule
     }
 
     /// <summary>
-    /// Đăng ký trình cấp JWT, cổng gửi OTP và kiểm tra cấu hình <see cref="JwtOptions"/> lúc khởi động.
-    /// Kênh gửi OTP chưa được chọn nên tạm dùng <see cref="NoOpOtpSender"/>.
+    /// Đăng ký trình cấp JWT, cổng gửi OTP và kiểm tra cấu hình <see cref="JwtOptions"/>, <see cref="SmtpEmailOptions"/> lúc khởi động.
+    /// Có <c>Email:Smtp:Host</c> thì gửi OTP qua <see cref="SmtpOtpSender"/>; chưa cấu hình thì dùng <see cref="NoOpOtpSender"/>.
     /// </summary>
     public static IServiceCollection AddIdentityInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddSingleton<IAccessTokenIssuer, JwtTokenGenerator>();
-        services.AddSingleton<IOtpSender, NoOpOtpSender>();
+        var smtpSection = configuration.GetSection(SmtpEmailOptions.SectionName);
+        services.AddOptions<SmtpEmailOptions>().Bind(smtpSection).ValidateOnStart();
+        services.AddSingleton<IValidateOptions<SmtpEmailOptions>, SmtpEmailOptionsValidator>();
+        if (string.IsNullOrWhiteSpace(smtpSection[nameof(SmtpEmailOptions.Host)]))
+        {
+            services.AddSingleton<IOtpSender, NoOpOtpSender>();
+        }
+        else
+        {
+            services.AddSingleton<IOtpSender, SmtpOtpSender>();
+        }
+
         services.AddOptions<JwtOptions>().Bind(configuration.GetSection(JwtOptions.SectionName)).ValidateOnStart();
         services.AddSingleton<IValidateOptions<JwtOptions>, JwtOptionsValidator>();
         return services;

@@ -34,6 +34,24 @@ internal sealed class PostgresRefreshTokenStore(DbContext context) : IRefreshTok
         return affected == 1;
     }
 
+    public async Task<bool> TryRotateAsync(Guid currentTokenId, RefreshToken replacement, DateTime now,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(replacement);
+        // UPDATE giữ khóa dòng tới khi commit: request khác cùng token phải chờ, rồi thấy 0 dòng và thu hồi
+        // toàn bộ phiên sau khi token mới đã được commit, nên token mới không thể lọt qua bước thu hồi đó.
+        await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+        if (!await TryRevokeAsync(currentTokenId, now, cancellationToken))
+        {
+            return false;
+        }
+
+        context.Set<RefreshToken>().Add(replacement);
+        await context.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+        return true;
+    }
+
     public async Task RevokeTokenAsync(string tokenHash, DateTime revokedAt, CancellationToken cancellationToken = default)
     {
         var token = await context.Set<RefreshToken>()
@@ -47,18 +65,9 @@ internal sealed class PostgresRefreshTokenStore(DbContext context) : IRefreshTok
 
     public async Task RevokeAllForUserAsync(string userId, DateTime revokedAt, CancellationToken cancellationToken = default)
     {
-        var activeTokens = await context.Set<RefreshToken>()
+        // Một câu UPDATE: thu hồi cả token được commit ngay trước đó, không đọc rồi ghi.
+        await context.Set<RefreshToken>()
             .Where(r => r.UserId == userId && r.RevokedAt == null)
-            .ToListAsync(cancellationToken);
-
-        foreach (var t in activeTokens)
-        {
-            t.Revoke(revokedAt);
-        }
-
-        if (activeTokens.Count > 0)
-        {
-            await context.SaveChangesAsync(cancellationToken);
-        }
+            .ExecuteUpdateAsync(setters => setters.SetProperty(r => r.RevokedAt, revokedAt), cancellationToken);
     }
 }

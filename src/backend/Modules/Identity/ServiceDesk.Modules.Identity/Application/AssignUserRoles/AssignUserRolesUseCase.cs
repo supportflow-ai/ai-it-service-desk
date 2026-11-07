@@ -17,7 +17,6 @@ public interface IAssignUserRoles
 /// </summary>
 internal sealed class AssignUserRolesUseCase(
     IUserAccountGateway accounts,
-    IRefreshTokenStore refreshTokens,
     ICurrentUser currentUser,
     IClock clock) : IAssignUserRoles
 {
@@ -47,12 +46,7 @@ internal sealed class AssignUserRolesUseCase(
             }
         }
 
-        var result = await accounts.AssignRolesAsync(targetUserId.ToString(), request.Roles, cancellationToken);
-        if (result.Succeeded)
-        {
-            await refreshTokens.RevokeAllForUserAsync(targetUserId.ToString(), clock.UtcNow.UtcDateTime, cancellationToken);
-        }
-
-        return result;
+        // Gateway đổi vai trò và thu hồi refresh token trong cùng một giao dịch.
+        return await accounts.AssignRolesAsync(targetUserId.ToString(), request.Roles, clock.UtcNow.UtcDateTime, cancellationToken);
     }
 }

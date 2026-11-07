@@ -1,4 +1,7 @@
+using System.Net;
+using System.Net.Http.Json;
 using System.Security.Cryptography;
+using System.Text.Json;
 using System.Text;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -150,7 +153,7 @@ public sealed class IdentityHardeningPostgresTests(ServiceDeskWebApplicationFact
         await using (var scope = factory.Services.CreateAsyncScope())
         {
             var result = await scope.ServiceProvider.GetRequiredService<IUserAccountGateway>()
-                .AssignRolesAsync(lastAdminId, [RoleNames.Requester], default);
+                .AssignRolesAsync(lastAdminId, [RoleNames.Requester], DateTime.UtcNow, default);
             Assert.False(result.Succeeded);
         }
 
@@ -196,5 +199,121 @@ public sealed class IdentityHardeningPostgresTests(ServiceDeskWebApplicationFact
         Assert.False(await directory.IsInAnyRoleAsync(Guid.NewGuid(), [RoleNames.Requester]));
         Assert.Equal("Người Yêu Cầu B", await directory.FindDisplayNameAsync(userId));
         Assert.Null(await directory.FindDisplayNameAsync(Guid.NewGuid()));
+    }
+
+    private async Task<string> LoginForRefreshTokenAsync(HttpClient client, string email, string password = Password)
+    {
+        var response = await client.PostAsJsonAsync("/api/auth/login", new { email, password });
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        return body.RootElement.GetProperty("refreshToken").GetString()!;
+    }
+
+    private async Task<int> ActiveRefreshTokensAsync(string userId)
+    {
+        await using var scope = factory.Services.CreateAsyncScope();
+        return await scope.ServiceProvider.GetRequiredService<ApplicationDbContext>().RefreshTokens
+            .CountAsync(r => r.UserId == userId && r.RevokedAt == null);
+    }
+
+    [Fact]
+    public async Task ParallelRefreshWithOneTokenLeavesNoUsableSessionThroughTheEndpoint()
+    {
+        var email = await CreateUserAsync("refresh-race");
+        var userId = await UserIdAsync(email);
+        using var client = factory.CreateClient();
+        var refreshToken = await LoginForRefreshTokenAsync(client, email);
+
+        var responses = await Task.WhenAll(Enumerable.Range(0, 8).Select(_ =>
+            client.PostAsJsonAsync("/api/auth/refresh", new { refreshToken })));
+
+        // Tối đa một request nhận token mới, nhưng các request thua đều thu hồi toàn bộ phiên sau khi token đó
+        // đã được lưu, nên không còn refresh token nào dùng được.
+        Assert.True(responses.Count(r => r.StatusCode == HttpStatusCode.OK) <= 1);
+        Assert.All(responses, r => Assert.Contains(r.StatusCode, new[] { HttpStatusCode.OK, HttpStatusCode.Unauthorized }));
+        Assert.Equal(0, await ActiveRefreshTokensAsync(userId));
+    }
+
+    [Fact]
+    public async Task ReplayingARotatedTokenRevokesTheReplacementToo()
+    {
+        var email = await CreateUserAsync("refresh-replay");
+        using var client = factory.CreateClient();
+        var first = await LoginForRefreshTokenAsync(client, email);
+
+        var rotated = await client.PostAsJsonAsync("/api/auth/refresh", new { refreshToken = first });
+        Assert.Equal(HttpStatusCode.OK, rotated.StatusCode);
+        using var body = JsonDocument.Parse(await rotated.Content.ReadAsStringAsync());
+        var second = body.RootElement.GetProperty("refreshToken").GetString()!;
+
+        Assert.Equal(HttpStatusCode.Unauthorized, (await client.PostAsJsonAsync("/api/auth/refresh", new { refreshToken = first })).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await client.PostAsJsonAsync("/api/auth/refresh", new { refreshToken = second })).StatusCode);
+    }
+
+    [Fact]
+    public async Task ConcurrentRemovalOfTheLastTwoAdministratorsKeepsOne()
+    {
+        string[] adminIds;
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            var users = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+            var created = new List<string>();
+            foreach (var prefix in new[] { "admin-race-a", "admin-race-b" })
+            {
+                var admin = (await users.FindByEmailAsync(await CreateUserAsync(prefix)))!;
+                Assert.True((await users.AddToRoleAsync(admin, RoleNames.Admin)).Succeeded);
+                created.Add(admin.Id);
+            }
+            foreach (var other in (await users.GetUsersInRoleAsync(RoleNames.Admin)).Where(u => !created.Contains(u.Id)).ToArray())
+                Assert.True((await users.RemoveFromRoleAsync(other, RoleNames.Admin)).Succeeded);
+            adminIds = created.ToArray();
+        }
+
+        async Task<bool> DemoteAsync(string userId)
+        {
+            await using var scope = factory.Services.CreateAsyncScope();
+            var result = await scope.ServiceProvider.GetRequiredService<IUserAccountGateway>()
+                .AssignRolesAsync(userId, [RoleNames.Requester], DateTime.UtcNow, default);
+            return result.Succeeded;
+        }
+
+        var outcomes = await Task.WhenAll(adminIds.Select(DemoteAsync));
+
+        Assert.Single(outcomes, succeeded => succeeded);
+        await using var verify = factory.Services.CreateAsyncScope();
+        var remaining = await verify.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>().GetUsersInRoleAsync(RoleNames.Admin);
+        Assert.Single(remaining);
+    }
+
+    [Fact]
+    public async Task RoleChangeAndPasswordChangeRevokeSessionsInTheSameTransaction()
+    {
+        var email = await CreateUserAsync("revoke-on-change");
+        var userId = await UserIdAsync(email);
+        using var client = factory.CreateClient();
+        await LoginForRefreshTokenAsync(client, email);
+        Assert.Equal(1, await ActiveRefreshTokensAsync(userId));
+
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            var accounts = scope.ServiceProvider.GetRequiredService<IUserAccountGateway>();
+            Assert.True((await accounts.AssignRolesAsync(userId, [RoleNames.Agent], DateTime.UtcNow, default)).Succeeded);
+        }
+        Assert.Equal(0, await ActiveRefreshTokensAsync(userId));
+
+        await LoginForRefreshTokenAsync(client, email);
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            var accounts = scope.ServiceProvider.GetRequiredService<IUserAccountGateway>();
+            Assert.False((await accounts.ChangePasswordAsync(userId, "Wrong@1234", "Changed@1234", DateTime.UtcNow, default)).Succeeded);
+        }
+        Assert.Equal(1, await ActiveRefreshTokensAsync(userId));
+
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            var accounts = scope.ServiceProvider.GetRequiredService<IUserAccountGateway>();
+            Assert.True((await accounts.ChangePasswordAsync(userId, Password, "Changed@1234", DateTime.UtcNow, default)).Succeeded);
+        }
+        Assert.Equal(0, await ActiveRefreshTokensAsync(userId));
     }
 }

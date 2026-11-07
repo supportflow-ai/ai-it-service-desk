@@ -25,12 +25,21 @@ public interface IUserAccountGateway
     /// <summary>Lấy danh sách người dùng theo vai trò cụ thể.</summary>
     Task<IReadOnlyList<UserInfo>> GetUsersInRoleAsync(string roleName, CancellationToken cancellationToken);
 
-    /// <summary>Đổi mật khẩu người dùng.</summary>
-    Task<IdentityOperationResult> ChangePasswordAsync(string userId, string currentPassword, string newPassword, CancellationToken cancellationToken);
+    /// <summary>
+    /// Đổi mật khẩu và, trong cùng giao dịch, thu hồi mọi refresh token của người dùng tại <paramref name="revokeSessionsAt"/>.
+    /// Lỗi ở bước nào thì không bước nào được ghi.
+    /// </summary>
+    Task<IdentityOperationResult> ChangePasswordAsync(string userId, string currentPassword, string newPassword, DateTime revokeSessionsAt,
+        CancellationToken cancellationToken);
 
-    /// <summary>Đặt lại mật khẩu người dùng (sau khi đã xác thực OTP thành công).</summary>
+    /// <summary>Email đã có tài khoản hay chưa.</summary>
     Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken);
 
-    /// <summary>Gán danh sách vai trò cho người dùng (Admin).</summary>
-    Task<IdentityOperationResult> AssignRolesAsync(string userId, IReadOnlyList<string> roles, CancellationToken cancellationToken);
+    /// <summary>
+    /// Thay toàn bộ vai trò và, trong cùng giao dịch, thu hồi mọi refresh token của người dùng tại <paramref name="revokeSessionsAt"/>.
+    /// Từ chối khi thao tác gỡ vai trò Admin của quản trị viên cuối cùng; các thao tác đổi Admin chạy tuần tự nên
+    /// hai yêu cầu đồng thời không thể cùng gỡ hai Admin cuối.
+    /// </summary>
+    Task<IdentityOperationResult> AssignRolesAsync(string userId, IReadOnlyList<string> roles, DateTime revokeSessionsAt,
+        CancellationToken cancellationToken);
 }

@@ -52,7 +52,7 @@ public sealed class ExtendedIdentityUseCaseTests
         var user = new UserInfo { UserId = userId, Email = "user@test.com", Roles = [RoleNames.Requester] };
         var stored = StoredToken(userId);
         _refreshTokens.Setup(r => r.FindByHashAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(stored);
-        _refreshTokens.Setup(r => r.TryRevokeAsync(stored.Id, _now.UtcDateTime, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        _refreshTokens.Setup(r => r.TryRotateAsync(stored.Id, It.IsAny<RefreshToken>(), _now.UtcDateTime, It.IsAny<CancellationToken>())).ReturnsAsync(true);
         _accounts.Setup(a => a.FindByIdAsync(userId, It.IsAny<CancellationToken>())).ReturnsAsync(user);
         _tokens.Setup(t => t.GenerateToken(user)).Returns("new-jwt-token");
 
@@ -61,9 +61,9 @@ public sealed class ExtendedIdentityUseCaseTests
         Assert.True(result.Succeeded);
         Assert.Equal("new-jwt-token", result.Token);
         Assert.False(string.IsNullOrWhiteSpace(result.RefreshToken));
-        _refreshTokens.Verify(r => r.TryRevokeAsync(stored.Id, _now.UtcDateTime, It.IsAny<CancellationToken>()), Times.Once);
-        _refreshTokens.Verify(r => r.SaveTokenAsync(It.Is<RefreshToken>(t => t.UserId == userId && t.ExpiresAt == _now.UtcDateTime.AddDays(7)),
-            It.IsAny<CancellationToken>()), Times.Once);
+        _refreshTokens.Verify(r => r.TryRotateAsync(stored.Id, It.Is<RefreshToken>(t => t.UserId == userId && t.ExpiresAt == _now.UtcDateTime.AddDays(7)),
+            _now.UtcDateTime, It.IsAny<CancellationToken>()), Times.Once);
+        _refreshTokens.Verify(r => r.SaveTokenAsync(It.IsAny<RefreshToken>(), It.IsAny<CancellationToken>()), Times.Never);
         _refreshTokens.Verify(r => r.RevokeAllForUserAsync(It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -98,7 +98,7 @@ public sealed class ExtendedIdentityUseCaseTests
         var userId = Guid.NewGuid().ToString();
         var stored = StoredToken(userId);
         _refreshTokens.Setup(r => r.FindByHashAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(stored);
-        _refreshTokens.Setup(r => r.TryRevokeAsync(stored.Id, _now.UtcDateTime, It.IsAny<CancellationToken>())).ReturnsAsync(false);
+        _refreshTokens.Setup(r => r.TryRotateAsync(stored.Id, It.IsAny<RefreshToken>(), _now.UtcDateTime, It.IsAny<CancellationToken>())).ReturnsAsync(false);
         _accounts.Setup(a => a.FindByIdAsync(userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new UserInfo { UserId = userId, Email = "user@test.com", Roles = [RoleNames.Requester] });
 
@@ -119,7 +119,7 @@ public sealed class ExtendedIdentityUseCaseTests
         var result = await Refresh().ExecuteAsync(new RefreshAuthRequest("expired-token"));
 
         Assert.False(result.Succeeded);
-        _refreshTokens.Verify(r => r.TryRevokeAsync(It.IsAny<Guid>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Never);
+        _refreshTokens.Verify(r => r.TryRotateAsync(It.IsAny<Guid>(), It.IsAny<RefreshToken>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -148,36 +148,36 @@ public sealed class ExtendedIdentityUseCaseTests
         Assert.Equal("IT", result[0].Code);
     }
 
-    private ChangePasswordUseCase ChangePassword() => new(_accounts.Object, _refreshTokens.Object, _currentUser.Object, _clock.Object);
+    private ChangePasswordUseCase ChangePassword() => new(_accounts.Object, _currentUser.Object, _clock.Object);
 
     [Fact]
-    public async Task ChangePassword_WhenSucceeded_RevokesAllRefreshTokens()
+    public async Task ChangePassword_PassesClockTimeSoGatewayRevokesSessionsInSameTransaction()
     {
         var userId = Guid.NewGuid();
         _currentUser.SetupGet(u => u.IsAuthenticated).Returns(true);
         _currentUser.SetupGet(u => u.UserId).Returns(userId.ToString());
-        _accounts.Setup(a => a.ChangePasswordAsync(userId.ToString(), "oldpass", "newpass", It.IsAny<CancellationToken>()))
+        _accounts.Setup(a => a.ChangePasswordAsync(userId.ToString(), "oldpass", "newpass", _now.UtcDateTime, It.IsAny<CancellationToken>()))
             .ReturnsAsync(IdentityOperationResult.Success());
 
         var result = await ChangePassword().ExecuteAsync(new ChangePasswordRequest("oldpass", "newpass"));
 
         Assert.True(result.Succeeded);
-        _refreshTokens.Verify(r => r.RevokeAllForUserAsync(userId.ToString(), _now.UtcDateTime, It.IsAny<CancellationToken>()), Times.Once);
+        _accounts.Verify(a => a.ChangePasswordAsync(userId.ToString(), "oldpass", "newpass", _now.UtcDateTime, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
-    public async Task ChangePassword_WhenFailed_KeepsSessions()
+    public async Task ChangePassword_WhenGatewayFails_ReturnsItsErrors()
     {
         var userId = Guid.NewGuid();
         _currentUser.SetupGet(u => u.IsAuthenticated).Returns(true);
         _currentUser.SetupGet(u => u.UserId).Returns(userId.ToString());
-        _accounts.Setup(a => a.ChangePasswordAsync(userId.ToString(), "wrong", "newpass", It.IsAny<CancellationToken>()))
+        _accounts.Setup(a => a.ChangePasswordAsync(userId.ToString(), "wrong", "newpass", It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(IdentityOperationResult.Failed("Incorrect password."));
 
         var result = await ChangePassword().ExecuteAsync(new ChangePasswordRequest("wrong", "newpass"));
 
         Assert.False(result.Succeeded);
-        _refreshTokens.Verify(r => r.RevokeAllForUserAsync(It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Never);
+        Assert.Equal("Incorrect password.", Assert.Single(result.Errors));
     }
 
     private ForgotPasswordUseCase ForgotPassword() => new(_accounts.Object, _otpStore.Object, _otpSender.Object, _clock.Object);
@@ -249,7 +249,7 @@ public sealed class ExtendedIdentityUseCaseTests
         _passwordReset.Verify(g => g.ResetWithOtpAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
-    private AssignUserRolesUseCase AssignRoles() => new(_accounts.Object, _refreshTokens.Object, _currentUser.Object, _clock.Object);
+    private AssignUserRolesUseCase AssignRoles() => new(_accounts.Object, _currentUser.Object, _clock.Object);
 
     [Fact]
     public async Task AssignUserRoles_WhenNotAdmin_ThrowsUnauthorizedAccessException()
@@ -261,31 +261,31 @@ public sealed class ExtendedIdentityUseCaseTests
     }
 
     [Fact]
-    public async Task AssignUserRoles_WhenAdminWithValidRoles_CallsGatewayAndRevokesTargetSessions()
+    public async Task AssignUserRoles_WhenAdminWithValidRoles_CallsGatewayWithClockTime()
     {
         var targetId = Guid.NewGuid();
         _currentUser.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(true);
-        _accounts.Setup(a => a.AssignRolesAsync(targetId.ToString(), It.IsAny<IReadOnlyList<string>>(), It.IsAny<CancellationToken>()))
+        _accounts.Setup(a => a.AssignRolesAsync(targetId.ToString(), It.IsAny<IReadOnlyList<string>>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(IdentityOperationResult.Success());
 
         var result = await AssignRoles().ExecuteAsync(targetId, new AssignRolesRequest([RoleNames.Agent, RoleNames.Requester]));
 
         Assert.True(result.Succeeded);
-        _accounts.Verify(a => a.AssignRolesAsync(targetId.ToString(), It.Is<IReadOnlyList<string>>(r => r.Contains(RoleNames.Agent)), It.IsAny<CancellationToken>()), Times.Once);
-        _refreshTokens.Verify(r => r.RevokeAllForUserAsync(targetId.ToString(), _now.UtcDateTime, It.IsAny<CancellationToken>()), Times.Once);
+        _accounts.Verify(a => a.AssignRolesAsync(targetId.ToString(), It.Is<IReadOnlyList<string>>(r => r.Contains(RoleNames.Agent)),
+            _now.UtcDateTime, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
-    public async Task AssignUserRoles_WhenGatewayRejects_KeepsSessions()
+    public async Task AssignUserRoles_WhenGatewayRejects_ReturnsItsError()
     {
         var targetId = Guid.NewGuid();
         _currentUser.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(true);
-        _accounts.Setup(a => a.AssignRolesAsync(targetId.ToString(), It.IsAny<IReadOnlyList<string>>(), It.IsAny<CancellationToken>()))
+        _accounts.Setup(a => a.AssignRolesAsync(targetId.ToString(), It.IsAny<IReadOnlyList<string>>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(IdentityOperationResult.Failed("Không thể gỡ vai trò Admin của quản trị viên cuối cùng."));
 
         var result = await AssignRoles().ExecuteAsync(targetId, new AssignRolesRequest([RoleNames.Requester]));
 
         Assert.False(result.Succeeded);
-        _refreshTokens.Verify(r => r.RevokeAllForUserAsync(It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Never);
+        Assert.Equal("Không thể gỡ vai trò Admin của quản trị viên cuối cùng.", Assert.Single(result.Errors));
     }
 }
