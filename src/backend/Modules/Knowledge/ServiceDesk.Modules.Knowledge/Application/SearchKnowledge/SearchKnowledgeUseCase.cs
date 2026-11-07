@@ -17,6 +17,12 @@ internal sealed class SearchKnowledgeUseCase(
 
         var page = Math.Max(1, query.Page);
         var pageSize = Math.Clamp(query.PageSize, 1, 100);
+        // Cùng hợp đồng với Ticketing: vị trí bắt đầu (page - 1) * pageSize phải vừa kiểu int, nếu không trả 400
+        // thay vì để phép nhân tràn số thành một offset nhỏ và trả nhầm trang đầu.
+        if (((long)page - 1) * pageSize > int.MaxValue)
+        {
+            throw new ArgumentException("page quá lớn so với pageSize.");
+        }
 
         var scope = KnowledgePermissions.ReadScope(currentUser);
         return scope is KnowledgeReadScope.Public

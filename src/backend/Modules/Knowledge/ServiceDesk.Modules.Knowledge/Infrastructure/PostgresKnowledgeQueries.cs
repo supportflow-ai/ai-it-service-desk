@@ -62,7 +62,7 @@ internal sealed class PostgresKnowledgeQueries(DbContext context) : IKnowledgeQu
             queryable
                 .OrderByDescending(a => a.PublishedAt)
                 .ThenByDescending(a => a.CreatedAt)
-                .Skip((safePage - 1) * safePageSize)
+                .Skip(checked((safePage - 1) * safePageSize))
                 .Take(safePageSize))
             .ToListAsync(cancellationToken);
 
@@ -113,7 +113,7 @@ internal sealed class PostgresKnowledgeQueries(DbContext context) : IKnowledgeQu
             queryable
                 .OrderByDescending(a => a.UpdatedAt)
                 .ThenByDescending(a => a.CreatedAt)
-                .Skip((safePage - 1) * safePageSize)
+                .Skip(checked((safePage - 1) * safePageSize))
                 .Take(safePageSize))
             .ToListAsync(cancellationToken);
 

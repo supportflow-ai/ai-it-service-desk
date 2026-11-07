@@ -115,6 +115,31 @@ public sealed class SearchAndReadArticleUseCaseTests
     // SEARCH KNOWLEDGE
     // ==========================================
 
+    [Theory]
+    [InlineData(42949674, 100, false)]   // (page - 1) * pageSize tràn int thành 4 nếu nhân kiểu int
+    [InlineData(21474838, 100, false)]   // tràn thành số âm
+    [InlineData(int.MaxValue, 1, true)]  // offset int.MaxValue - 1 vẫn hợp lệ
+    [InlineData(21474837, 100, true)]    // offset 2.147.483.600, vừa kiểu int
+    public async Task SearchKnowledge_RejectsPagesWhoseOffsetOverflows(int page, int pageSize, bool accepted)
+    {
+        _user.Setup(u => u.IsInRole(It.IsAny<string>())).Returns(false);
+        _queries.Setup(q => q.SearchPublishedAsync(It.IsAny<string?>(), It.IsAny<string?>(), page, pageSize, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new PagedArticleResult([], page, pageSize, 0, 0));
+        var useCase = new SearchKnowledgeUseCase(_queries.Object, _user.Object);
+        var query = new SearchKnowledgeQuery(Page: page, PageSize: pageSize);
+
+        if (accepted)
+        {
+            await useCase.ExecuteAsync(query);
+            _queries.Verify(q => q.SearchPublishedAsync(It.IsAny<string?>(), It.IsAny<string?>(), page, pageSize, It.IsAny<CancellationToken>()), Times.Once);
+        }
+        else
+        {
+            await Assert.ThrowsAsync<ArgumentException>(() => useCase.ExecuteAsync(query));
+            _queries.VerifyNoOtherCalls();
+        }
+    }
+
     [Fact]
     public async Task SearchKnowledge_WhenRequesterSearches_CallsSearchPublishedAndIgnoresStatusFilter()
     {

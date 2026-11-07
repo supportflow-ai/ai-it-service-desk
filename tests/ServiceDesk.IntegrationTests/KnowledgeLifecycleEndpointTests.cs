@@ -22,6 +22,22 @@ public class KnowledgeLifecycleEndpointTests : IClassFixture<ServiceDeskWebAppli
         _client = factory.CreateClient();
     }
 
+    [Theory]
+    [InlineData("Requester")]
+    [InlineData("Agent")]
+    public async Task Search_WithPageWhoseOffsetOverflows_Returns400InsteadOfTheFirstPage(string role)
+    {
+        SetAuth(role == "Agent" ? await RegisterAndPromoteRoleAsync("Agent") : await RegisterAndGetTokenAsync());
+
+        // (42949674 - 1) * 100 tràn kiểu int thành 4: trước bản sửa, trang rất xa trả kết quả ở đầu danh sách.
+        var overflow = await _client.GetAsync("/api/knowledge/articles/search?page=42949674&pageSize=100");
+        var largest = await _client.GetAsync("/api/knowledge/articles/search?page=21474837&pageSize=100");
+
+        overflow.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        largest.StatusCode.Should().Be(HttpStatusCode.OK);
+        (await largest.Content.ReadFromJsonAsync<PagedArticleResult>())!.Items.Should().BeEmpty();
+    }
+
     [Fact]
     public async Task FullWorkflow_Draft_Publish_Search_Archive_EnforcesNegativeVisibility_And_RBAC()
     {

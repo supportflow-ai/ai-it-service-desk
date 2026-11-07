@@ -57,27 +57,29 @@ Sáu thao tác mới đều dùng POST. Chỉ `update` nhận nội dung JSON; c
 | Thao tác | Trạng thái trước | Trạng thái sau | Giới hạn hiện tại |
 | --- | --- | --- | --- |
 | Cập nhật | Submitted | Submitted | Quy tắc tiêu đề, mô tả và danh mục như khi tạo |
-| Nhận xử lý | Submitted | InProgress | Chưa lưu người phụ trách, nhóm hoặc lịch sử nhận xử lý |
+| Nhận xử lý | Submitted hoặc Assigned | InProgress | Agent hoặc Admin; lưu người phụ trách và ghi audit. Phiếu đã phân công cho người khác chỉ Admin nhận thay được. Chưa có nhóm |
 | Giải quyết | InProgress | Resolved | Chưa có nội dung giải quyết, thời điểm giải quyết riêng hoặc lịch sử nghiệp vụ |
 | Mở lại | Resolved | InProgress | Chưa có cửa sổ thời gian, kiểm tra người phụ trách hoặc tác vụ tự đóng |
 | Đóng | Resolved | Closed | Chưa có tác vụ đóng tự động |
 | Hủy | Submitted | Cancelled | Chưa nhận lý do hủy hoặc lưu lịch sử nghiệp vụ |
 
-Trạng thái khác bị Domain từ chối; Application chuyển lỗi trạng thái thành `ArgumentException`, bộ lọc HTTP hiện trả 400 với `{ error }`. Phiếu thiếu hoặc ngoài quyền chủ sở hữu của các lệnh `update/reopen/close/cancel` trả 404. Các lệnh mới chưa có cơ chế khóa chống tạo trùng hoặc phát lại phản hồi như thao tác tạo phiếu. Yêu cầu đã thực hiện thành công rồi gửi lại có thể nhận lỗi trạng thái.
+Mọi lệnh ghi phiếu (cập nhật, nhận xử lý, phân công, hủy phân công, giải quyết, mở lại, đóng, hủy) bắt buộc `expectedRevision`: thiếu hoặc bằng 0 trả 400, khác revision hiện tại (`xmin`) trả 409. Trạng thái khác bị Domain từ chối; `TicketCommandGuard` chuyển lỗi trạng thái thành `ArgumentException`, bộ lọc HTTP trả 400 với `{ error }`. Phiếu thiếu hoặc ngoài quyền chủ sở hữu của các lệnh `update/reopen/close/cancel` trả 404. Các lệnh mới chưa có cơ chế khóa chống tạo trùng hoặc phát lại phản hồi như thao tác tạo phiếu. Yêu cầu đã thực hiện thành công rồi gửi lại có thể nhận lỗi trạng thái.
 
 Nguồn được ghim: [các đường dẫn HTTP tại mốc đối chiếu](https://github.com/supportflow-ai/ai-it-service-desk/blob/47634bc8162c13bd6ae024233ec24a0076738c51/src/backend/ServiceDesk.Api/Endpoints/TicketEndpoints.cs), [quy tắc trên Ticket](https://github.com/supportflow-ai/ai-it-service-desk/blob/47634bc8162c13bd6ae024233ec24a0076738c51/src/backend/ServiceDesk.Domain/Ticketing/Ticket.cs), [các luồng Ticketing](https://github.com/supportflow-ai/ai-it-service-desk/tree/47634bc8162c13bd6ae024233ec24a0076738c51/src/backend/ServiceDesk.Application/Ticketing).
 
-## Các điểm chưa đạt cần xử lý
+## Các điểm đã xử lý sau refactor
 
-Các phát hiện dưới đây từ đối chiếu mã nguồn tại mốc ghi đầu tài liệu; chưa phải kết quả tái hiện HTTP mới trong đợt sửa tài liệu.
+Đối chiếu `dev@314f5b9`. Các vấn đề từng ghi ở mục này tại mốc PR #29 đã được sửa trong mã:
 
-| Vấn đề | Hành vi trong mã | Yêu cầu theo dõi |
-| --- | --- | --- |
-| Quyền nhận xử lý chưa thống nhất | `RequireAgent` ở HTTP nhận Agent hoặc Admin, nhưng `ClaimTicketUseCase` chỉ nhận Agent; Admin chỉ có vai trò Admin bị bộ lọc trả 401 | Chốt phạm vi vai trò theo DEC-02; kiểm thử Agent, Admin và người nhiều vai trò; sửa phản hồi từ chối theo chính sách được chọn |
-| Giải quyết tải tài nguyên trước kiểm tra vai trò | `ResolveTicketUseCase` tìm ID rồi mới kiểm tra Agent/Admin; Requester đã đăng nhập có thể nhận 404 khi thiếu phiếu và 401 khi phiếu tồn tại | Áp dụng thứ tự kiểm tra quyền và che giấu tài nguyên trong quy tắc bảo mật; bổ sung kiểm thử từ chối tương ứng |
-| Phản hồi ghi đồng thời chưa hoàn thiện | `xmin` là dấu phát hiện xung đột; bộ ghi mới chưa ánh xạ `DbUpdateConcurrencyException` thành lỗi nghiệp vụ ổn định | Kiểm thử hai yêu cầu cạnh tranh trên PostgreSQL thật; xử lý xung đột ở bộ tích hợp mà không đưa kiểu EF vào Application |
+| Vấn đề cũ | Hành vi hiện tại |
+| --- | --- |
+| Quyền nhận xử lý chưa thống nhất | `ClaimTicketUseCase` nhận Agent hoặc Admin, khớp chính sách `RequireAgent`; phiếu đã phân công cho người khác chỉ Admin nhận thay được (403 với người khác). |
+| Giải quyết tải phiếu trước khi kiểm vai trò | `ResolveTicketUseCase` kiểm Agent/Admin trước khi tải phiếu; Requester luôn nhận 403, không phân biệt được phiếu có tồn tại hay không. |
+| Ghi đồng thời chưa có phản hồi ổn định | Lệnh ghi kiểm `expectedRevision` với `xmin` trước khi lưu; `DbUpdateConcurrencyException` khi lưu được chuyển thành `ConcurrencyConflictException` và trả 409. |
+| Phân trang Knowledge tràn offset | `(page - 1) * pageSize` vượt `int` trả 400, cùng hợp đồng với danh sách phiếu (trước đây phép nhân tràn số và trả nhầm trang đầu). |
+| Bình luận/tệp ghi vào phiếu vừa đóng | Bình luận công khai và xác nhận tệp đọc lại trạng thái phiếu với `FOR SHARE` trong giao dịch ghi (`TicketRowLock`); người ngoài phạm vi nhận 404 trước khi xét trạng thái. |
 
-`GetForUpdateAsync` hiện dùng `SingleOrDefaultAsync`, không thực hiện `SELECT ... FOR UPDATE`. Không suy ra có khóa dòng từ tên phương thức hoặc coi CI cũ là bằng chứng đã kiểm tra các tình huống trên. Xem [quy tắc bảo mật](security-design-rules.md), [DEC-02/DEC-05](pending-business-decisions.md) và [hướng dẫn kiểm chứng](../runbooks/backend-hardening-verification.md).
+`GetForUpdateAsync` vẫn đọc phiếu bằng `SingleOrDefaultAsync` (không khóa dòng); xung đột được phát hiện bằng revision. Xem [quy tắc bảo mật](security-design-rules.md) và [hướng dẫn kiểm chứng](../runbooks/backend-hardening-verification.md).
 
 ## Dữ liệu phiếu và mã trạng thái
 
@@ -124,4 +126,4 @@ Bản chuẩn OpenAPI đã được đồng bộ trên mã sau PR #29: 16 đư�
 
 PR #29 cũng Việt hóa mô tả API và hướng dẫn Bearer trong Swagger, trong khi bản chuẩn vẫn giữ mô tả tiếng Anh. Kiểm thử hiện không so sánh toàn bộ phần `info`/mô tả bảo mật, nên việc CI đạt chưa chứng minh những phần mô tả này đã đồng bộ. Các điểm quyền nhận xử lý, thứ tự tải phiếu ở giải quyết và ghi đồng thời trong bảng trên vẫn còn tại mốc PR #29.
 
-Chưa có luồng Draft/Submit riêng, nhóm, SLA, AI thật hoặc thu hồi tức thời quyền trong JWT đã phát. Luồng tệp đính kèm dùng pre-signed PUT và quyền xác nhận một lần, gắn actor/ticket/tên/dung lượng/MIME/key/hết hạn; xác nhận đối chiếu metadata object từ MinIO. URL PUT còn hiệu lực vẫn có thể ghi đè object sau xác nhận; cần object versioning hoặc promote sang key bất biến để loại bỏ giới hạn này. FullName chưa có dữ liệu hồ sơ riêng được lưu. Các phần còn thiếu thuộc đợt phát triển được quyết định riêng.
+Chưa có luồng Draft/Submit riêng, nhóm, SLA, AI thật hoặc thu hồi tức thời quyền trong JWT đã phát. Luồng tệp đính kèm: xin quyền tải lên nhận form multipart POST đã ký (giới hạn 10 MiB, gắn actor/ticket/tên/dung lượng/MIME/key/hết hạn) → xác nhận đối chiếu metadata object, sao chép sang key cuối bất biến rồi mới ghi metadata vào DB → tải xuống bằng URL ký ngắn hạn. Grant PUT cũ còn hạn vẫn được xác nhận theo cùng cách (xem [runbook](../runbooks/supportflow-hardening-phase-2-6.md)). Còn mở: đối soát object mồ côi khi lưu trữ thành công nhưng kết quả giao dịch DB không xác định. FullName chưa có dữ liệu hồ sơ riêng được lưu. Các phần còn thiếu thuộc đợt phát triển được quyết định riêng.
