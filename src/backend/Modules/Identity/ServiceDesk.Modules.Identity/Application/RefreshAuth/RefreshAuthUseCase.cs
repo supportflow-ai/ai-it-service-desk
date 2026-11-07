@@ -58,15 +58,13 @@ internal sealed class RefreshAuthUseCase(
             return AuthResult.Failed("User account no longer exists.");
         }
 
-        if (!await refreshTokens.TryRevokeAsync(stored.Id, now, cancellationToken))
+        var (next, rawRefreshToken) = RefreshTokenIssuer.Issue(user.UserId, now, stored.DeviceInfo, stored.IpAddress);
+        if (!await refreshTokens.TryRotateAsync(stored.Id, next, now, cancellationToken))
         {
-            // Một request khác vừa dùng cùng token: không cấp thêm phiên.
+            // Một request khác vừa dùng cùng token: coi như bị lộ, thu hồi mọi phiên (kể cả token request kia vừa nhận).
             await refreshTokens.RevokeAllForUserAsync(stored.UserId, now, cancellationToken);
             return AuthResult.Failed(InvalidToken);
         }
-
-        var (next, rawRefreshToken) = RefreshTokenIssuer.Issue(user.UserId, now, stored.DeviceInfo, stored.IpAddress);
-        await refreshTokens.SaveTokenAsync(next, cancellationToken);
 
         return AuthResult.Success(tokens.GenerateToken(user), user, rawRefreshToken);
     }

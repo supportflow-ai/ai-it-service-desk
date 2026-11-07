@@ -13,7 +13,6 @@ public interface IChangePassword
 /// <summary>Đổi mật khẩu của người đang đăng nhập; thành công thì thu hồi mọi refresh token để đăng xuất các phiên khác.</summary>
 internal sealed class ChangePasswordUseCase(
     IUserAccountGateway accounts,
-    IRefreshTokenStore refreshTokens,
     ICurrentUser currentUser,
     IClock clock) : IChangePassword
 {
@@ -26,12 +25,8 @@ internal sealed class ChangePasswordUseCase(
             return IdentityOperationResult.Failed("Current password and new password are required.");
         }
 
-        var result = await accounts.ChangePasswordAsync(actorId.ToString(), request.CurrentPassword, request.NewPassword, cancellationToken);
-        if (result.Succeeded)
-        {
-            await refreshTokens.RevokeAllForUserAsync(actorId.ToString(), clock.UtcNow.UtcDateTime, cancellationToken);
-        }
-
-        return result;
+        // Gateway đổi mật khẩu và thu hồi refresh token trong cùng một giao dịch.
+        return await accounts.ChangePasswordAsync(actorId.ToString(), request.CurrentPassword, request.NewPassword,
+            clock.UtcNow.UtcDateTime, cancellationToken);
     }
 }

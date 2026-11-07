@@ -2,6 +2,7 @@ namespace ServiceDesk.Modules.Knowledge.Application.PublishArticle;
 
 using ServiceDesk.SharedKernel.Application;
 using ServiceDesk.SharedKernel.Application.Abstractions;
+using ServiceDesk.Modules.Knowledge.Application.Authorization;
 using ServiceDesk.Modules.Knowledge.Application.Contracts;
 using ServiceDesk.Modules.Knowledge.Application.Ports;
 using ServiceDesk.SharedKernel.Authorization;
@@ -15,7 +16,7 @@ internal sealed class PublishArticleUseCase(
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        if (!currentUser.IsInRole(RoleNames.Agent) && !currentUser.IsInRole(RoleNames.Admin))
+        if (!KnowledgePermissions.IsStaff(currentUser))
         {
             throw new UnauthorizedAccessException("Chỉ kỹ thuật viên hoặc quản trị viên mới có thể xuất bản bài viết.");
         }
@@ -27,7 +28,7 @@ internal sealed class PublishArticleUseCase(
         }
 
         var callerId = AuthenticatedActor.RequireId(currentUser);
-        if (!currentUser.IsInRole(RoleNames.Admin) && !article.IsAuthor(callerId))
+        if (!KnowledgePermissions.CanManage(article, callerId, currentUser))
         {
             throw new UnauthorizedAccessException("Chỉ tác giả hoặc quản trị viên mới có quyền xuất bản bài viết.");
         }

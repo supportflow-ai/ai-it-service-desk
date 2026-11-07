@@ -2,6 +2,7 @@ namespace ServiceDesk.Modules.Knowledge.Application.CreateDraftArticle;
 
 using ServiceDesk.SharedKernel.Application;
 using ServiceDesk.SharedKernel.Application.Abstractions;
+using ServiceDesk.Modules.Knowledge.Application.Authorization;
 using ServiceDesk.Modules.Knowledge.Application.Contracts;
 using ServiceDesk.Modules.Knowledge.Application.Ports;
 using ServiceDesk.SharedKernel.Authorization;
@@ -16,7 +17,7 @@ internal sealed class CreateDraftArticleUseCase(
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        if (!currentUser.IsInRole(RoleNames.Agent) && !currentUser.IsInRole(RoleNames.Admin))
+        if (!KnowledgePermissions.IsStaff(currentUser))
         {
             throw new UnauthorizedAccessException("Chỉ kỹ thuật viên hoặc quản trị viên mới có thể tạo bài viết nháp.");
         }

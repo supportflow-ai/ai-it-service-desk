@@ -15,20 +15,6 @@ internal sealed class GetArticleDetailUseCase(
     {
         ArgumentNullException.ThrowIfNull(query);
 
-        KnowledgeReadScope scope;
-        if (currentUser.IsInRole(RoleNames.Admin))
-        {
-            scope = new KnowledgeReadScope.Staff();
-        }
-        else if (currentUser.IsInRole(RoleNames.Agent))
-        {
-            scope = new KnowledgeReadScope.Author(AuthenticatedActor.RequireId(currentUser));
-        }
-        else
-        {
-            scope = new KnowledgeReadScope.Public();
-        }
-
-        return queries.GetByIdAsync(query.Id, scope, cancellationToken);
+        return queries.GetByIdAsync(query.Id, KnowledgePermissions.ReadScope(currentUser), cancellationToken);
     }
 }

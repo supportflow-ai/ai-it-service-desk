@@ -18,17 +18,9 @@ internal sealed class SearchKnowledgeUseCase(
         var page = Math.Max(1, query.Page);
         var pageSize = Math.Clamp(query.PageSize, 1, 100);
 
-        if (currentUser.IsInRole(RoleNames.Admin))
-        {
-            return queries.SearchStaffAsync(query.Query, query.Tag, query.Status, new KnowledgeReadScope.Staff(), page, pageSize, cancellationToken);
-        }
-
-        if (currentUser.IsInRole(RoleNames.Agent))
-        {
-            var authorId = AuthenticatedActor.RequireId(currentUser);
-            return queries.SearchStaffAsync(query.Query, query.Tag, query.Status, new KnowledgeReadScope.Author(authorId), page, pageSize, cancellationToken);
-        }
-
-        return queries.SearchPublishedAsync(query.Query, query.Tag, page, pageSize, cancellationToken);
+        var scope = KnowledgePermissions.ReadScope(currentUser);
+        return scope is KnowledgeReadScope.Public
+            ? queries.SearchPublishedAsync(query.Query, query.Tag, page, pageSize, cancellationToken)
+            : queries.SearchStaffAsync(query.Query, query.Tag, query.Status, scope, page, pageSize, cancellationToken);
     }
 }
