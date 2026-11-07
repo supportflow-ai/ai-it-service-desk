@@ -26,7 +26,7 @@ internal sealed class GetTicketDetailUseCase(ITicketQueries queries, ICurrentUse
     {
         var requester = TicketActor.RequireId(currentUser);
         ArgumentNullException.ThrowIfNull(query);
-        TicketReadScope scope = currentUser.IsInRole(RoleNames.Agent) || currentUser.IsInRole(RoleNames.Admin)
+        TicketReadScope scope = TicketPermissions.IsStaff(currentUser)
             ? new TicketReadScope.AllTickets() : new TicketReadScope.OwnTickets(requester);
         return queries.GetByIdAsync(query.Id, scope, cancellationToken);
     }

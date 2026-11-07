@@ -45,7 +45,7 @@ internal sealed class GenerateAttachmentUploadUrlUseCase(
         if (req.FileSizeBytes <= 0 || req.FileSizeBytes > MaxSizeBytes)
             throw new ArgumentException("File size must be between 1 byte and 10MB.");
 
-        var isStaff = currentUser.IsInRole(RoleNames.Agent) || currentUser.IsInRole(RoleNames.Admin);
+        var isStaff = TicketPermissions.IsStaff(currentUser);
         var scope = isStaff ? (TicketReadScope)new TicketReadScope.AllTickets() : new TicketReadScope.OwnTickets(actorId);
 
         var ticket = await ticketQueries.GetByIdAsync(command.TicketId, scope, cancellationToken);

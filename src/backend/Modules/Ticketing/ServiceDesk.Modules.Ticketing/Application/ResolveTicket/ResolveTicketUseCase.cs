@@ -1,6 +1,7 @@
 using ServiceDesk.SharedKernel.Application;
 using ServiceDesk.SharedKernel.Application.Abstractions;
 using ServiceDesk.Modules.Ticketing.Application.Authorization;
+using ServiceDesk.Modules.Ticketing.Application.Common;
 using ServiceDesk.Modules.Ticketing.Application.Contracts;
 using ServiceDesk.Modules.Ticketing.Application.Ports;
 using ServiceDesk.SharedKernel.Authorization;
@@ -32,7 +33,7 @@ internal sealed class ResolveTicketUseCase(
     {
         var actorId = TicketActor.RequireId(currentUser);
         ArgumentNullException.ThrowIfNull(command);
-        var isStaff = currentUser.IsInRole(RoleNames.Agent) || currentUser.IsInRole(RoleNames.Admin);
+        var isStaff = TicketPermissions.IsStaff(currentUser);
         if (!isStaff)
         {
             throw new UnauthorizedAccessException("Only an agent or admin can resolve this ticket.");
@@ -44,28 +45,11 @@ internal sealed class ResolveTicketUseCase(
             throw new KeyNotFoundException("Ticket not found.");
         }
 
-        if (!command.ExpectedRevision.HasValue || command.ExpectedRevision.Value == 0)
-        {
-            throw new ArgumentException("Expected revision is required.");
-        }
-
-        var currentRev = writer.GetRevision(ticket);
-        if (currentRev != command.ExpectedRevision.Value)
-        {
-            throw new ConcurrencyConflictException("Dữ liệu đã bị thay đổi bởi người khác hoặc phiên làm việc đã cũ. Vui lòng tải lại trang.");
-        }
+        TicketCommandGuard.RequireCurrentRevision(writer, ticket, command.ExpectedRevision);
 
         var now = clock.UtcNow.UtcDateTime;
-        try
-        {
-            ticket.Resolve(now);
-        }
-        catch (InvalidOperationException ex)
-        {
-            throw new ArgumentException(ex.Message);
-        }
+        TicketCommandGuard.ApplyRule(ticket, t => t.Resolve(now));
 
-        var audit = TicketComment.CreatePublic(ticket.Id, actorId, "Hệ thống", "System", "Yêu cầu đã được đánh dấu giải quyết xong.", now);
-        return await writer.UpdateTicketWithAuditAsync(ticket, audit, cancellationToken);
+        return await TicketCommandGuard.SaveWithSystemAuditAsync(writer, ticket, actorId, "Yêu cầu đã được đánh dấu giải quyết xong.", now, cancellationToken);
     }
 }

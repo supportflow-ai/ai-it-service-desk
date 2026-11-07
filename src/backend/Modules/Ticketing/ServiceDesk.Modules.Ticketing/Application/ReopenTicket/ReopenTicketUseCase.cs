@@ -1,6 +1,7 @@
 using ServiceDesk.SharedKernel.Application;
 using ServiceDesk.SharedKernel.Application.Abstractions;
 using ServiceDesk.Modules.Ticketing.Application.Authorization;
+using ServiceDesk.Modules.Ticketing.Application.Common;
 using ServiceDesk.Modules.Ticketing.Application.Contracts;
 using ServiceDesk.Modules.Ticketing.Application.Ports;
 using ServiceDesk.SharedKernel.Authorization;
@@ -34,33 +35,16 @@ internal sealed class ReopenTicketUseCase(
         ArgumentNullException.ThrowIfNull(command);
 
         var ticket = await writer.GetForUpdateAsync(command.Id, cancellationToken);
-        if (ticket == null || (!ticket.IsOwnedBy(actorId) && !currentUser.IsInRole(RoleNames.Admin)))
+        if (ticket == null || !TicketPermissions.CanActAsOwner(ticket, actorId, currentUser))
         {
             throw new KeyNotFoundException("Ticket not found or outside access scope.");
         }
 
-        if (!command.ExpectedRevision.HasValue || command.ExpectedRevision.Value == 0)
-        {
-            throw new ArgumentException("Expected revision is required.");
-        }
-
-        var currentRev = writer.GetRevision(ticket);
-        if (currentRev != command.ExpectedRevision.Value)
-        {
-            throw new ConcurrencyConflictException("Dữ liệu đã bị thay đổi bởi người khác hoặc phiên làm việc đã cũ. Vui lòng tải lại trang.");
-        }
+        TicketCommandGuard.RequireCurrentRevision(writer, ticket, command.ExpectedRevision);
 
         var now = clock.UtcNow.UtcDateTime;
-        try
-        {
-            ticket.Reopen(now);
-        }
-        catch (InvalidOperationException ex)
-        {
-            throw new ArgumentException(ex.Message);
-        }
+        TicketCommandGuard.ApplyRule(ticket, t => t.Reopen(now));
 
-        var audit = TicketComment.CreatePublic(ticket.Id, actorId, "Hệ thống", "System", "Người dùng đã mở lại yêu cầu.", now);
-        return await writer.UpdateTicketWithAuditAsync(ticket, audit, cancellationToken);
+        return await TicketCommandGuard.SaveWithSystemAuditAsync(writer, ticket, actorId, "Người dùng đã mở lại yêu cầu.", now, cancellationToken);
     }
 }

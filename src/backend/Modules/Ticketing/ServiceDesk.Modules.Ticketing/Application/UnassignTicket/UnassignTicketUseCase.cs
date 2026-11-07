@@ -1,6 +1,7 @@
 using ServiceDesk.SharedKernel.Application;
 using ServiceDesk.SharedKernel.Application.Abstractions;
 using ServiceDesk.Modules.Ticketing.Application.Authorization;
+using ServiceDesk.Modules.Ticketing.Application.Common;
 using ServiceDesk.Modules.Ticketing.Application.Contracts;
 using ServiceDesk.Modules.Ticketing.Application.Ports;
 using ServiceDesk.SharedKernel.Authorization;
@@ -25,7 +26,7 @@ internal sealed class UnassignTicketUseCase(
     public async Task<TicketDto> ExecuteAsync(UnassignTicketCommand command, CancellationToken cancellationToken = default)
     {
         var actorId = TicketActor.RequireId(currentUser);
-        var isStaff = currentUser.IsInRole(RoleNames.Agent) || currentUser.IsInRole(RoleNames.Admin);
+        var isStaff = TicketPermissions.IsStaff(currentUser);
         if (!isStaff)
         {
             throw new UnauthorizedAccessException("Only agents or admins can unassign tickets.");
@@ -39,28 +40,11 @@ internal sealed class UnassignTicketUseCase(
             throw new KeyNotFoundException("Ticket not found.");
         }
 
-        if (!command.ExpectedRevision.HasValue || command.ExpectedRevision.Value == 0)
-        {
-            throw new ArgumentException("Expected revision is required.");
-        }
-
-        var currentRev = writer.GetRevision(ticket);
-        if (currentRev != command.ExpectedRevision.Value)
-        {
-            throw new ConcurrencyConflictException("Dữ liệu đã bị thay đổi bởi người khác hoặc phiên làm việc đã cũ. Vui lòng tải lại trang.");
-        }
+        TicketCommandGuard.RequireCurrentRevision(writer, ticket, command.ExpectedRevision);
 
         var now = clock.UtcNow.UtcDateTime;
-        try
-        {
-            ticket.Unassign(now);
-        }
-        catch (InvalidOperationException ex)
-        {
-            throw new ArgumentException(ex.Message);
-        }
+        TicketCommandGuard.ApplyRule(ticket, t => t.Unassign(now));
 
-        var audit = TicketComment.CreatePublic(ticket.Id, actorId, "Hệ thống", "System", "Yêu cầu đã được hủy phân công xử lý.", now);
-        return await writer.UpdateTicketWithAuditAsync(ticket, audit, cancellationToken);
+        return await TicketCommandGuard.SaveWithSystemAuditAsync(writer, ticket, actorId, "Yêu cầu đã được hủy phân công xử lý.", now, cancellationToken);
     }
 }

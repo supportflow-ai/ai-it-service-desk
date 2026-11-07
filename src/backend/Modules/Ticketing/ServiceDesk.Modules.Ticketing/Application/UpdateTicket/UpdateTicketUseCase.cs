@@ -1,6 +1,7 @@
 using ServiceDesk.SharedKernel.Application;
 using ServiceDesk.SharedKernel.Application.Abstractions;
 using ServiceDesk.Modules.Ticketing.Application.Authorization;
+using ServiceDesk.Modules.Ticketing.Application.Common;
 using ServiceDesk.Modules.Ticketing.Application.Contracts;
 using ServiceDesk.Modules.Ticketing.Application.Ports;
 using ServiceDesk.SharedKernel.Authorization;
@@ -30,30 +31,14 @@ internal sealed class UpdateTicketUseCase(ITicketWriter writer, ICurrentUser cur
         ArgumentNullException.ThrowIfNull(command);
 
         var ticket = await writer.GetForUpdateAsync(command.Id, cancellationToken);
-        if (ticket == null || (!ticket.IsOwnedBy(actorId) && !currentUser.IsInRole(RoleNames.Admin)))
+        if (ticket == null || !TicketPermissions.CanActAsOwner(ticket, actorId, currentUser))
         {
             throw new KeyNotFoundException("Ticket not found or outside access scope.");
         }
 
-        if (!command.ExpectedRevision.HasValue || command.ExpectedRevision.Value == 0)
-        {
-            throw new ArgumentException("Expected revision is required.");
-        }
+        TicketCommandGuard.RequireCurrentRevision(writer, ticket, command.ExpectedRevision);
 
-        var currentRev = writer.GetRevision(ticket);
-        if (currentRev != command.ExpectedRevision.Value)
-        {
-            throw new ConcurrencyConflictException("Dữ liệu đã bị thay đổi bởi người khác hoặc phiên làm việc đã cũ. Vui lòng tải lại trang.");
-        }
-
-        try
-        {
-            ticket.Update(command.Title, command.Description, command.CategoryId, clock.UtcNow.UtcDateTime);
-        }
-        catch (InvalidOperationException ex)
-        {
-            throw new ArgumentException(ex.Message);
-        }
+        TicketCommandGuard.ApplyRule(ticket, t => t.Update(command.Title, command.Description, command.CategoryId, clock.UtcNow.UtcDateTime));
 
         return await writer.UpdateTicketAsync(ticket, cancellationToken);
     }

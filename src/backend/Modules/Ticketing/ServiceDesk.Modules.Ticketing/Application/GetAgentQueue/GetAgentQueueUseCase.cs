@@ -28,7 +28,7 @@ internal sealed class GetAgentQueueUseCase(ITicketQueries queries, ICurrentUser 
         var actorId = TicketActor.RequireId(currentUser);
         ArgumentNullException.ThrowIfNull(query);
 
-        var isStaff = currentUser.IsInRole(RoleNames.Agent) || currentUser.IsInRole(RoleNames.Admin);
+        var isStaff = TicketPermissions.IsStaff(currentUser);
         if (!isStaff)
         {
             throw new UnauthorizedAccessException("Only agents or admins can access the agent queue.");

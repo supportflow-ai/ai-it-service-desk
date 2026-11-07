@@ -26,7 +26,7 @@ internal sealed class AddInternalNoteUseCase(
         var actorId = TicketActor.RequireId(currentUser);
         ArgumentNullException.ThrowIfNull(command);
 
-        var isStaff = currentUser.IsInRole(RoleNames.Agent) || currentUser.IsInRole(RoleNames.Admin);
+        var isStaff = TicketPermissions.IsStaff(currentUser);
         if (!isStaff)
         {
             throw new UnauthorizedAccessException("Requester không có quyền tạo ghi chú nội bộ.");

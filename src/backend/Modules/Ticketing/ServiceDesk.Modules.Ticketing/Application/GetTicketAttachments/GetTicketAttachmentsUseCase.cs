@@ -23,7 +23,7 @@ internal sealed class GetTicketAttachmentsUseCase(
         var actorId = TicketActor.RequireId(currentUser);
         ArgumentNullException.ThrowIfNull(query);
 
-        var isStaff = currentUser.IsInRole(RoleNames.Agent) || currentUser.IsInRole(RoleNames.Admin);
+        var isStaff = TicketPermissions.IsStaff(currentUser);
         var scope = isStaff ? (TicketReadScope)new TicketReadScope.AllTickets() : new TicketReadScope.OwnTickets(actorId);
 
         var ticket = await ticketQueries.GetByIdAsync(query.TicketId, scope, cancellationToken);

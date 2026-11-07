@@ -32,7 +32,7 @@ internal sealed class AddCommentUseCase(
         if (ticket.Status is TicketStatus.Closed or TicketStatus.Cancelled)
             throw new ArgumentException("Không thể thêm bình luận vào vé đã kết thúc.");
 
-        var isStaff = currentUser.IsInRole(RoleNames.Agent) || currentUser.IsInRole(RoleNames.Admin);
+        var isStaff = TicketPermissions.IsStaff(currentUser);
         if (!isStaff && !ticket.IsOwnedBy(actorId))
             throw new KeyNotFoundException("Ticket not found.");
 

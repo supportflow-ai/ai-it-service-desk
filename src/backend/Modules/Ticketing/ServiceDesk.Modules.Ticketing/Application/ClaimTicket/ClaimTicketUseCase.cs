@@ -1,6 +1,7 @@
 using ServiceDesk.SharedKernel.Application;
 using ServiceDesk.SharedKernel.Application.Abstractions;
 using ServiceDesk.Modules.Ticketing.Application.Authorization;
+using ServiceDesk.Modules.Ticketing.Application.Common;
 using ServiceDesk.Modules.Ticketing.Application.Contracts;
 using ServiceDesk.Modules.Ticketing.Application.Ports;
 using ServiceDesk.SharedKernel.Authorization;
@@ -31,7 +32,7 @@ internal sealed class ClaimTicketUseCase(
     public async Task<TicketDto> ExecuteAsync(ClaimTicketCommand command, CancellationToken cancellationToken = default)
     {
         var actorId = TicketActor.RequireId(currentUser);
-        var isStaff = currentUser.IsInRole(RoleNames.Agent) || currentUser.IsInRole(RoleNames.Admin);
+        var isStaff = TicketPermissions.IsStaff(currentUser);
         if (!isStaff)
         {
             throw new UnauthorizedAccessException("Only an agent or admin can claim a ticket.");
@@ -45,34 +46,16 @@ internal sealed class ClaimTicketUseCase(
             throw new KeyNotFoundException("Ticket not found.");
         }
 
-        if (ticket.Status == TicketStatus.Assigned && ticket.AssignedToId != actorId &&
-            !currentUser.IsInRole(RoleNames.Admin))
+        if (ticket.Status == TicketStatus.Assigned && ticket.AssignedToId != actorId && !TicketPermissions.IsAdmin(currentUser))
         {
             throw new UnauthorizedAccessException("Vé đã được phân công cho kỹ thuật viên khác.");
         }
 
-        if (!command.ExpectedRevision.HasValue || command.ExpectedRevision.Value == 0)
-        {
-            throw new ArgumentException("Expected revision is required.");
-        }
-
-        var currentRev = writer.GetRevision(ticket);
-        if (currentRev != command.ExpectedRevision.Value)
-        {
-            throw new ConcurrencyConflictException("Dữ liệu đã bị thay đổi bởi người khác hoặc phiên làm việc đã cũ. Vui lòng tải lại trang.");
-        }
+        TicketCommandGuard.RequireCurrentRevision(writer, ticket, command.ExpectedRevision);
 
         var now = clock.UtcNow.UtcDateTime;
-        try
-        {
-            ticket.Claim(actorId, now);
-        }
-        catch (InvalidOperationException ex)
-        {
-            throw new ArgumentException(ex.Message);
-        }
+        TicketCommandGuard.ApplyRule(ticket, t => t.Claim(actorId, now));
 
-        var audit = TicketComment.CreatePublic(ticket.Id, actorId, "Hệ thống", "System", "Kỹ thuật viên đã tiếp nhận xử lý yêu cầu.", now);
-        return await writer.UpdateTicketWithAuditAsync(ticket, audit, cancellationToken);
+        return await TicketCommandGuard.SaveWithSystemAuditAsync(writer, ticket, actorId, "Kỹ thuật viên đã tiếp nhận xử lý yêu cầu.", now, cancellationToken);
     }
 }

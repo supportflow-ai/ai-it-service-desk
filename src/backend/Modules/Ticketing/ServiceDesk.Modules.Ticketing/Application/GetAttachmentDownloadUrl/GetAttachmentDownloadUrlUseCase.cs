@@ -28,7 +28,7 @@ internal sealed class GetAttachmentDownloadUrlUseCase(
         if (string.IsNullOrWhiteSpace(query.StorageKey))
             throw new ArgumentException("Storage key is required.");
 
-        var isStaff = currentUser.IsInRole(RoleNames.Agent) || currentUser.IsInRole(RoleNames.Admin);
+        var isStaff = TicketPermissions.IsStaff(currentUser);
         var scope = isStaff ? (TicketReadScope)new TicketReadScope.AllTickets() : new TicketReadScope.OwnTickets(actorId);
 
         var ticket = await ticketQueries.GetByIdAsync(query.TicketId, scope, cancellationToken);
