@@ -14,15 +14,15 @@ using ServiceDesk.SharedKernel.Application.Abstractions;
 namespace ServiceDesk.Infrastructure;
 
 /// <summary>
-/// Đăng ký hạ tầng kỹ thuật dùng chung vào DI container: Persistence (DbContext duy nhất), kho Identity,
-/// object storage và đồng hồ. Adapter nghiệp vụ không đăng ký ở đây: mỗi module tự đăng ký
-/// bằng phương thức <c>Add{Module}Module</c> của mình.
+/// Đăng ký hạ tầng kỹ thuật dùng chung vào DI container: Persistence (DbContext duy nhất), object storage và đồng hồ.
+/// Không đăng ký module nào: host tự ghép từng module bằng <c>Add{Module}Module</c>; riêng kho ASP.NET Core Identity
+/// cần kiểu DbContext cụ thể nên host gọi thêm <see cref="AddIdentityStores"/>.
 /// </summary>
 public static class DependencyInjection
 {
-    /// <summary>Đăng ký toàn bộ hạ tầng dùng chung: Persistence, kho Identity, Storage, Clock.</summary>
+    /// <summary>Đăng ký toàn bộ hạ tầng dùng chung: Persistence, Storage, Clock.</summary>
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration) =>
-        services.AddPersistence(configuration).AddIdentityStores().AddStorage(configuration).AddClock();
+        services.AddPersistence(configuration).AddStorage(configuration).AddClock();
 
     /// <summary>
     /// Cấu hình PostgreSQL (EF Core) với <see cref="ApplicationDbContext"/> và đăng ký bí danh <see cref="DbContext"/>
@@ -37,7 +37,10 @@ public static class DependencyInjection
         return services;
     }
 
-    /// <summary>Đăng ký kho người dùng/vai trò ASP.NET Core Identity trên <see cref="ApplicationDbContext"/>.</summary>
+    /// <summary>
+    /// Đăng ký phần lưu trữ của module Identity (kho người dùng/vai trò ASP.NET Core Identity, refresh token, OTP,
+    /// danh bạ người dùng) trên <see cref="ApplicationDbContext"/>. Module không biết kiểu context cụ thể nên host truyền vào.
+    /// </summary>
     public static IServiceCollection AddIdentityStores(this IServiceCollection services) =>
         services.AddIdentityPersistence<ApplicationDbContext>();
 

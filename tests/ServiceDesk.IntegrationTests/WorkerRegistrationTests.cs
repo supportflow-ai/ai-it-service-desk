@@ -45,7 +45,7 @@ public sealed class WorkerRegistrationTests
     public void GenericHost_CanResolveIdentityWithoutWebHostDefaults()
     {
         var builder = Host.CreateApplicationBuilder();
-        builder.Services.AddInfrastructure(builder.Configuration);
+        builder.Services.AddInfrastructure(builder.Configuration).AddIdentityStores();
         using var host = builder.Build();
         using var scope = host.Services.CreateScope();
         // Generic Worker hosts do not implicitly register the Web host's services.

@@ -3,6 +3,8 @@ namespace ServiceDesk.Modules.Identity.Domain;
 /// <summary>
 /// Token làm mới phiên đăng nhập. Chỉ lưu giá trị băm; giá trị gốc chỉ trả cho client một lần.
 /// Token được thu hồi khi xoay vòng, đăng xuất, đổi/đặt lại mật khẩu hoặc đổi vai trò.
+/// Mọi token sinh ra từ cùng một lần đăng nhập (qua các lần xoay vòng) có chung <see cref="FamilyId"/>:
+/// đăng xuất hoặc phát hiện token bị dùng lại thì thu hồi cả chuỗi đó (RFC 9700, mục 4.14).
 /// </summary>
 public sealed class RefreshToken
 {
@@ -14,6 +16,9 @@ public sealed class RefreshToken
     }
 
     public Guid Id { get; private set; }
+
+    /// <summary>Chuỗi phiên: bằng <see cref="Id"/> của token phát khi đăng nhập, giữ nguyên qua các lần xoay vòng.</summary>
+    public Guid FamilyId { get; private set; }
     public string UserId { get; private set; } = string.Empty;
     public string TokenHash { get; private set; } = string.Empty;
     public DateTime ExpiresAt { get; private set; }
@@ -36,15 +41,36 @@ public sealed class RefreshToken
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(userId);
         ArgumentException.ThrowIfNullOrWhiteSpace(tokenHash);
+        var id = Guid.NewGuid();
         return new RefreshToken
         {
-            Id = Guid.NewGuid(),
+            Id = id,
+            FamilyId = id,
             UserId = userId,
             TokenHash = tokenHash,
             CreatedAt = now,
             ExpiresAt = now.Add(Lifetime),
             DeviceInfo = deviceInfo,
             IpAddress = ipAddress
+        };
+    }
+
+    /// <summary>
+    /// Tạo token thay thế khi xoay vòng: cùng người dùng, chuỗi phiên, thiết bị và địa chỉ; hết hạn sau <see cref="Lifetime"/>.
+    /// </summary>
+    public RefreshToken Rotate(string tokenHash, DateTime now)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(tokenHash);
+        return new RefreshToken
+        {
+            Id = Guid.NewGuid(),
+            FamilyId = FamilyId,
+            UserId = UserId,
+            TokenHash = tokenHash,
+            CreatedAt = now,
+            ExpiresAt = now.Add(Lifetime),
+            DeviceInfo = DeviceInfo,
+            IpAddress = IpAddress
         };
     }
 

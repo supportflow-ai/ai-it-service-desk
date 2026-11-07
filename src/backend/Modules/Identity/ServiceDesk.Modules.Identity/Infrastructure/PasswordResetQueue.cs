@@ -11,15 +11,30 @@ namespace ServiceDesk.Modules.Identity.Infrastructure;
 /// Hàng đợi trong bộ nhớ cho yêu cầu quên mật khẩu (mỗi instance API một hàng đợi). Mất khi tiến trình dừng;
 /// người dùng gửi lại yêu cầu. Đầy thì bỏ yêu cầu mới và ghi cảnh báo, không ghi email.
 /// </summary>
-internal sealed class PasswordResetQueue(ILogger<PasswordResetQueue> logger) : IPasswordResetQueue
+internal sealed class PasswordResetQueue : IPasswordResetQueue
 {
-    internal const int Capacity = 1000;
+    internal const int DefaultCapacity = 1000;
 
-    private readonly Channel<string> channel = Channel.CreateBounded<string>(new BoundedChannelOptions(Capacity)
+    private readonly ILogger<PasswordResetQueue> logger;
+
+    // FullMode.Wait: TryWrite trả false khi đầy. Với DropWrite, TryWrite vẫn trả true dù yêu cầu bị bỏ,
+    // nên không thể biết để ghi cảnh báo.
+    private readonly Channel<string> channel;
+
+    public PasswordResetQueue(ILogger<PasswordResetQueue> logger) : this(logger, DefaultCapacity)
     {
-        FullMode = BoundedChannelFullMode.DropWrite,
-        SingleReader = true
-    });
+    }
+
+    internal PasswordResetQueue(ILogger<PasswordResetQueue> logger, int capacity)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(capacity, 1);
+        this.logger = logger;
+        channel = Channel.CreateBounded<string>(new BoundedChannelOptions(capacity)
+        {
+            FullMode = BoundedChannelFullMode.Wait,
+            SingleReader = true
+        });
+    }
 
     internal ChannelReader<string> Reader => channel.Reader;
 

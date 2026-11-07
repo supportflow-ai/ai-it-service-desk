@@ -41,7 +41,7 @@ public sealed class CommentAuthorizationTests
         _writer.Setup(writer => writer.GetForUpdateAsync(ticket.Id, It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
         _directory.Setup(directory => directory.GetDisplayNameAsync(_actor, It.IsAny<CancellationToken>())).ReturnsAsync("Người dùng kiểm thử");
         TicketComment? saved = null;
-        _timeline.Setup(store => store.AddAsync(It.IsAny<TicketComment>(), It.IsAny<CancellationToken>()))
+        _timeline.Setup(store => store.AddToOpenTicketAsync(It.IsAny<TicketComment>(), It.IsAny<CancellationToken>()))
             .Callback<TicketComment, CancellationToken>((comment, _) => saved = comment)
             .ReturnsAsync((TicketComment comment, CancellationToken _) => new TimelineItemDto(
                 comment.Id, comment.TicketId, comment.AuthorId, comment.AuthorName, comment.AuthorRole,
@@ -58,7 +58,7 @@ public sealed class CommentAuthorizationTests
         Assert.Equal(saved.Id, result.Id);
         _writer.VerifyAll();
         _directory.VerifyAll();
-        _timeline.Verify(store => store.AddAsync(It.IsAny<TicketComment>(), It.IsAny<CancellationToken>()), Times.Once);
+        _timeline.Verify(store => store.AddToOpenTicketAsync(It.IsAny<TicketComment>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]

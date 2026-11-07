@@ -88,7 +88,7 @@ public sealed class IdentityConcurrencyTests(TicketIdempotencyPostgresFixture fi
         {
             await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
                 scope.ServiceProvider.GetRequiredService<IUserAccountGateway>()
-                    .CheckPasswordAsync(email, "wrong", cancellation.Token));
+                    .SignInAsync(email, "wrong", DateTime.UtcNow, cancellation.Token));
         }
         await using var db = fixture.CreateContext();
         Assert.Equal(0, (await db.Users.SingleAsync(u => u.Email == email)).AccessFailedCount);

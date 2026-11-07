@@ -7,6 +7,18 @@ namespace ServiceDesk.Modules.Ticketing.Infrastructure;
 
 internal sealed class PostgresTicketTimelineStore(DbContext context) : ITicketTimelineStore
 {
+    internal const string TerminalTicketMessage = "Không thể thêm bình luận vào vé đã kết thúc.";
+
+    public async Task<TimelineItemDto> AddToOpenTicketAsync(TicketComment comment, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(comment);
+        await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+        await TicketRowLock.RequireOpenAsync(context, comment.TicketId, TerminalTicketMessage, cancellationToken);
+        var result = await AddAsync(comment, cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+        return result;
+    }
+
     public async Task<TimelineItemDto> AddAsync(TicketComment comment, CancellationToken cancellationToken = default)
     {
         context.Set<TicketComment>().Add(comment);

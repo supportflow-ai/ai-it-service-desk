@@ -49,6 +49,7 @@ internal sealed class AddCommentUseCase(
             command.Content,
             clock.UtcNow.UtcDateTime);
 
-        return await timelineStore.AddAsync(comment, cancellationToken);
+        // Kiểm lại trạng thái trong giao dịch ghi: ticket có thể vừa bị đóng sau lần kiểm ở trên.
+        return await timelineStore.AddToOpenTicketAsync(comment, cancellationToken);
     }
 }

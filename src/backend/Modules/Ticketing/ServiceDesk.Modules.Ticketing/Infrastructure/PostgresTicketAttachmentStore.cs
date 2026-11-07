@@ -50,12 +50,7 @@ internal sealed class PostgresTicketAttachmentStore(DbContext context) : ITicket
         }
         // Kiểm lại trạng thái ticket trong giao dịch với khóa chia sẻ: lệnh đóng/hủy ticket (UPDATE dòng ticket) phải chờ
         // giao dịch này, hoặc đã commit trước và bị phát hiện ở đây. Không ghi tệp vào ticket đã kết thúc.
-        var status = (await context.Database.SqlQuery<int>(
-                $"SELECT status AS \"Value\" FROM public.tickets WHERE \"Id\" = {attachment.TicketId} FOR SHARE")
-            .ToListAsync(cancellationToken)).SingleOrDefault(-1);
-        if (status < 0) throw new KeyNotFoundException("Ticket not found.");
-        if (status is (int)TicketStatus.Closed or (int)TicketStatus.Cancelled)
-            throw new ArgumentException(ClosedTicketMessage);
+        await TicketRowLock.RequireOpenAsync(context, attachment.TicketId, ClosedTicketMessage, cancellationToken);
         var databaseNow = await context.Database.SqlQuery<DateTime>($"SELECT clock_timestamp() AS \"Value\"").SingleAsync(cancellationToken);
         upload.Confirm(attachment, now > databaseNow ? now : databaseNow);
         context.Set<TicketAttachment>().Add(attachment);

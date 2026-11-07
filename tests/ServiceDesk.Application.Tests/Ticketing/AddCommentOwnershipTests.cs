@@ -40,7 +40,7 @@ public sealed class AddCommentOwnershipTests
 
         await Assert.ThrowsAsync<KeyNotFoundException>(() =>
             useCase.ExecuteAsync(new(ticket.Id, "Attempt to comment on another ticket.")));
-        _timelineStore.Verify(store => store.AddAsync(It.IsAny<TicketComment>(), It.IsAny<CancellationToken>()), Times.Never);
+        _timelineStore.Verify(store => store.AddToOpenTicketAsync(It.IsAny<TicketComment>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Theory]
@@ -100,7 +100,7 @@ public sealed class AddCommentOwnershipTests
         _user.SetupGet(user => user.Roles).Returns([RoleNames.Requester]);
         _writer.Setup(writer => writer.GetForUpdateAsync(ticket.Id, It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
         _agentDirectory.Setup(directory => directory.GetDisplayNameAsync(_actorId, It.IsAny<CancellationToken>())).ReturnsAsync("Requester");
-        _timelineStore.Setup(store => store.AddAsync(It.IsAny<TicketComment>(), It.IsAny<CancellationToken>()))
+        _timelineStore.Setup(store => store.AddToOpenTicketAsync(It.IsAny<TicketComment>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new TimelineItemDto(Guid.NewGuid(), ticket.Id, _actorId, "Requester", RoleNames.Requester, "Owner comment", false, _now.UtcDateTime));
 
         var result = await CreateUseCase().ExecuteAsync(new(ticket.Id, "Owner comment"));
@@ -120,7 +120,7 @@ public sealed class AddCommentOwnershipTests
         _user.Setup(user => user.IsInRole(RoleNames.Admin)).Returns(role == RoleNames.Admin);
         _writer.Setup(writer => writer.GetForUpdateAsync(ticket.Id, It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
         _agentDirectory.Setup(directory => directory.GetDisplayNameAsync(_actorId, It.IsAny<CancellationToken>())).ReturnsAsync("Staff");
-        _timelineStore.Setup(store => store.AddAsync(It.IsAny<TicketComment>(), It.IsAny<CancellationToken>()))
+        _timelineStore.Setup(store => store.AddToOpenTicketAsync(It.IsAny<TicketComment>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new TimelineItemDto(Guid.NewGuid(), ticket.Id, _actorId, "Staff", role, "Staff comment", false, _now.UtcDateTime));
 
         var result = await CreateUseCase().ExecuteAsync(new(ticket.Id, "Staff comment"));
