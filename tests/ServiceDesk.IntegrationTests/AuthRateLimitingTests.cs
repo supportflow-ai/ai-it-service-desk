@@ -10,6 +10,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using ServiceDesk.Modules.Identity.Application.Contracts;
 using ServiceDesk.Modules.Identity.Application.ForgotPassword;
+using ServiceDesk.Modules.Identity.Application.RefreshAuth;
 using ServiceDesk.Modules.Identity.Presentation;
 using Xunit;
 
@@ -47,7 +48,51 @@ public sealed class AuthRateLimitingTests
             Assert.Equal(HttpStatusCode.OK, (await client.PostAsJsonAsync("/api/auth/forgot-password", Request)).StatusCode);
     }
 
-    private sealed class RateLimitFactory(IPAddress? remoteIp) : WebApplicationFactory<ServiceDesk.Api.Program>
+    [Fact]
+    public async Task EmailBudgetIsIndependentOfIpAndRejectsUniformly()
+    {
+        await using var factory = new RateLimitFactory(IPAddress.Parse("203.0.113.20"), o =>
+        {
+            o.PermitLimit = 100;
+            o.EmailPermitLimit = 2;
+            o.EmailWindowSeconds = 3600;
+        });
+        using var client = factory.CreateClient();
+
+        var first = new ForgotPasswordRequest("budget-a@test.invalid");
+        await client.PostAsJsonAsync("/api/auth/forgot-password", first);
+        await client.PostAsJsonAsync("/api/auth/forgot-password", first);
+        var blocked = await client.PostAsJsonAsync("/api/auth/forgot-password", new ForgotPasswordRequest(" Budget-A@Test.invalid "));
+        var other = await client.PostAsJsonAsync("/api/auth/forgot-password", new ForgotPasswordRequest("budget-b@test.invalid"));
+
+        Assert.Equal(HttpStatusCode.TooManyRequests, blocked.StatusCode);
+        Assert.True(blocked.Headers.Contains("Retry-After"));
+        Assert.Equal(HttpStatusCode.OK, other.StatusCode);
+    }
+
+    [Fact]
+    public async Task RefreshHasItsOwnBudgetAndDoesNotConsumeTheIpBudget()
+    {
+        await using var factory = new RateLimitFactory(IPAddress.Parse("203.0.113.30"), o =>
+        {
+            o.PermitLimit = 100;
+            o.RefreshPermitLimit = 1;
+            o.WindowSeconds = 3600;
+        });
+        using var client = factory.CreateClient();
+
+        var refresh = new RefreshAuthRequest("x");
+        var first = await client.PostAsJsonAsync("/api/auth/refresh", refresh);
+        var second = await client.PostAsJsonAsync("/api/auth/refresh", refresh);
+        var forgot = await client.PostAsJsonAsync("/api/auth/forgot-password", Request);
+
+        Assert.NotEqual(HttpStatusCode.TooManyRequests, first.StatusCode);
+        Assert.Equal(HttpStatusCode.TooManyRequests, second.StatusCode);
+        Assert.True(second.Headers.Contains("Retry-After"));
+        Assert.Equal(HttpStatusCode.OK, forgot.StatusCode);
+    }
+
+    private sealed class RateLimitFactory(IPAddress? remoteIp, Action<AuthRateLimitOptions>? tune = null) : WebApplicationFactory<ServiceDesk.Api.Program>
     {
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
@@ -60,10 +105,13 @@ public sealed class AuthRateLimitingTests
                     services.Remove(service);
                 services.RemoveAll<IForgotPassword>();
                 services.AddScoped<IForgotPassword, AlwaysSucceedsForgotPassword>();
+                services.RemoveAll<IRefreshAuth>();
+                services.AddScoped<IRefreshAuth, AlwaysFailsRefresh>();
                 services.Configure<AuthRateLimitOptions>(options =>
                 {
                     options.PermitLimit = 2;
                     options.WindowSeconds = 3600;
+                    tune?.Invoke(options);
                 });
                 services.AddSingleton<IStartupFilter>(new RemoteIpStartupFilter(remoteIp));
             });
@@ -88,5 +136,11 @@ public sealed class AuthRateLimitingTests
     {
         public Task<IdentityOperationResult> ExecuteAsync(ForgotPasswordRequest request, CancellationToken cancellationToken = default) =>
             Task.FromResult(IdentityOperationResult.Success());
+    }
+
+    private sealed class AlwaysFailsRefresh : IRefreshAuth
+    {
+        public Task<AuthResult> ExecuteAsync(RefreshAuthRequest request, CancellationToken cancellationToken = default) =>
+            Task.FromResult(AuthResult.Failed("invalid"));
     }
 }
