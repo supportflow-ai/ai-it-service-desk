@@ -16,6 +16,12 @@ public interface IUserAccountGateway
     /// <summary>Kiểm tra thông tin đăng nhập và mật khẩu của người dùng.</summary>
     Task<UserInfo?> CheckPasswordAsync(string email, string password, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Kiểm mật khẩu và, khi đúng, lưu refresh token mới trong cùng giao dịch giữ khóa người dùng.
+    /// Trả null khi sai thông tin hoặc tài khoản đang bị khóa.
+    /// </summary>
+    Task<PasswordSignIn?> SignInAsync(string email, string password, DateTime now, CancellationToken cancellationToken);
+
     /// <summary>Tìm kiếm thông tin người dùng theo Id.</summary>
     Task<UserInfo?> FindByIdAsync(string userId, CancellationToken cancellationToken);
 

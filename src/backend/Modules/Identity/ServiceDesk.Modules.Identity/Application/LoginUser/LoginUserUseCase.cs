@@ -19,22 +19,19 @@ public interface ILoginUser
 internal sealed class LoginUserUseCase(
     IUserAccountGateway accounts,
     IAccessTokenIssuer tokens,
-    IRefreshTokenStore refreshTokens,
     IClock clock) : ILoginUser
 {
     public async Task<AuthResult> ExecuteAsync(LoginRequest request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
-        var user = await accounts.CheckPasswordAsync(request.Email, request.Password, cancellationToken);
+        // Kiểm mật khẩu và lưu refresh token trong cùng một giao dịch (xem IUserAccountGateway.SignInAsync).
+        var signIn = await accounts.SignInAsync(request.Email, request.Password, clock.UtcNow.UtcDateTime, cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
-        if (user is null)
+        if (signIn is null)
         {
             return AuthResult.Failed("Invalid email or password.");
         }
 
-        var (refreshToken, rawRefreshToken) = RefreshTokenIssuer.Issue(user.UserId, clock.UtcNow.UtcDateTime);
-        await refreshTokens.SaveTokenAsync(refreshToken, cancellationToken);
-
-        return AuthResult.Success(tokens.GenerateToken(user), user, rawRefreshToken);
+        return AuthResult.Success(tokens.GenerateToken(signIn.User), signIn.User, signIn.RawRefreshToken);
     }
 }

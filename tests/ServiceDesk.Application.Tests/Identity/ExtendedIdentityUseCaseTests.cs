@@ -180,49 +180,74 @@ public sealed class ExtendedIdentityUseCaseTests
         Assert.Equal("Incorrect password.", Assert.Single(result.Errors));
     }
 
-    private ForgotPasswordUseCase ForgotPassword() => new(_accounts.Object, _otpStore.Object, _otpSender.Object, _clock.Object);
+    private readonly Mock<IPasswordResetQueue> _resetQueue = new();
+
+    private ForgotPasswordUseCase ForgotPassword() => new(_resetQueue.Object);
+
+    private PasswordResetCodeIssuer Issuer() => new(_accounts.Object, _otpStore.Object, _otpSender.Object, _clock.Object);
+
+    [Theory]
+    [InlineData(" User@Test.com ")]
+    [InlineData("nobody@test.com")]
+    public async Task ForgotPassword_QueuesNormalizedEmailAndAlwaysSucceeds(string email)
+    {
+        var result = await ForgotPassword().ExecuteAsync(new ForgotPasswordRequest(email));
+
+        Assert.True(result.Succeeded);
+        _resetQueue.Verify(q => q.TryEnqueue(email.Trim().ToLowerInvariant()), Times.Once);
+        _accounts.VerifyNoOtherCalls();
+    }
 
     [Fact]
-    public async Task ForgotPassword_ForKnownEmail_IssuesHashedCodeAndSendsIt()
+    public async Task ForgotPassword_WithoutEmail_FailsWithoutQueueing()
+    {
+        var result = await ForgotPassword().ExecuteAsync(new ForgotPasswordRequest(" "));
+
+        Assert.False(result.Succeeded);
+        _resetQueue.Verify(q => q.TryEnqueue(It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ResetCodeIssuer_ForKnownEmail_IssuesHashedCodeAndSendsIt()
     {
         _accounts.Setup(a => a.EmailExistsAsync("user@test.com", It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        _otpStore.Setup(s => s.TryIssueAsync(It.IsAny<OtpCode>(), OtpCode.MaxIssuedPerHour, _now.UtcDateTime.AddHours(-1), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
         string? sentCode = null;
         _otpSender.Setup(s => s.SendPasswordResetCodeAsync("user@test.com", It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
             .Callback<string, string, DateTime, CancellationToken>((_, code, _, _) => sentCode = code)
             .Returns(Task.CompletedTask);
 
-        var result = await ForgotPassword().ExecuteAsync(new ForgotPasswordRequest(" User@Test.com "));
+        await Issuer().IssueAsync("user@test.com");
 
-        Assert.True(result.Succeeded);
         Assert.NotNull(sentCode);
         Assert.Matches("^[0-9]{6}$", sentCode);
-        _otpStore.Verify(s => s.IssueAsync(It.Is<OtpCode>(o => o.Target == "user@test.com" && o.Purpose == OtpCode.ResetPasswordPurpose &&
-            o.CodeHash != sentCode && o.ExpiresAt == _now.UtcDateTime.AddMinutes(15) && o.FailedAttempts == 0), It.IsAny<CancellationToken>()), Times.Once);
+        _otpStore.Verify(s => s.TryIssueAsync(It.Is<OtpCode>(o => o.Target == "user@test.com" && o.Purpose == OtpCode.ResetPasswordPurpose &&
+            o.CodeHash != sentCode && o.ExpiresAt == _now.UtcDateTime.AddMinutes(15) && o.FailedAttempts == 0),
+            OtpCode.MaxIssuedPerHour, _now.UtcDateTime.AddHours(-1), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
-    public async Task ForgotPassword_ForUnknownEmail_ReturnsSuccessWithoutIssuingCode()
+    public async Task ResetCodeIssuer_ForUnknownEmail_IssuesNothing()
     {
         _accounts.Setup(a => a.EmailExistsAsync("nobody@test.com", It.IsAny<CancellationToken>())).ReturnsAsync(false);
 
-        var result = await ForgotPassword().ExecuteAsync(new ForgotPasswordRequest("nobody@test.com"));
+        await Issuer().IssueAsync("nobody@test.com");
 
-        Assert.True(result.Succeeded);
-        _otpStore.Verify(s => s.IssueAsync(It.IsAny<OtpCode>(), It.IsAny<CancellationToken>()), Times.Never);
+        _otpStore.Verify(s => s.TryIssueAsync(It.IsAny<OtpCode>(), It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Never);
         _otpSender.Verify(s => s.SendPasswordResetCodeAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
-    public async Task ForgotPassword_OverHourlyLimit_ReturnsSuccessWithoutIssuingCode()
+    public async Task ResetCodeIssuer_OverHourlyLimit_SendsNothing()
     {
         _accounts.Setup(a => a.EmailExistsAsync("user@test.com", It.IsAny<CancellationToken>())).ReturnsAsync(true);
-        _otpStore.Setup(s => s.CountIssuedSinceAsync("user@test.com", OtpCode.ResetPasswordPurpose, _now.UtcDateTime.AddHours(-1), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(OtpCode.MaxIssuedPerHour);
+        _otpStore.Setup(s => s.TryIssueAsync(It.IsAny<OtpCode>(), It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
 
-        var result = await ForgotPassword().ExecuteAsync(new ForgotPasswordRequest("user@test.com"));
+        await Issuer().IssueAsync("user@test.com");
 
-        Assert.True(result.Succeeded);
-        _otpStore.Verify(s => s.IssueAsync(It.IsAny<OtpCode>(), It.IsAny<CancellationToken>()), Times.Never);
+        _otpSender.Verify(s => s.SendPasswordResetCodeAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]

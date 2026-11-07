@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
+using ServiceDesk.Modules.Knowledge.Domain;
 using ServiceDesk.SharedKernel.Web;
 using Xunit;
 
@@ -78,5 +79,24 @@ public sealed class LegacyErrorFilterTests
         var (status, error) = await RunAsync(() => throw new KeyNotFoundException("chi tiết nội bộ"));
         Assert.Equal(StatusCodes.Status404NotFound, status);
         Assert.Null(error);
+    }
+
+    [Fact]
+    public void DomainRuleIsAttributedToItsModuleDomain()
+    {
+        var article = Article.CreateDraft(Guid.NewGuid(), "Valid Title", "Valid Content at least 10 chars", null, DateTime.UtcNow);
+        var rule = Assert.Throws<InvalidOperationException>(() => article.Archive(DateTime.UtcNow));
+
+        Assert.True(ExceptionOrigin.IsRaisedIn(rule, "ServiceDesk.Modules.Knowledge.Domain"));
+        Assert.False(ExceptionOrigin.IsRaisedIn(rule, "ServiceDesk.Modules.Knowledge.Infrastructure"));
+    }
+
+    [Fact]
+    public void LibraryInvalidOperationIsNotAttributedToTheDomain()
+    {
+        var library = Assert.Throws<InvalidOperationException>(() => new List<int>().First());
+
+        Assert.False(ExceptionOrigin.IsRaisedIn(library, "ServiceDesk.Modules.Knowledge.Domain"));
+        Assert.False(ExceptionOrigin.IsRaisedByApplication(library));
     }
 }

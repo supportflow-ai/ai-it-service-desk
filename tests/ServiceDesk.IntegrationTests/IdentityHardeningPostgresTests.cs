@@ -45,7 +45,7 @@ public sealed class IdentityHardeningPostgresTests(ServiceDeskWebApplicationFact
     {
         await using var scope = factory.Services.CreateAsyncScope();
         await scope.ServiceProvider.GetRequiredService<IOtpCodeStore>()
-            .IssueAsync(OtpCode.Issue(email, OtpCode.ResetPasswordPurpose, Hash(code), DateTime.UtcNow));
+            .TryIssueAsync(OtpCode.Issue(email, OtpCode.ResetPasswordPurpose, Hash(code), DateTime.UtcNow), int.MaxValue, DateTime.UtcNow.AddHours(-1));
     }
 
     private async Task<bool> ResetAsync(string email, string code, string newPassword)
@@ -315,5 +315,117 @@ public sealed class IdentityHardeningPostgresTests(ServiceDeskWebApplicationFact
             Assert.True((await accounts.ChangePasswordAsync(userId, Password, "Changed@1234", DateTime.UtcNow, default)).Succeeded);
         }
         Assert.Equal(0, await ActiveRefreshTokensAsync(userId));
+    }
+
+    [Fact]
+    public async Task ConcurrentOtpRequestsRespectTheHourlyLimitAndLeaveOneValidCode()
+    {
+        var email = await CreateUserAsync("otp-race");
+        for (var i = 0; i < OtpCode.MaxIssuedPerHour - 1; i++)
+            await IssueOtpAsync(email, $"10000{i}");
+
+        async Task<bool> RequestAsync(int i)
+        {
+            await using var scope = factory.Services.CreateAsyncScope();
+            var now = DateTime.UtcNow;
+            return await scope.ServiceProvider.GetRequiredService<IOtpCodeStore>().TryIssueAsync(
+                OtpCode.Issue(email, OtpCode.ResetPasswordPurpose, Hash($"20000{i}"), now), OtpCode.MaxIssuedPerHour, now.AddHours(-1));
+        }
+
+        var issued = await Task.WhenAll(Enumerable.Range(0, 6).Select(RequestAsync));
+
+        Assert.Single(issued, won => won);
+        await using var check = factory.Services.CreateAsyncScope();
+        var codes = check.ServiceProvider.GetRequiredService<ApplicationDbContext>().OtpCodes.Where(o => o.Target == email);
+        Assert.Equal(OtpCode.MaxIssuedPerHour, await codes.CountAsync());
+        Assert.Equal(1, await codes.CountAsync(o => !o.IsUsed));
+    }
+
+    [Fact]
+    public async Task ForgotPasswordAnswersAtOnceAndIssuesTheCodeInTheBackground()
+    {
+        var email = await CreateUserAsync("forgot-queue");
+        using var client = factory.CreateClient();
+
+        var known = await client.PostAsJsonAsync("/api/auth/forgot-password", new { email });
+        var unknown = await client.PostAsJsonAsync("/api/auth/forgot-password", new { email = $"nobody-{Guid.NewGuid():N}@test.invalid" });
+
+        Assert.Equal(HttpStatusCode.OK, known.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, unknown.StatusCode);
+        Assert.Equal(await known.Content.ReadAsStringAsync(), await unknown.Content.ReadAsStringAsync());
+        var deadline = DateTime.UtcNow.AddSeconds(15);
+        var issued = false;
+        while (!issued && DateTime.UtcNow < deadline)
+        {
+            await using var scope = factory.Services.CreateAsyncScope();
+            issued = await scope.ServiceProvider.GetRequiredService<ApplicationDbContext>().OtpCodes.AnyAsync(o => o.Target == email);
+            if (!issued) await Task.Delay(100);
+        }
+        Assert.True(issued);
+    }
+
+    /// <summary>
+    /// Mô phỏng một giao dịch đang tạo refresh token (đăng nhập hoặc xoay vòng) giữ khóa người dùng; thao tác thu hồi
+    /// chạy song song phải chờ nó commit rồi thu hồi luôn token mới.
+    /// </summary>
+    private async Task RevocationWaitsForAnInFlightSessionAsync(string userId, Func<IServiceProvider, Task> revoke)
+    {
+        await using var holder = factory.Services.CreateAsyncScope();
+        var context = holder.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        await using var transaction = await context.Database.BeginTransactionAsync();
+        await context.Database.ExecuteSqlInterpolatedAsync($"SELECT 1 FROM public.\"AspNetUsers\" WHERE \"Id\" = {userId} FOR UPDATE");
+        context.RefreshTokens.Add(RefreshToken.Issue(userId, Hash(Guid.NewGuid().ToString()), DateTime.UtcNow));
+        await context.SaveChangesAsync();
+
+        async Task RunAsync()
+        {
+            await using var scope = factory.Services.CreateAsyncScope();
+            await revoke(scope.ServiceProvider);
+        }
+
+        var revoking = RunAsync();
+        await Task.Delay(500);
+        Assert.False(revoking.IsCompleted, "Thao tác thu hồi phải chờ giao dịch đang giữ khóa người dùng.");
+        await transaction.CommitAsync();
+        await revoking;
+
+        Assert.Equal(0, await ActiveRefreshTokensAsync(userId));
+    }
+
+    [Fact]
+    public async Task PasswordChangeRevokesASessionCreatedConcurrently()
+    {
+        var email = await CreateUserAsync("lock-password");
+        var userId = await UserIdAsync(email);
+        await RevocationWaitsForAnInFlightSessionAsync(userId, async services => Assert.True((await services
+            .GetRequiredService<IUserAccountGateway>().ChangePasswordAsync(userId, Password, "Changed@1234", DateTime.UtcNow, default)).Succeeded));
+    }
+
+    [Fact]
+    public async Task RoleChangeRevokesASessionCreatedConcurrently()
+    {
+        var email = await CreateUserAsync("lock-role");
+        var userId = await UserIdAsync(email);
+        await RevocationWaitsForAnInFlightSessionAsync(userId, async services => Assert.True((await services
+            .GetRequiredService<IUserAccountGateway>().AssignRolesAsync(userId, [RoleNames.Agent], DateTime.UtcNow, default)).Succeeded));
+    }
+
+    [Fact]
+    public async Task ReuseDetectionRevokesASessionCreatedConcurrently()
+    {
+        var email = await CreateUserAsync("lock-reuse");
+        var userId = await UserIdAsync(email);
+        await RevocationWaitsForAnInFlightSessionAsync(userId, services =>
+            services.GetRequiredService<IRefreshTokenStore>().RevokeAllForUserAsync(userId, DateTime.UtcNow));
+    }
+
+    [Fact]
+    public async Task PasswordResetRevokesASessionCreatedConcurrently()
+    {
+        var email = await CreateUserAsync("lock-reset");
+        var userId = await UserIdAsync(email);
+        await IssueOtpAsync(email, "778899");
+        await RevocationWaitsForAnInFlightSessionAsync(userId, async services => Assert.True((await services
+            .GetRequiredService<IPasswordResetGateway>().ResetWithOtpAsync(email, Hash("778899"), "Changed@1234", DateTime.UtcNow)).Succeeded));
     }
 }

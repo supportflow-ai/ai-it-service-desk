@@ -48,6 +48,7 @@ public static class IdentityModule
         services.AddScoped<IGetDepartments, GetDepartmentsUseCase>();
         services.AddScoped<IChangePassword, ChangePasswordUseCase>();
         services.AddScoped<IForgotPassword, ForgotPasswordUseCase>();
+        services.AddScoped<PasswordResetCodeIssuer>();
         services.AddScoped<IResetPassword, ResetPasswordUseCase>();
         services.AddScoped<IAssignUserRoles, AssignUserRolesUseCase>();
         return services;
@@ -60,6 +61,10 @@ public static class IdentityModule
     public static IServiceCollection AddIdentityInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddSingleton<IAccessTokenIssuer, JwtTokenGenerator>();
+        // Quên mật khẩu: endpoint chỉ xếp hàng, phát và gửi mã chạy nền để phản hồi không lộ email nào tồn tại.
+        services.AddSingleton<PasswordResetQueue>();
+        services.AddSingleton<IPasswordResetQueue>(sp => sp.GetRequiredService<PasswordResetQueue>());
+        services.AddHostedService<PasswordResetQueueProcessor>();
         var smtpSection = configuration.GetSection(SmtpEmailOptions.SectionName);
         services.AddOptions<SmtpEmailOptions>().Bind(smtpSection).ValidateOnStart();
         services.AddSingleton<IValidateOptions<SmtpEmailOptions>, SmtpEmailOptionsValidator>();

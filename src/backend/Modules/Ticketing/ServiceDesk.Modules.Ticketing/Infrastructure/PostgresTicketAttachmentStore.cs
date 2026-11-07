@@ -7,6 +7,8 @@ namespace ServiceDesk.Modules.Ticketing.Infrastructure;
 
 internal sealed class PostgresTicketAttachmentStore(DbContext context) : ITicketAttachmentStore
 {
+    internal const string ClosedTicketMessage = "Không thể xác nhận tệp cho vé đã kết thúc.";
+
     public async Task CreateUploadGrantAsync(AttachmentUploadGrant upload, CancellationToken cancellationToken = default)
     {
         await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
@@ -46,6 +48,14 @@ internal sealed class PostgresTicketAttachmentStore(DbContext context) : ITicket
             await transaction.CommitAsync(cancellationToken);
             return existing;
         }
+        // Kiểm lại trạng thái ticket trong giao dịch với khóa chia sẻ: lệnh đóng/hủy ticket (UPDATE dòng ticket) phải chờ
+        // giao dịch này, hoặc đã commit trước và bị phát hiện ở đây. Không ghi tệp vào ticket đã kết thúc.
+        var status = (await context.Database.SqlQuery<int>(
+                $"SELECT status AS \"Value\" FROM public.tickets WHERE \"Id\" = {attachment.TicketId} FOR SHARE")
+            .ToListAsync(cancellationToken)).SingleOrDefault(-1);
+        if (status < 0) throw new KeyNotFoundException("Ticket not found.");
+        if (status is (int)TicketStatus.Closed or (int)TicketStatus.Cancelled)
+            throw new ArgumentException(ClosedTicketMessage);
         var databaseNow = await context.Database.SqlQuery<DateTime>($"SELECT clock_timestamp() AS \"Value\"").SingleAsync(cancellationToken);
         upload.Confirm(attachment, now > databaseNow ? now : databaseNow);
         context.Set<TicketAttachment>().Add(attachment);

@@ -76,7 +76,17 @@ internal sealed class ConfirmAttachmentUploadUseCase(
             upload.ContentType, finalKey, actorId, clock.UtcNow.UtcDateTime);
         // Không xóa finalKey khi commit báo lỗi: kết quả commit có thể chưa xác định do mất kết nối.
         // Tác vụ dọn object mồ côi phải kiểm tra metadata và thời hạn trước khi xóa.
-        var result = await attachmentStore.ConfirmAsync(upload.Id, attachment, clock.UtcNow.UtcDateTime, cancellationToken);
+        TicketAttachmentDto result;
+        try
+        {
+            result = await attachmentStore.ConfirmAsync(upload.Id, attachment, clock.UtcNow.UtcDateTime, cancellationToken);
+        }
+        catch (ArgumentException)
+        {
+            // Bị từ chối chắc chắn (ví dụ ticket vừa đóng): giao dịch đã rollback nên object đích là mồ côi.
+            await TryCleanupAsync(bucket, finalKey);
+            throw;
+        }
         await TryCleanupAsync(bucket, upload.StorageKey);
         if (result.StorageKey != finalKey) await TryCleanupAsync(bucket, finalKey);
         return result;
