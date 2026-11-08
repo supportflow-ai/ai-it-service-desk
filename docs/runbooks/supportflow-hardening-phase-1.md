@@ -1,5 +1,7 @@
 # Củng cố quyền bình luận và ghi ticket–timeline nguyên tử
 
+Hồ sơ đợt củng cố (lịch sử), đã hợp nhất vào `dev` qua PR #50–#53; nội dung giữ nguyên để truy vết. Hướng dẫn hiện hành: [kiểm chứng backend](backend-hardening-verification.md). Trạng thái "chưa commit/working tree" bên dưới là của thời điểm viết, không mô tả `dev` hôm nay.
+
 Trạng thái: thay đổi triển khai đang kiểm chứng, chưa nghiệm thu trên PostgreSQL. Cập nhật: 2026-11-03. Mốc bắt đầu: nhánh `dev`, `44ba0b4b4fc1ad6f515f8485b83736eccb127491`; các thay đổi mô tả ở đây nằm trong working tree sau mốc này, chưa commit.
 
 ## Phạm vi

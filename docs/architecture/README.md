@@ -1,12 +1,12 @@
 # Chỉ mục kiến trúc backend
 
-Trạng thái: hiện hành cho kho backend. Đối chiếu `dev` tại `47634bc8162c13bd6ae024233ec24a0076738c51`, sau PR #28 và #29; cập nhật 2026-10-20. Quy tắc chọn nguồn nằm trong [bản đồ tài liệu](../README.md).
+Trạng thái: hiện hành cho kho backend. Đối chiếu `dev` tại `8036e2c185dfef7c4ed9941d736388c781e85f52`; cập nhật 2026-11-08. Quy tắc chọn nguồn nằm trong [bản đồ tài liệu](../README.md).
 
 ## Nguồn đang áp dụng
 
 | Nguồn | Phạm vi |
 | --- | --- |
-| [Mốc mã nguồn](source-baseline.md) | Phân biệt mã local, thay đổi chưa commit và dev sau PR #29; khoảng cách hợp đồng/công cụ cần xử lý trước khi tích hợp |
+| [Mốc mã nguồn](source-baseline.md) | Mốc đối chiếu của tài liệu hiện hành và cách xác định mã nguồn |
 | [Mô-đun và luồng xử lý](backend-modules-and-use-cases.md) | Tổ chức module trước, Clean bên trong module (ADR-015), 12 luồng nghiệp vụ, giao diện công khai và giao dịch |
 | [Hợp đồng backend](current-backend-contract.md) | API, mười mã trạng thái, dữ liệu và quyền đã triển khai tại SHA được ghi |
 | [Quy tắc thiết kế bảo mật](security-design-rules.md) | Quyền trước revision, vị trí policy Ticketing, tình huống phủ định |

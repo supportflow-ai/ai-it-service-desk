@@ -170,6 +170,16 @@
       "kind": "evidence",
       "notice": "Bằng chứng tại mốc cũ",
       "replacement": "docs/runbooks/backend-hardening-verification.md"
+    },
+    "docs/runbooks/supportflow-hardening-phase-1.md": {
+      "kind": "historical",
+      "notice": "Hồ sơ đợt củng cố",
+      "replacement": "docs/runbooks/backend-hardening-verification.md"
+    },
+    "docs/runbooks/supportflow-hardening-phase-2-6.md": {
+      "kind": "historical",
+      "notice": "Hồ sơ đợt củng cố",
+      "replacement": "docs/runbooks/backend-hardening-verification.md"
     }
   },
   "groups": {

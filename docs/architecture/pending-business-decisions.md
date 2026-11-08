@@ -1,8 +1,8 @@
 # Các quyết định nghiệp vụ còn mở
 
-Trạng thái: đề xuất chờ quyết định; không cấp phép triển khai. Cập nhật: 2026-10-20, đối chiếu mã `dev` tại `47634bc8162c13bd6ae024233ec24a0076738c51`. [Hợp đồng hiện hành](current-backend-contract.md) và [ranh giới kiến trúc](backend-modules-and-use-cases.md) mô tả phần đã có.
+Trạng thái: đề xuất chờ quyết định; không cấp phép triển khai. Cập nhật: 2026-11-08, đối chiếu mã `dev` tại `8036e2c185dfef7c4ed9941d736388c781e85f52`. [Hợp đồng hiện hành](current-backend-contract.md) và [ranh giới kiến trúc](backend-modules-and-use-cases.md) mô tả phần đã có.
 
-PR #28 đã thêm cập nhật, nhận xử lý, giải quyết, mở lại, đóng và hủy phiếu. Sự tồn tại của các lệnh này chưa chốt mọi lựa chọn trong bảng: nhận xử lý chưa có người phụ trách; mở lại chưa có giới hạn thời gian; quyền Agent/Admin và phản hồi từ chối còn điểm lệch. Ghi nhận mã đang chạy tách biệt với việc chọn chính sách nghiệp vụ.
+Các lệnh vòng đời phiếu (cập nhật, nhận, phân công, giải quyết, mở lại, đóng, hủy) đã có, kèm người phụ trách, audit và `expectedRevision`. Còn chưa chốt: giới hạn thời gian mở lại, tự đóng, nhóm hỗ trợ và phạm vi đọc của Agent. Ghi nhận mã đang chạy tách biệt với việc chọn chính sách nghiệp vụ.
 
 Người quyết định là chủ dự án; Backend/Frontend/QA hoặc phụ trách vận hành cung cấp đánh giá theo tác động. Bảng này không gán công việc Jira, không xác nhận một phê duyệt bên ngoài chưa được kiểm chứng. Mọi dòng dưới đây chưa có phương án nghiệp vụ mới được chọn trong đợt chỉnh tài liệu này.
 
