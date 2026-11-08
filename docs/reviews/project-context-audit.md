@@ -61,7 +61,7 @@ P1: có thể dẫn đến triển khai sai hợp đồng, sai dữ liệu hoặ
 
 **Bằng chứng:** [chỉ mục kiến trúc](../architecture/README.md), dòng 1–5 nói giữ tạo Submitted và hoãn lifecycle; dòng 11–21 gọi thư mục này là nguồn kỹ thuật duy nhất, đặt hợp đồng kiến trúc trên OpenAPI; dòng 43 lại yêu cầu sửa ngay tạo Draft và thêm Submit. Chỉ mục còn bỏ sót ADR-014, tài liệu module/use case và bộ đề xuất có đánh giá nguồn ở cùng thư mục.
 
-[Biên bản governance](../architecture/08-sprint-acceptance-and-governance-record.md), dòng 24–26 và 71, kết luận đủ điều kiện đóng và `ACCEPTED WITH CARRY-OVER`; trong khi [review TC-285](../sprint-1/TC-285/review.md), dòng 51, chỉ ghi nhận `BLOCKED — PENDING QA EVIDENCE AND HUMAN REVIEW` tại một SHA/ngày khác. Chúng không phải bằng chứng nghiệm thu cho HEAD hiện tại.
+[Biên bản governance](https://github.com/supportflow-ai/ai-it-service-desk/blob/db756d27f07819cefca208548d8ecc8155fa0d48/docs/architecture/08-sprint-acceptance-and-governance-record.md), dòng 24–26 và 71, kết luận đủ điều kiện đóng và `ACCEPTED WITH CARRY-OVER`; trong khi [review TC-285](../sprint-1/TC-285/review.md), dòng 51, chỉ ghi nhận `BLOCKED — PENDING QA EVIDENCE AND HUMAN REVIEW` tại một SHA/ngày khác. Chúng không phải bằng chứng nghiệm thu cho HEAD hiện tại.
 
 **Tác động:** người mới hoặc trợ lý có thể coi yêu cầu lịch sử là nhiệm vụ bắt buộc hiện tại, hoặc kết luận đã nghiệm thu từ một nhãn trong tài liệu.
 
@@ -69,9 +69,9 @@ P1: có thể dẫn đến triển khai sai hợp đồng, sai dữ liệu hoặ
 
 ### CTX-02 — P1: hợp đồng cũ yêu cầu đổi nghĩa enum và phá hợp đồng HTTP hiện tại
 
-**Bằng chứng:** [hợp đồng lifecycle cũ](../architecture/03-ticket-lifecycle-and-visibility-baseline.md), dòng 23–48, yêu cầu bảng trạng thái 0–8 và chuỗi JSON, loại Cancelled. Mã hiện tại trong [TicketStatus](https://github.com/supportflow-ai/ai-it-service-desk/blob/bf38ef903f46f6ea21f80da44c11d437391a9efb/src/backend/ServiceDesk.Domain/Ticketing/TicketStatus.cs), dòng 5–15, giữ các nghĩa 0–6 và thêm 7–9; [TicketDto](https://github.com/supportflow-ai/ai-it-service-desk/blob/bf38ef903f46f6ea21f80da44c11d437391a9efb/src/backend/ServiceDesk.Application/Ticketing/Contracts/TicketDto.cs), dòng 9, dùng `int Status`.
+**Bằng chứng:** [hợp đồng lifecycle cũ](https://github.com/supportflow-ai/ai-it-service-desk/blob/db756d27f07819cefca208548d8ecc8155fa0d48/docs/architecture/03-ticket-lifecycle-and-visibility-baseline.md), dòng 23–48, yêu cầu bảng trạng thái 0–8 và chuỗi JSON, loại Cancelled. Mã hiện tại trong [TicketStatus](https://github.com/supportflow-ai/ai-it-service-desk/blob/bf38ef903f46f6ea21f80da44c11d437391a9efb/src/backend/ServiceDesk.Domain/Ticketing/TicketStatus.cs), dòng 5–15, giữ các nghĩa 0–6 và thêm 7–9; [TicketDto](https://github.com/supportflow-ai/ai-it-service-desk/blob/bf38ef903f46f6ea21f80da44c11d437391a9efb/src/backend/ServiceDesk.Application/Ticketing/Contracts/TicketDto.cs), dòng 9, dùng `int Status`.
 
-[Hợp đồng field cũ](../architecture/02-ticket-domain-and-field-contract.md), dòng 22, 32–37, 69 và 82–113, còn yêu cầu `/api/v1`, tạo Draft, category GUID tùy chọn, tiêu đề tối đa 200, mã `TK-YYYY-00000` và Submit riêng. Những điều này khác [ADR-014](../adr/ADR-014-feature-use-cases-and-published-contracts.md), dòng 10–14, và mã đang chạy.
+[Hợp đồng field cũ](https://github.com/supportflow-ai/ai-it-service-desk/blob/db756d27f07819cefca208548d8ecc8155fa0d48/docs/architecture/02-ticket-domain-and-field-contract.md), dòng 22, 32–37, 69 và 82–113, còn yêu cầu `/api/v1`, tạo Draft, category GUID tùy chọn, tiêu đề tối đa 200, mã `TK-YYYY-00000` và Submit riêng. Những điều này khác [ADR-014](../adr/ADR-014-feature-use-cases-and-published-contracts.md), dòng 10–14, và mã đang chạy.
 
 **Tác động:** cùng số 2 có thể bị hiểu từ InProgress thành Triaged; số 6 từ Cancelled thành PendingExternal. Đổi DTO/route/category còn làm caller hiện tại mất tương thích. Không thể coi đây là chỉnh sửa tài liệu nhỏ hoặc refactor thuần túy.
 
@@ -79,7 +79,7 @@ P1: có thể dẫn đến triển khai sai hợp đồng, sai dữ liệu hoặ
 
 ### CTX-03 — P1: sơ đồ phân công kiểm tra revision trước quyền truy cập
 
-**Bằng chứng:** [hợp đồng assignment cũ](../architecture/06-ticket-assignment-policy.md), dòng 53–59, chỉ tìm ticket theo ID rồi trả 409 nếu revision lệch, sau đó mới kiểm tra quyền caller. Không nêu bước tải tài nguyên trong phạm vi được phép. [Đề xuất assignment/comment](../architecture/05-assignment-and-comment-policy.md), dòng 48, quy định quyền hiển thị và quyền hành động trước revision.
+**Bằng chứng:** [hợp đồng assignment cũ](https://github.com/supportflow-ai/ai-it-service-desk/blob/db756d27f07819cefca208548d8ecc8155fa0d48/docs/architecture/06-ticket-assignment-policy.md), dòng 53–59, chỉ tìm ticket theo ID rồi trả 409 nếu revision lệch, sau đó mới kiểm tra quyền caller. Không nêu bước tải tài nguyên trong phạm vi được phép. [Đề xuất assignment/comment](../architecture/05-assignment-and-comment-policy.md), dòng 48, quy định quyền hiển thị và quyền hành động trước revision.
 
 **Tác động:** nếu triển khai đúng sơ đồ cũ mà không thêm phạm vi truy cập, caller ngoài quyền có thể phân biệt ticket tồn tại qua phản hồi 409/403 thay vì bị che bằng 404. Đây là lỗi trong chỉ dẫn thiết kế; chưa có endpoint assignment để kết luận ứng dụng đang rò rỉ theo đường này.
 
@@ -87,7 +87,7 @@ P1: có thể dẫn đến triển khai sai hợp đồng, sai dữ liệu hoặ
 
 ### CTX-04 — P2: hướng dẫn RBAC vừa khác chính sách hiện hành, vừa đặt logic sai ranh giới module
 
-**Bằng chứng:** [ma trận RBAC cũ](../architecture/01-rbac-and-api-permission-matrix.md), dòng 46, cho đặt predicate Ticket trong `Application/Common/Security` hoặc `Infrastructure/Identity`; đoạn mẫu dùng Ticket, team, assignee và Lead. Trong khi [ModuleRules](../../tests/ServiceDesk.ArchitectureTests/ModuleRules.cs) cấm shared code truy cập entity module; [ADR-014](../adr/ADR-014-feature-use-cases-and-published-contracts.md) giao phạm vi truy cập cho Application của module.
+**Bằng chứng:** [ma trận RBAC cũ](https://github.com/supportflow-ai/ai-it-service-desk/blob/db756d27f07819cefca208548d8ecc8155fa0d48/docs/architecture/01-rbac-and-api-permission-matrix.md), dòng 46, cho đặt predicate Ticket trong `Application/Common/Security` hoặc `Infrastructure/Identity`; đoạn mẫu dùng Ticket, team, assignee và Lead. Trong khi [ModuleRules](../../tests/ServiceDesk.ArchitectureTests/ModuleRules.cs) cấm shared code truy cập entity module; [ADR-014](../adr/ADR-014-feature-use-cases-and-published-contracts.md) giao phạm vi truy cập cho Application của module.
 
 Hai bộ ma trận mô tả Agent theo team/assignment, còn [GetTicketDetail](https://github.com/supportflow-ai/ai-it-service-desk/blob/bf38ef903f46f6ea21f80da44c11d437391a9efb/src/backend/ServiceDesk.Application/Ticketing/GetTicketDetail/GetTicketDetailUseCase.cs), dòng 22–23, dùng AllTickets cho Agent/Admin. ADR-014 nói rõ chưa có cách ly theo team. `RoleNames.Lead` trong ví dụ chưa phải role được triển khai.
 
@@ -99,10 +99,10 @@ Hai bộ ma trận mô tả Agent theo team/assignment, còn [GetTicketDetail](h
 
 | Chủ đề | Bộ hợp đồng cũ | Bộ đề xuất sau đó |
 | --- | --- | --- |
-| Requester phản hồi PendingUser | Tự chuyển InProgress: [privacy contract](../architecture/05-comment-and-internal-note-privacy-contract.md), dòng 91 | Giữ PendingUser, nhân viên chủ động resume: [assignment/comment](../architecture/05-assignment-and-comment-policy.md), dòng 103 |
-| Resolve khi PendingExternal | Cho phép trực tiếp: [transition matrix](../architecture/04-ticket-state-transition-and-reopen-matrix.md), dòng 37 | Phải resume trước: [lifecycle policy](../architecture/04-ticket-lifecycle-policy.md), dòng 75 |
+| Requester phản hồi PendingUser | Tự chuyển InProgress: [privacy contract](https://github.com/supportflow-ai/ai-it-service-desk/blob/db756d27f07819cefca208548d8ecc8155fa0d48/docs/architecture/05-comment-and-internal-note-privacy-contract.md), dòng 91 | Giữ PendingUser, nhân viên chủ động resume: [assignment/comment](../architecture/05-assignment-and-comment-policy.md), dòng 103 |
+| Resolve khi PendingExternal | Cho phép trực tiếp: [transition matrix](https://github.com/supportflow-ai/ai-it-service-desk/blob/db756d27f07819cefca208548d8ecc8155fa0d48/docs/architecture/04-ticket-state-transition-and-reopen-matrix.md), dòng 37 | Phải resume trước: [lifecycle policy](../architecture/04-ticket-lifecycle-policy.md), dòng 75 |
 | Reopen/auto-close | Mở lại trong 168 giờ; tự đóng sau 72 giờ | Cảnh báo cửa sổ thực tế bị rút ngắn vì Closed là terminal; thông số và job vẫn chờ quyết định |
-| Tải tệp | Presigned URL 900 giây: [attachment contract](../architecture/07-attachment-security-limits-and-policy.md), dòng 35 | API xác thực rồi truyền tệp, không trả URL MinIO: [attachment proposal](../architecture/06-attachment-security.md), dòng 32 |
+| Tải tệp | Presigned URL 900 giây: [attachment contract](https://github.com/supportflow-ai/ai-it-service-desk/blob/db756d27f07819cefca208548d8ecc8155fa0d48/docs/architecture/07-attachment-security-limits-and-policy.md), dòng 35 | API xác thực rồi truyền tệp, không trả URL MinIO: [attachment proposal](../architecture/06-attachment-security.md), dòng 32 |
 | Giới hạn và xóa tệp | 10 MiB/file, 30 MiB/ticket, 10 file và quyền xóa trong một giờ | Giới hạn chưa duyệt; chưa mở API xóa trong MVP |
 
 **Tác động:** hai nhóm triển khai có thể đều làm đúng tài liệu họ đọc nhưng không tích hợp được; QA cũng không có kết quả mong đợi thống nhất.

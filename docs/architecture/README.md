@@ -32,17 +32,17 @@ Các đề xuất này là đầu vào thảo luận. Không suy ra quyền tri�
 
 ## Hồ sơ hợp đồng lịch sử
 
-Các tệp sau giữ bản ghi ngày 2026-09-29. Nhãn APPROVED và chỉ dẫn trong bản gốc không thay thế hợp đồng hiện hành hay phê duyệt nhiệm vụ mới. Chú thích đầu từng tệp chỉ rõ nguồn thay thế và điều còn mở; bản gốc được giữ để truy vết.
+Tám tệp sau giữ bản ghi ngày 2026-09-29 và **đã được đưa ra khỏi cây tệp hiện tại**; bản gốc nằm ở commit `db756d2` (liên kết ghim bên dưới, chú thích đầu tệp ở mốc đó chỉ rõ nguồn thay thế). Nhãn APPROVED và chỉ dẫn trong bản gốc không thay thế hợp đồng hiện hành hay phê duyệt nhiệm vụ mới. Ánh xạ sang nguồn thay thế nằm ở [bảng kiểm kê](legacy-requirements-inventory.md). Mặc định không đọc các bản này.
 
 | Hồ sơ | Cách tra cứu hiện tại |
 | --- | --- |
-| [RBAC/API cũ](01-rbac-and-api-permission-matrix.md) | Hợp đồng hiện hành, quy tắc bảo mật, DEC-02 |
-| [Fields cũ](02-ticket-domain-and-field-contract.md) | Hợp đồng hiện hành, DEC-01 |
-| [Lifecycle/visibility cũ](03-ticket-lifecycle-and-visibility-baseline.md) | Hợp đồng hiện hành; không remap enum |
-| [Transition/reopen cũ](04-ticket-state-transition-and-reopen-matrix.md) | DEC-03–05 |
-| [Comment/privacy cũ](05-comment-and-internal-note-privacy-contract.md) | Quy tắc bảo mật, DEC-03 |
-| [Assignment cũ](06-ticket-assignment-policy.md) | Quy tắc quyền trước revision, DEC-02 |
-| [Attachment cũ](07-attachment-security-limits-and-policy.md) | DEC-06–07 |
-| [Governance/nghiệm thu cũ](08-sprint-acceptance-and-governance-record.md) | [Hồ sơ Sprint 1](../sprint-1/README.md), DEC-08 |
+| [RBAC/API cũ](https://github.com/supportflow-ai/ai-it-service-desk/blob/db756d27f07819cefca208548d8ecc8155fa0d48/docs/architecture/01-rbac-and-api-permission-matrix.md) | Hợp đồng hiện hành, quy tắc bảo mật, DEC-02 |
+| [Fields cũ](https://github.com/supportflow-ai/ai-it-service-desk/blob/db756d27f07819cefca208548d8ecc8155fa0d48/docs/architecture/02-ticket-domain-and-field-contract.md) | Hợp đồng hiện hành, DEC-01 |
+| [Lifecycle/visibility cũ](https://github.com/supportflow-ai/ai-it-service-desk/blob/db756d27f07819cefca208548d8ecc8155fa0d48/docs/architecture/03-ticket-lifecycle-and-visibility-baseline.md) | Hợp đồng hiện hành; không remap enum |
+| [Transition/reopen cũ](https://github.com/supportflow-ai/ai-it-service-desk/blob/db756d27f07819cefca208548d8ecc8155fa0d48/docs/architecture/04-ticket-state-transition-and-reopen-matrix.md) | DEC-03–05 |
+| [Comment/privacy cũ](https://github.com/supportflow-ai/ai-it-service-desk/blob/db756d27f07819cefca208548d8ecc8155fa0d48/docs/architecture/05-comment-and-internal-note-privacy-contract.md) | Quy tắc bảo mật, DEC-03 |
+| [Assignment cũ](https://github.com/supportflow-ai/ai-it-service-desk/blob/db756d27f07819cefca208548d8ecc8155fa0d48/docs/architecture/06-ticket-assignment-policy.md) | Quy tắc quyền trước revision, DEC-02 |
+| [Attachment cũ](https://github.com/supportflow-ai/ai-it-service-desk/blob/db756d27f07819cefca208548d8ecc8155fa0d48/docs/architecture/07-attachment-security-limits-and-policy.md) | DEC-06–07 |
+| [Governance/nghiệm thu cũ](https://github.com/supportflow-ai/ai-it-service-desk/blob/db756d27f07819cefca208548d8ecc8155fa0d48/docs/architecture/08-sprint-acceptance-and-governance-record.md) | [Hồ sơ Sprint 1](../sprint-1/README.md), DEC-08 |
 
 Không dùng một thứ bậc tuyệt đối cho toàn bộ thư mục này. Xung đột về sản phẩm cần người quyết định; lỗi trong chỉ dẫn kỹ thuật đã được đính chính tại phần hiện hành. Nhãn lịch sử không chứng minh feature đã có hoặc CI/QA đã đạt trên commit mới.

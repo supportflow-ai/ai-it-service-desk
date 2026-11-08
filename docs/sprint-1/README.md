@@ -21,6 +21,6 @@ Các thư mục TC-196, TC-199, TC-246, TC-247, TC-260, TC-261, TC-264, TC-277, 
 
 Các tệp có manifest/mã băm giữ nguyên để đối chiếu. Bản diễn giải tiếng Việt mới đặt ở chỉ mục hoặc tài liệu hiện hành; các đoạn tiếng Anh còn lại trong bản nguồn/nhật ký là bằng chứng gốc. Quy tắc bảo toàn nằm trong [quy chuẩn tài liệu](../process/documentation-standard.md).
 
-[Review TC-285](TC-285/review.md) và [governance lịch sử](../architecture/08-sprint-acceptance-and-governance-record.md) khác ngày/SHA và kết luận. Không ghi đè một kết luận bằng kết luận kia. Nghiệm thu mới cần QA và chủ dự án xác nhận trên cùng phiên bản theo [DEC-08](../architecture/pending-business-decisions.md).
+[Review TC-285](TC-285/review.md) và [governance lịch sử](https://github.com/supportflow-ai/ai-it-service-desk/blob/db756d27f07819cefca208548d8ecc8155fa0d48/docs/architecture/08-sprint-acceptance-and-governance-record.md) khác ngày/SHA và kết luận. Không ghi đè một kết luận bằng kết luận kia. Nghiệm thu mới cần QA và chủ dự án xác nhận trên cùng phiên bản theo [DEC-08](../architecture/pending-business-decisions.md).
 
 Nguồn đang áp dụng: [bản đồ tài liệu](../README.md), [hợp đồng backend](../architecture/current-backend-contract.md), [quy trình kiểm chứng](../runbooks/backend-hardening-verification.md).

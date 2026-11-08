@@ -57,7 +57,7 @@ Sau refactor không chủ đích đổi schema, dùng `has-pending-model-changes
 
 ## 3. Kiến trúc và ranh giới module
 
-Modular Monolith, tổ chức **module trước, Clean Architecture bên trong module** ([ADR-015](docs/adr/ADR-015-module-first-clean-architecture.md), trạng thái Đề xuất cho tới khi CI đạt và nhóm duyệt). Tài liệu bằng chứng/đề xuất cũ trong `docs/reviews`, `docs/sprint-1`, `artifacts` và `docs/architecture/0*.md` vẫn ghi đường dẫn `ServiceDesk.Domain/Application/...` của mốc cũ: chỉ dùng để truy vết, không dùng làm chỗ đặt mã mới.
+Modular Monolith, tổ chức **module trước, Clean Architecture bên trong module** ([ADR-015](docs/adr/ADR-015-module-first-clean-architecture.md), trạng thái Đề xuất cho tới khi CI đạt và nhóm duyệt). Tài liệu bằng chứng/đề xuất cũ trong `docs/reviews`, `docs/sprint-1`, `artifacts` và sáu đề xuất `docs/architecture/0[1-6]-*.md` vẫn ghi đường dẫn `ServiceDesk.Domain/Application/...` của mốc cũ: chỉ dùng để truy vết, không dùng làm chỗ đặt mã mới.
 
 | Cần viết | Đặt ở |
 | --- | --- |
@@ -101,7 +101,7 @@ Modular Monolith, tổ chức **module trước, Clean Architecture bên trong m
 - Trong nhiệm vụ sửa bảo mật, được từ chối yêu cầu trái phép theo chính sách đã rõ và thêm kiểm thử hồi quy. Hỏi khi cần chọn chính sách mới, như quyền vai trò Agent (nhân viên hỗ trợ) theo chủ sở hữu, team hay assignment. Lỗ hổng không phải hành vi cần giữ.
 - Báo lỗi nghiêm trọng ngoài phạm vi kèm bằng chứng và ảnh hưởng; không âm thầm bỏ qua hoặc mở rộng nhiệm vụ.
 - Mặc định giữ tương thích API/dữ liệu. Chỉ đổi hợp đồng/đặc tả/tài liệu quy trình khi nhiệm vụ yêu cầu; không sửa kiểm thử, fixture hoặc baseline để hợp thức hóa lỗi hay làm CI đạt.
-- Khi di chuyển hoặc đổi tên tệp mã, cập nhật liên kết trong tài liệu loại `current`/`decision` theo [danh mục nguồn](docs/context-sources.json). Tài liệu `evidence`/`proposal`/`historical` giữ nguyên nội dung, đường dẫn và số dòng gốc; chỉ thay liên kết tương đối bị gãy bằng URL GitHub ghim SHA trước thay đổi.
+- Khi di chuyển hoặc đổi tên tệp mã, cập nhật liên kết trong tài liệu loại `current`/`decision` theo [danh mục nguồn](docs/context-sources.json). Tài liệu `evidence`/`proposal`/`historical` giữ nguyên nội dung, đường dẫn và số dòng gốc; chỉ thay liên kết tương đối bị gãy bằng URL GitHub ghim SHA trước thay đổi. Ngoại lệ lưu trữ duy nhất: tám tệp `historical` trong `docs/architecture/`: `01-rbac-and-api-permission-matrix`, `02-ticket-domain-and-field-contract`, `03-ticket-lifecycle-and-visibility-baseline`, `04-ticket-state-transition-and-reopen-matrix`, `05-comment-and-internal-note-privacy-contract`, `06-ticket-assignment-policy`, `07-attachment-security-limits-and-policy`, `08-sprint-acceptance-and-governance-record` (đuôi `.md`) đã được đưa ra khỏi cây tệp tại PR lưu trữ; bản gốc giữ nguyên ở commit `db756d27f07819cefca208548d8ecc8155fa0d48` và chỉ dẫn tới bằng URL ghim đó. Ngoại lệ này không áp dụng cho `evidence`, `proposal` hay tệp khác.
 
 ### Database và môi trường
 
