@@ -1,6 +1,6 @@
 # Ma trận quyền chính thức
 
-Trạng thái: tài liệu hiện hành, đối chiếu mã `dev@db756d2` (2026-11-08) và [ADR-016](../adr/ADR-016-support-team-routing-and-agent-scope.md). Thay thế vai trò tham chiếu của đề xuất cũ [02-rbac-permission-matrix.md](02-rbac-permission-matrix.md), vốn chỉ còn là nguồn truy vết. "Đã triển khai" là mô tả mã, không phải nghiệm thu; kết quả kiểm thử phải gắn với mốc chạy riêng.
+Trạng thái: tài liệu hiện hành, đối chiếu mã `dev@a182c9f` (2026-11-08; phân quyền chưa đổi kể từ `8036e2c`) và [ADR-016](../adr/ADR-016-support-team-routing-and-agent-scope.md). Thay thế vai trò tham chiếu của đề xuất cũ [02-rbac-permission-matrix.md](02-rbac-permission-matrix.md), vốn chỉ còn là nguồn truy vết. "Đã triển khai" là mô tả mã, không phải nghiệm thu; kết quả kiểm thử phải gắn với mốc chạy riêng.
 
 ## Nhãn trạng thái
 

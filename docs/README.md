@@ -1,6 +1,6 @@
 # Bản đồ tài liệu dự án
 
-Trạng thái: hiện hành cho kho backend. Cập nhật: 2026-11-08. Phần mô tả chức năng đã đối chiếu `dev` tại `8036e2c185dfef7c4ed9941d736388c781e85f52`, sau PR #50–#55; kết quả kiểm thử phải gắn với mốc chạy riêng.
+Trạng thái: hiện hành cho kho backend. Cập nhật: 2026-11-08. Phần mô tả chức năng đã đối chiếu `dev` tại `a182c9fde556423d04764fe2a0b7ac16af773923`, sau PR #50–#55 và #59–#60 (hợp đồng API và phân quyền không đổi kể từ #55); kết quả kiểm thử phải gắn với mốc chạy riêng.
 
 [Quy chuẩn tài liệu](process/documentation-standard.md) quy định cách viết tiếng Việt, ghi mốc nguồn và cập nhật theo thay đổi. [Bảng thuật ngữ](process/technical-glossary.md) thống nhất cách gọi giữa các tài liệu.
 

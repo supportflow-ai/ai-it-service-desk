@@ -4,7 +4,12 @@ Trạng thái: chỉ mục mốc nguồn hiện hành; cập nhật ngày 2026-1
 
 ## Mốc áp dụng
 
-Tài liệu hiện hành được đối chiếu với `dev@8036e2c185dfef7c4ed9941d736388c781e85f52` (2026-11-08), sau PR #50–#55: tái tổ chức module, Identity (phiên, mã đặt lại mật khẩu, giới hạn tần suất), Knowledge và các sửa lỗi triển khai cuốn chiếu. Mốc này mô tả mã, không phải bằng chứng nghiệm thu; kết quả CI gắn với SHA của từng PR.
+Hai mốc được ghi riêng:
+
+- **Mốc mã:** `dev@a182c9fde556423d04764fe2a0b7ac16af773923` (2026-11-08). Mã đổi qua PR #50–#55 (tái tổ chức module, Identity: phiên, mã đặt lại mật khẩu, giới hạn tần suất; Knowledge; các sửa lỗi triển khai cuốn chiếu) và PR #59–#60 (nền dữ liệu nhóm hỗ trợ: bảng, cột `tickets.support_team_id`, phiếu mới vào `MANUAL_TRIAGE`, backfill phiếu cũ, cổng đọc thành viên nhóm; chưa đổi phân quyền và OpenAPI). PR #56–#58 chỉ đổi tài liệu. Mốc mã cuối cùng đổi hợp đồng hay hành vi người dùng thấy được là `8036e2c` (PR #55).
+- **Tài liệu:** cập nhật tới cùng mốc `a182c9f`.
+
+Các mốc này mô tả mã, không phải bằng chứng nghiệm thu; kết quả CI gắn với SHA của từng PR.
 
 | Thành phần | Phạm vi |
 | --- | --- |
