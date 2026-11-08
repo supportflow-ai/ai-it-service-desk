@@ -23,17 +23,20 @@ internal sealed class GetTicketTimelineUseCase(
         var actorId = TicketActor.RequireId(currentUser);
         ArgumentNullException.ThrowIfNull(query);
 
-        var isStaff = TicketPermissions.IsStaff(currentUser);
-        var scope = isStaff ? (TicketReadScope)new TicketReadScope.AllTickets() : new TicketReadScope.OwnTickets(actorId);
-
+        var scope = TicketPermissions.ReadScopeFor(currentUser, actorId);
         var ticket = await ticketQueries.GetByIdAsync(query.TicketId, scope, cancellationToken);
+        var includeInternal = scope is TicketReadScope.AgentTickets or TicketReadScope.AllTickets;
+        if (ticket is null && scope is TicketReadScope.AgentTickets)
+        {
+            // Quyền chủ sở hữu chỉ cấp phần công khai khi người gọi không có quyền nhân viên trên phiếu.
+            ticket = await ticketQueries.GetByIdAsync(query.TicketId, new TicketReadScope.OwnTickets(actorId), cancellationToken);
+            includeInternal = false;
+        }
+
         if (ticket == null)
         {
             throw new KeyNotFoundException("Ticket not found.");
         }
-
-        // QUY TẮC AN TOÀN SỐ 1: Phía server lọc bỏ hoàn toàn ghi chú nội bộ nếu caller không phải Staff
-        var includeInternal = isStaff;
 
         return await timelineStore.GetForTicketAsync(query.TicketId, includeInternal, cancellationToken);
     }

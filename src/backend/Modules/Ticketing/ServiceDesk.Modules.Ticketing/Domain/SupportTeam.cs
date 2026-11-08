@@ -2,8 +2,7 @@ namespace ServiceDesk.Modules.Ticketing.Domain;
 
 /// <summary>
 /// Nhóm hỗ trợ: nơi xử lý phiếu, tách hoàn toàn khỏi <c>Department</c> (phòng ban của người gửi). Xem ADR-016.
-/// Giai đoạn nền dữ liệu: bảng và hàng đợi phân loại thủ công được tạo bằng migration; chưa có thao tác ghi,
-/// chưa có định tuyến và chưa dùng để cấp quyền đọc.
+/// Bảng và hàng đợi phân loại thủ công được tạo bằng migration. Phạm vi đọc chỉ tính nhóm đang hoạt động.
 /// </summary>
 public sealed class SupportTeam
 {

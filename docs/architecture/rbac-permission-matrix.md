@@ -1,6 +1,6 @@
 # Ma trận quyền chính thức
 
-Trạng thái: tài liệu hiện hành, đối chiếu mã `dev@a182c9f` (2026-11-08; phân quyền chưa đổi kể từ `8036e2c`) và [ADR-016](../adr/ADR-016-support-team-routing-and-agent-scope.md). Thay thế vai trò tham chiếu của đề xuất cũ [02-rbac-permission-matrix.md](02-rbac-permission-matrix.md), vốn chỉ còn là nguồn truy vết. "Đã triển khai" là mô tả mã, không phải nghiệm thu; kết quả kiểm thử phải gắn với mốc chạy riêng.
+Trạng thái: đối chiếu mã `dev@a182c9f` (2026-11-08) và [ADR-016](../adr/ADR-016-support-team-routing-and-agent-scope.md). Cột B1-PR3 mô tả thay đổi của ứng viên này. Tệp [02-rbac-permission-matrix.md](02-rbac-permission-matrix.md) dùng để truy vết.
 
 ## Nhãn trạng thái
 
@@ -19,14 +19,14 @@ Trạng thái: tài liệu hiện hành, đối chiếu mã `dev@a182c9f` (2026-
 
 ## Phạm vi đọc phiếu
 
-| Đối tượng | Hiện tại (**Đã triển khai**) | Đích |
+| Đối tượng | Tại mốc đối chiếu | B1-PR3 |
 | --- | --- | --- |
 | Requester | Chỉ phiếu của mình; ngoài phạm vi trả 404 | Không đổi |
-| Agent | Mọi phiếu (`AllTickets`) | **Đã duyệt – chưa triển khai**: phiếu thuộc nhóm mình là thành viên active hoặc được phân công trực tiếp |
+| Agent | Mọi phiếu (`AllTickets`) | Phiếu thuộc nhóm đang hoạt động mà Agent là thành viên hoặc được phân công trực tiếp |
 | Admin | Mọi phiếu | Không đổi |
-| Lead | Chưa có | **Đã duyệt – chưa triển khai**: đọc và điều phối trong nhóm mình phụ trách |
+| Lead | Có cờ `IsLead` của thành viên | Đọc theo quyền Agent của nhóm. Luồng điều phối thuộc đợt sau. |
 
-Chi tiết phiếu, timeline, danh sách tệp, xin URL tải xuống và hàng đợi dùng cùng quy tắc phạm vi. Đã chốt (ADR-016): Agent thuộc nhiều nhóm đọc theo hợp mọi nhóm đang hoạt động; phiếu cũ chưa kết thúc vào `MANUAL_TRIAGE`. Còn mở: lịch sử ghi chú nội bộ sau khi chuyển nhóm, hiệu lực tức thời khi thu hồi tư cách thành viên.
+Chi tiết, timeline, tệp, hàng đợi và lệnh của nhân viên dùng phạm vi nhóm hoặc phân công. Tư cách thành viên và quyền Lead được kiểm qua DB ở request kế tiếp sau khi thu hồi. Nếu Agent còn được phân công trực tiếp, quyền đọc phiếu vẫn có hiệu lực. Agent dùng quyền chủ sở hữu để đọc phần công khai của phiếu mình tạo. Sau chuyển nhóm, quyền xem lịch sử ghi chú cần phép riêng từ đội cũ và phải qua kiểm tra bảo mật theo ADR-016.
 
 ## Ma trận thao tác trên phiếu
 
@@ -34,10 +34,10 @@ Chi tiết phiếu, timeline, danh sách tệp, xin URL tải xuống và hàng 
 | --- | --- | --- | --- |
 | Tạo phiếu | Mọi người dùng đã đăng nhập; chủ sở hữu là người gọi; hỗ trợ `Idempotency-Key` | Tạo ở Submitted | Draft: **Mở** (DEC-01) |
 | Xem danh sách của tôi | Người gọi | | Không đổi |
-| Hàng đợi | Agent, Admin; hiện thấy mọi phiếu | | Lọc theo nhóm/phân công: **Đã duyệt – chưa triển khai** |
+| Hàng đợi | Agent, Admin | | B1-PR3 lọc theo nhóm/phân công trước khi đếm và phân trang |
 | Cập nhật | Chủ sở hữu hoặc Admin | Chỉ Submitted | |
 | Hủy | Chủ sở hữu hoặc Admin | Chỉ Submitted | |
-| Nhận xử lý (claim) | Agent hoặc Admin; phiếu đã phân công cho người khác chỉ Admin nhận thay được | Submitted hoặc Assigned | Phạm vi theo nhóm cho Agent thường: **Mở** |
+| Nhận xử lý (claim) | Agent hoặc Admin; phiếu đã phân công cho người khác chỉ Admin nhận thay được | Submitted hoặc Assigned | B1-PR3 yêu cầu phiếu nằm trong phạm vi của nhân viên |
 | Phân công / hủy phân công | Mọi Agent hoặc Admin, cho bất kỳ Agent nào | Gán không được khi Closed hoặc Cancelled; hủy phân công chỉ khi Assigned | Đích: Lead trong nhóm mình hoặc Admin (**Đã duyệt – chưa triển khai**). Cấm phân công lại khi Resolved (DEC-05): **Đã duyệt – chưa triển khai**, mã hiện vẫn cho gán khi Resolved |
 | Giải quyết | Agent hoặc Admin | Chỉ InProgress | Nội dung giải quyết: **Mở** |
 | Mở lại | Chủ sở hữu hoặc Admin | Resolved sang InProgress | Thời hạn mở lại: **Mở** (không dùng 168 giờ cũ) |
@@ -45,7 +45,7 @@ Chi tiết phiếu, timeline, danh sách tệp, xin URL tải xuống và hàng 
 | Trạng thái cuối | Closed là terminal; Resolved không terminal | | Không tự động đóng trong MVP |
 | Bình luận công khai | Chủ sở hữu phiếu; Agent/Admin | Không viết vào phiếu Closed/Cancelled | Phản hồi khi PendingUser: **Mở** (DEC-03) |
 | Ghi chú nội bộ | Agent hoặc Admin | | Requester không bao giờ thấy |
-| Timeline | Requester chỉ thấy phần công khai; staff thấy cả ghi chú nội bộ | | Lịch sử sau chuyển nhóm: **Mở** |
+| Timeline | Requester chỉ thấy phần công khai; nhân viên có quyền trên phiếu thấy ghi chú nội bộ | | Lịch sử sau chuyển nhóm cần quyền chia sẻ từ đội cũ. Luồng chia sẻ triển khai cùng chuyển nhóm. |
 | Tệp đính kèm | Người xem được phiếu: xin quyền tải lên, xác nhận, liệt kê, xin URL tải xuống; không viết vào phiếu Closed/Cancelled | | Giới hạn tệp: xem bên dưới |
 | Gợi ý AI (đọc, chấp nhận) | Chưa có endpoint | | Đích: Agent đọc; xác nhận định tuyến là việc của Lead (**Đã duyệt – chưa triển khai**) |
 
@@ -61,7 +61,7 @@ Chi tiết phiếu, timeline, danh sách tệp, xin URL tải xuống và hàng 
 | Tri thức: đọc | Admin đọc mọi bài; Agent đọc bài đã xuất bản và bài của mình; người khác chỉ bài đã xuất bản |
 | Phân tích, báo cáo | Chưa có module; **Mở** |
 
-Giới hạn: access token đã phát giữ vai trò cũ tới khi hết hạn (`Jwt:ExpiryMinutes`), nên thu hồi quyền chưa có hiệu lực tức thời (quyết định riêng trong DEC-02).
+Access token đã phát giữ vai trò JWT toàn hệ thống tới khi hết hạn (`Jwt:ExpiryMinutes`). Tư cách thành viên và quyền Lead được xét qua cơ sở dữ liệu.
 
 ## Tệp đính kèm (DEC-07)
 

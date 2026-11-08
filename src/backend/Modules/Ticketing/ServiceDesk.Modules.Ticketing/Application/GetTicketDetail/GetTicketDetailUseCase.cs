@@ -18,7 +18,8 @@ public interface IGetTicketDetail
 /// <summary>
 /// Xử lý lấy chi tiết ticket theo phạm vi quyền (Scope):
 /// - Requester: Chỉ đọc được ticket do chính mình tạo (nếu xem vé người khác -> trả về null / 404).
-/// - Agent / Admin: Đọc được vé trên toàn bộ hệ thống.
+/// - Agent: Đọc phiếu của nhóm đang hoạt động hoặc được phân công trực tiếp.
+/// - Admin: Đọc phiếu trên toàn bộ hệ thống.
 /// </summary>
 internal sealed class GetTicketDetailUseCase(ITicketQueries queries, ICurrentUser currentUser) : IGetTicketDetail
 {
@@ -26,8 +27,7 @@ internal sealed class GetTicketDetailUseCase(ITicketQueries queries, ICurrentUse
     {
         var requester = TicketActor.RequireId(currentUser);
         ArgumentNullException.ThrowIfNull(query);
-        TicketReadScope scope = TicketPermissions.IsStaff(currentUser)
-            ? new TicketReadScope.AllTickets() : new TicketReadScope.OwnTickets(requester);
+        var scope = TicketPermissions.ReadScopeFor(currentUser, requester, includeOwner: true);
         return queries.GetByIdAsync(query.Id, scope, cancellationToken);
     }
 }

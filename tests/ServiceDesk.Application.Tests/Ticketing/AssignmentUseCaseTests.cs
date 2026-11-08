@@ -2,6 +2,7 @@ using Moq;
 using ServiceDesk.SharedKernel.Application.Abstractions;
 using ServiceDesk.Modules.Identity.Application.Ports;
 using ServiceDesk.Modules.Ticketing.Application.AssignTicket;
+using ServiceDesk.Modules.Ticketing.Application.Authorization;
 using ServiceDesk.Modules.Ticketing.Application.Contracts;
 using ServiceDesk.Modules.Ticketing.Application.Ports;
 using ServiceDesk.Modules.Ticketing.Application.UnassignTicket;
@@ -36,7 +37,7 @@ public sealed class AssignmentUseCaseTests
         _user.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(false);
 
         var ticket = Ticket.Create(Guid.NewGuid(), "Title", "Valid description here", TicketCategories.VPN, _now.UtcDateTime);
-        _writer.Setup(w => w.GetForUpdateAsync(ticket.Id, It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
+        _writer.Setup(w => w.GetForUpdateAsync(ticket.Id, It.IsAny<TicketReadScope>(), It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
         _writer.Setup(w => w.GetRevision(ticket)).Returns(1);
         _writer.Setup(w => w.UpdateTicketWithAuditAsync(
                 ticket,
@@ -64,7 +65,7 @@ public sealed class AssignmentUseCaseTests
         var ticket = Ticket.Create(Guid.NewGuid(), "Title", "Valid description here", TicketCategories.VPN, _now.UtcDateTime);
         ticket.Assign(_agentId, _now.UtcDateTime);
 
-        _writer.Setup(w => w.GetForUpdateAsync(ticket.Id, It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
+        _writer.Setup(w => w.GetForUpdateAsync(ticket.Id, It.IsAny<TicketReadScope>(), It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
         _writer.Setup(w => w.GetRevision(ticket)).Returns(1);
         _writer.Setup(w => w.UpdateTicketWithAuditAsync(
                 ticket,
@@ -90,7 +91,7 @@ public sealed class AssignmentUseCaseTests
         _user.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(false);
 
         var ticket = Ticket.Create(Guid.NewGuid(), "Title", "Valid description here", TicketCategories.VPN, _now.UtcDateTime);
-        _writer.Setup(w => w.GetForUpdateAsync(ticket.Id, It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
+        _writer.Setup(w => w.GetForUpdateAsync(ticket.Id, It.IsAny<TicketReadScope>(), It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
         _writer.Setup(w => w.GetRevision(ticket)).Returns(1);
         _writer.Setup(w => w.UpdateTicketWithAuditAsync(ticket, It.IsAny<TicketComment>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new TicketDto(ticket.Id, "IT-2026-0001", ticket.Title, ticket.Description, ticket.CategoryId, (int)TicketStatus.Assigned, ticket.CreatedAt));
@@ -113,7 +114,7 @@ public sealed class AssignmentUseCaseTests
 
         var ticket = Ticket.Create(Guid.NewGuid(), "Title", "Valid description here", TicketCategories.VPN, _now.UtcDateTime);
         ticket.Assign(_agentId, _now.UtcDateTime);
-        _writer.Setup(w => w.GetForUpdateAsync(ticket.Id, It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
+        _writer.Setup(w => w.GetForUpdateAsync(ticket.Id, It.IsAny<TicketReadScope>(), It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
         _writer.Setup(w => w.GetRevision(ticket)).Returns(1);
         _writer.Setup(w => w.UpdateTicketWithAuditAsync(ticket, It.IsAny<TicketComment>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new TicketDto(ticket.Id, "IT-2026-0001", ticket.Title, ticket.Description, ticket.CategoryId, (int)TicketStatus.Submitted, ticket.CreatedAt));

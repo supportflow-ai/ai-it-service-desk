@@ -30,7 +30,8 @@ internal sealed class UpdateTicketUseCase(ITicketWriter writer, ICurrentUser cur
         var actorId = TicketActor.RequireId(currentUser);
         ArgumentNullException.ThrowIfNull(command);
 
-        var ticket = await writer.GetForUpdateAsync(command.Id, cancellationToken);
+        var scope = TicketPermissions.OwnerScopeFor(currentUser, actorId);
+        var ticket = await writer.GetForUpdateAsync(command.Id, scope, cancellationToken);
         if (ticket == null || !TicketPermissions.CanActAsOwner(ticket, actorId, currentUser))
         {
             throw new KeyNotFoundException("Ticket not found or outside access scope.");

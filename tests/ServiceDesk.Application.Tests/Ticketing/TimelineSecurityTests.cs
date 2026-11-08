@@ -96,4 +96,30 @@ public sealed class TimelineSecurityTests
         Assert.Contains(result, r => r.IsInternal);
         _timelineStore.Verify(s => s.GetForTicketAsync(_ticketId, true, It.IsAny<CancellationToken>()), Times.Once);
     }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Agent_OnlySeesPublicTimelineThroughOwnership(bool hasRequesterRole)
+    {
+        _user.SetupGet(u => u.IsAuthenticated).Returns(true);
+        _user.SetupGet(u => u.UserId).Returns(_agentId.ToString());
+        _user.SetupGet(u => u.Roles).Returns(hasRequesterRole ? [RoleNames.Agent, RoleNames.Requester] : [RoleNames.Agent]);
+        _user.Setup(u => u.IsInRole(RoleNames.Agent)).Returns(true);
+        _user.Setup(u => u.IsInRole(RoleNames.Requester)).Returns(hasRequesterRole);
+
+        _ticketQueries.Setup(q => q.GetByIdAsync(
+                _ticketId, new TicketReadScope.AgentTickets(_agentId, false), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((TicketDto?)null);
+        _ticketQueries.Setup(q => q.GetByIdAsync(
+                _ticketId, new TicketReadScope.OwnTickets(_agentId), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new TicketDto(_ticketId, "IT-2026-0001", "VPN", "Issue", "VPN", 1, _now.UtcDateTime));
+
+        var useCase = new GetTicketTimelineUseCase(_ticketQueries.Object, _timelineStore.Object, _user.Object);
+        await useCase.ExecuteAsync(new(_ticketId));
+
+        _ticketQueries.VerifyAll();
+        _timelineStore.Verify(s => s.GetForTicketAsync(_ticketId, false, It.IsAny<CancellationToken>()), Times.Once);
+        _timelineStore.VerifyNoOtherCalls();
+    }
 }

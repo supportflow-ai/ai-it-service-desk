@@ -37,8 +37,7 @@ internal sealed class ConfirmAttachmentUploadUseCase(
             throw new ArgumentException("Storage key không hợp lệ hoặc không thuộc về vé này.");
         }
 
-        var isStaff = TicketPermissions.IsStaff(currentUser);
-        var scope = isStaff ? (TicketReadScope)new TicketReadScope.AllTickets() : new TicketReadScope.OwnTickets(actorId);
+        var scope = TicketPermissions.ReadScopeFor(currentUser, actorId, includeOwner: true);
 
         var ticket = await ticketQueries.GetByIdAsync(command.TicketId, scope, cancellationToken);
         if (ticket == null) throw new KeyNotFoundException("Ticket not found.");

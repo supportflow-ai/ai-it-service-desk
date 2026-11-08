@@ -1,3 +1,4 @@
+using ServiceDesk.Modules.Ticketing.Application.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using ServiceDesk.SharedKernel.Application;
@@ -20,7 +21,7 @@ public sealed class TicketAuditPersistenceTests(TicketIdempotencyPostgresFixture
         var agent = Guid.NewGuid();
         await using var context = fixture.CreateContext();
         var writer = new PostgresTicketWriter(context);
-        var ticket = (await writer.GetForUpdateAsync(id, default))!;
+        var ticket = (await writer.GetForUpdateAsync(id, new TicketReadScope.AllTickets(), default))!;
         var previousRevision = writer.GetRevision(ticket);
         ticket.Assign(agent, Now);
         var audit = Audit(ticket.Id, agent);
@@ -56,7 +57,7 @@ public sealed class TicketAuditPersistenceTests(TicketIdempotencyPostgresFixture
             await using (var context = fixture.CreateContext())
             {
                 var writer = new PostgresTicketWriter(context);
-                var ticket = (await writer.GetForUpdateAsync(id, default))!;
+                var ticket = (await writer.GetForUpdateAsync(id, new TicketReadScope.AllTickets(), default))!;
                 ticket.Assign(Guid.NewGuid(), Now);
                 var exception = await Record.ExceptionAsync(() => writer.UpdateTicketWithAuditAsync(ticket, Audit(id), default));
                 Assert.NotNull(exception);
@@ -89,8 +90,8 @@ public sealed class TicketAuditPersistenceTests(TicketIdempotencyPostgresFixture
         await using var second = fixture.CreateContext();
         var firstWriter = new PostgresTicketWriter(first);
         var secondWriter = new PostgresTicketWriter(second);
-        var winner = (await firstWriter.GetForUpdateAsync(id, default))!;
-        var stale = (await secondWriter.GetForUpdateAsync(id, default))!;
+        var winner = (await firstWriter.GetForUpdateAsync(id, new TicketReadScope.AllTickets(), default))!;
+        var stale = (await secondWriter.GetForUpdateAsync(id, new TicketReadScope.AllTickets(), default))!;
         var agent = Guid.NewGuid();
         winner.Assign(agent, Now);
         var firstAudit = Audit(id, agent);
@@ -112,7 +113,7 @@ public sealed class TicketAuditPersistenceTests(TicketIdempotencyPostgresFixture
         var id = await CreateTicketAsync();
         await using var context = fixture.CreateContext();
         var writer = new PostgresTicketWriter(context);
-        var ticket = (await writer.GetForUpdateAsync(id, default))!;
+        var ticket = (await writer.GetForUpdateAsync(id, new TicketReadScope.AllTickets(), default))!;
         ticket.Assign(Guid.NewGuid(), Now);
 
         await Assert.ThrowsAsync<ArgumentException>(() => writer.UpdateTicketWithAuditAsync(ticket, Audit(Guid.NewGuid()), default));

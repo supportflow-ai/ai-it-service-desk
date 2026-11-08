@@ -32,7 +32,8 @@ internal sealed class AddInternalNoteUseCase(
             throw new UnauthorizedAccessException("Requester không có quyền tạo ghi chú nội bộ.");
         }
 
-        var ticket = await writer.GetForUpdateAsync(command.TicketId, cancellationToken);
+        var scope = TicketPermissions.ReadScopeFor(currentUser, actorId);
+        var ticket = await writer.GetForUpdateAsync(command.TicketId, scope, cancellationToken);
         if (ticket == null) throw new KeyNotFoundException("Ticket not found.");
 
         var authorName = await agentDirectory.GetDisplayNameAsync(actorId, cancellationToken);

@@ -1,6 +1,7 @@
 using Moq;
 using ServiceDesk.SharedKernel.Application.Abstractions;
 using ServiceDesk.Modules.Ticketing.Application.AddComment;
+using ServiceDesk.Modules.Ticketing.Application.Authorization;
 using ServiceDesk.Modules.Ticketing.Application.Contracts;
 using ServiceDesk.Modules.Ticketing.Application.Ports;
 using ServiceDesk.SharedKernel.Authorization;
@@ -38,7 +39,7 @@ public sealed class CommentAuthorizationTests
     {
         SetRoles(roleList);
         var ticket = CreateTicket(ownsTicket ? _actor : Guid.NewGuid());
-        _writer.Setup(writer => writer.GetForUpdateAsync(ticket.Id, It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
+        _writer.Setup(writer => writer.GetForUpdateAsync(ticket.Id, It.IsAny<TicketReadScope>(), It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
         _directory.Setup(directory => directory.GetDisplayNameAsync(_actor, It.IsAny<CancellationToken>())).ReturnsAsync("Người dùng kiểm thử");
         TicketComment? saved = null;
         _timeline.Setup(store => store.AddToOpenTicketAsync(It.IsAny<TicketComment>(), It.IsAny<CancellationToken>()))
@@ -66,7 +67,7 @@ public sealed class CommentAuthorizationTests
     {
         SetRoles(RoleNames.Requester);
         var ticket = CreateTicket(Guid.NewGuid());
-        _writer.Setup(writer => writer.GetForUpdateAsync(ticket.Id, It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
+        _writer.Setup(writer => writer.GetForUpdateAsync(ticket.Id, It.IsAny<TicketReadScope>(), It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
 
         await Assert.ThrowsAsync<KeyNotFoundException>(() => CreateUseCase().ExecuteAsync(new(ticket.Id, "Không được ghi")));
 
@@ -79,7 +80,7 @@ public sealed class CommentAuthorizationTests
     {
         SetRoles(RoleNames.Requester);
         var id = Guid.NewGuid();
-        _writer.Setup(writer => writer.GetForUpdateAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync((Ticket?)null);
+        _writer.Setup(writer => writer.GetForUpdateAsync(id, It.IsAny<TicketReadScope>(), It.IsAny<CancellationToken>())).ReturnsAsync((Ticket?)null);
 
         await Assert.ThrowsAsync<KeyNotFoundException>(() => CreateUseCase().ExecuteAsync(new(id, "Không được ghi")));
 

@@ -2,6 +2,7 @@ using System.Data;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
+using ServiceDesk.Modules.Ticketing.Application.Authorization;
 using ServiceDesk.Modules.Ticketing.Application.Contracts;
 using ServiceDesk.Modules.Ticketing.Application.Idempotency;
 using ServiceDesk.Modules.Ticketing.Application.Ports;
@@ -104,8 +105,9 @@ internal sealed class PostgresTicketWriter(DbContext context) : ITicketWriter
         _context.Database.SqlQuery<DateTime>($"SELECT clock_timestamp() AS \"Value\"")
             .SingleAsync(cancellationToken);
 
-    public Task<Ticket?> GetForUpdateAsync(Guid id, CancellationToken cancellationToken)
-        => _context.Set<Ticket>().SingleOrDefaultAsync(t => t.Id == id, cancellationToken);
+    public Task<Ticket?> GetForUpdateAsync(Guid id, TicketReadScope scope, CancellationToken cancellationToken)
+        => TicketScopeQuery.Apply(_context.Set<Ticket>(), _context, scope)
+            .SingleOrDefaultAsync(t => t.Id == id, cancellationToken);
 
     public uint GetRevision(Ticket ticket)
     {

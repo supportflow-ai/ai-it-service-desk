@@ -4,6 +4,7 @@ using ServiceDesk.Modules.Ticketing.Application.AssignTicket;
 using ServiceDesk.Modules.Ticketing.Application.CancelTicket;
 using ServiceDesk.Modules.Ticketing.Application.ClaimTicket;
 using ServiceDesk.Modules.Ticketing.Application.CloseTicket;
+using ServiceDesk.Modules.Ticketing.Application.Authorization;
 using ServiceDesk.Modules.Ticketing.Application.Contracts;
 using ServiceDesk.Modules.Ticketing.Application.Ports;
 using ServiceDesk.Modules.Ticketing.Application.ReopenTicket;
@@ -45,7 +46,7 @@ public sealed class TicketAuditUseCaseTests
         var directory = new Mock<IAgentDirectory>();
         directory.Setup(value => value.IsAgentAsync(actor, It.IsAny<CancellationToken>())).ReturnsAsync(true);
         var writer = new Mock<ITicketWriter>(MockBehavior.Strict);
-        writer.Setup(value => value.GetForUpdateAsync(ticket.Id, It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
+        writer.Setup(value => value.GetForUpdateAsync(ticket.Id, It.IsAny<TicketReadScope>(), It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
         writer.Setup(value => value.GetRevision(ticket)).Returns(42);
         var failure = new InvalidOperationException("Lỗi ghi dữ liệu được chủ động tạo trong kiểm thử.");
         writer.Setup(value => value.UpdateTicketWithAuditAsync(ticket,

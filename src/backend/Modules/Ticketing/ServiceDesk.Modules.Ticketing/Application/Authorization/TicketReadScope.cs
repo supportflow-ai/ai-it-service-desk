@@ -22,7 +22,21 @@ public abstract record TicketReadScope
         }
     }
 
-    /// <summary>Đọc toàn bộ vé trong workspace (Agent / Admin scope).</summary>
+    /// <summary>Đọc phiếu thuộc nhóm đang hoạt động hoặc được phân công trực tiếp cho Agent.</summary>
+    public sealed record AgentTickets : TicketReadScope
+    {
+        public Guid ActorId { get; }
+        public bool IncludeOwnTickets { get; }
+
+        public AgentTickets(Guid actorId, bool includeOwnTickets = false)
+        {
+            if (actorId == Guid.Empty) throw new ArgumentException("Yêu cầu danh tính Agent.", nameof(actorId));
+            ActorId = actorId;
+            IncludeOwnTickets = includeOwnTickets;
+        }
+    }
+
+    /// <summary>Đọc toàn bộ phiếu trong workspace (Admin).</summary>
     public sealed record AllTickets : TicketReadScope;
 }
 

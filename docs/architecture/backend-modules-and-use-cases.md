@@ -64,13 +64,13 @@ Mỗi tính năng có thư mục chứa giao diện, dữ liệu đầu vào và
 
 ## Quyền truy cập và các lệnh ghi
 
-Truy vấn chi tiết dùng `OwnTickets(actorId)` cho Requester và `AllTickets` cho Agent/Admin, kể cả người có nhiều vai trò. Tạo/danh sách luôn theo người đang đăng nhập. Phạm vi null hoặc không hợp lệ bị từ chối; phiếu thiếu hoặc ngoài phạm vi trả 404.
+Tại mốc đối chiếu, chi tiết dùng `OwnTickets(actorId)` cho Requester và `AllTickets` cho Agent/Admin. B1-PR3 dùng thêm `AgentTickets` cho Agent theo [ADR-016](../adr/ADR-016-support-team-routing-and-agent-scope.md). PostgreSQL lọc theo phân công hoặc thành viên của nhóm đang hoạt động trước khi đếm, phân trang và chiếu dữ liệu. Phiếu thiếu hoặc ngoài phạm vi trả 404.
 
-Các lệnh ghi của PR #28 dùng `ITicketWriter.GetForUpdateAsync` tải thực thể rồi kiểm tra quyền riêng. Phương thức này chưa nhận `TicketReadScope`. Tên phương thức không chứng minh có khóa dòng: bộ tích hợp hiện dùng `SingleOrDefaultAsync`.
+Từ B1-PR3, `ITicketWriter.GetForUpdateAsync` nhận `TicketReadScope` để tải phiếu trong phạm vi trước khi áp dụng quy tắc của từng lệnh. Bộ tích hợp dùng `SingleOrDefaultAsync`; cập nhật phiếu dựa vào revision để phát hiện xung đột.
 
 Các điểm cần xử lý được ghi trong [hợp đồng hiện hành](current-backend-contract.md#các-điểm-chưa-đạt-cần-xử-lý): quyền nhận xử lý Agent/Admin chưa thống nhất giữa HTTP và Application; giải quyết phiếu tải ID trước khi kiểm tra vai trò; lỗi ghi đồng thời chưa có ánh xạ phản hồi riêng.
 
-Nhận xử lý chưa lưu người phụ trách. Mở lại chưa kiểm tra thời gian hoặc lịch sử giải quyết. Chưa có phân quyền theo nhóm, phân công hoặc thu hồi tức thời quyền trong JWT đã phát. Những giới hạn này tiếp tục theo [bảng quyết định](pending-business-decisions.md).
+Mở lại chưa kiểm tra thời gian hoặc lịch sử giải quyết. B1-PR3 kiểm quyền nhóm qua cơ sở dữ liệu ở request hiện tại. Luồng điều phối Lead và chia sẻ lịch sử khi chuyển nhóm được theo dõi trong [bảng quyết định](pending-business-decisions.md).
 
 ## Giao dịch và lưu dữ liệu
 

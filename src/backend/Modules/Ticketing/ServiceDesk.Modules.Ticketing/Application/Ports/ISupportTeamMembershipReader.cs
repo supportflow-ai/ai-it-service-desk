@@ -5,7 +5,6 @@ namespace ServiceDesk.Modules.Ticketing.Application.Ports;
 /// <b>và</b> nhóm đang hoạt động; thu hồi tư cách là xóa dòng thành viên. Dữ liệu lấy từ cơ sở dữ liệu ở mỗi lần gọi,
 /// không dựa vào JWT hay dữ liệu client, và không tra Identity: người dùng không có dòng thành viên thì không có
 /// quyền nào. Một người thuộc nhiều nhóm có quyền là hợp của mọi nhóm; <c>IsLead</c> chỉ xét riêng từng nhóm.
-/// Chưa được nối vào phạm vi đọc phiếu.
 /// </summary>
 public interface ISupportTeamMembershipReader
 {
