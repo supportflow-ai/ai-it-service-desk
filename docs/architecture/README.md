@@ -10,7 +10,9 @@ Trạng thái: hiện hành cho kho backend. Đối chiếu `dev` tại `8036e2c
 | [Mô-đun và luồng xử lý](backend-modules-and-use-cases.md) | Tổ chức module trước, Clean bên trong module (ADR-015), 12 luồng nghiệp vụ, giao diện công khai và giao dịch |
 | [Hợp đồng backend](current-backend-contract.md) | API, mười mã trạng thái, dữ liệu và quyền đã triển khai tại SHA được ghi |
 | [Quy tắc thiết kế bảo mật](security-design-rules.md) | Quyền trước revision, vị trí policy Ticketing, tình huống phủ định |
-| [Danh mục ADR](../adr/README.md) | Quan hệ giữa quyết định nền tảng và ADR-011–015 |
+| [Danh mục ADR](../adr/README.md) | Quan hệ giữa quyết định nền tảng và ADR-011–016 |
+| [Ma trận quyền](rbac-permission-matrix.md) | Quyền hiện tại và đích đã duyệt (đã triển khai / đã duyệt chưa triển khai / mở) |
+| [Kiểm kê yêu cầu cũ](legacy-requirements-inventory.md) | Yêu cầu trong các tệp `01–08` đã có, đã duyệt chưa làm, còn mở hay thay thế |
 | [Quyết định còn mở](pending-business-decisions.md) | Các lựa chọn nghiệp vụ chưa cấp phép triển khai |
 
 Tạo ticket hiện tại vẫn là Submitted; JSON status là số. Không đổi sang Draft, bảng enum 0–8 hoặc `/api/v1` chỉ vì gặp yêu cầu đó trong hồ sơ cũ. API/DB đang có được bảo vệ bằng baseline và kiểm thử; thay hợp đồng cần nhiệm vụ và phương án chuyển đổi rõ ràng.
