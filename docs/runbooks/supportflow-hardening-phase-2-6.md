@@ -1,5 +1,7 @@
 # Hoàn thiện attachment, hợp đồng và kết nối AI
 
+Hồ sơ đợt củng cố (lịch sử), đã hợp nhất vào `dev` qua PR #50–#53; nội dung giữ nguyên để truy vết. Hướng dẫn hiện hành: [kiểm chứng backend](backend-hardening-verification.md). Trạng thái "chưa commit/working tree" bên dưới là của thời điểm viết, không mô tả `dev` hôm nay.
+
 Phạm vi: working tree trên `dev`, đã hợp nhất ba commit và fast-forward từ `44ba0b4` tới `659289c3a1cf8e4b9da86a15ea890ee59bcc3e6d`, cập nhật 03/11/2026. Đây là hướng dẫn kiểm chứng code đang sửa, chưa phải bằng chứng triển khai VPS hoặc phát hành. Fetch GitHub trong lần này bị lỗi mạng; mốc tích hợp là ref origin/dev đã có trên máy.
 
 ## Attachment

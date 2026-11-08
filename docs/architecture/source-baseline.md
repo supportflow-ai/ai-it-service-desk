@@ -1,32 +1,23 @@
 # Mốc mã nguồn và phạm vi tài liệu
 
-Trạng thái: chỉ mục mốc nguồn hiện hành; cập nhật ngày 2026-10-20 (Asia/Bangkok).
+Trạng thái: chỉ mục mốc nguồn hiện hành; cập nhật ngày 2026-11-08 (Asia/Bangkok).
 
 ## Mốc áp dụng
 
-Nhánh `codex/docs-vi-rebaseline` được chuẩn bị trên `dev@47634bc8162c13bd6ae024233ec24a0076738c51`, sau PR #28 và #29. Mã nguồn, tài liệu, công cụ Python và bản chuẩn OpenAPI trong thay đổi này được đối chiếu trên cùng bản làm việc.
+Tài liệu hiện hành được đối chiếu với `dev@8036e2c185dfef7c4ed9941d736388c781e85f52` (2026-11-08), sau PR #50–#55: tái tổ chức module, Identity (phiên, mã đặt lại mật khẩu, giới hạn tần suất), Knowledge và các sửa lỗi triển khai cuốn chiếu. Mốc này mô tả mã, không phải bằng chứng nghiệm thu; kết quả CI gắn với SHA của từng PR.
 
 | Thành phần | Phạm vi |
 | --- | --- |
-| Mã backend kế thừa từ dev | 12 luồng nghiệp vụ; sáu thao tác vòng đời phiếu được thêm ở PR #28 |
+| Mã backend | Bốn module (Identity, Ticketing, Knowledge, AIAssistance); 36 luồng nghiệp vụ |
+| Hợp đồng OpenAPI | 40 đường dẫn, 41 thao tác trong `contracts/backend/openapi-baseline.json` |
+| Kiểm thử hợp đồng | `PublishedApiMatchesBaseline` so sánh toàn bộ tài liệu OpenAPI |
 | Tài liệu hiện hành | Tiếng Việt, phân biệt hành vi đang có, đề xuất, quyết định và bằng chứng lịch sử |
-| Hợp đồng OpenAPI | 16 đường dẫn, gồm sáu thao tác mới và `UpdateTicketRequest`; mô tả Swagger theo PR #29 |
-| Kiểm thử hợp đồng | So sánh toàn bộ tài liệu OpenAPI, giữ kiểm tra chi tiết từng đường dẫn/lược đồ đã công bố |
-| Công cụ phát triển | Hai công cụ Python, kiểm thử và hướng dẫn được công bố cùng nhau |
 
-[Hợp đồng backend](current-backend-contract.md) và [mô-đun/luồng xử lý](backend-modules-and-use-cases.md) mô tả mã tại mốc này. Liên kết mã tương đối mở checkout của người đọc; kiểm tra HEAD trước khi áp dụng. Kết quả kiểm thử của một commit cũ không xác nhận thay đổi mới.
-
-Bản local `codex/backend-clean-architecture@334485d` được dùng trong lần rà soát ban đầu chỉ có sáu luồng; khác biệt này và cách khắc phục được lưu trong [báo cáo rà soát](../reviews/documentation-audit-20261020.md). Dùng nhánh đã đồng bộ để kiểm chứng phần vòng đời mới.
+[Hợp đồng backend](current-backend-contract.md) và [mô-đun/luồng xử lý](backend-modules-and-use-cases.md) mô tả mã tại mốc này. Liên kết mã tương đối mở checkout của người đọc; kiểm tra HEAD trước khi áp dụng. Kết quả kiểm thử của một commit cũ không xác nhận thay đổi mới. Mốc cũ `dev@47634bc` (sau PR #28 và #29) và bản local `codex/backend-clean-architecture@334485d` chỉ còn trong [báo cáo rà soát](../reviews/documentation-audit-20261020.md) để truy vết.
 
 ## Nhánh tái tổ chức theo module (2026-11-07)
 
 Nhánh `refactor/backend-module-first` dựa trên `dev@0f189b5` chuyển mã sang `src/backend/Modules/<Module>` và `src/backend/BuildingBlocks` theo [ADR-015](../adr/ADR-015-module-first-clean-architecture.md). Việc di chuyển không đổi API, dữ liệu hay hành vi nghiệp vụ; các sửa bảo mật Identity đi trước ở commit riêng. Kết quả kiểm thử gắn với SHA của lần chạy CI ghi trong PR #50. Liên kết tương đối trong tài liệu hiện hành trỏ tới vị trí mới; tài liệu bằng chứng giữ đường dẫn của mốc cũ.
-
-## PR #29 có thay đổi gì liên quan tài liệu
-
-PR #29 bổ sung/Việt hóa chú thích mã và đổi một số chuỗi thông báo lỗi, lý do AI không khả dụng, mô tả Swagger và thông báo vận hành. Ba khoảng cách về quyền nhận xử lý, thứ tự kiểm tra ở giải quyết phiếu và ánh xạ lỗi ghi đồng thời vẫn được ghi trong hợp đồng hiện hành.
-
-Giữ định danh JSON/mã HTTP không có nghĩa giữ nguyên nội dung từng thông báo lỗi. Bên sử dụng cần dựa vào hợp đồng đã công bố khi xử lý phản hồi.
 
 ## Đồng bộ hợp đồng API
 
