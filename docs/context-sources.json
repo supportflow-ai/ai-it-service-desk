@@ -180,6 +180,12 @@
       "kind": "historical",
       "notice": "Hồ sơ đợt củng cố",
       "replacement": "docs/runbooks/backend-hardening-verification.md"
+    },
+    "docs/architecture/rbac-permission-matrix.md": {
+      "kind": "current"
+    },
+    "docs/architecture/legacy-requirements-inventory.md": {
+      "kind": "current"
     }
   },
   "groups": {
