@@ -2,7 +2,7 @@
 
 Backend .NET của SupportFlow AI, tổ chức theo module trước, Clean Architecture bên trong từng module (Identity, Ticketing, Knowledge, AIAssistance). Kho này sở hữu API, nghiệp vụ, truy cập dữ liệu, tiến trình nền, migration và kiểm thử backend.
 
-Mốc tài liệu: đối chiếu mã `dev` tại `8036e2c185dfef7c4ed9941d736388c781e85f52`, cập nhật 2026-11-08, sau các PR #50–#55 (refactor module, Identity, Knowledge, giới hạn tần suất). Mốc này mô tả mã nguồn, không thay bằng chứng nghiệm thu. Xem [quy chuẩn tài liệu](docs/process/documentation-standard.md) và [bảng thuật ngữ](docs/process/technical-glossary.md).
+Mốc tài liệu: đối chiếu mã `dev` tại `a182c9fde556423d04764fe2a0b7ac16af773923`, cập nhật 2026-11-08, sau các PR #50–#55 (refactor module, Identity, Knowledge, giới hạn tần suất) và #59–#60 (nền dữ liệu nhóm hỗ trợ, chưa đổi phân quyền). Mốc này mô tả mã nguồn, không thay bằng chứng nghiệm thu. Xem [quy chuẩn tài liệu](docs/process/documentation-standard.md) và [bảng thuật ngữ](docs/process/technical-glossary.md).
 
 | Thành phần | Repo |
 |---|---|

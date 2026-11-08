@@ -33,6 +33,8 @@ Tại `dev@db756d2`, Agent/Admin đọc chi tiết, timeline và tệp của m�
 - Quyền xem lịch sử ghi chú nội bộ sau khi phiếu chuyển nhóm.
 - Hiệu lực tức thời khi bị gỡ thành viên hoặc gỡ quyền Lead, khi access token đã phát vẫn còn hạn (xem giới hạn thu hồi quyền trong [hợp đồng hiện hành](../architecture/current-backend-contract.md)). Cổng đọc thành viên hiện đọc cơ sở dữ liệu ở mỗi lần gọi nên bản thân việc kiểm thành viên không bị trễ; điểm còn mở là các quyết định dựa trên claim đã phát.
 
+**Đề xuất chờ xác nhận (chưa phải quyết định):** kiểm thành viên và Lead của quyết định ghi/đọc phiếu đọc cơ sở dữ liệu ở mỗi request qua `ISupportTeamMembershipReader`, không đọc từ claim; khi đó gỡ thành viên có hiệu lực ngay cho phạm vi đọc phiếu. Giới hạn của access token (vai trò JWT còn hiệu lực tới khi hết hạn) giữ nguyên và là việc riêng. Điểm về ghi chú nội bộ sau chuyển nhóm chưa có đề xuất được duyệt.
+
 Không đặt giá trị mặc định cho hai điểm này trong mã trước khi chủ dự án chốt.
 
 ## Phương án đã cân nhắc
