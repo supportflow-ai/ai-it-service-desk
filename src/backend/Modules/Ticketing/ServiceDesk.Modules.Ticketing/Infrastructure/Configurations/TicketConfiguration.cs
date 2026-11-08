@@ -23,6 +23,15 @@ internal sealed class TicketConfiguration : IEntityTypeConfiguration<Ticket>
         entity.HasIndex(t => t.Status);
         entity.HasIndex(t => t.AssignedToId);
         entity.HasIndex(t => t.Priority);
+        entity.HasIndex(t => t.SupportTeamId);
+
+        // Khóa ngoại tới nhóm hỗ trợ: không xóa dây chuyền; xóa nhóm đang giữ phiếu bị cơ sở dữ liệu chặn.
+        entity.HasOne<SupportTeam>().WithMany()
+            .HasForeignKey(t => t.SupportTeamId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        entity.Property(t => t.SupportTeamId)
+            .HasColumnName("support_team_id");
 
         entity.Property(t => t.RequesterId)
             .HasColumnName("requester_id")
