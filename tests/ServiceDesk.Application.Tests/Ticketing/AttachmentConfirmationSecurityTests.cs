@@ -97,6 +97,34 @@ public sealed class AttachmentConfirmationSecurityTests
         _storage.Verify(value => value.CopyAsync("configured-bucket", _upload.StorageKey, result.StorageKey, "etag", It.IsAny<CancellationToken>()), Times.Once);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task RejectedConfirmation_RemovesOnlyTheNewCopy(bool lockTimedOut)
+    {
+        string? finalKey = null;
+        Exception rejection = lockTimedOut
+            ? new AttachmentConfirmationBusyException(new TimeoutException())
+            : new ArgumentException("Mỗi phiếu chỉ được đính kèm tối đa 10 tệp.");
+        _storage.Setup(value => value.StatAsync("configured-bucket", It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new StoredObject(1024, "image/png", "etag"));
+        _storage.Setup(value => value.CopyAsync("configured-bucket", _upload.StorageKey, It.IsAny<string>(), "etag", It.IsAny<CancellationToken>()))
+            .Returns((string _, string _, string key, string _, CancellationToken _) =>
+            {
+                finalKey = key;
+                return Task.CompletedTask;
+            });
+        _storage.Setup(value => value.DeleteAsync("configured-bucket", It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        _store.Setup(value => value.ConfirmAsync(_upload.Id, It.IsAny<TicketAttachment>(), _now, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(rejection);
+
+        Assert.Same(rejection, await Record.ExceptionAsync(() => Confirm().ExecuteAsync(new(_ticket, Request()))));
+        Assert.NotNull(finalKey);
+        _storage.Verify(value => value.DeleteAsync("configured-bucket", finalKey, It.IsAny<CancellationToken>()), Times.Once);
+        _storage.Verify(value => value.DeleteAsync("configured-bucket", _upload.StorageKey, It.IsAny<CancellationToken>()), Times.Never);
+    }
+
     [Fact]
     public async Task RepeatedConfirmation_ReturnsExistingAttachmentWithoutCopy()
     {

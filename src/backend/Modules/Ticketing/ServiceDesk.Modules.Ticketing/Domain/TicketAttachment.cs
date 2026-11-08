@@ -6,6 +6,9 @@ namespace ServiceDesk.Modules.Ticketing.Domain;
 /// </summary>
 public sealed class TicketAttachment
 {
+    internal const int MaxFilesPerTicket = 10;
+    private const long MaxBytesPerTicket = 50L * 1024 * 1024;
+
     private TicketAttachment() { }
 
     public Guid Id { get; private set; }
@@ -16,6 +19,14 @@ public sealed class TicketAttachment
     public string StorageKey { get; private set; } = string.Empty;
     public Guid UploadedBy { get; private set; }
     public DateTime CreatedAt { get; private set; }
+
+    public void RequireTicketCapacity(IReadOnlyCollection<long> confirmedFileSizes)
+    {
+        if (confirmedFileSizes.Count >= MaxFilesPerTicket)
+            throw new ArgumentException("Mỗi phiếu chỉ được đính kèm tối đa 10 tệp.");
+        if (confirmedFileSizes.Sum(size => (decimal)size) + FileSizeBytes > MaxBytesPerTicket)
+            throw new ArgumentException("Tổng dung lượng tệp đính kèm của mỗi phiếu không được vượt quá 50 MiB.");
+    }
 
     public static TicketAttachment Create(
         Guid ticketId,
