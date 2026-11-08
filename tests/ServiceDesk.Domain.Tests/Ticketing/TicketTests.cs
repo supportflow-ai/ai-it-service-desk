@@ -34,6 +34,26 @@ public class TicketTests
         ticket.UpdatedAt.Should().Be(CreatedAt);
     }
 
+    [Fact]
+    public void Create_StartsInManualTriageQueueWithoutAssignee()
+    {
+        var ticket = CreateValidTicket();
+
+        ticket.SupportTeamId.Should().Be(SupportTeam.ManualTriageId);
+        ticket.AssignedToId.Should().BeNull();
+    }
+
+    [Fact]
+    public void Assign_DoesNotChangeTeamOwnership()
+    {
+        var ticket = CreateValidTicket();
+
+        ticket.Assign(Guid.NewGuid(), CreatedAt.AddMinutes(1));
+
+        ticket.AssignedToId.Should().NotBeNull();
+        ticket.SupportTeamId.Should().Be(SupportTeam.ManualTriageId);
+    }
+
     [Theory]
     [InlineData("")]
     [InlineData("   ")]

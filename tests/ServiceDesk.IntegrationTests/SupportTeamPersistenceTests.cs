@@ -17,6 +17,7 @@ namespace ServiceDesk.IntegrationTests;
 public sealed class SupportTeamPersistenceTests
 {
     private const string BeforeSupportTeams = "20261108010000_DefaultRefreshTokenFamilyForLegacyWriters";
+    private const string AddSupportTeamsMigration = "20261108120000_AddSupportTeams";
 
     private static PostgreSqlContainer NewPostgres(string database) =>
         new PostgreSqlBuilder("postgres:17-alpine").WithDatabase(database).WithUsername("test").WithPassword("test").Build();
@@ -74,10 +75,11 @@ public sealed class SupportTeamPersistenceTests
         var legacy = Guid.NewGuid();
         await InsertLegacyTicketAsync(context, legacy, token);
 
-        await context.Database.MigrateAsync(token);
-        await context.Database.MigrateAsync(token); // Chạy lại không đổi dữ liệu.
+        await migrator.MigrateAsync(AddSupportTeamsMigration, token);
+        await migrator.MigrateAsync(AddSupportTeamsMigration, token); // Chạy lại không đổi dữ liệu.
 
-        // Phiếu cũ còn nguyên và chưa thuộc nhóm nào; bản API cũ vẫn ghi được phiếu sau khi nâng cấp.
+        // Riêng migration tạo nhóm không gán nhóm cho phiếu nào: phiếu cũ còn nguyên và chưa thuộc nhóm; bản API cũ
+        // vẫn ghi được phiếu sau khi nâng cấp. (Việc chuyển phiếu cũ vào hàng đợi là migration dữ liệu riêng.)
         var afterLegacyWrite = Guid.NewGuid();
         await InsertLegacyTicketAsync(context, afterLegacyWrite, token);
         var teams = await context.Tickets.AsNoTracking().Where(t => t.Id == legacy || t.Id == afterLegacyWrite)
@@ -88,6 +90,12 @@ public sealed class SupportTeamPersistenceTests
 
         await AssertSingleSeededTriageQueueAsync(context, token);
         Assert.False(context.Database.HasPendingModelChanges());
+
+        // Migration dữ liệu tiếp theo chuyển phiếu cũ chưa kết thúc vào hàng đợi phân loại (chi tiết ở
+        // SupportTeamTriageAndMembershipTests); ở đây chỉ xác nhận phiếu vẫn còn và đã có nhóm.
+        await context.Database.MigrateAsync(token);
+        Assert.Equal(SupportTeam.ManualTriageId, await context.Tickets.AsNoTracking()
+            .Where(t => t.Id == legacy).Select(t => t.SupportTeamId).SingleAsync(token));
 
         // Quay lui về trước nhóm hỗ trợ rồi nâng cấp lại: bảng và cột được gỡ, rồi tạo lại sạch với đúng một hàng đợi.
         await migrator.MigrateAsync(BeforeSupportTeams, token);

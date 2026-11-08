@@ -26,7 +26,7 @@ Trạng thái: tài liệu hiện hành, đối chiếu mã `dev@db756d2` (2026-
 | Admin | Mọi phiếu | Không đổi |
 | Lead | Chưa có | **Đã duyệt – chưa triển khai**: đọc và điều phối trong nhóm mình phụ trách |
 
-Chi tiết phiếu, timeline, danh sách tệp, xin URL tải xuống và hàng đợi dùng cùng quy tắc phạm vi. Còn mở: Agent thuộc nhiều nhóm, lịch sử ghi chú nội bộ sau khi chuyển nhóm, phiếu cũ chưa có nhóm, hiệu lực tức thời khi thu hồi tư cách thành viên (xem ADR-016).
+Chi tiết phiếu, timeline, danh sách tệp, xin URL tải xuống và hàng đợi dùng cùng quy tắc phạm vi. Đã chốt (ADR-016): Agent thuộc nhiều nhóm đọc theo hợp mọi nhóm đang hoạt động; phiếu cũ chưa kết thúc vào `MANUAL_TRIAGE`. Còn mở: lịch sử ghi chú nội bộ sau khi chuyển nhóm, hiệu lực tức thời khi thu hồi tư cách thành viên.
 
 ## Ma trận thao tác trên phiếu
 
