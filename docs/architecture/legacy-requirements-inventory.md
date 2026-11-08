@@ -1,6 +1,6 @@
 # Kiểm kê yêu cầu từ tài liệu kiến trúc cũ
 
-Trạng thái: tài liệu hiện hành, đối chiếu mã `dev@db756d2` (2026-11-08). Mục đích: biết yêu cầu nào trong 14 tệp `docs/architecture/01–08` đã có trong mã, đã được duyệt nhưng chưa làm, còn mở hay đã bị thay thế, **trước khi** quyết định đưa tệp ra khỏi HEAD. Đây là kiểm kê theo nhóm quy tắc, không phải truy vết từng dòng. Tài liệu này không xóa, không sửa 14 tệp, không thay đổi quyết định nghiệp vụ.
+Trạng thái: tài liệu hiện hành, đối chiếu mã `dev@db756d2` (2026-11-08). Mục đích: biết yêu cầu nào trong 14 tệp `docs/architecture/01–08` đã có trong mã, đã được duyệt nhưng chưa làm, còn mở hay đã bị thay thế. Đây là kiểm kê theo nhóm quy tắc, không phải truy vết từng dòng, và không thay đổi quyết định nghiệp vụ. Tám hồ sơ lịch sử (mục 2) đã được đưa ra khỏi HEAD; sáu đề xuất (mục 1) vẫn còn trong repo.
 
 Git history và SHA commit là nguồn lưu trữ: mỗi tệp dưới đây có liên kết tới bản tại `db756d2`. Chủ dự án không yêu cầu manifest SHA-256 cho cả 14 tệp. Quyết định nguồn: [ADR-016](../adr/ADR-016-support-team-routing-and-agent-scope.md), [ma trận quyền](rbac-permission-matrix.md), [quyết định còn mở](pending-business-decisions.md).
 
@@ -101,9 +101,9 @@ Nhãn: **Đã triển khai** (có trong mã, không phải nghiệm thu) · **Đ
 
 ## 2. Tám hồ sơ hợp đồng lịch sử (mức tệp)
 
-Chủ dự án chỉ yêu cầu ánh xạ nguồn thay thế ở mức tệp. Các tệp này đã mang nhãn lịch sử và không cấp quyền triển khai. Các điểm còn mở của chúng đã có trong bảng quyết định DEC-01–08; đối chiếu cột cuối trước khi đưa ra khỏi HEAD.
+Chủ dự án chỉ yêu cầu ánh xạ nguồn thay thế ở mức tệp. Các tệp này đã mang nhãn lịch sử và không cấp quyền triển khai. Các điểm còn mở của chúng đã có trong bảng quyết định DEC-01–08; đã được đối chiếu với cột cuối trước khi đưa ra khỏi HEAD.
 
-| Tệp (bản tại `db756d2`) | Nguồn thay thế hiện hành | Quyết định liên quan |
+| Tệp (đã đưa ra khỏi HEAD; bản tại `db756d2`) | Nguồn thay thế hiện hành | Quyết định liên quan |
 | --- | --- | --- |
 | [01-rbac-and-api-permission-matrix.md](https://github.com/supportflow-ai/ai-it-service-desk/blob/db756d27f07819cefca208548d8ecc8155fa0d48/docs/architecture/01-rbac-and-api-permission-matrix.md) | [Ma trận quyền](rbac-permission-matrix.md), ADR-016 | DEC-02 |
 | [02-ticket-domain-and-field-contract.md](https://github.com/supportflow-ai/ai-it-service-desk/blob/db756d27f07819cefca208548d8ecc8155fa0d48/docs/architecture/02-ticket-domain-and-field-contract.md) | [Hợp đồng hiện hành](current-backend-contract.md), ADR-016 | DEC-01, DEC-02 |
@@ -114,8 +114,8 @@ Chủ dự án chỉ yêu cầu ánh xạ nguồn thay thế ở mức tệp. C�
 | [07-attachment-security-limits-and-policy.md](https://github.com/supportflow-ai/ai-it-service-desk/blob/db756d27f07819cefca208548d8ecc8155fa0d48/docs/architecture/07-attachment-security-limits-and-policy.md) | Ma trận quyền (mục tệp đính kèm); 30 MiB/phiếu cũ bị thay bằng 50 MiB/phiếu đã duyệt | DEC-06, DEC-07 |
 | [08-sprint-acceptance-and-governance-record.md](https://github.com/supportflow-ai/ai-it-service-desk/blob/db756d27f07819cefca208548d8ecc8155fa0d48/docs/architecture/08-sprint-acceptance-and-governance-record.md) | [Hồ sơ Sprint 1](../sprint-1/README.md); nhãn nghiệm thu cũ không ký nhận mã mới | DEC-08 |
 
-## 3. Điều kiện trước khi đưa tệp ra khỏi HEAD (PR sau)
+## 3. Điều kiện và trạng thái đưa tệp ra khỏi HEAD
 
-- Tám tệp lịch sử: sau PR này có thể xét đưa ra khỏi HEAD bằng URL ghim SHA ở trên, cần sửa quy tắc bảo toàn trong `AGENTS.md` bằng ngoại lệ hẹp, cập nhật `docs/context-sources.json`, chỉ mục kiến trúc và các liên kết trong tài liệu hiện hành và hồ sơ bằng chứng (chỉ thay liên kết gãy bằng URL ghim SHA).
+- Tám tệp lịch sử: **đã đưa ra khỏi HEAD** (xóa khỏi cây tệp, vẫn truy cập qua URL ghim `db756d2`). `AGENTS.md` có ngoại lệ lưu trữ hẹp cho đúng tám tệp này; `docs/context-sources.json` và chỉ mục kiến trúc đã cập nhật; trong tài liệu hiện hành và hồ sơ bằng chứng chỉ liên kết tương đối bị gãy được thay bằng URL ghim SHA, nội dung giữ nguyên. Các nhắc tên tệp dạng văn bản thường (không phải liên kết) trong hồ sơ bằng chứng và sáu đề xuất được giữ nguyên.
 - Sáu đề xuất: chỉ xét khi các dòng **Mở** và **Đã duyệt – chưa triển khai** đã nằm trong ADR, bảng quyết định hoặc backlog có chủ sở hữu. Bảng 1.x là danh sách để đối chiếu.
 - Mỗi PR xóa phải chạy `python scripts/validate_project_docs.py`, `python -m unittest discover -s scripts/tests -p "test_project_docs.py"`, `git diff --check` và kiểm tra `git grep` các đường dẫn cũ.
