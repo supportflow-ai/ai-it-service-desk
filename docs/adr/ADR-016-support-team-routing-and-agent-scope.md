@@ -2,7 +2,7 @@
 
 ## Trạng thái và nguồn quyết định
 
-Hướng thiết kế đã được chủ dự án phê duyệt ngày 2026-11-08 qua chỉ dẫn trực tiếp trong phiên làm việc với trợ lý; chưa có biên bản riêng trong repo và chưa có mã Jira. **Chưa triển khai**: không có bảng, migration, endpoint hay thay đổi quyền nào trong mã tại `dev@db756d2`. Bốn chi tiết ở mục "Còn mở" chưa được chốt. Khi triển khai, từng thay đổi dùng nhiệm vụ riêng và thêm kiểm thử từ chối.
+Hướng thiết kế đã được chủ dự án phê duyệt ngày 2026-11-08 qua chỉ dẫn trực tiếp trong phiên làm việc với trợ lý; chưa có biên bản riêng trong repo và chưa có mã Jira. **Triển khai theo giai đoạn.** Giai đoạn nền dữ liệu (B1-PR1) chỉ thêm bằng migration cộng thêm `AddSupportTeams`: bảng `support_teams`, `support_team_members`, cột nullable `tickets.support_team_id` và hàng đợi `MANUAL_TRIAGE` có ID cố định; không gán nhóm cho phiếu mới hay cũ. Endpoint, gán nhóm, định tuyến, phạm vi đọc theo nhóm và quyền Lead **chưa triển khai**: mã vẫn cho Agent/Admin đọc mọi phiếu như mô tả ở mục Bối cảnh (mốc `dev@db756d2`). Bốn chi tiết ở mục "Còn mở" chưa được chốt. Khi triển khai, từng thay đổi dùng nhiệm vụ riêng và thêm kiểm thử từ chối.
 
 Quan hệ: làm rõ và thay thế phần "chưa cách ly theo nhóm hoặc phân công" của [ADR-014](ADR-014-feature-use-cases-and-published-contracts.md); đóng phần hướng của DEC-02 trong [bảng quyết định còn mở](../architecture/pending-business-decisions.md); ma trận quyền ở [RBAC chính thức](../architecture/rbac-permission-matrix.md); nguồn yêu cầu cũ ở [bảng kiểm kê](../architecture/legacy-requirements-inventory.md).
 

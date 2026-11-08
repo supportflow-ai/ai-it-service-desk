@@ -1,7 +1,8 @@
 namespace ServiceDesk.Modules.Identity.Domain;
 
 /// <summary>
-/// Phòng ban / bộ phận trong tổ chức (dùng để định tuyến IT Helpdesk). Dữ liệu được nạp bằng migration/seed;
+/// Phòng ban tổ chức của người dùng/requester. Không đại diện cho nhóm hỗ trợ và không dùng để cấp quyền xử lý
+/// phiếu (xem ADR-016). Dữ liệu được nạp bằng migration/seed;
 /// ứng dụng hiện chỉ đọc nên không có thao tác thay đổi.
 /// </summary>
 public sealed class Department

@@ -22,6 +22,12 @@ public class Ticket
     /// <summary>Mã phòng ban của người gửi tại thời điểm tạo vé (snapshot cố định).</summary>
     public Guid? RequesterDepartmentId { get; private set; }
 
+    /// <summary>
+    /// Nhóm hỗ trợ đang giữ phiếu (null = chưa có nhóm). Cột đã có trong cơ sở dữ liệu nhưng chưa được ghi
+    /// hay dùng cấp quyền; việc gán nhóm và chính sách phiếu cũ thuộc bước sau (ADR-016).
+    /// </summary>
+    public Guid? SupportTeamId { get; private set; }
+
     /// <summary>Mã định danh kỹ thuật viên được phân công xử lý vé (Assignee).</summary>
     public Guid? AssignedToId { get; private set; }
 

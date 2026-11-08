@@ -27,6 +27,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<TicketComment> TicketComments { get; set; }
     public DbSet<TicketAttachment> TicketAttachments { get; set; }
     public DbSet<AttachmentUploadGrant> AttachmentUploadGrants { get; set; }
+    public DbSet<SupportTeam> SupportTeams { get; set; }
+    public DbSet<SupportTeamMember> SupportTeamMembers { get; set; }
 
     public DbSet<Article> Articles { get; set; }
     public DbSet<ArticleTag> ArticleTags { get; set; }
