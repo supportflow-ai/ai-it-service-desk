@@ -23,8 +23,9 @@ public class Ticket
     public Guid? RequesterDepartmentId { get; private set; }
 
     /// <summary>
-    /// Nhóm hỗ trợ đang giữ phiếu (null = chưa có nhóm). Cột đã có trong cơ sở dữ liệu nhưng chưa được ghi
-    /// hay dùng cấp quyền; việc gán nhóm và chính sách phiếu cũ thuộc bước sau (ADR-016).
+    /// Nhóm hỗ trợ đang giữ phiếu. Phiếu mới luôn vào hàng đợi phân loại thủ công (<see cref="SupportTeam.ManualTriageId"/>);
+    /// null chỉ còn ở phiếu lịch sử đã Closed/Cancelled trước khi có nhóm. Độc lập với <see cref="AssignedToId"/>:
+    /// phiếu có người phụ trách vẫn có thể thuộc hàng đợi phân loại. Chưa dùng để cấp quyền đọc (ADR-016).
     /// </summary>
     public Guid? SupportTeamId { get; private set; }
 
@@ -115,6 +116,7 @@ public class Ticket
             Description = normalizedDescription,
             CategoryId = categoryId,
             Status = TicketStatus.Submitted,
+            SupportTeamId = SupportTeam.ManualTriageId,
             Impact = Domain.Impact.Medium,
             Urgency = Domain.Urgency.Medium,
             Priority = Domain.Priority.P3,

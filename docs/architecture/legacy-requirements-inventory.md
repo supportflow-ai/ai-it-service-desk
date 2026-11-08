@@ -77,7 +77,7 @@ Nhãn: **Đã triển khai** (có trong mã, không phải nghiệm thu) · **Đ
 | ASG-02, 03, 09, 10: tự nhận, chạy đồng thời một người thắng, audit bên backend | **Đã triển khai** (claim, `expectedRevision`, audit hệ thống) | |
 | ASG-04–08: gán/gán lại/hủy gán bởi Lead hoặc Admin; điều kiện người nhận thuộc nhóm | **Đã duyệt – chưa triển khai** (hiện mọi Agent gán được) | ADR-016 |
 | ASG-11: không phân công lại khi Resolved | **Đã duyệt – chưa triển khai** (mã hiện cho gán khi Resolved) | DEC-05 |
-| ASG-12, OPS-DEC-02: chuyển nhóm, lịch sử riêng, phiếu cũ chưa có nhóm | **Mở** | DEC-02 |
+| ASG-12, OPS-DEC-02: chuyển nhóm, lịch sử riêng, phiếu cũ chưa có nhóm | Phiếu cũ chưa có nhóm: **Đã duyệt – chưa triển khai** quyền (migration chuyển phiếu chưa kết thúc vào `MANUAL_TRIAGE` đã có, ADR-016). Chuyển nhóm, lịch sử riêng: **Mở** | DEC-02 |
 | COM-01–06, 08, 10, 11: bình luận công khai, ghi chú nội bộ, đọc theo vai trò, bất biến, không viết vào phiếu kết thúc, lọc ở truy vấn | **Đã triển khai** | Ma trận quyền |
 | COM-07, OPS-DEC-04: phản hồi khi PendingUser tự tiếp tục hay nhân viên tiếp tục | **Mở** | DEC-03 |
 | COM-09, OPS-DEC-06: sửa/xóa bình luận, giới hạn độ dài, tần suất, lưu giữ | **Mở** (chưa có sửa/xóa) | |

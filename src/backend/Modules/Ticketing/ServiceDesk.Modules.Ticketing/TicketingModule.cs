@@ -68,6 +68,7 @@ public static class TicketingModule
         services.AddScoped<ITicketTimelineStore, PostgresTicketTimelineStore>();
         services.AddScoped<ITicketAttachmentStore, PostgresTicketAttachmentStore>();
         services.AddScoped<IAgentDirectory, AgentDirectory>();
+        services.AddScoped<ISupportTeamMembershipReader, PostgresSupportTeamMembershipReader>();
         return services;
     }
 }

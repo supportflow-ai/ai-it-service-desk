@@ -56,3 +56,11 @@ Ghi SHA, thay đổi chưa commit, lệnh và số test/kết quả thực tế.
 4. Ghi lại `__EFMigrationsHistory` sau; smoke đăng nhập, làm mới phiên, đăng xuất, quên mật khẩu.
 
 Rollback ưu tiên dùng image ứng dụng trước đó và giữ schema mới (cột mới không cản bản cũ). Chỉ chạy `Down` khi bắt buộc và đã thử trên staging: `Down` xóa `failed_attempts` (mất bộ đếm nhập sai OTP) và `family_id` (mất liên kết chuỗi phiên). [Kiểm thử nâng cấp](../../tests/ServiceDesk.IntegrationTests/RefreshTokenFamilyMigrationTests.cs) kiểm backfill, bản ghi của API cũ sau migration và quay lui rồi nâng cấp lại. Với bản triển khai cũ hơn còn seed tự động, tuân [runbook rollout](backend-refactor-rollout.md). Các chính sách nghiệp vụ chưa chốt theo [bảng quyết định](../architecture/pending-business-decisions.md).
+
+### Nhóm hỗ trợ (ADR-016, B1)
+
+Hai migration cộng thêm: `20261108120000_AddSupportTeams` (bảng `support_teams`, `support_team_members`, cột nullable `tickets.support_team_id`, hàng đợi `MANUAL_TRIAGE`) và `20261108130000_BackfillLegacyTicketsToManualTriage` (đặt `support_team_id` cho phiếu chưa kết thúc còn null; Closed/Cancelled giữ null). Lưu ý khi triển khai:
+
+- Backfill chỉ ghi `support_team_id` nhưng UPDATE làm `xmin` (revision) của các dòng bị ảnh hưởng đổi một lần: client đang giữ revision cũ nhận 409 rồi tải lại. Đo thời gian và số dòng trên staging.
+- Bản API cũ không biết cột mới nên phiếu nó tạo sau migration có `support_team_id` null. Câu backfill idempotent: sau khi bản API cũ đã dừng hẳn, chạy lại đúng câu `UPDATE` trong migration (hoặc áp lại migration) để bổ sung. Phải làm trước khi bật phạm vi đọc theo nhóm.
+- Rollback: `Down` của `BackfillLegacyTicketsToManualTriage` không làm gì (không phân biệt được dòng nào vốn là null); `Down` của `AddSupportTeams` xóa cột `support_team_id` và hai bảng, mất dữ liệu nhóm. Ưu tiên giữ schema và quay lại image trước.
