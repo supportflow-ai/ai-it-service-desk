@@ -22,7 +22,7 @@ public static class DepartmentEndpoints
             var departments = await getDepartments.ExecuteAsync(new GetDepartmentsQuery(), ct);
             return Results.Ok(departments);
         })
-        .AddEndpointFilter<LegacyErrorFilter>()
+        .AddEndpointFilter<ApiErrorFilter>()
         .WithName("GetDepartments")
         .RequireAuthorization()
         .Produces<IReadOnlyList<DepartmentDto>>(StatusCodes.Status200OK)

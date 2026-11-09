@@ -20,7 +20,7 @@ namespace ServiceDesk.SharedKernel.Web;
 /// chỉ ghi chi tiết vào log, để không lộ thông tin nội bộ.
 /// Bộ lọc chỉ biết các ngoại lệ trong SharedKernel nên module mới không phải sửa lớp này (Open/Closed).
 /// </summary>
-public sealed class LegacyErrorFilter : IEndpointFilter
+public sealed class ApiErrorFilter : IEndpointFilter
 {
     /// <summary>Thông điệp 400 khi lỗi tham số không đến từ quy tắc nghiệp vụ.</summary>
     public const string GenericBadRequestMessage = "Yêu cầu không hợp lệ.";
@@ -55,7 +55,7 @@ public sealed class LegacyErrorFilter : IEndpointFilter
     {
         if (ExceptionOrigin.IsRaisedByApplication(exception)) return exception.Message;
 
-        context.HttpContext.RequestServices?.GetService<ILoggerFactory>()?.CreateLogger<LegacyErrorFilter>()
+        context.HttpContext.RequestServices?.GetService<ILoggerFactory>()?.CreateLogger<ApiErrorFilter>()
             .LogWarning(exception, "Ngoại lệ {ExceptionType} từ thư viện được trả về dạng thông điệp chung.", exception.GetType().Name);
         return fallback;
     }

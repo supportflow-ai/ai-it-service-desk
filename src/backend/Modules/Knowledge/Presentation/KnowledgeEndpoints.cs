@@ -35,7 +35,7 @@ public record ArchiveArticleRequest(uint? ExpectedRevision = null);
 
 /// <summary>
 /// Định nghĩa các API endpoints cho phân hệ tri thức (Knowledge Base).
-/// Áp dụng bộ lọc lỗi LegacyErrorFilter để chuẩn hóa các lỗi nghiệp vụ về mã HTTP tương ứng.
+/// Áp dụng bộ lọc lỗi ApiErrorFilter để chuẩn hóa các lỗi nghiệp vụ về mã HTTP tương ứng.
 /// </summary>
 public static class KnowledgeEndpoints
 {
@@ -45,7 +45,7 @@ public static class KnowledgeEndpoints
     {
         var group = app.MapGroup("/api/knowledge/articles")
             .WithTags("Knowledge")
-            .AddEndpointFilter<LegacyErrorFilter>()
+            .AddEndpointFilter<ApiErrorFilter>()
             .AddEndpointFilter(async (ctx, next) =>
             {
                 try

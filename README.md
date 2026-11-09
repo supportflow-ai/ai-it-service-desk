@@ -92,18 +92,21 @@ src/backend/
     ServiceDesk.SharedKernel/      # Vai trò, actor hiện tại, đồng hồ, cổng lưu trữ, ngoại lệ nghiệp vụ dùng chung
     ServiceDesk.SharedKernel.Web/  # Thành phần HTTP dùng chung cho endpoint (bộ lọc lỗi)
   Modules/
-    Identity/ Ticketing/ Knowledge/ AIAssistance/
-      ServiceDesk.Modules.<Module>/
-        Domain/  Application/  Infrastructure/  Presentation/  <Module>Module.cs
+    <Module>/                      # Identity, Ticketing, Knowledge, AIAssistance
+      ServiceDesk.Modules.<Module>.csproj
+      <Module>Module.cs
+      Domain/  Application/  Infrastructure/  Presentation/
   ServiceDesk.Infrastructure/      # Hạ tầng dùng chung: ApplicationDbContext, migration, bảo trì DB, MinIO, đồng hồ
-  ServiceDesk.Api/                 # Host HTTP: ghép module, JWT, middleware, health
+  ServiceDesk.Api/                 # Host HTTP: ghép module, middleware, health
   ServiceDesk.Worker/              # Chương trình xử lý nền
   ServiceDesk.Database/            # Công cụ migration và khởi tạo có chủ đích
 tests/                             # Domain, Application, Architecture, Integration
 contracts/                         # Baseline HTTP và AI classification v1
 ```
 
-Module là ranh giới ngoài cùng; bên trong mỗi module là Clean Architecture: Presentation → Application → Domain và Infrastructure → Application → Domain. Domain/Application không dùng EF Core, Npgsql hay ASP.NET Core. Mỗi module tự đăng ký DI và endpoint qua lớp `<Module>Module`; API/Worker chỉ ghép module. Giữa các module chỉ dùng kiểu đã công bố. Hàm xử lý HTTP không truy cập DbContext; Worker không sử dụng HttpContext hoặc danh tính người dùng ngầm định. Xem [ADR-015](docs/adr/ADR-015-module-first-clean-architecture.md), [ADR-011](docs/adr/ADR-011-backend-module-boundaries.md) và [ADR-014](docs/adr/ADR-014-feature-use-cases-and-published-contracts.md).
+Mỗi thư mục trong `Modules/` chứa một project. Tên assembly và namespace gốc giữ dạng `ServiceDesk.Modules.<Module>`. Host API đọc người dùng từ HTTP qua `ServiceDesk.Api/Authentication/`. Module Identity sở hữu cấu hình JWT, tài khoản và phiên.
+
+Module là ranh giới ngoài cùng. Bên trong module, Presentation và Infrastructure phụ thuộc Application, còn Application phụ thuộc Domain. Domain và Application độc lập với EF Core, Npgsql và ASP.NET Core. Mỗi module đăng ký dịch vụ qua lớp `<Module>Module` và đặt endpoint trong `Presentation` nếu có API HTTP. API và Worker ghép module qua các điểm đăng ký. AIAssistance dùng ba kiểu phân loại đã công bố của Ticketing. Xem [ADR-015](docs/adr/ADR-015-module-first-clean-architecture.md), [ADR-011](docs/adr/ADR-011-backend-module-boundaries.md) và [ADR-014](docs/adr/ADR-014-feature-use-cases-and-published-contracts.md).
 
 Application tổ chức theo mô-đun và tính năng, mỗi tính năng một thư mục có giao diện `I<TínhNăng>` và lớp `<TínhNăng>UseCase`: Identity 11 luồng (đăng ký, đăng nhập, hồ sơ, làm mới/thu hồi phiên, đổi/quên/đặt lại mật khẩu, gán vai trò, danh sách người dùng, phòng ban), Ticketing 19 luồng (tạo, danh sách cá nhân và hàng đợi, chi tiết, cập nhật, nhận/phân công/hủy phân công, giải quyết/mở lại/đóng/hủy, bình luận, ghi chú nội bộ, timeline, tệp đính kèm), Knowledge 6 luồng (bản nháp, xuất bản, lưu trữ, chi tiết, tìm kiếm). Hàm xử lý HTTP gọi giao diện nghiệp vụ; lớp triển khai là `internal`. Các giao diện công khai và cổng tích hợp được kiểm tra riêng bằng kiểm thử kiến trúc. [Tài liệu mô-đun và luồng xử lý](docs/architecture/backend-modules-and-use-cases.md) mô tả trách nhiệm, giao dịch và phạm vi quyền hiện tại.
 

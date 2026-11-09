@@ -8,14 +8,13 @@
   <ItemGroup>
     <ProjectReference Include="..\ServiceDesk.Infrastructure\ServiceDesk.Infrastructure.csproj" />
     <ProjectReference Include="..\BuildingBlocks\ServiceDesk.SharedKernel.Web\ServiceDesk.SharedKernel.Web.csproj" />
-    <ProjectReference Include="..\Modules\AIAssistance\ServiceDesk.Modules.AIAssistance\ServiceDesk.Modules.AIAssistance.csproj" />
-    <ProjectReference Include="..\Modules\Identity\ServiceDesk.Modules.Identity\ServiceDesk.Modules.Identity.csproj" />
-    <ProjectReference Include="..\Modules\Knowledge\ServiceDesk.Modules.Knowledge\ServiceDesk.Modules.Knowledge.csproj" />
-    <ProjectReference Include="..\Modules\Ticketing\ServiceDesk.Modules.Ticketing\ServiceDesk.Modules.Ticketing.csproj" />
+    <ProjectReference Include="..\Modules\AIAssistance\ServiceDesk.Modules.AIAssistance.csproj" />
+    <ProjectReference Include="..\Modules\Identity\ServiceDesk.Modules.Identity.csproj" />
+    <ProjectReference Include="..\Modules\Knowledge\ServiceDesk.Modules.Knowledge.csproj" />
+    <ProjectReference Include="..\Modules\Ticketing\ServiceDesk.Modules.Ticketing.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.13" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="7.3.2" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.13">
       <PrivateAssets>all</PrivateAssets>

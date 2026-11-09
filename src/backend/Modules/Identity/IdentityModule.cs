@@ -1,9 +1,13 @@
+using System.Security.Claims;
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using ServiceDesk.Modules.Identity.Application.AssignUserRoles;
 using ServiceDesk.Modules.Identity.Application.ChangePassword;
 using ServiceDesk.Modules.Identity.Application.ForgotPassword;
@@ -35,6 +39,34 @@ public static class IdentityModule
     /// <summary>Đăng ký use case và hạ tầng cấp token của Identity.</summary>
     public static IServiceCollection AddIdentityModule(this IServiceCollection services, IConfiguration configuration) =>
         services.AddIdentityApplication().AddIdentityInfrastructure(configuration);
+
+    /// <summary>Đăng ký xác thực JWT cho host HTTP, dùng cùng cấu hình với trình cấp token.</summary>
+    public static IServiceCollection AddIdentityAuthentication(this IServiceCollection services)
+    {
+        services.AddAuthentication(options =>
+        {
+            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+        }).AddJwtBearer();
+
+        services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
+            .Configure<IOptions<JwtOptions>>((options, configured) =>
+            {
+                var jwt = configured.Value;
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    ValidIssuer = jwt.Issuer,
+                    ValidAudience = jwt.Audience,
+                    RoleClaimType = ClaimTypes.Role,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.SecretKey))
+                };
+            });
+        return services;
+    }
 
     /// <summary>Đăng ký use case của Identity.</summary>
     public static IServiceCollection AddIdentityApplication(this IServiceCollection services)

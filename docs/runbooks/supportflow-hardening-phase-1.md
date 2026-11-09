@@ -6,10 +6,10 @@ Trạng thái: thay đổi triển khai đang kiểm chứng, chưa nghiệm thu
 
 ## Phạm vi
 
-- [AddCommentUseCase](../../src/backend/Modules/Ticketing/ServiceDesk.Modules.Ticketing/Application/AddComment/AddCommentUseCase.cs) kiểm tra quyền trên ticket trước tra cứu tác giả và ghi bình luận. Requester chỉ bình luận trên ticket của mình; Agent/Admin giữ phạm vi ticket toàn hệ thống. Không đổi quyền ghi chú nội bộ, team hoặc assignment.
+- [AddCommentUseCase](https://github.com/supportflow-ai/ai-it-service-desk/blob/1e272b91d3a6d31aefe3547c2b6cf3947e26dcb2/src/backend/Modules/Ticketing/ServiceDesk.Modules.Ticketing/Application/AddComment/AddCommentUseCase.cs) kiểm tra quyền trên ticket trước tra cứu tác giả và ghi bình luận. Requester chỉ bình luận trên ticket của mình; Agent/Admin giữ phạm vi ticket toàn hệ thống. Không đổi quyền ghi chú nội bộ, team hoặc assignment.
 - Ticket thiếu và ticket ngoài quyền Requester đều trả 404 qua bộ lọc HTTP hiện có; payload phản hồi bình luận thành công giữ nguyên.
-- [ITicketWriter](../../src/backend/Modules/Ticketing/ServiceDesk.Modules.Ticketing/Application/Ports/ITicketWriter.cs) có phương thức lưu ticket và timeline của cùng ticket một cách nguyên tử.
-- [PostgresTicketWriter](../../src/backend/Modules/Ticketing/ServiceDesk.Modules.Ticketing/Infrastructure/PostgresTicketWriter.cs) thêm timeline vào cùng DbContext rồi gọi một SaveChangesAsync. EF Core/Npgsql dùng transaction tự động cho các lệnh ghi trong lần lưu; lỗi commit hoặc concurrency không được để lại cập nhật/audit một phần.
+- [ITicketWriter](https://github.com/supportflow-ai/ai-it-service-desk/blob/1e272b91d3a6d31aefe3547c2b6cf3947e26dcb2/src/backend/Modules/Ticketing/ServiceDesk.Modules.Ticketing/Application/Ports/ITicketWriter.cs) có phương thức lưu ticket và timeline của cùng ticket một cách nguyên tử.
+- [PostgresTicketWriter](https://github.com/supportflow-ai/ai-it-service-desk/blob/1e272b91d3a6d31aefe3547c2b6cf3947e26dcb2/src/backend/Modules/Ticketing/ServiceDesk.Modules.Ticketing/Infrastructure/PostgresTicketWriter.cs) thêm timeline vào cùng DbContext rồi gọi một SaveChangesAsync. EF Core/Npgsql dùng transaction tự động cho các lệnh ghi trong lần lưu; lỗi commit hoặc concurrency không được để lại cập nhật/audit một phần.
 - Bảy use case Assign, Unassign, Claim, Resolve, Reopen, Close, Cancel dùng phương thức nguyên tử; bỏ hai lần lưu độc lập. Luồng UpdateTicket và tạo ticket/idempotency giữ nguyên.
 
 Không thay schema, migration, enum, đường dẫn HTTP hoặc chính sách vai trò hiện có ngoài việc đóng lỗ hổng bình luận xuyên quyền.

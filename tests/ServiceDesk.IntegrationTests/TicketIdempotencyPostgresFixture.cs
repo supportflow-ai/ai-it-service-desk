@@ -12,7 +12,6 @@ using Microsoft.Extensions.Hosting;
 using ServiceDesk.Modules.Identity.Infrastructure;
 using ServiceDesk.Infrastructure.Clock;
 using ServiceDesk.Modules.Identity.Application.Contracts;
-using ServiceDesk.Api.Identity;
 using ServiceDesk.Infrastructure.Persistence;
 using Testcontainers.PostgreSql;
 using Xunit;

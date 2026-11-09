@@ -1,40 +1,17 @@
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Routing;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using System.Net.Http.Json;
-using ServiceDesk.SharedKernel.Web;
 using Microsoft.AspNetCore.Mvc;
-using ServiceDesk.SharedKernel.Application.Abstractions;
-using ServiceDesk.Modules.Ticketing.Application.CreateTicket;
-using ServiceDesk.Modules.Ticketing.Application.Contracts;
-using ServiceDesk.Modules.Ticketing.Application.Idempotency;
-using ServiceDesk.Modules.Ticketing.Application.GetMyTickets;
-using ServiceDesk.Modules.Ticketing.Application.GetTicketDetail;
-using ServiceDesk.Modules.Ticketing.Application.UpdateTicket;
-using ServiceDesk.Modules.Ticketing.Application.ClaimTicket;
-using ServiceDesk.Modules.Ticketing.Application.ResolveTicket;
-using ServiceDesk.Modules.Ticketing.Application.ReopenTicket;
-using ServiceDesk.Modules.Ticketing.Application.CloseTicket;
-using ServiceDesk.Modules.Ticketing.Application.CancelTicket;
-using ServiceDesk.Modules.Ticketing.Application.GetAgentQueue;
+using Microsoft.AspNetCore.Routing;
 using ServiceDesk.Modules.Ticketing.Application.AssignTicket;
+using ServiceDesk.Modules.Ticketing.Application.ClaimTicket;
+using ServiceDesk.Modules.Ticketing.Application.Contracts;
 using ServiceDesk.Modules.Ticketing.Application.UnassignTicket;
-using ServiceDesk.Modules.Ticketing.Application.AddComment;
-using ServiceDesk.Modules.Ticketing.Application.AddInternalNote;
-using ServiceDesk.Modules.Ticketing.Application.GetTicketTimeline;
-using ServiceDesk.Modules.Ticketing.Application.GenerateAttachmentUploadUrl;
-using ServiceDesk.Modules.Ticketing.Application.GetAttachmentDownloadUrl;
-using ServiceDesk.Modules.Ticketing.Application.ConfirmAttachmentUpload;
-using ServiceDesk.Modules.Ticketing.Application.GetTicketAttachments;
 using ServiceDesk.SharedKernel.Authorization;
 
-
 namespace ServiceDesk.Modules.Ticketing.Presentation;
+
+/// <summary>Request body phân công ticket.</summary>
+public record AssignTicketRequest(Guid AgentId, uint? ExpectedRevision = null);
 
 public static partial class TicketEndpoints
 {

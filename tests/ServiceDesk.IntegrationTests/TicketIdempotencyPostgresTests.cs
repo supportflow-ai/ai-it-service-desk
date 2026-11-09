@@ -14,7 +14,6 @@ using ServiceDesk.Modules.Ticketing.Application.Idempotency;
 using ServiceDesk.Modules.Identity.Infrastructure;
 using ServiceDesk.Infrastructure.Clock;
 using ServiceDesk.Modules.Identity.Application.Contracts;
-using ServiceDesk.Api.Identity;
 using ServiceDesk.Modules.Identity.Infrastructure.Options;
 using Xunit;
 
