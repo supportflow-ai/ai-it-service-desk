@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Text.RegularExpressions;
 using Mono.Cecil;
 using NetArchTest.Rules;
 using Xunit;
@@ -52,14 +53,23 @@ public sealed class ModuleEncapsulationTests
         }
     }
 
+    /// <summary>Tên module sở hữu assembly chứa kiểu (ServiceDesk.Modules.{Module}).</summary>
+    private static string ModuleOf(Type type) =>
+        type.Assembly.GetName().Name!["ServiceDesk.Modules.".Length..];
+
     [Fact]
     public void UseCasesAreInternalAndWireTypesBelongOnlyToInfrastructure()
     {
         var application = ModuleAssemblies().SelectMany(assembly => assembly.GetTypes())
             .Where(t => t.Namespace?.Contains(".Application", StringComparison.Ordinal) == true).ToArray();
         var cases = application.Where(t => t.Name.EndsWith("UseCase", StringComparison.Ordinal)).ToArray();
-        Assert.Equal(36, cases.Length);
+        // Không cố định số lượng use case: thêm use case hợp lệ không được làm CI đỏ. Quy tắc cần giữ là mỗi lớp
+        // UseCase phải internal sealed (chỉ lộ ra qua cổng đã công bố) và nằm trong tầng Application của đúng module
+        // sở hữu assembly đó.
+        Assert.NotEmpty(cases);
         Assert.All(cases, type => Assert.True(type.IsNotPublic && type.IsSealed, type.FullName));
+        Assert.All(cases, type => Assert.Matches(
+            $@"^ServiceDesk\.Modules\.{Regex.Escape(ModuleOf(type))}\.Application(\.|$)", type.Namespace!));
         Assert.DoesNotContain(application, type => type.Name.StartsWith("ClassificationContract", StringComparison.Ordinal));
         // Ticket idempotency deliberately retains its versioned JSON fingerprint encoding.
         Assert.True(Types.InAssembly(Assembly.Load("ServiceDesk.Modules.AIAssistance")).That()
