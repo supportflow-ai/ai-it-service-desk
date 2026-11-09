@@ -105,9 +105,15 @@ internal sealed class PostgresTicketWriter(DbContext context) : ITicketWriter
         _context.Database.SqlQuery<DateTime>($"SELECT clock_timestamp() AS \"Value\"")
             .SingleAsync(cancellationToken);
 
-    public Task<Ticket?> GetForUpdateAsync(Guid id, TicketReadScope scope, CancellationToken cancellationToken)
-        => TicketScopeQuery.Apply(_context.Set<Ticket>(), _context, scope)
-            .SingleOrDefaultAsync(t => t.Id == id, cancellationToken);
+    public async Task<Ticket?> GetForUpdateAsync(Guid id, TicketReadScope scope, CancellationToken cancellationToken)
+    {
+        // Kiểm phạm vi bằng truy vấn không theo dõi, rồi tải thực thể bằng truy vấn thường để EF nạp đúng
+        // concurrency token xmin. (CI: truy vấn có subquery thành viên nhóm trả xmin = 0 cho thực thể được theo dõi.)
+        var inScope = await TicketScopeQuery.Apply(_context.Set<Ticket>().AsNoTracking(), _context, scope)
+            .AnyAsync(t => t.Id == id, cancellationToken);
+        if (!inScope) return null;
+        return await _context.Set<Ticket>().SingleOrDefaultAsync(t => t.Id == id, cancellationToken);
+    }
 
     public uint GetRevision(Ticket ticket)
     {
@@ -128,12 +134,9 @@ internal sealed class PostgresTicketWriter(DbContext context) : ITicketWriter
             await _context.SaveChangesAsync(cancellationToken);
             return TicketProjection.ToDto(ticket, GetRevision(ticket));
         }
-        catch (DbUpdateConcurrencyException exception)
+        catch (DbUpdateConcurrencyException)
         {
-            // TẠM THỜI (chẩn đoán B1-PR3): sẽ gỡ sau khi tìm ra nguyên nhân.
-            var detail = string.Join("; ", exception.Entries.Select(entry => $"{entry.Entity.GetType().Name}:{entry.State}"));
-            throw new ServiceDesk.SharedKernel.Application.ConcurrencyConflictException(
-                $"DIAG[{detail}] {exception.Message}", exception);
+            throw new ServiceDesk.SharedKernel.Application.ConcurrencyConflictException();
         }
     }
 

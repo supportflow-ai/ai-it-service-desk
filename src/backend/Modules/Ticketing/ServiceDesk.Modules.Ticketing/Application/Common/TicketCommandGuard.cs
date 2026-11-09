@@ -28,7 +28,7 @@ internal static class TicketCommandGuard
 
         if (writer.GetRevision(ticket) != expectedRevision.Value)
         {
-            throw new ConcurrencyConflictException(StaleRevisionMessage + $" STALE[expected={expectedRevision.Value} entity={writer.GetRevision(ticket)} status={ticket.Status} team={ticket.SupportTeamId}]");
+            throw new ConcurrencyConflictException(StaleRevisionMessage);
         }
     }
 
