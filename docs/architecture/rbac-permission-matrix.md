@@ -26,7 +26,9 @@ Trạng thái: đối chiếu mã `dev@a182c9f` (2026-11-08) và [ADR-016](../ad
 | Admin | Mọi phiếu | Không đổi |
 | Lead | Có cờ `IsLead` của thành viên | Đọc theo quyền Agent của nhóm. Luồng điều phối thuộc đợt sau. |
 
-Chi tiết, timeline, tệp, hàng đợi và lệnh của nhân viên dùng phạm vi nhóm hoặc phân công. Tư cách thành viên và quyền Lead được kiểm qua DB ở request kế tiếp sau khi thu hồi. Nếu Agent còn được phân công trực tiếp, quyền đọc phiếu vẫn có hiệu lực. Agent dùng quyền chủ sở hữu để đọc phần công khai của phiếu mình tạo. Sau chuyển nhóm, quyền xem lịch sử ghi chú cần phép riêng từ đội cũ và phải qua kiểm tra bảo mật theo ADR-016.
+Chi tiết, timeline, tệp, hàng đợi và lệnh của nhân viên dùng phạm vi nhóm hoặc phân công. Tư cách thành viên và quyền Lead được kiểm qua DB ở request kế tiếp sau khi thu hồi. Nếu Agent còn được phân công trực tiếp, quyền đọc phiếu vẫn có hiệu lực. Agent dùng quyền chủ sở hữu để đọc phần công khai của phiếu mình tạo. Ghi chú nội bộ đi cùng phiếu khi chuyển nhóm (ADR-016): Agent mất quyền xem nếu quyền trước đó chỉ đến từ nhóm cũ; nhóm mới đang hoạt động hoặc phân công trực tiếp xem theo quyền hiện tại.
+
+Giới hạn đã biết của B1-PR3: (1) Agent có quyền trên phiếu vẫn phân công được cho Agent ngoài nhóm, và người được phân công có quyền đọc trực tiếp, gồm ghi chú nội bộ, cho tới khi luồng điều phối của Lead được triển khai. (2) Thu hồi được bảo đảm từ request kế tiếp; một request đang chạy đồng thời với thay đổi nhóm có thể hoàn tất theo quyền đọc lúc bắt đầu (kiểm phạm vi và tải phiếu là hai truy vấn), chưa có kiểm thử riêng cho tình huống này.
 
 ## Ma trận thao tác trên phiếu
 
