@@ -1,5 +1,7 @@
 # Bản đồ tài liệu dự án
 
+[Tài liệu chung SupportFlow AI](https://github.com/supportflow-ai/supportflow-ai-infra/blob/main/README.md) tập hợp phạm vi MVP, luồng nghiệm thu và ranh giới bốn kho. Backend sở hữu API, quy tắc nghiệp vụ, phân quyền và migration. Đọc [hợp đồng backend hiện hành](architecture/current-backend-contract.md) trước khi phối hợp với Frontend hoặc AI Service.
+
 Trạng thái: hiện hành cho kho backend. Cập nhật: 2026-11-08. Phần mô tả chức năng đã đối chiếu `dev` tại `a182c9fde556423d04764fe2a0b7ac16af773923`, sau PR #50–#55 và #59–#60 (hợp đồng API và phân quyền không đổi kể từ #55); kết quả kiểm thử phải gắn với mốc chạy riêng.
 
 [Quy chuẩn tài liệu](process/documentation-standard.md) quy định cách viết tiếng Việt, ghi mốc nguồn và cập nhật theo thay đổi. [Bảng thuật ngữ](process/technical-glossary.md) thống nhất cách gọi giữa các tài liệu.

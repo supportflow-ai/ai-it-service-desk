@@ -1,6 +1,6 @@
 # Các quyết định nghiệp vụ còn mở
 
-Trạng thái: đề xuất chờ quyết định; không cấp phép triển khai. Cập nhật: 2026-11-08, đối chiếu mã `dev` tại `8036e2c185dfef7c4ed9941d736388c781e85f52`. [Hợp đồng hiện hành](current-backend-contract.md) và [ranh giới kiến trúc](backend-modules-and-use-cases.md) mô tả phần đã có.
+Trạng thái: đề xuất chờ quyết định; không cấp phép triển khai. Cập nhật: 2026-11-08, đối chiếu mã `dev` tại `f09e097ed4697b196a7b6f8d5d68f46502d8e1ed`. [Hợp đồng hiện hành](current-backend-contract.md) và [ranh giới kiến trúc](backend-modules-and-use-cases.md) mô tả phần đã có.
 
 Các lệnh vòng đời phiếu (cập nhật, nhận, phân công, giải quyết, mở lại, đóng, hủy) đã có, kèm người phụ trách, audit và `expectedRevision`. Còn chưa chốt: giới hạn thời gian mở lại, tự đóng, nhóm hỗ trợ và phạm vi đọc của Agent. Ghi nhận mã đang chạy tách biệt với việc chọn chính sách nghiệp vụ.
 
