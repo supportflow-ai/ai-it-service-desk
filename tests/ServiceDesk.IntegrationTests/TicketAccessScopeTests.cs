@@ -98,6 +98,95 @@ public sealed class TicketAccessScopeTests(TicketIdempotencyPostgresFixture fixt
         Assert.False(await context.TicketComments.AnyAsync(comment => comment.TicketId == first.Id));
     }
 
+    [Fact]
+    public async Task TransferKeepsInternalNotesWithTicketAndMovesAccessToNewTeam()
+    {
+        using var owner = fixture.First!.CreateClient();
+        SetToken(owner, (await RegisterAsync(owner)).Token);
+        using var oldTeamAgent = fixture.Second!.CreateClient();
+        using var newTeamAgent = fixture.First.CreateClient();
+        using var directAgent = fixture.Second.CreateClient();
+        using var admin = fixture.First.CreateClient();
+        var oldAgentId = await SignInAgentAsync(oldTeamAgent);
+        var newAgentId = await SignInAgentAsync(newTeamAgent);
+        var directAgentId = await SignInAgentAsync(directAgent);
+        await SignInAdminAsync(admin);
+        var oldTeam = await AddTeamAsync(oldAgentId, active: true);
+        var newTeam = await AddTeamAsync(newAgentId, active: true);
+        var ticket = await CreateTicketAsync(owner);
+
+        await using var context = fixture.CreateContext();
+        await context.Tickets.Where(item => item.Id == ticket.Id)
+            .ExecuteUpdateAsync(updates => updates.SetProperty(item => item.SupportTeamId, oldTeam));
+        context.TicketComments.Add(TicketComment.CreateInternalNote(ticket.Id, oldAgentId,
+            "Nhân viên nhóm cũ", RoleNames.Agent, "Ghi chú của nhóm cũ", DateTime.UtcNow));
+        await context.SaveChangesAsync();
+        var directTicket = await context.Tickets.SingleAsync(item => item.Id == ticket.Id);
+        directTicket.Assign(directAgentId, DateTime.UtcNow);
+        await context.SaveChangesAsync();
+
+        await AssertInternalNoteVisibleAsync(oldTeamAgent, ticket.Id, expected: true);
+        await AssertTicketStatusAsync(newTeamAgent, ticket.Id, HttpStatusCode.NotFound);
+
+        // Chuyển nhóm: phiếu và ghi chú đi cùng nhau, không có cơ chế chia sẻ riêng.
+        await context.Tickets.Where(item => item.Id == ticket.Id)
+            .ExecuteUpdateAsync(updates => updates.SetProperty(item => item.SupportTeamId, newTeam));
+
+        await AssertTicketStatusAsync(oldTeamAgent, ticket.Id, HttpStatusCode.NotFound);
+        using var oldNote = await oldTeamAgent.PostAsJsonAsync($"/api/tickets/{ticket.Id}/internal-notes", new { content = "Không còn quyền" });
+        Assert.Equal(HttpStatusCode.NotFound, oldNote.StatusCode);
+        await AssertInternalNoteVisibleAsync(newTeamAgent, ticket.Id, expected: true);
+        await AssertInternalNoteVisibleAsync(directAgent, ticket.Id, expected: true);
+        await AssertInternalNoteVisibleAsync(admin, ticket.Id, expected: true);
+        await AssertInternalNoteVisibleAsync(owner, ticket.Id, expected: false);
+    }
+
+    [Fact]
+    public async Task DeactivatingTeamRevokesTeamAccessOnNextRequestButKeepsDirectAssignment()
+    {
+        using var owner = fixture.First!.CreateClient();
+        SetToken(owner, (await RegisterAsync(owner)).Token);
+        using var agent = fixture.Second!.CreateClient();
+        var agentId = await SignInAgentAsync(agent);
+        var team = await AddTeamAsync(agentId, active: true);
+        var byTeam = await CreateTicketAsync(owner);
+        var assigned = await CreateTicketAsync(owner);
+
+        await using var context = fixture.CreateContext();
+        await context.Tickets.Where(item => item.Id == byTeam.Id || item.Id == assigned.Id)
+            .ExecuteUpdateAsync(updates => updates.SetProperty(item => item.SupportTeamId, team));
+        var assignedTicket = await context.Tickets.SingleAsync(item => item.Id == assigned.Id);
+        assignedTicket.Assign(agentId, DateTime.UtcNow);
+        await context.SaveChangesAsync();
+        await AssertTicketStatusAsync(agent, byTeam.Id, HttpStatusCode.OK);
+
+        await context.SupportTeams.Where(item => item.Id == team)
+            .ExecuteUpdateAsync(updates => updates.SetProperty(item => item.IsActive, false));
+
+        // Cùng JWT, máy chủ khác, request kế tiếp.
+        await AssertTicketStatusAsync(agent, byTeam.Id, HttpStatusCode.NotFound);
+        await AssertTicketStatusAsync(agent, assigned.Id, HttpStatusCode.OK);
+        var queue = await agent.GetFromJsonAsync<PagedTicketResult>("/api/tickets/queue?pageSize=10");
+        Assert.Equal(new[] { assigned.Id }, queue!.Items.Select(item => item.Id));
+    }
+
+    private async Task AssertInternalNoteVisibleAsync(HttpClient client, Guid ticketId, bool expected)
+    {
+        var timeline = await client.GetFromJsonAsync<TimelineItemDto[]>($"/api/tickets/{ticketId}/timeline");
+        Assert.Equal(expected, timeline!.Any(item => item.IsInternal));
+    }
+
+    private async Task SignInAdminAsync(HttpClient client)
+    {
+        var identity = await RegisterAsync(client);
+        await using var scope = fixture.Second!.Services.CreateAsyncScope();
+        var users = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+        Assert.True((await users.AddToRoleAsync((await users.FindByIdAsync(identity.User.UserId))!, RoleNames.Admin)).Succeeded);
+        using var login = await client.PostAsJsonAsync("/api/auth/login", new { email = identity.User.Email, password = "Test@1234" });
+        Assert.Equal(HttpStatusCode.OK, login.StatusCode);
+        SetToken(client, (await login.Content.ReadFromJsonAsync<AuthResponse>())!.Token);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

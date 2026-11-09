@@ -45,7 +45,7 @@ Chi tiết, timeline, tệp, hàng đợi và lệnh của nhân viên dùng ph�
 | Trạng thái cuối | Closed là terminal; Resolved không terminal | | Không tự động đóng trong MVP |
 | Bình luận công khai | Chủ sở hữu phiếu; Agent/Admin | Không viết vào phiếu Closed/Cancelled | Phản hồi khi PendingUser: **Mở** (DEC-03) |
 | Ghi chú nội bộ | Agent hoặc Admin | | Requester không bao giờ thấy |
-| Timeline | Requester chỉ thấy phần công khai; nhân viên có quyền trên phiếu thấy ghi chú nội bộ | | Lịch sử sau chuyển nhóm cần quyền chia sẻ từ đội cũ. Luồng chia sẻ triển khai cùng chuyển nhóm. |
+| Timeline | Requester chỉ thấy phần công khai; nhân viên có quyền hiện tại trên phiếu thấy cả ghi chú nội bộ | | Sau chuyển nhóm ghi chú đi cùng phiếu: Agent chỉ có quyền từ nhóm cũ mất quyền xem; nhóm mới đang hoạt động hoặc phân công trực tiếp xem được; Admin xem tất cả |
 | Tệp đính kèm | Người xem được phiếu: xin quyền tải lên, xác nhận, liệt kê, xin URL tải xuống; không viết vào phiếu Closed/Cancelled | | Giới hạn tệp: xem bên dưới |
 | Gợi ý AI (đọc, chấp nhận) | Chưa có endpoint | | Đích: Agent đọc; xác nhận định tuyến là việc của Lead (**Đã duyệt – chưa triển khai**) |
 

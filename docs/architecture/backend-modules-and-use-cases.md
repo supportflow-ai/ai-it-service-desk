@@ -70,7 +70,7 @@ Từ B1-PR3, `ITicketWriter.GetForUpdateAsync` nhận `TicketReadScope` để t�
 
 Các điểm cần xử lý được ghi trong [hợp đồng hiện hành](current-backend-contract.md#các-điểm-chưa-đạt-cần-xử-lý): quyền nhận xử lý Agent/Admin chưa thống nhất giữa HTTP và Application; giải quyết phiếu tải ID trước khi kiểm tra vai trò; lỗi ghi đồng thời chưa có ánh xạ phản hồi riêng.
 
-Mở lại chưa kiểm tra thời gian hoặc lịch sử giải quyết. B1-PR3 kiểm quyền nhóm qua cơ sở dữ liệu ở request hiện tại. Luồng điều phối Lead và chia sẻ lịch sử khi chuyển nhóm được theo dõi trong [bảng quyết định](pending-business-decisions.md).
+Mở lại chưa kiểm tra thời gian hoặc lịch sử giải quyết. B1-PR3 kiểm quyền nhóm qua cơ sở dữ liệu ở request hiện tại. Luồng chuyển nhóm và điều phối Lead được theo dõi trong [bảng quyết định](pending-business-decisions.md); quy tắc xem ghi chú sau chuyển nhóm đã chốt trong ADR-016.
 
 ## Giao dịch và lưu dữ liệu
 

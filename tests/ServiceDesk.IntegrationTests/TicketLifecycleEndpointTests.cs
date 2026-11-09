@@ -88,7 +88,7 @@ public class TicketLifecycleEndpointTests : IClassFixture<ServiceDeskWebApplicat
         // 3. Agent claims ticket
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", agentToken);
         var claimRes = await _client.PostAsync($"/api/tickets/{ticket.Id}/claim?expectedRevision={ticket.Revision}", null);
-        claimRes.StatusCode.Should().Be(HttpStatusCode.OK);
+        claimRes.StatusCode.Should().Be(HttpStatusCode.OK, await claimRes.Content.ReadAsStringAsync());
         var inProgressTicket = await claimRes.Content.ReadFromJsonAsync<TicketDto>();
         inProgressTicket!.Status.Should().Be((int)TicketStatus.InProgress);
 
