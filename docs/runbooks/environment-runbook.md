@@ -236,7 +236,7 @@ Khi lọc riêng kiểm thử, thay placeholder bằng tên thực tế và ki�
 
 Trợ lý chỉ chạy `seed-demo`, `bootstrap-admin`, `check-production` khi được giao rõ lệnh và đích; không suy ra quyền chạy từ tên lệnh hoặc từ việc đang viết tài liệu. Thông tin bootstrap chỉ cấp cho tiến trình một lần, không truyền sang API/Worker. Điều kiện `SeedDemo__*` và `BootstrapAdmin__*` nằm trong quy trình triển khai.
 
-Hành vi hiện có của `check-production`, đối chiếu [DatabaseMaintenance](../../src/backend/ServiceDesk.Infrastructure/Persistence/DatabaseMaintenance.cs) và [Database Program](../../src/backend/ServiceDesk.Database/Program.cs):
+Hành vi hiện có của `check-production`, đối chiếu [DatabaseMaintenance](../../src/backend/ServiceDesk.Platform/Persistence/DatabaseMaintenance.cs) và [Database Program](../../src/backend/ServiceDesk.Migrator/Program.cs):
 
 - Chỉ tìm ba email trong `DemoEmails`: `admin@test.com`, `agent@test.com`, `requester@test.com`.
 - Với tài khoản tồn tại, gọi `UserManager.CheckPasswordAsync` bằng mật khẩu mẫu đã có trong mã; nếu còn khớp, dừng với `demo_default_password_present` và exit code 1.
