@@ -2,12 +2,12 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Options;
-using ServiceDesk.Application.AIAssistance.Contracts;
-using ServiceDesk.Application.Common.Interfaces;
-using ServiceDesk.Domain.AIAssistance;
-using ServiceDesk.Domain.Ticketing;
-using ServiceDesk.Infrastructure.AI;
-using ServiceDesk.Infrastructure.Options;
+using ServiceDesk.Modules.AIAssistance.Application.Contracts;
+using ServiceDesk.SharedKernel.Application.Abstractions;
+using ServiceDesk.Modules.AIAssistance.Domain;
+using ServiceDesk.Modules.Ticketing.Domain;
+using ServiceDesk.Modules.AIAssistance.Infrastructure;
+using ServiceDesk.Modules.AIAssistance.Infrastructure.Options;
 using Xunit;
 
 namespace ServiceDesk.IntegrationTests;

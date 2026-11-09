@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
-using ServiceDesk.Domain.Ticketing;
+using ServiceDesk.Modules.Ticketing.Domain;
 using ServiceDesk.Infrastructure.Persistence;
 using Xunit;
 namespace ServiceDesk.IntegrationTests;

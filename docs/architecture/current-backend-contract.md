@@ -1,79 +1,81 @@
 # Hợp đồng backend đang triển khai
 
-## Đối chiếu liên kho ngày 05/11/2026
-
-Đối chiếu mã backend tại [`main@bf38ef9`](https://github.com/supportflow-ai/ai-it-service-desk/commit/bf38ef903f46f6ea21f80da44c11d437391a9efb) và frontend tại [`main@ade7af4`](https://github.com/supportflow-ai/ai-it-service-desk-web/commit/ade7af4e1b88e7834c8d9b225f68eb7ebd75f9fe). Phạm vi MVP gồm Identity và Ticketing. Knowledge đã có API và giao diện. Phạm vi sản phẩm cần được chủ dự án xem xét riêng. Mốc này mô tả mã và hợp đồng trong Git. Kết quả demo cần ghi thêm môi trường và bằng chứng chạy thực tế.
-
-| Điểm tích hợp | Hành vi tại mốc backend |
-| --- | --- |
-| Phạm vi đọc | Requester đọc phiếu của mình. Agent và Admin có phạm vi đọc toàn hệ thống. Quyền ghi còn phụ thuộc lệnh, chủ phiếu và trạng thái |
-| Danh bạ để phân công | `GET /api/users?role=Agent` trả `userId` và `fullName`. Bộ đọc của Frontend dùng hai trường này, với `fullName` có thể rỗng |
-| Vòng đời phiếu | API có hàng đợi, phân công và hủy phân công. Agent và Admin có thể nhận xử lý theo điều kiện của use case. Domain chỉ hủy phân công khi phiếu còn `Assigned` và có người phụ trách |
-| Kiểm soát ghi đồng thời | Các lệnh sửa, phân công và chuyển trạng thái bắt buộc `expectedRevision` dương trong runtime. `update` và `assign` nhận revision trong body, các lệnh còn lại nhận qua query. Revision cũ trả `409` |
-| Bình luận và tệp | Backend lọc ghi chú nội bộ khỏi timeline của Requester. Tệp dùng grant tải lên, xác nhận với backend, sau đó mới có trong danh sách |
-| Phân loại AI | Backend công bố hợp đồng S2S v1 và có adapter HTTP. Chu trình phân loại ticket và duyệt gợi ý đầu cuối thuộc giai đoạn sau |
-
-Khi đổi API, cập nhật [OpenAPI backend](../../contracts/backend/openapi-baseline.json) và kiểm thử hợp đồng tại cùng mốc, rồi phối hợp ghim phiên bản ở kho Frontend. Với phân loại AI, Backend công bố [hợp đồng v1](../../contracts/ai/v1/openapi.yaml) và AI Service ghim bản sao theo checksum. [Đối chiếu Frontend](https://github.com/supportflow-ai/ai-it-service-desk-web/blob/main/docs/architecture/api-baseline.md) · [Đối chiếu AI Service](https://github.com/supportflow-ai/ai-service/blob/main/docs/backend-alignment.md)
-
-## Mốc đối chiếu trước đó
-
-Bản bổ sung ngày 03/11/2026 mô tả comment, attachment, revision và adapter AI trong [đợt củng cố khi đang triển khai](../runbooks/supportflow-hardening-phase-2-6.md). Các bảng bên dưới giữ mốc đối chiếu tháng 10 để truy vết.
-
-Mốc lịch sử là `dev@47634bc8162c13bd6ae024233ec24a0076738c51`, sau PR #28 và #29, cập nhật ngày 20/10/2026. [ADR-014](../adr/ADR-014-feature-use-cases-and-published-contracts.md) · [Bảng quyết định nghiệp vụ](pending-business-decisions.md)
+Trạng thái: mô tả hiện hành, đối chiếu mã `dev` tại `8036e2c185dfef7c4ed9941d736388c781e85f52`, cập nhật 2026-11-08, sau PR #50–#55. Bản chuẩn HTTP là [OpenAPI baseline](../../contracts/backend/openapi-baseline.json) (40 đường dẫn, 41 thao tác); tài liệu này mô tả thêm quyền, trạng thái và lỗi mà OpenAPI không nêu. Mốc nguồn có thể mới hơn nhánh local của người đọc; đối chiếu commit trước khi chạy. Cập nhật tài liệu không thay API, quyền hoặc dữ liệu và không xác nhận phiên bản VPS hay một bản phát hành. Quyết định kiến trúc: [ADR-014](../adr/ADR-014-feature-use-cases-and-published-contracts.md). Chính sách cần chốt: [bảng quyết định](pending-business-decisions.md). Hồ sơ các đợt củng cố đầu tháng 11 là lịch sử: [giai đoạn 1](../runbooks/supportflow-hardening-phase-1.md), [giai đoạn 2–6](../runbooks/supportflow-hardening-phase-2-6.md).
 
 ## HTTP và danh tính
 
-[Bảng mốc mã nguồn](source-baseline.md) ghi nhánh chuẩn hóa trên dev sau PR #29 và phạm vi hợp đồng đã đồng bộ. Liên kết mã tương đối bên dưới mở checkout của người đọc; đối chiếu HEAD trước khi áp dụng.
+[Bảng mốc mã nguồn](source-baseline.md) ghi cách xác định mốc đối chiếu. Liên kết mã tương đối bên dưới mở checkout của người đọc; đối chiếu HEAD trước khi áp dụng. Cột "Chính sách" là chính sách HTTP của endpoint; Application kiểm tra thêm quyền theo phiếu (chủ sở hữu, người phụ trách, Admin).
 
-| Thao tác | Đường dẫn | Hành vi |
-| --- | --- | --- |
-| Đăng ký | `POST /api/auth/register` | Máy chủ chỉ cấp Requester, bỏ qua yêu cầu tự chọn vai trò |
-| Đăng nhập | `POST /api/auth/login` | Sai mật khẩu, không có tài khoản hoặc bị khóa đều trả 401 chung |
-| Hồ sơ bản thân | `GET /api/auth/me` | Application lấy ID từ người đang đăng nhập; tài khoản hợp lệ nhưng không còn trong cơ sở dữ liệu trả 404 |
-| Tạo phiếu | `POST /api/tickets` | Chủ sở hữu là người đang đăng nhập; tạo Submitted; 201 với header Location `/api/tickets/{id}` |
-| Danh sách cá nhân | `GET /api/tickets/me` | Chỉ phiếu của người đang đăng nhập; kết quả phân trang, không phải mảng trần |
-| Chi tiết | `GET /api/tickets/{id}` | Requester chỉ đọc phiếu của mình; Agent/Admin đọc toàn hệ thống; thiếu/ngoài phạm vi trả 404 |
-| Cập nhật phiếu | `POST /api/tickets/{id}/update` | Chủ sở hữu hoặc Admin; chỉ ở Submitted; nhận `title`, `description`, `categoryId`; trả 200 với `TicketDto` |
-| Nhận xử lý | `POST /api/tickets/{id}/claim` | Application hiện yêu cầu Agent; Submitted sang InProgress; trả 200 với `TicketDto`; xem điểm lệch quyền bên dưới |
-| Giải quyết | `POST /api/tickets/{id}/resolve` | Agent/Admin; InProgress sang Resolved; trả 200 với `TicketDto` |
-| Mở lại | `POST /api/tickets/{id}/reopen` | Chủ sở hữu hoặc Admin; Resolved sang InProgress; trả 200 với `TicketDto` |
-| Đóng | `POST /api/tickets/{id}/close` | Chủ sở hữu hoặc Admin; Resolved sang Closed; trả 200 với `TicketDto` |
-| Hủy | `POST /api/tickets/{id}/cancel` | Chủ sở hữu hoặc Admin; Submitted sang Cancelled; trả 200 với `TicketDto` |
+| Nhóm | Thao tác | Đường dẫn | Chính sách | Ghi chú |
+| --- | --- | --- | --- | --- |
+| Xác thực | Đăng ký, đăng nhập, làm mới, quên và đặt lại mật khẩu | `POST /api/auth/register`, `/login`, `/refresh`, `/forgot-password`, `/reset-password` | Ẩn danh, có giới hạn tần suất | Chi tiết ở mục Identity bên dưới |
+| Xác thực | Đăng xuất | `POST /api/auth/revoke` | Ẩn danh | Luôn 204 |
+| Xác thực | Đổi mật khẩu, hồ sơ bản thân | `POST /api/auth/change-password`, `GET /api/auth/me` | Đã đăng nhập | Tài khoản hợp lệ nhưng không còn trong cơ sở dữ liệu trả 404 |
+| Người dùng | Danh sách theo vai trò; gán vai trò | `GET /api/users`, `PUT /api/users/{id}/roles` | Agent hoặc Admin; Admin | |
+| Phòng ban | Danh sách | `GET /api/departments` | Đã đăng nhập | Phòng ban của người gửi, không phải nhóm hỗ trợ |
+| Phiếu | Tạo; danh sách cá nhân; hàng đợi; chi tiết; cập nhật | `POST /api/tickets`, `GET /api/tickets/me`, `GET /api/tickets/queue`, `GET /api/tickets/{id}`, `POST /api/tickets/{id}/update` | Requester (gồm Agent/Admin); hàng đợi chỉ Agent/Admin | Tạo: Submitted, 201 với `Location`, hỗ trợ `Idempotency-Key`; danh sách phân trang; cập nhật chỉ ở Submitted, chủ sở hữu hoặc Admin |
+| Phiếu | Nhận, phân công, hủy phân công | `POST /api/tickets/{id}/claim`, `/assign`, `/unassign` | Agent hoặc Admin | Lưu người phụ trách và ghi audit; phiếu đã phân công cho người khác chỉ Admin nhận thay được |
+| Phiếu | Giải quyết, mở lại, đóng, hủy | `POST /api/tickets/{id}/resolve`, `/reopen`, `/close`, `/cancel` | Đã đăng nhập; Application kiểm vai trò và chủ sở hữu | Bảng chuyển trạng thái bên dưới |
+| Trao đổi | Bình luận; ghi chú nội bộ; timeline | `POST /api/tickets/{id}/comments`, `POST /api/tickets/{id}/internal-notes`, `GET /api/tickets/{id}/timeline` | Requester; Agent; Requester | Requester chỉ thấy phiếu của mình; ghi chú nội bộ không lộ cho Requester |
+| Tệp | Xin quyền tải lên; xác nhận; danh sách; xin URL tải xuống | `POST /api/tickets/{id}/attachments/upload-url`, `/attachments/confirm`, `GET /api/tickets/{id}/attachments`, `/attachments/download-url` | Requester (theo phạm vi phiếu) | Luồng ở cuối tài liệu |
+| Tri thức | Tạo bản nháp, sửa, xuất bản, lưu trữ | `POST /api/knowledge/articles`, `PUT .../{id}/draft`, `POST .../{id}/publish`, `POST .../{id}/archive` | Agent hoặc Admin | Sửa, xuất bản và lưu trữ bắt buộc `expectedRevision` |
+| Tri thức | Chi tiết, tìm kiếm, danh sách | `GET /api/knowledge/articles/{id}`, `/search`, `GET /api/knowledge/articles` | Đã đăng nhập | Quyền đọc theo trạng thái bài viết |
 
-Agent là nhân viên hỗ trợ; Admin là quản trị viên; Requester là người yêu cầu. Chưa có phân quyền theo nhóm, phân công hoặc vai trò Lead. Người có nhiều vai trò vẫn được cấp phạm vi đọc chi tiết rộng hơn nếu có Agent/Admin. Tạo phiếu và danh sách cá nhân luôn theo người đang đăng nhập, kể cả nhân viên hỗ trợ.
+Tại mốc đối chiếu trên, Agent và Admin đọc chi tiết toàn hệ thống. B1-PR3 thu hẹp quyền Agent theo [ADR-016](../adr/ADR-016-support-team-routing-and-agent-scope.md): nhóm đang hoạt động hoặc phân công trực tiếp. Bộ lọc áp dụng cho chi tiết, hàng đợi và số lượng, timeline, tệp và lệnh của nhân viên. Phiếu ngoài phạm vi trả 404. Agent vẫn truy cập được phần công khai của phiếu mình tạo theo quyền chủ sở hữu. Admin đọc toàn hệ thống. Tạo phiếu và danh sách cá nhân luôn theo người đăng nhập.
 
 Application từ chối actor chưa xác thực, ID không phải GUID hợp lệ hoặc GUID rỗng trước persistence. Endpoint còn có policy role; role không được cấp bị từ chối tại HTTP. Worker dùng actor anonymous, không đăng ký HttpContext. Không chỉ dựa vào middleware để bảo vệ use case.
 
-Nguồn: [AuthEndpoints](../../src/backend/ServiceDesk.Api/Endpoints/AuthEndpoints.cs), [TicketEndpoints](../../src/backend/ServiceDesk.Api/Endpoints/TicketEndpoints.cs), [GetTicketDetail](../../src/backend/ServiceDesk.Application/Ticketing/GetTicketDetail/GetTicketDetailUseCase.cs), [GetCurrentUser](../../src/backend/ServiceDesk.Application/Identity/GetCurrentUser/GetCurrentUserUseCase.cs).
+Nguồn: [AuthEndpoints](../../src/backend/Modules/Identity/ServiceDesk.Modules.Identity/Presentation/AuthEndpoints.cs), [TicketEndpoints](../../src/backend/Modules/Ticketing/ServiceDesk.Modules.Ticketing/Presentation/TicketEndpoints.cs) (tách thành các tệp `TicketEndpoints.*.cs` cùng thư mục), [KnowledgeEndpoints](../../src/backend/Modules/Knowledge/ServiceDesk.Modules.Knowledge/Presentation/KnowledgeEndpoints.cs), [GetTicketDetail](../../src/backend/Modules/Ticketing/ServiceDesk.Modules.Ticketing/Application/GetTicketDetail/GetTicketDetailUseCase.cs).
 
-## Các thao tác vòng đời sau PR #28
+## Identity sau PR #47, #48 và nhánh refactor
 
-Sáu thao tác mới đều dùng POST. Chỉ `update` nhận nội dung JSON; các thao tác còn lại nhận ID trên đường dẫn. Điều kiện chuyển trạng thái nằm trong `Ticket`, quyền nằm trong từng luồng Application. Agent đọc được một phiếu không tự có quyền cập nhật, mở lại, đóng hoặc hủy phiếu của người khác.
+Cập nhật 2026-11-07, đối chiếu PR #50 đến #53 vào `dev`. Mã ở [AuthEndpoints](../../src/backend/Modules/Identity/ServiceDesk.Modules.Identity/Presentation/AuthEndpoints.cs) và [DepartmentEndpoints](../../src/backend/Modules/Identity/ServiceDesk.Modules.Identity/Presentation/DepartmentEndpoints.cs).
+
+| Thao tác | Đường dẫn | Quyền | Hành vi |
+| --- | --- | --- | --- |
+| Làm mới phiên | `POST /api/auth/refresh` | Ẩn danh, có rate limit | Thu hồi token cũ bằng một lệnh cập nhật có điều kiện và lưu token mới trong cùng giao dịch. Token đã thu hồi bị gửi lại, hoặc hai request cùng token chạy song song, thì cả chuỗi phiên của token đó (mọi token sinh từ cùng một lần đăng nhập, cột `family_id`) bị thu hồi, kể cả token vừa cấp cho request thắng; phiên trên thiết bị khác giữ nguyên. |
+| Đăng xuất | `POST /api/auth/revoke` | Ẩn danh | Thu hồi cả chuỗi phiên của refresh token được gửi, kể cả khi token đó đã được xoay vòng hoặc một lần làm mới đang chạy song song; token không tồn tại thì bỏ qua. Luôn trả 204. Access token đã phát vẫn hiệu lực tới khi hết hạn. |
+| Đổi mật khẩu | `POST /api/auth/change-password` | Đã đăng nhập | Đổi mật khẩu và thu hồi mọi refresh token của người đó trong cùng giao dịch. |
+| Quên mật khẩu | `POST /api/auth/forgot-password` | Ẩn danh, có rate limit | Chỉ đưa email vào hàng đợi trong bộ nhớ rồi trả ngay cùng một thông điệp, nên nội dung và thời gian phản hồi không phụ thuộc email có tồn tại. Xử lý nền: chỉ phát mã khi email tồn tại và chưa có 5 mã trong một giờ; đếm, vô hiệu mã cũ và thêm mã chạy tuần tự theo email (khóa tư vấn PostgreSQL) nên luôn còn đúng một mã hiệu lực. Có `Email:Smtp:Host` thì gửi qua SMTP; chưa cấu hình thì `NoOpOtpSender` chỉ ghi cảnh báo. Log chỉ ghi loại lỗi, không ghi email hay mã. Hàng đợi mất khi tiến trình dừng; người dùng gửi lại yêu cầu. |
+| Đặt lại mật khẩu | `POST /api/auth/reset-password` | Ẩn danh, có rate limit | Một giao dịch khóa dòng mã (`FOR UPDATE`). Sai mã tăng `failed_attempts`; sau 5 lần sai mã bị từ chối kể cả khi đúng. Đúng mã thì đổi mật khẩu, đánh dấu đã dùng và thu hồi mọi refresh token; mật khẩu mới không hợp lệ thì rollback, mã vẫn dùng được. |
+| Danh sách người dùng theo vai trò | `GET /api/users?role=` | Agent hoặc Admin (`RequireAgent`) | Mặc định vai trò Agent; trả `UserId`, `FullName`. |
+| Gán vai trò | `PUT /api/users/{id}/roles` | Admin | Đổi vai trò và thu hồi refresh token của người được gán trong cùng giao dịch. Không cho gỡ Admin của quản trị viên cuối cùng; các lần gán vai trò khóa dòng vai trò Admin nên hai yêu cầu đồng thời không thể gỡ hai Admin cuối. Access token đã phát vẫn mang vai trò cũ tới khi hết hạn (`Jwt:ExpiryMinutes`). |
+| Phòng ban | `GET /api/departments` | Đã đăng nhập | Danh sách phòng ban. |
+
+Giới hạn tần suất hai lớp. Theo IP: đăng ký, đăng nhập, quên và đặt lại mật khẩu tối đa 60 request mỗi 60 giây (`auth-ip`); `/refresh` có ngân sách riêng 120 request mỗi 60 giây (`auth-refresh`) nên không tiêu hết lượt đăng nhập. Theo email: email đã chuẩn hóa (cắt khoảng trắng, chữ thường) cộng loại thao tác (đăng nhập, quên mật khẩu, đặt lại mật khẩu) tối đa 10 request mỗi 900 giây, độc lập với IP và giữa các thao tác. Vượt ngưỡng trả 429 cùng nội dung `{error}` cho email tồn tại lẫn không tồn tại, kèm header `Retry-After` (đã khai báo 429 trong OpenAPI). Cấu hình ở mục `RateLimiting:Auth` (`Enabled`, `PermitLimit`, `WindowSeconds`, `RefreshPermitLimit`, `EmailPermitLimit`, `EmailWindowSeconds`). Request không có địa chỉ IP không bị giới hạn theo IP. Sau reverse proxy, địa chỉ lấy từ Forwarded Headers. Các ngưỡng 60/60 giây, 10/900 giây, 5 lần sai và 5 mã mỗi giờ là giá trị khởi điểm chưa được nhóm chốt; cần đo sau NGINX trên staging.
+
+Mọi thao tác tạo hoặc thu hồi refresh token (đăng nhập, làm mới phiên, đăng xuất, đổi/đặt lại mật khẩu, đổi vai trò, thu hồi chuỗi phiên khi phát hiện token bị dùng lại) lấy khóa dòng người dùng (`AspNetUsers ... FOR UPDATE`) trước trong giao dịch của mình. Lệnh thu hồi vì vậy luôn chạy sau khi token mới đã commit; đăng nhập kiểm mật khẩu và lưu refresh token trong cùng một giao dịch. Đổi vai trò cũng đổi security stamp.
+
+Bộ lọc lỗi `LegacyErrorFilter` giữ mã 400/403/404/409/503. Thông điệp của `ArgumentException` và `UnauthorizedAccessException` chỉ được trả khi mã ServiceDesk ném ra; lỗi cùng loại từ .NET hoặc thư viện trả thông điệp chung ("Yêu cầu không hợp lệ.", "Bạn không có quyền thực hiện thao tác này.") và chỉ ghi chi tiết vào log. Knowledge chỉ trả 422 kèm thông điệp cho `InvalidOperationException` ném từ `ServiceDesk.Modules.Knowledge.Domain`; ngoại lệ cùng loại từ adapter hay thư viện thành lỗi 500 chung.
+
+## Thao tác vòng đời phiếu
+
+Các thao tác đều dùng POST. Chỉ `update` nhận nội dung JSON; các thao tác còn lại nhận ID trên đường dẫn. Điều kiện chuyển trạng thái nằm trong `Ticket`, quyền nằm trong từng luồng Application. Agent đọc được một phiếu không tự có quyền cập nhật, mở lại, đóng hoặc hủy phiếu của người khác.
 
 | Thao tác | Trạng thái trước | Trạng thái sau | Giới hạn hiện tại |
 | --- | --- | --- | --- |
 | Cập nhật | Submitted | Submitted | Quy tắc tiêu đề, mô tả và danh mục như khi tạo |
-| Nhận xử lý | Submitted | InProgress | Chưa lưu người phụ trách, nhóm hoặc lịch sử nhận xử lý |
+| Nhận xử lý | Submitted hoặc Assigned | InProgress | Agent hoặc Admin; lưu người phụ trách và ghi audit. Phiếu đã phân công cho người khác chỉ Admin nhận thay được. Chưa có nhóm |
 | Giải quyết | InProgress | Resolved | Chưa có nội dung giải quyết, thời điểm giải quyết riêng hoặc lịch sử nghiệp vụ |
 | Mở lại | Resolved | InProgress | Chưa có cửa sổ thời gian, kiểm tra người phụ trách hoặc tác vụ tự đóng |
 | Đóng | Resolved | Closed | Chưa có tác vụ đóng tự động |
 | Hủy | Submitted | Cancelled | Chưa nhận lý do hủy hoặc lưu lịch sử nghiệp vụ |
 
-Trạng thái khác bị Domain từ chối; Application chuyển lỗi trạng thái thành `ArgumentException`, bộ lọc HTTP hiện trả 400 với `{ error }`. Phiếu thiếu hoặc ngoài quyền chủ sở hữu của các lệnh `update/reopen/close/cancel` trả 404. Các lệnh mới chưa có cơ chế khóa chống tạo trùng hoặc phát lại phản hồi như thao tác tạo phiếu. Yêu cầu đã thực hiện thành công rồi gửi lại có thể nhận lỗi trạng thái.
+Mọi lệnh ghi phiếu (cập nhật, nhận xử lý, phân công, hủy phân công, giải quyết, mở lại, đóng, hủy) bắt buộc `expectedRevision`: thiếu hoặc bằng 0 trả 400, khác revision hiện tại (`xmin`) trả 409. Trạng thái khác bị Domain từ chối; `TicketCommandGuard` chuyển lỗi trạng thái thành `ArgumentException`, bộ lọc HTTP trả 400 với `{ error }`. Phiếu thiếu hoặc ngoài quyền chủ sở hữu của các lệnh `update/reopen/close/cancel` trả 404. Các lệnh mới chưa có cơ chế khóa chống tạo trùng hoặc phát lại phản hồi như thao tác tạo phiếu. Yêu cầu đã thực hiện thành công rồi gửi lại có thể nhận lỗi trạng thái.
 
-Nguồn được ghim: [các đường dẫn HTTP tại mốc đối chiếu](https://github.com/supportflow-ai/ai-it-service-desk/blob/47634bc8162c13bd6ae024233ec24a0076738c51/src/backend/ServiceDesk.Api/Endpoints/TicketEndpoints.cs), [quy tắc trên Ticket](https://github.com/supportflow-ai/ai-it-service-desk/blob/47634bc8162c13bd6ae024233ec24a0076738c51/src/backend/ServiceDesk.Domain/Ticketing/Ticket.cs), [các luồng Ticketing](https://github.com/supportflow-ai/ai-it-service-desk/tree/47634bc8162c13bd6ae024233ec24a0076738c51/src/backend/ServiceDesk.Application/Ticketing).
+## Các điểm đã xử lý sau refactor
 
-## Các điểm chưa đạt cần xử lý
+Đối chiếu `dev@314f5b9`. Các vấn đề từng ghi ở mục này tại mốc PR #29 đã được sửa trong mã:
 
-Các phát hiện dưới đây từ đối chiếu mã nguồn tại mốc ghi đầu tài liệu; chưa phải kết quả tái hiện HTTP mới trong đợt sửa tài liệu.
+| Vấn đề cũ | Hành vi hiện tại |
+| --- | --- |
+| Quyền nhận xử lý chưa thống nhất | `ClaimTicketUseCase` nhận Agent hoặc Admin, khớp chính sách `RequireAgent`; phiếu đã phân công cho người khác chỉ Admin nhận thay được (403 với người khác). |
+| Giải quyết tải phiếu trước khi kiểm vai trò | `ResolveTicketUseCase` kiểm Agent/Admin trước khi tải phiếu; Requester luôn nhận 403, không phân biệt được phiếu có tồn tại hay không. |
+| Ghi đồng thời chưa có phản hồi ổn định | Lệnh ghi kiểm `expectedRevision` với `xmin` trước khi lưu; `DbUpdateConcurrencyException` khi lưu được chuyển thành `ConcurrencyConflictException` và trả 409. |
+| Phân trang Knowledge tràn offset | `(page - 1) * pageSize` vượt `int` trả 400, cùng hợp đồng với danh sách phiếu (trước đây phép nhân tràn số và trả nhầm trang đầu). |
+| Bình luận/tệp ghi vào phiếu vừa đóng | Bình luận công khai và xác nhận tệp đọc lại trạng thái phiếu với `FOR SHARE` trong giao dịch ghi (`TicketRowLock`); người ngoài phạm vi nhận 404 trước khi xét trạng thái. |
 
-| Vấn đề | Hành vi trong mã | Yêu cầu theo dõi |
-| --- | --- | --- |
-| Quyền nhận xử lý chưa thống nhất | `RequireAgent` ở HTTP nhận Agent hoặc Admin, nhưng `ClaimTicketUseCase` chỉ nhận Agent; Admin chỉ có vai trò Admin bị bộ lọc trả 401 | Chốt phạm vi vai trò theo DEC-02; kiểm thử Agent, Admin và người nhiều vai trò; sửa phản hồi từ chối theo chính sách được chọn |
-| Giải quyết tải tài nguyên trước kiểm tra vai trò | `ResolveTicketUseCase` tìm ID rồi mới kiểm tra Agent/Admin; Requester đã đăng nhập có thể nhận 404 khi thiếu phiếu và 401 khi phiếu tồn tại | Áp dụng thứ tự kiểm tra quyền và che giấu tài nguyên trong quy tắc bảo mật; bổ sung kiểm thử từ chối tương ứng |
-| Phản hồi ghi đồng thời chưa hoàn thiện | `xmin` là dấu phát hiện xung đột; bộ ghi mới chưa ánh xạ `DbUpdateConcurrencyException` thành lỗi nghiệp vụ ổn định | Kiểm thử hai yêu cầu cạnh tranh trên PostgreSQL thật; xử lý xung đột ở bộ tích hợp mà không đưa kiểu EF vào Application |
-
-`GetForUpdateAsync` hiện dùng `SingleOrDefaultAsync`, không thực hiện `SELECT ... FOR UPDATE`. Không suy ra có khóa dòng từ tên phương thức hoặc coi CI cũ là bằng chứng đã kiểm tra các tình huống trên. Xem [quy tắc bảo mật](security-design-rules.md), [DEC-02/DEC-05](pending-business-decisions.md) và [hướng dẫn kiểm chứng](../runbooks/backend-hardening-verification.md).
+`GetForUpdateAsync` vẫn đọc phiếu bằng `SingleOrDefaultAsync` (không khóa dòng); xung đột được phát hiện bằng revision. Xem [quy tắc bảo mật](security-design-rules.md) và [hướng dẫn kiểm chứng](../runbooks/backend-hardening-verification.md).
 
 ## Dữ liệu phiếu và mã trạng thái
 
@@ -101,12 +103,11 @@ Các phát hiện dưới đây từ đối chiếu mã nguồn tại mốc ghi 
 | 8 | Assigned |
 | 9 | PendingExternal |
 
-Nguồn: [TicketStatus](../../src/backend/ServiceDesk.Domain/Ticketing/TicketStatus.cs), [Ticket](../../src/backend/ServiceDesk.Domain/Ticketing/Ticket.cs), [TicketDto](../../src/backend/ServiceDesk.Application/Ticketing/Contracts/TicketDto.cs), [mapping](../../src/backend/ServiceDesk.Infrastructure/Ticketing/Configurations/TicketConfiguration.cs). Có enum không có nghĩa đã triển khai lệnh chuyển trạng thái. Không đổi nghĩa 0–6, loại Cancelled hoặc đổi JSON sang chuỗi để khớp bảng 0–8 trong tài liệu lịch sử.
+Nguồn: [TicketStatus](../../src/backend/Modules/Ticketing/ServiceDesk.Modules.Ticketing/Domain/TicketStatus.cs), [Ticket](../../src/backend/Modules/Ticketing/ServiceDesk.Modules.Ticketing/Domain/Ticket.cs), [TicketDto](../../src/backend/Modules/Ticketing/ServiceDesk.Modules.Ticketing/Application/Contracts/TicketDto.cs), [mapping](../../src/backend/Modules/Ticketing/ServiceDesk.Modules.Ticketing/Infrastructure/Configurations/TicketConfiguration.cs). Có enum không có nghĩa đã triển khai lệnh chuyển trạng thái. Không đổi nghĩa 0–6, loại Cancelled hoặc đổi JSON sang chuỗi để khớp bảng 0–8 trong tài liệu lịch sử.
 
 ## Lỗi và idempotency
 
-- Giữ hình dạng phản hồi lỗi hiện hành, không chuyển đồng loạt sang ProblemDetails. [LegacyErrorFilter](../../src/backend/ServiceDesk.Api/Endpoints/LegacyErrorFilter.cs) giữ `{ error }` cho lỗi đầu vào/chống tạo trùng; 404 chi tiết không dựng một DTO lỗi mới.
-- PR #29 đã đổi một số chuỗi thông báo sang tiếng Việt, gồm lỗi khóa chống tạo trùng. Hình dạng JSON và mã HTTP được giữ không đồng nghĩa nội dung thông báo còn giống bản local trước PR #29. Chi tiết phiên bản nằm trong bảng mốc nguồn.
+- Giữ hình dạng phản hồi lỗi hiện hành, không chuyển đồng loạt sang ProblemDetails. [LegacyErrorFilter](../../src/backend/BuildingBlocks/ServiceDesk.SharedKernel.Web/LegacyErrorFilter.cs) giữ `{ error }` cho lỗi đầu vào/chống tạo trùng; 404 chi tiết không dựng một DTO lỗi mới.
 - Tạo ticket hỗ trợ `Idempotency-Key` tùy chọn. Receipt nằm trong phạm vi requester + method + resource + key hash; khác payload cùng key trả 409.
 - Advisory lock và transaction PostgreSQL giữ ticket/receipt nguyên tử. Receipt dùng giờ DB, hiệu lực 10 phút; lock timeout 5 giây; timeout trả 503 và `Retry-After: 1`.
 - Replay trả response đã lưu sau kiểm tra quyền sở hữu, không dựng lại từ ticket có thể thay đổi. Không dùng cache trong tiến trình thay cơ chế này.
@@ -116,8 +117,8 @@ Nguồn: [TicketStatus](../../src/backend/ServiceDesk.Domain/Ticketing/TicketSta
 
 [OpenAPI baseline](../../contracts/backend/openapi-baseline.json) cùng [ApiContractTests](../../tests/ServiceDesk.IntegrationTests/ApiContractTests.cs), [TicketAccessScopeTests](../../tests/ServiceDesk.IntegrationTests/TicketAccessScopeTests.cs), [TicketIdempotencyPostgresTests](../../tests/ServiceDesk.IntegrationTests/TicketIdempotencyPostgresTests.cs) bảo vệ các phần tương ứng. Baseline OpenAPI không thay kiểm thử hành vi, dữ liệu và quyền.
 
-Bản chuẩn OpenAPI đã được đồng bộ trên mã sau PR #29: 16 đường dẫn, gồm sáu thao tác mới và `UpdateTicketRequest`. Kiểm thử `PublishedApiMatchesBaseline` so sánh toàn bộ tài liệu, phát hiện cả mục mới chưa công bố và thay đổi mô tả/bảo mật. Quy trình cập nhật có chủ đích theo [quy chuẩn tài liệu](../process/documentation-standard.md); kết quả này không xác nhận các khoảng cách hành vi ở trên đã được sửa.
+Kiểm thử `PublishedApiMatchesBaseline` so sánh toàn bộ tài liệu OpenAPI với bản chuẩn, phát hiện cả mục mới chưa công bố và thay đổi mô tả/bảo mật. Cập nhật bản chuẩn có chủ đích theo [quy chuẩn tài liệu](../process/documentation-standard.md).
 
-PR #29 cũng Việt hóa mô tả API và hướng dẫn Bearer trong Swagger, trong khi bản chuẩn vẫn giữ mô tả tiếng Anh. Kiểm thử hiện không so sánh toàn bộ phần `info`/mô tả bảo mật, nên việc CI đạt chưa chứng minh những phần mô tả này đã đồng bộ. Các điểm quyền nhận xử lý, thứ tự tải phiếu ở giải quyết và ghi đồng thời trong bảng trên vẫn còn tại mốc PR #29.
+Chưa có luồng Draft/Submit riêng, nhóm hỗ trợ, SLA, AI thật hoặc thu hồi tức thời quyền trong access token đã phát. Luồng tệp đính kèm: xin quyền tải lên nhận form multipart POST đã ký (giới hạn 10 MiB, gắn actor/ticket/tên/dung lượng/MIME/key/hết hạn) → xác nhận đối chiếu metadata object, sao chép sang key cuối bất biến rồi mới ghi metadata vào DB → tải xuống bằng URL ký ngắn hạn. Grant PUT cũ còn hạn vẫn được xác nhận theo cùng cách (xem [runbook](../runbooks/supportflow-hardening-phase-2-6.md)). Còn mở: đối soát object mồ côi khi lưu trữ thành công nhưng kết quả giao dịch DB không xác định. FullName chưa có dữ liệu hồ sơ riêng được lưu. Các phần còn thiếu thuộc đợt phát triển được quyết định riêng.
 
-Chưa có luồng Draft/Submit riêng, nhóm, SLA, AI thật hoặc thu hồi tức thời quyền trong JWT đã phát. Luồng tệp đính kèm dùng pre-signed PUT và quyền xác nhận một lần, gắn actor/ticket/tên/dung lượng/MIME/key/hết hạn; xác nhận đối chiếu metadata object từ MinIO. URL PUT còn hiệu lực vẫn có thể ghi đè object sau xác nhận; cần object versioning hoặc promote sang key bất biến để loại bỏ giới hạn này. FullName chưa có dữ liệu hồ sơ riêng được lưu. Các phần còn thiếu thuộc đợt phát triển được quyết định riêng.
+Ứng viên B3 áp dụng [DEC-07](pending-business-decisions.md) cho tệp đã xác nhận. Mỗi phiếu có tối đa 10 tệp với tổng dung lượng tối đa 50 MiB. Khi xác nhận tệp mới, backend kiểm tra hạn mức và lưu metadata trong cùng giao dịch khóa theo phiếu. Nếu vượt hạn mức, API trả 400. Nếu hết thời gian chờ khóa, API trả 503 với `Retry-After` và giữ grant để gửi lại. Gửi lại yêu cầu xác nhận thành công trả về tệp đã ghi mà không tính thêm dung lượng. Grant đang chờ xác nhận chưa chiếm hạn mức tệp đã xác nhận.

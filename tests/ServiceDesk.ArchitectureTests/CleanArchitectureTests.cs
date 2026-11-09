@@ -1,3 +1,4 @@
+using System.Reflection;
 using FluentAssertions;
 using NetArchTest.Rules;
 using Xunit;
@@ -5,86 +6,82 @@ using Xunit;
 namespace ServiceDesk.ArchitectureTests;
 
 /// <summary>
-/// Enforces Clean Architecture dependency rules.
-/// Domain must not reference any framework or infrastructure.
-/// Application must not reference Infrastructure or Presentation.
+/// Luật Clean Architecture áp dụng bên trong từng module:
+/// Domain không phụ thuộc tầng nào khác hay framework; Application không phụ thuộc Infrastructure/Presentation;
+/// Presentation không chạm Infrastructure; SharedKernel không phụ thuộc framework web hay persistence.
 /// </summary>
 public class CleanArchitectureTests
 {
-    private const string DomainNamespace = "ServiceDesk.Domain";
-    private const string ApplicationNamespace = "ServiceDesk.Application";
-    private const string InfrastructureNamespace = "ServiceDesk.Infrastructure";
-    private const string ApiNamespace = "ServiceDesk.Api";
-
-    [Fact]
-    public void Domain_ShouldNotReference_Infrastructure()
+    public static TheoryData<string> Modules()
     {
-        var result = Types.InAssembly(typeof(ServiceDesk.Domain.Common.DomainDefaults).Assembly)
-            .ShouldNot()
-            .HaveDependencyOn(InfrastructureNamespace)
-            .GetResult();
+        var data = new TheoryData<string>();
+        foreach (var module in ModuleRules.Modules) data.Add(module);
+        return data;
+    }
 
-        result.IsSuccessful.Should().BeTrue(
-            "Domain must not depend on Infrastructure");
+    private static Types Module(string module) => Types.InAssembly(Assembly.Load($"ServiceDesk.Modules.{module}"));
+
+    [Theory]
+    [MemberData(nameof(Modules))]
+    public void Domain_ShouldNotReference_OtherLayersOrFrameworks(string module)
+    {
+        foreach (var forbidden in new[]
+                 {
+                     $"ServiceDesk.Modules.{module}.Application", $"ServiceDesk.Modules.{module}.Infrastructure",
+                     $"ServiceDesk.Modules.{module}.Presentation", "ServiceDesk.Infrastructure", "ServiceDesk.Api",
+                     "Microsoft.EntityFrameworkCore", "Npgsql", "Microsoft.AspNetCore"
+                 })
+        {
+            Module(module).That().ResideInNamespace($"ServiceDesk.Modules.{module}.Domain")
+                .ShouldNot().HaveDependencyOn(forbidden).GetResult().IsSuccessful
+                .Should().BeTrue($"Domain của {module} không được phụ thuộc {forbidden}");
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(Modules))]
+    public void Application_ShouldNotReference_InfrastructureOrPresentation(string module)
+    {
+        foreach (var forbidden in new[]
+                 {
+                     $"ServiceDesk.Modules.{module}.Infrastructure", $"ServiceDesk.Modules.{module}.Presentation",
+                     "ServiceDesk.Infrastructure", "ServiceDesk.Api", "ServiceDesk.SharedKernel.Web",
+                     "Microsoft.EntityFrameworkCore", "Npgsql", "Microsoft.AspNetCore"
+                 })
+        {
+            Module(module).That().ResideInNamespace($"ServiceDesk.Modules.{module}.Application")
+                .ShouldNot().HaveDependencyOn(forbidden).GetResult().IsSuccessful
+                .Should().BeTrue($"Application của {module} không được phụ thuộc {forbidden}");
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(Modules))]
+    public void Presentation_ShouldNotReference_Persistence(string module)
+    {
+        foreach (var forbidden in new[]
+                 {
+                     $"ServiceDesk.Modules.{module}.Infrastructure", "ServiceDesk.Infrastructure",
+                     "Microsoft.EntityFrameworkCore", "Npgsql"
+                 })
+        {
+            Module(module).That().ResideInNamespace($"ServiceDesk.Modules.{module}.Presentation")
+                .ShouldNot().HaveDependencyOn(forbidden).GetResult().IsSuccessful
+                .Should().BeTrue($"Presentation của {module} không được phụ thuộc {forbidden}");
+        }
     }
 
     [Fact]
-    public void Domain_ShouldNotReference_Application()
+    public void SharedKernel_ShouldNotReference_ModulesOrFrameworks()
     {
-        var result = Types.InAssembly(typeof(ServiceDesk.Domain.Common.DomainDefaults).Assembly)
-            .ShouldNot()
-            .HaveDependencyOn(ApplicationNamespace)
-            .GetResult();
-
-        result.IsSuccessful.Should().BeTrue(
-            "Domain must not depend on Application");
-    }
-
-    [Fact]
-    public void Domain_ShouldNotReference_EFCore()
-    {
-        var result = Types.InAssembly(typeof(ServiceDesk.Domain.Common.DomainDefaults).Assembly)
-            .ShouldNot()
-            .HaveDependencyOn("Microsoft.EntityFrameworkCore")
-            .GetResult();
-
-        result.IsSuccessful.Should().BeTrue(
-            "Domain must not depend on EF Core");
-    }
-
-    [Fact]
-    public void Domain_ShouldNotReference_AspNetCore()
-    {
-        var result = Types.InAssembly(typeof(ServiceDesk.Domain.Common.DomainDefaults).Assembly)
-            .ShouldNot()
-            .HaveDependencyOn("Microsoft.AspNetCore")
-            .GetResult();
-
-        result.IsSuccessful.Should().BeTrue(
-            "Domain must not depend on ASP.NET Core");
-    }
-
-    [Fact]
-    public void Application_ShouldNotReference_Infrastructure()
-    {
-        var result = Types.InAssembly(typeof(ServiceDesk.Application.DependencyInjection).Assembly)
-            .ShouldNot()
-            .HaveDependencyOn(InfrastructureNamespace)
-            .GetResult();
-
-        result.IsSuccessful.Should().BeTrue(
-            "Application must not depend on Infrastructure");
-    }
-
-    [Fact]
-    public void Application_ShouldNotReference_Api()
-    {
-        var result = Types.InAssembly(typeof(ServiceDesk.Application.DependencyInjection).Assembly)
-            .ShouldNot()
-            .HaveDependencyOn(ApiNamespace)
-            .GetResult();
-
-        result.IsSuccessful.Should().BeTrue(
-            "Application must not depend on API/Presentation");
+        foreach (var forbidden in new[]
+                 {
+                     "ServiceDesk.Modules", "ServiceDesk.Infrastructure", "ServiceDesk.Api",
+                     "Microsoft.EntityFrameworkCore", "Npgsql", "Microsoft.AspNetCore"
+                 })
+        {
+            Types.InAssembly(Assembly.Load("ServiceDesk.SharedKernel")).ShouldNot().HaveDependencyOn(forbidden)
+                .GetResult().IsSuccessful.Should().BeTrue($"SharedKernel không được phụ thuộc {forbidden}");
+        }
     }
 }

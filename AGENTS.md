@@ -57,12 +57,29 @@ Sau refactor không chủ đích đổi schema, dùng `has-pending-model-changes
 
 ## 3. Kiến trúc và ranh giới module
 
-- Duy trì Modular Monolith, Clean Architecture, Layered + Feature Folders; không tạo module rỗng hoặc cố định số module/project theo một đợt refactor.
-- Domain không phụ thuộc EF Core, ASP.NET Core hoặc Infrastructure. Application không phụ thuộc Infrastructure, EF Core, Npgsql hoặc HTTP context.
-- Application xác thực actor và phân quyền nghiệp vụ, không chỉ dựa vào middleware HTTP. Infrastructure triển khai các cổng giao tiếp.
-- Mẫu: [CreateTicketUseCase](src/backend/ServiceDesk.Application/Ticketing/CreateTicket/CreateTicketUseCase.cs), interface có phương thức `ExecuteAsync`, implementation `internal`. Tách ghi/truy vấn; không tự thêm mediator hoặc Generic Repository.
-- Dùng gateway chuyên biệt, không đưa `DbSet`/`IQueryable`/transaction EF qua cổng Application. API không truy cập persistence để xử lý nghiệp vụ; Worker không phụ thuộc HTTP context.
-- Xuyên module chỉ dùng Published Contracts trong [ModuleRules](tests/ServiceDesk.ArchitectureTests/ModuleRules.cs); `public` không tự cấp quyền. Không đi vòng qua helper, generic hoặc `Common`.
+Modular Monolith, tổ chức **module trước, Clean Architecture bên trong module** ([ADR-015](docs/adr/ADR-015-module-first-clean-architecture.md), trạng thái Đề xuất cho tới khi CI đạt và nhóm duyệt). Tài liệu bằng chứng/đề xuất cũ trong `docs/reviews`, `docs/sprint-1`, `artifacts` và sáu đề xuất `docs/architecture/0[1-6]-*.md` vẫn ghi đường dẫn `ServiceDesk.Domain/Application/...` của mốc cũ: chỉ dùng để truy vết, không dùng làm chỗ đặt mã mới.
+
+| Cần viết | Đặt ở |
+| --- | --- |
+| Thực thể, giá trị, quy tắc | `src/backend/Modules/<Module>/ServiceDesk.Modules.<Module>/Domain/` |
+| Luồng xử lý | `.../Application/<TínhNăng>/`: interface `I<TínhNăng>` có `ExecuteAsync`, lệnh/truy vấn, lớp `<TínhNăng>UseCase` `internal sealed`; DTO dùng chung ở `Application/Contracts`, cổng ở `Application/Ports` |
+| Adapter PostgreSQL/HTTP, ánh xạ EF, options | `.../Infrastructure/` (ánh xạ EF ở `Infrastructure/Configurations`) |
+| Endpoint và request body | `.../Presentation/` |
+| Đăng ký DI của module | `<Module>Module.cs`: `Add<Module>Application`, `Add<Module>Infrastructure`, `Add<Module>Module` |
+| Kiểu dùng chung nhiều module (vai trò, actor, đồng hồ, cổng lưu trữ, ngoại lệ nghiệp vụ) | `src/backend/BuildingBlocks/ServiceDesk.SharedKernel/`; thành phần HTTP dùng chung ở `ServiceDesk.SharedKernel.Web/` |
+| `ApplicationDbContext`, migration, bảo trì DB, MinIO, đồng hồ hệ thống | `src/backend/ServiceDesk.Infrastructure/` (không đặt nghiệp vụ ở đây) |
+| Ghép module, JWT, middleware | `ServiceDesk.Api/Program.cs`, `ServiceDesk.Worker/WorkerServices.cs` |
+
+- Trong module, phụ thuộc chỉ đi vào trong: Presentation → Application → Domain; Infrastructure → Application → Domain. Domain không dùng EF Core, Npgsql, ASP.NET Core. Application không dùng Infrastructure, EF Core, Npgsql hoặc HTTP context. Các tầng cùng nằm trong một project nên vi phạm chỉ bị chặn khi chạy `ServiceDesk.ArchitectureTests`; chạy project này sau mọi thay đổi chạm `using`/tham chiếu.
+- Application xác thực actor và phân quyền nghiệp vụ, không chỉ dựa vào middleware HTTP. Mẫu: [CreateTicketUseCase](src/backend/Modules/Ticketing/ServiceDesk.Modules.Ticketing/Application/CreateTicket/CreateTicketUseCase.cs). Tách ghi/truy vấn; không tự thêm mediator hoặc Generic Repository.
+- Dùng gateway chuyên biệt, không đưa `DbSet`/`IQueryable`/transaction EF qua cổng Application. Adapter persistence nhận `DbContext` dùng chung (bí danh của `ApplicationDbContext` theo scope) và dùng `Set<T>()`; không tham chiếu `ApplicationDbContext` từ module. API không truy cập persistence để xử lý nghiệp vụ; Worker không phụ thuộc HTTP context.
+- Xuyên module chỉ dùng kiểu trong `Published` của [ModuleRules](tests/ServiceDesk.ArchitectureTests/ModuleRules.cs); `public` không tự cấp quyền. Hiện chỉ AIAssistance tham chiếu Ticketing và chỉ dùng `TicketCategory`, `Impact`, `Urgency`. Không đi vòng qua SharedKernel, helper hoặc generic; SharedKernel không được chứa thực thể hay quy tắc của một module.
+- Chỉ Identity đọc bảng ASP.NET Core Identity. Module khác cần vai trò hoặc tên hiển thị thì dùng `IUserDirectory` (SharedKernel, Identity cài đặt); host nào ghép module đó phải gọi `AddIdentityUserDirectory`.
+- Lệnh ghi Ticketing dùng `TicketCommandGuard` (revision, lỗi quy tắc → 400, audit hệ thống) và `TicketPermissions`; Knowledge dùng `KnowledgePermissions`; không chép lại khung tải/kiểm/lưu trong use case mới.
+- Thay đổi Identity có thu hồi phiên (đổi vai trò, đổi/đặt lại mật khẩu, xoay vòng refresh token) phải ghi và thu hồi trong cùng một giao dịch; có kiểm thử PostgreSQL cho trường hợp chạy đồng thời.
+- Ngoại lệ nghiệp vụ cần mã HTTP chung thì kế thừa lớp cơ sở trong SharedKernel (`ConflictException` → 409, `RetryLaterException` → 503 + Retry-After); không thêm `catch` theo kiểu của module vào `LegacyErrorFilter`.
+- Thêm tính năng: tạo thư mục trong `Application`, đăng ký trong `<Module>Module.cs`, map endpoint trong `Presentation`, rồi cập nhật [baseline OpenAPI](contracts/backend/openapi-baseline.json) có chủ đích và `Published` nếu module khác cần dùng.
+- Thêm module mới (chỉ khi nhiệm vụ yêu cầu, không tạo module rỗng): project `ServiceDesk.Modules.<Module>` theo mẫu module hiện có, thêm vào `ServiceDesk.sln`, `Modules`/`ProductionAssemblies` trong ArchitectureTests, tham chiếu từ host và Dockerfile của API/Worker/Database. Nếu module có bảng: thêm assembly vào `ModuleModelAssemblies` và `DbSet` trong `ApplicationDbContext`, tham chiếu project từ `ServiceDesk.Infrastructure`, rồi tạo migration. Project mới cần `packages.lock.json` sinh bằng `dotnet restore`, review diff trước khi commit.
 - API/Worker không tự migration/seed khi khởi động.
 - Khi sửa luồng tạo phiếu, giữ ticket và receipt trong cùng transaction; kiểm tra rollback, replay và đồng thời theo bảng §6.
 - Không tự kết nối AI thật ngoài nhiệm vụ.
@@ -84,6 +101,7 @@ Sau refactor không chủ đích đổi schema, dùng `has-pending-model-changes
 - Trong nhiệm vụ sửa bảo mật, được từ chối yêu cầu trái phép theo chính sách đã rõ và thêm kiểm thử hồi quy. Hỏi khi cần chọn chính sách mới, như quyền vai trò Agent (nhân viên hỗ trợ) theo chủ sở hữu, team hay assignment. Lỗ hổng không phải hành vi cần giữ.
 - Báo lỗi nghiêm trọng ngoài phạm vi kèm bằng chứng và ảnh hưởng; không âm thầm bỏ qua hoặc mở rộng nhiệm vụ.
 - Mặc định giữ tương thích API/dữ liệu. Chỉ đổi hợp đồng/đặc tả/tài liệu quy trình khi nhiệm vụ yêu cầu; không sửa kiểm thử, fixture hoặc baseline để hợp thức hóa lỗi hay làm CI đạt.
+- Khi di chuyển hoặc đổi tên tệp mã, cập nhật liên kết trong tài liệu loại `current`/`decision` theo [danh mục nguồn](docs/context-sources.json). Tài liệu `evidence`/`proposal`/`historical` giữ nguyên nội dung, đường dẫn và số dòng gốc; chỉ thay liên kết tương đối bị gãy bằng URL GitHub ghim SHA trước thay đổi. Ngoại lệ lưu trữ duy nhất: tám tệp `historical` trong `docs/architecture/`: `01-rbac-and-api-permission-matrix`, `02-ticket-domain-and-field-contract`, `03-ticket-lifecycle-and-visibility-baseline`, `04-ticket-state-transition-and-reopen-matrix`, `05-comment-and-internal-note-privacy-contract`, `06-ticket-assignment-policy`, `07-attachment-security-limits-and-policy`, `08-sprint-acceptance-and-governance-record` (đuôi `.md`) đã được đưa ra khỏi cây tệp tại PR lưu trữ; bản gốc giữ nguyên ở commit `db756d27f07819cefca208548d8ecc8155fa0d48` và chỉ dẫn tới bằng URL ghim đó. Ngoại lệ này không áp dụng cho `evidence`, `proposal` hay tệp khác.
 
 ### Database và môi trường
 

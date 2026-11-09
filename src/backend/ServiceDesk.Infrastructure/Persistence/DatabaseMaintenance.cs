@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using ServiceDesk.Domain.Identity;
+using ServiceDesk.SharedKernel.Authorization;
 
 namespace ServiceDesk.Infrastructure.Persistence;
 

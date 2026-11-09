@@ -2,6 +2,8 @@
 
 ## Trạng thái và mốc quyết định
 
+Chú thích 2026-11-07: [ADR-015](ADR-015-module-first-clean-architecture.md) (đang Đề xuất trên nhánh `refactor/backend-module-first`) đổi tổ chức project sang module trước, Clean bên trong module. Khi ADR-015 được chấp nhận, "sáu dự án backend" và tên namespace `ServiceDesk.Application.*` dưới đây chỉ còn giá trị lịch sử; giao diện công khai, use case internal và danh sách `Published` giữ nguyên ý nghĩa với namespace mới.
+
 Đã chấp nhận ngày 2026-10-19. Mốc nguồn của quyết định gốc: `9dd0746450dca4348d6d0fa8a09cfc2a48860020`. Bản diễn giải tiếng Việt ngày 2026-10-20 giữ ngày, phạm vi và số liệu gốc; phần phát triển sau đó được ghi riêng ở cuối.
 
 ## Quyết định tại mốc tái cấu trúc

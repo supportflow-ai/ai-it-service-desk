@@ -1,13 +1,13 @@
 using Moq;
-using ServiceDesk.Application.Common;
-using ServiceDesk.Application.Common.Interfaces;
-using ServiceDesk.Application.Ticketing.Authorization;
-using ServiceDesk.Application.Ticketing.ConfirmAttachmentUpload;
-using ServiceDesk.Application.Ticketing.Contracts;
-using ServiceDesk.Application.Ticketing.GetAttachmentDownloadUrl;
-using ServiceDesk.Application.Ticketing.Ports;
-using ServiceDesk.Domain.Identity;
-using ServiceDesk.Domain.Ticketing;
+using ServiceDesk.SharedKernel.Application;
+using ServiceDesk.SharedKernel.Application.Abstractions;
+using ServiceDesk.Modules.Ticketing.Application.Authorization;
+using ServiceDesk.Modules.Ticketing.Application.ConfirmAttachmentUpload;
+using ServiceDesk.Modules.Ticketing.Application.Contracts;
+using ServiceDesk.Modules.Ticketing.Application.GetAttachmentDownloadUrl;
+using ServiceDesk.Modules.Ticketing.Application.Ports;
+using ServiceDesk.SharedKernel.Authorization;
+using ServiceDesk.Modules.Ticketing.Domain;
 using Xunit;
 
 namespace ServiceDesk.Application.Tests.Ticketing;
@@ -95,6 +95,34 @@ public sealed class AttachmentConfirmationSecurityTests
         Assert.NotEqual(_upload.StorageKey, result.StorageKey);
         Assert.Equal(_user, result.UploadedBy);
         _storage.Verify(value => value.CopyAsync("configured-bucket", _upload.StorageKey, result.StorageKey, "etag", It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task RejectedConfirmation_RemovesOnlyTheNewCopy(bool lockTimedOut)
+    {
+        string? finalKey = null;
+        Exception rejection = lockTimedOut
+            ? new AttachmentConfirmationBusyException(new TimeoutException())
+            : new ArgumentException("Mỗi phiếu chỉ được đính kèm tối đa 10 tệp.");
+        _storage.Setup(value => value.StatAsync("configured-bucket", It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new StoredObject(1024, "image/png", "etag"));
+        _storage.Setup(value => value.CopyAsync("configured-bucket", _upload.StorageKey, It.IsAny<string>(), "etag", It.IsAny<CancellationToken>()))
+            .Returns((string _, string _, string key, string _, CancellationToken _) =>
+            {
+                finalKey = key;
+                return Task.CompletedTask;
+            });
+        _storage.Setup(value => value.DeleteAsync("configured-bucket", It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        _store.Setup(value => value.ConfirmAsync(_upload.Id, It.IsAny<TicketAttachment>(), _now, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(rejection);
+
+        Assert.Same(rejection, await Record.ExceptionAsync(() => Confirm().ExecuteAsync(new(_ticket, Request()))));
+        Assert.NotNull(finalKey);
+        _storage.Verify(value => value.DeleteAsync("configured-bucket", finalKey, It.IsAny<CancellationToken>()), Times.Once);
+        _storage.Verify(value => value.DeleteAsync("configured-bucket", _upload.StorageKey, It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]

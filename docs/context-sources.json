@@ -39,46 +39,6 @@
     "contracts/ai/v1/README.md": {
       "kind": "current"
     },
-    "docs/architecture/01-rbac-and-api-permission-matrix.md": {
-      "kind": "historical",
-      "notice": "Tài liệu lịch sử",
-      "replacement": "docs/architecture/current-backend-contract.md"
-    },
-    "docs/architecture/02-ticket-domain-and-field-contract.md": {
-      "kind": "historical",
-      "notice": "Tài liệu lịch sử",
-      "replacement": "docs/architecture/current-backend-contract.md"
-    },
-    "docs/architecture/03-ticket-lifecycle-and-visibility-baseline.md": {
-      "kind": "historical",
-      "notice": "Tài liệu lịch sử",
-      "replacement": "docs/architecture/current-backend-contract.md"
-    },
-    "docs/architecture/04-ticket-state-transition-and-reopen-matrix.md": {
-      "kind": "historical",
-      "notice": "Tài liệu lịch sử",
-      "replacement": "docs/architecture/current-backend-contract.md"
-    },
-    "docs/architecture/05-comment-and-internal-note-privacy-contract.md": {
-      "kind": "historical",
-      "notice": "Tài liệu lịch sử",
-      "replacement": "docs/architecture/current-backend-contract.md"
-    },
-    "docs/architecture/06-ticket-assignment-policy.md": {
-      "kind": "historical",
-      "notice": "Tài liệu lịch sử",
-      "replacement": "docs/architecture/current-backend-contract.md"
-    },
-    "docs/architecture/07-attachment-security-limits-and-policy.md": {
-      "kind": "historical",
-      "notice": "Tài liệu lịch sử",
-      "replacement": "docs/architecture/current-backend-contract.md"
-    },
-    "docs/architecture/08-sprint-acceptance-and-governance-record.md": {
-      "kind": "historical",
-      "notice": "Tài liệu lịch sử",
-      "replacement": "docs/architecture/current-backend-contract.md"
-    },
     "docs/architecture/01-actor-use-cases.md": {
       "kind": "proposal",
       "notice": "Đề xuất",
@@ -170,6 +130,22 @@
       "kind": "evidence",
       "notice": "Bằng chứng tại mốc cũ",
       "replacement": "docs/runbooks/backend-hardening-verification.md"
+    },
+    "docs/runbooks/supportflow-hardening-phase-1.md": {
+      "kind": "historical",
+      "notice": "Hồ sơ đợt củng cố",
+      "replacement": "docs/runbooks/backend-hardening-verification.md"
+    },
+    "docs/runbooks/supportflow-hardening-phase-2-6.md": {
+      "kind": "historical",
+      "notice": "Hồ sơ đợt củng cố",
+      "replacement": "docs/runbooks/backend-hardening-verification.md"
+    },
+    "docs/architecture/rbac-permission-matrix.md": {
+      "kind": "current"
+    },
+    "docs/architecture/legacy-requirements-inventory.md": {
+      "kind": "current"
     }
   },
   "groups": {

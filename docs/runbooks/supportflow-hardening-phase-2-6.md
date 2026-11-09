@@ -1,5 +1,7 @@
 # Hoàn thiện attachment, hợp đồng và kết nối AI
 
+Hồ sơ đợt củng cố (lịch sử), đã hợp nhất vào `dev` qua PR #50–#53; nội dung giữ nguyên để truy vết. Hướng dẫn hiện hành: [kiểm chứng backend](backend-hardening-verification.md). Trạng thái "chưa commit/working tree" bên dưới là của thời điểm viết, không mô tả `dev` hôm nay.
+
 Phạm vi: working tree trên `dev`, đã hợp nhất ba commit và fast-forward từ `44ba0b4` tới `659289c3a1cf8e4b9da86a15ea890ee59bcc3e6d`, cập nhật 03/11/2026. Đây là hướng dẫn kiểm chứng code đang sửa, chưa phải bằng chứng triển khai VPS hoặc phát hành. Fetch GitHub trong lần này bị lỗi mạng; mốc tích hợp là ref origin/dev đã có trên máy.
 
 ## Attachment
@@ -22,7 +24,7 @@ Cấu hình `Minio:Bucket` là nguồn bucket duy nhất. `Minio:PublicEndpoint`
 
 ## Revision và contract
 
-Giữ tương thích caller cũ: backend vẫn nhận `ExpectedRevision` tùy chọn. Frontend mới bắt buộc có revision hợp lệ trước thao tác phân công/trạng thái, truyền body cho assign và query cho các lệnh còn lại. HTTP 409 không tự retry mutation.
+`ExpectedRevision` chỉ tùy chọn trên lược đồ OpenAPI (kiểu `uint?`); khi chạy, các lệnh cập nhật, phân công, hủy phân công, tiếp nhận, giải quyết, mở lại, đóng, hủy ticket và các lệnh sửa nháp, xuất bản, lưu trữ bài viết Knowledge đều trả 400 nếu thiếu hoặc bằng 0, và 409 nếu khác revision hiện tại (đối chiếu `dev@ef043b3`, `TicketCommandGuard.RequireCurrentRevision`). Frontend gửi revision hợp lệ, truyền body cho assign và query cho các lệnh còn lại. HTTP 409 không tự retry mutation.
 
 [Baseline OpenAPI](../../contracts/backend/openapi-baseline.json) thêm `UploadUrlResult.formData`. Frontend lưu bản sao, manifest SHA nền + checksum working tree, sinh kiểu TypeScript và kiểm tra drift. Chỉ thay SHA nền thành SHA phát hành sau khi backend đã tích hợp/commit; không gọi bản working tree là contract của một commit mới.
 

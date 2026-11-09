@@ -25,6 +25,9 @@
         "responses": {
           "200": {
             "description": "OK"
+          },
+          "429": {
+            "description": "Too Many Requests"
           }
         }
       }
@@ -48,6 +51,9 @@
         "responses": {
           "200": {
             "description": "OK"
+          },
+          "429": {
+            "description": "Too Many Requests"
           }
         }
       }
@@ -71,6 +77,9 @@
         "responses": {
           "200": {
             "description": "OK"
+          },
+          "429": {
+            "description": "Too Many Requests"
           }
         }
       }
@@ -140,6 +149,9 @@
         "responses": {
           "200": {
             "description": "OK"
+          },
+          "429": {
+            "description": "Too Many Requests"
           }
         }
       }
@@ -163,6 +175,9 @@
         "responses": {
           "200": {
             "description": "OK"
+          },
+          "429": {
+            "description": "Too Many Requests"
           }
         }
       }
@@ -1639,6 +1654,9 @@
           },
           "404": {
             "description": "Not Found"
+          },
+          "503": {
+            "description": "Service Unavailable"
           }
         }
       }

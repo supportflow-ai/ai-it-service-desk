@@ -154,25 +154,53 @@
         "resolved": "6.0.1",
         "contentHash": "rHaWtKDwCi9qJ3ObKo8LHPMuuwv33YbmQi7TcUK1C264V3MFnOr5Im7QgCTdLniztP3GJyeiSg5x8NqYJFqRmg=="
       },
-      "servicedesk.application": {
-        "type": "Project",
-        "dependencies": {
-          "ServiceDesk.Domain": "[1.0.0, )"
-        }
-      },
-      "servicedesk.domain": {
-        "type": "Project"
-      },
       "servicedesk.infrastructure": {
         "type": "Project",
         "dependencies": {
           "AspNetCore.HealthChecks.NpgSql": "[9.0.0, )",
-          "Microsoft.AspNetCore.Authentication.JwtBearer": "[10.0.13, )",
           "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "[10.0.13, )",
           "Minio": "[6.0.5, )",
           "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.3, )",
-          "ServiceDesk.Application": "[1.0.0, )",
-          "ServiceDesk.Domain": "[1.0.0, )"
+          "ServiceDesk.Modules.Identity": "[1.0.0, )",
+          "ServiceDesk.Modules.Knowledge": "[1.0.0, )",
+          "ServiceDesk.Modules.Ticketing": "[1.0.0, )",
+          "ServiceDesk.SharedKernel": "[1.0.0, )"
+        }
+      },
+      "servicedesk.modules.identity": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.AspNetCore.Authentication.JwtBearer": "[10.0.13, )",
+          "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "[10.0.13, )",
+          "ServiceDesk.SharedKernel": "[1.0.0, )",
+          "ServiceDesk.SharedKernel.Web": "[1.0.0, )"
+        }
+      },
+      "servicedesk.modules.knowledge": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.EntityFrameworkCore.Relational": "[10.0.13, )",
+          "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.3, )",
+          "ServiceDesk.SharedKernel": "[1.0.0, )",
+          "ServiceDesk.SharedKernel.Web": "[1.0.0, )"
+        }
+      },
+      "servicedesk.modules.ticketing": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.EntityFrameworkCore.Relational": "[10.0.13, )",
+          "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.3, )",
+          "ServiceDesk.SharedKernel": "[1.0.0, )",
+          "ServiceDesk.SharedKernel.Web": "[1.0.0, )"
+        }
+      },
+      "servicedesk.sharedkernel": {
+        "type": "Project"
+      },
+      "servicedesk.sharedkernel.web": {
+        "type": "Project",
+        "dependencies": {
+          "ServiceDesk.SharedKernel": "[1.0.0, )"
         }
       }
     }

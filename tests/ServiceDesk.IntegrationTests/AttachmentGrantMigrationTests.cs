@@ -1,9 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
-using ServiceDesk.Domain.Ticketing;
+using ServiceDesk.Modules.Ticketing.Domain;
 using ServiceDesk.Infrastructure.Persistence;
-using ServiceDesk.Infrastructure.Ticketing;
+using ServiceDesk.Modules.Ticketing.Infrastructure;
 using Testcontainers.PostgreSql;
 using Xunit;
 
@@ -25,7 +25,11 @@ public sealed class AttachmentGrantMigrationTests
         var now = DateTime.UtcNow;
         var actor = Guid.NewGuid();
         var ticket = Ticket.Create(actor, "Legacy attachment", "Migration compatibility verification", TicketCategories.VPN, now);
-        await new PostgresTicketWriter(context).CreateAsync(ticket, null, timeout.Token);
+        // Schema thời điểm này chưa có các cột về sau (ví dụ support_team_id) nên không ghi phiếu bằng model hiện tại.
+        await context.Database.ExecuteSqlInterpolatedAsync($"""
+            INSERT INTO public.tickets ("Id", requester_id, title, description, category_id, status, created_at, updated_at)
+            VALUES ({ticket.Id}, {ticket.RequesterId}, {ticket.Title}, {ticket.Description}, {ticket.CategoryId}, {(int)ticket.Status}, {ticket.CreatedAt}, {ticket.UpdatedAt})
+            """, timeout.Token);
 
         async Task<(Guid Grant, Guid? Attachment, string Key)> Seed(string label, int matches, bool consumed, bool otherActor = false)
         {

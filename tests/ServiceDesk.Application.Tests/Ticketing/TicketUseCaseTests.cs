@@ -1,14 +1,14 @@
 using Moq;
-using ServiceDesk.Application.Common.Interfaces;
-using ServiceDesk.Application.Ticketing.GetMyTickets;
-using ServiceDesk.Application.Ticketing.GetTicketDetail;
-using ServiceDesk.Application.Ticketing.Authorization;
-using ServiceDesk.Application.Ticketing.CreateTicket;
-using ServiceDesk.Application.Ticketing.Contracts;
-using ServiceDesk.Application.Ticketing.Idempotency;
-using ServiceDesk.Application.Ticketing.Ports;
-using ServiceDesk.Domain.Identity;
-using ServiceDesk.Domain.Ticketing;
+using ServiceDesk.SharedKernel.Application.Abstractions;
+using ServiceDesk.Modules.Ticketing.Application.GetMyTickets;
+using ServiceDesk.Modules.Ticketing.Application.GetTicketDetail;
+using ServiceDesk.Modules.Ticketing.Application.Authorization;
+using ServiceDesk.Modules.Ticketing.Application.CreateTicket;
+using ServiceDesk.Modules.Ticketing.Application.Contracts;
+using ServiceDesk.Modules.Ticketing.Application.Idempotency;
+using ServiceDesk.Modules.Ticketing.Application.Ports;
+using ServiceDesk.SharedKernel.Authorization;
+using ServiceDesk.Modules.Ticketing.Domain;
 using Xunit;
 
 namespace ServiceDesk.Application.Tests.Ticketing;
@@ -106,12 +106,18 @@ public sealed class TicketUseCaseTests
     }
 
     [Theory]
-    [InlineData(RoleNames.Requester, false)] [InlineData(RoleNames.Agent, true)] [InlineData(RoleNames.Admin, true)]
-    public async Task Detail_RestrictsRequesterAndAllowsAgentAdmin(string role, bool broad)
+    [InlineData(RoleNames.Requester)] [InlineData(RoleNames.Agent)] [InlineData(RoleNames.Admin)]
+    public async Task Detail_UsesScopeForRole(string role)
     {
         _user.Setup(u => u.IsInRole(role)).Returns(true);
         var id = Guid.NewGuid();
-        _queries.Setup(q => q.GetByIdAsync(id, broad ? (TicketReadScope)new TicketReadScope.AllTickets() : new TicketReadScope.OwnTickets(_actor), It.IsAny<CancellationToken>())).ReturnsAsync((TicketDto?)null);
+        TicketReadScope scope = role switch
+        {
+            RoleNames.Admin => new TicketReadScope.AllTickets(),
+            RoleNames.Agent => new TicketReadScope.AgentTickets(_actor, includeOwnTickets: true),
+            _ => new TicketReadScope.OwnTickets(_actor)
+        };
+        _queries.Setup(q => q.GetByIdAsync(id, scope, It.IsAny<CancellationToken>())).ReturnsAsync((TicketDto?)null);
         Assert.Null(await _detail.ExecuteAsync(new(id)));
         _queries.VerifyAll();
     }

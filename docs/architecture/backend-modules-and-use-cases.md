@@ -1,36 +1,47 @@
 # Mô-đun backend và luồng xử lý nghiệp vụ
 
-Trạng thái: mô tả hiện hành. Đối chiếu mã `dev` tại `47634bc8162c13bd6ae024233ec24a0076738c51`, sau PR #28 và #29; cập nhật 2026-10-20. Quyết định nền tảng: [ADR-011](../adr/ADR-011-backend-module-boundaries.md), [ADR-014](../adr/ADR-014-feature-use-cases-and-published-contracts.md). Quyền và phản hồi HTTP chi tiết ở [hợp đồng hiện hành](current-backend-contract.md). Mốc đối chiếu không khẳng định bản làm việc của người đọc đã chứa commit này.
+Trạng thái: mô tả hiện hành. Đối chiếu mã `dev` tại `8036e2c185dfef7c4ed9941d736388c781e85f52`, cập nhật 2026-11-08. Quyết định nền tảng: [ADR-011](../adr/ADR-011-backend-module-boundaries.md), [ADR-014](../adr/ADR-014-feature-use-cases-and-published-contracts.md), [ADR-015](../adr/ADR-015-module-first-clean-architecture.md). Quyền và phản hồi HTTP chi tiết ở [hợp đồng hiện hành](current-backend-contract.md). Mốc đối chiếu không khẳng định bản làm việc của người đọc đã chứa commit này.
 
 ## Chiều phụ thuộc
 
-Mười hai luồng trong tài liệu thuộc mốc dev đã ghim; bản local trước PR #28 chỉ có sáu luồng. Đối chiếu [bảng mốc nguồn](source-baseline.md) trước khi chạy hoặc đọc liên kết mã tương đối.
+Mã nguồn tổ chức theo module trước, Clean bên trong module theo [ADR-015](../adr/ADR-015-module-first-clean-architecture.md) (đã hợp nhất vào `dev` qua PR #50–#53; ADR còn ở trạng thái Đề xuất, chờ nhóm duyệt). Đối chiếu [bảng mốc nguồn](source-baseline.md) trước khi đọc liên kết mã tương đối.
 
 ```mermaid
 flowchart TD
-    Hosts["API và Worker"] --> Application["Application"]
-    Hosts --> Infrastructure["Infrastructure"]
+    Hosts["API và Worker"] --> Modules["ServiceDesk.Modules.* (Identity, Ticketing, Knowledge, AIAssistance)"]
+    Hosts --> Infrastructure["ServiceDesk.Infrastructure (DbContext, migration, MinIO, đồng hồ)"]
     Database["Công cụ Database"] --> Infrastructure
-    Infrastructure --> Application
-    Infrastructure --> Domain["Domain"]
-    Application --> Domain
+    Infrastructure --> Modules
+    Modules --> SharedKernel["SharedKernel / SharedKernel.Web"]
 ```
 
-API/Worker tham chiếu Infrastructure để lắp ghép dịch vụ. Đăng ký kiểm tra PostgreSQL sẵn sàng thuộc Infrastructure. Hàm xử lý HTTP gọi giao diện nghiệp vụ và DTO được công khai. Application chỉ tham chiếu Domain và các giao diện hỗ trợ đăng ký phụ thuộc; không sử dụng EF Core hoặc ngữ cảnh HTTP.
+Trong mỗi module: `Presentation` → `Application` → `Domain` và `Infrastructure` → `Application` → `Domain`. API/Worker gọi `Add<Module>Module` để module tự đăng ký use case và adapter; đăng ký kiểm tra PostgreSQL sẵn sàng thuộc `ServiceDesk.Infrastructure`. Hàm xử lý HTTP nằm trong `Presentation` của module và chỉ gọi giao diện nghiệp vụ. Application không sử dụng EF Core hoặc ngữ cảnh HTTP.
 
 ## Trách nhiệm từng mô-đun
 
 | Mô-đun | Sở hữu | Giao diện hoặc kiểu được công khai |
 | --- | --- | --- |
-| Identity | Đăng ký, mật khẩu, vai trò, bảo vệ đăng nhập và truy vấn hồ sơ bản thân | Ba giao diện nghiệp vụ, dữ liệu yêu cầu/kết quả; tên vai trò và quy tắc HTTP |
-| Ticketing | Kiểm tra phiếu, quyền chủ sở hữu, phạm vi truy vấn, phân trang, tạo phiếu nguyên tử và các thao tác vòng đời | Chín giao diện nghiệp vụ, lệnh/truy vấn, DTO phiếu và trang; các kiểu danh mục, mức ảnh hưởng, mức khẩn cấp |
+| Identity | Đăng ký, mật khẩu, vai trò, bảo vệ đăng nhập và truy vấn hồ sơ bản thân | Mười một giao diện nghiệp vụ, dữ liệu yêu cầu/kết quả; tên vai trò và quy tắc HTTP |
+| Ticketing | Kiểm tra phiếu, quyền chủ sở hữu, phạm vi truy vấn, phân trang, tạo phiếu nguyên tử và các thao tác vòng đời | Mười chín giao diện nghiệp vụ, lệnh/truy vấn, DTO phiếu và trang; các kiểu danh mục, mức ảnh hưởng, mức khẩn cấp |
+| Knowledge | Bài viết tri thức: tạo/sửa bản nháp, xuất bản, lưu trữ, xem chi tiết và tìm kiếm theo quyền đọc | Sáu giao diện nghiệp vụ, lệnh/truy vấn, DTO bài viết và trang; trạng thái bài viết |
 | AIAssistance | Đầu vào/kết quả phân loại, độ tin cậy, bất biến đề xuất và chuyển đổi hợp đồng AI | Cổng phân loại/biểu diễn vectơ; các kiểu Ticketing được cho phép rõ ràng |
 
-`Common` chứa giao diện danh tính hiện tại, đồng hồ, lưu trữ và kiểm tra định danh dùng chung. Nó không chứa thực thể phiếu hoặc kho dữ liệu của mô-đun khác. Ánh xạ EF thuộc `Infrastructure.Ticketing`. Một `DbContext` dùng chung giữ các bảng và mô hình hiện có.
+`ServiceDesk.SharedKernel` chứa giao diện danh tính hiện tại, đồng hồ, lưu trữ, tên vai trò/chính sách và ngoại lệ nghiệp vụ dùng chung. Nó không chứa thực thể phiếu hoặc kho dữ liệu của mô-đun nào. Ánh xạ EF thuộc `Infrastructure/Configurations` của từng module. Một `ApplicationDbContext` dùng chung gom cấu hình từ các module và giữ các bảng, migration hiện có.
 
 Danh sách kiểu được phép truy cập xuyên mô-đun và ngoại lệ kỹ thuật nằm trong [ModuleRules](../../tests/ServiceDesk.ArchitectureTests/ModuleRules.cs). Khai báo `public` không tự cấp quyền truy cập. Lớp triển khai nghiệp vụ và bộ tích hợp là `internal`; quyền truy cập nội bộ dành cho kiểm thử được giới hạn theo assembly.
 
-## Mười hai luồng đã triển khai
+## Cập nhật sau refactor (2026-11-07)
+
+Phần này mô tả mã sau PR #50 và PR #51 vào `dev`. Số luồng hiện tại: Identity 11, Ticketing 19, Knowledge 6; bảng bên dưới chỉ liệt kê 12 luồng ban đầu, danh sách đầy đủ theo endpoint ở [hợp đồng hiện hành](current-backend-contract.md#http-và-danh-tính).
+
+- Identity có Domain riêng: `RefreshToken` (`Issue`, `Revoke`, `IsActiveAt`), `OtpCode` (`Issue`, `IsValid`, `Matches`) và `Department`; ba bảng `refresh_tokens`, `otp_codes`, `departments` ánh xạ trong `Infrastructure/Configurations` của module. Luồng refresh, revoke, đổi/quên/đặt lại mật khẩu, gán vai trò và phòng ban được mô tả ở [hợp đồng hiện hành](current-backend-contract.md#identity-sau-pr-47-48-và-nhánh-refactor).
+- Identity công bố `IUserDirectory` trong SharedKernel. `AgentDirectory` của Ticketing tra vai trò và tên hiển thị qua cổng này, không đọc bảng ASP.NET Core Identity; kiểm thử kiến trúc chặn Ticketing, Knowledge, AIAssistance phụ thuộc `Microsoft.AspNetCore.Identity`.
+- Tám lệnh ghi Ticketing dùng chung `TicketCommandGuard` (kiểm revision, đổi vi phạm quy tắc Domain thành lỗi 400, lưu kèm audit của hệ thống) và `TicketPermissions` (Agent/Admin, chủ sở hữu hoặc Admin). Kiểm quyền và tải ticket vẫn ở từng use case; thông điệp, thứ tự kiểm và mã HTTP không đổi.
+- Endpoint Ticketing tách thành các tệp partial theo nhóm trong `Presentation`; thứ tự đăng ký giữ nguyên nên OpenAPI không đổi.
+- Knowledge dùng `KnowledgePermissions` cho quyền soạn/xuất bản/lưu trữ và phạm vi đọc (Admin: mọi bài; Agent: bài đã xuất bản và bài của mình; người khác: bài đã xuất bản).
+- PR #51: xoay vòng refresh token, đổi vai trò, đổi mật khẩu đều ghi và thu hồi phiên trong một giao dịch; gán vai trò khóa dòng vai trò Admin. OTP gửi qua SMTP khi có cấu hình `Email:Smtp`.
+
+## Mười hai luồng ban đầu
 
 Đây là số luồng nghiệp vụ, không phải tổng số đường dẫn chẩn đoán hoặc kiểm tra sức khỏe.
 
@@ -53,13 +64,13 @@ Mỗi tính năng có thư mục chứa giao diện, dữ liệu đầu vào và
 
 ## Quyền truy cập và các lệnh ghi
 
-Truy vấn chi tiết dùng `OwnTickets(actorId)` cho Requester và `AllTickets` cho Agent/Admin, kể cả người có nhiều vai trò. Tạo/danh sách luôn theo người đang đăng nhập. Phạm vi null hoặc không hợp lệ bị từ chối; phiếu thiếu hoặc ngoài phạm vi trả 404.
+Tại mốc đối chiếu, chi tiết dùng `OwnTickets(actorId)` cho Requester và `AllTickets` cho Agent/Admin. B1-PR3 dùng thêm `AgentTickets` cho Agent theo [ADR-016](../adr/ADR-016-support-team-routing-and-agent-scope.md). PostgreSQL lọc theo phân công hoặc thành viên của nhóm đang hoạt động trước khi đếm, phân trang và chiếu dữ liệu. Phiếu thiếu hoặc ngoài phạm vi trả 404.
 
-Các lệnh ghi của PR #28 dùng `ITicketWriter.GetForUpdateAsync` tải thực thể rồi kiểm tra quyền riêng. Phương thức này chưa nhận `TicketReadScope`. Tên phương thức không chứng minh có khóa dòng: bộ tích hợp hiện dùng `SingleOrDefaultAsync`.
+Từ B1-PR3, `ITicketWriter.GetForUpdateAsync` nhận `TicketReadScope` để tải phiếu trong phạm vi trước khi áp dụng quy tắc của từng lệnh. Bộ tích hợp dùng `SingleOrDefaultAsync`; cập nhật phiếu dựa vào revision để phát hiện xung đột.
 
 Các điểm cần xử lý được ghi trong [hợp đồng hiện hành](current-backend-contract.md#các-điểm-chưa-đạt-cần-xử-lý): quyền nhận xử lý Agent/Admin chưa thống nhất giữa HTTP và Application; giải quyết phiếu tải ID trước khi kiểm tra vai trò; lỗi ghi đồng thời chưa có ánh xạ phản hồi riêng.
 
-Nhận xử lý chưa lưu người phụ trách. Mở lại chưa kiểm tra thời gian hoặc lịch sử giải quyết. Chưa có phân quyền theo nhóm, phân công hoặc thu hồi tức thời quyền trong JWT đã phát. Những giới hạn này tiếp tục theo [bảng quyết định](pending-business-decisions.md).
+Mở lại chưa kiểm tra thời gian hoặc lịch sử giải quyết. B1-PR3 kiểm quyền nhóm qua cơ sở dữ liệu ở request hiện tại. Luồng chuyển nhóm và điều phối Lead được theo dõi trong [bảng quyết định](pending-business-decisions.md); quy tắc xem ghi chú sau chuyển nhóm đã chốt trong ADR-016.
 
 ## Giao dịch và lưu dữ liệu
 

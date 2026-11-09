@@ -1,4 +1,4 @@
-using ServiceDesk.Domain.Identity;
+using ServiceDesk.SharedKernel.Authorization;
 
 namespace ServiceDesk.Api.Endpoints;
 

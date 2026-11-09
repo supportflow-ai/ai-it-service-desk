@@ -219,7 +219,7 @@ namespace ServiceDesk.Infrastructure.Persistence.Migrations
                     b.ToTable("AspNetUserTokens", "public");
                 });
 
-            modelBuilder.Entity("ServiceDesk.Domain.Identity.Department", b =>
+            modelBuilder.Entity("ServiceDesk.Modules.Identity.Domain.Department", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -255,7 +255,7 @@ namespace ServiceDesk.Infrastructure.Persistence.Migrations
                     b.ToTable("departments", "public");
                 });
 
-            modelBuilder.Entity("ServiceDesk.Domain.Identity.OtpCode", b =>
+            modelBuilder.Entity("ServiceDesk.Modules.Identity.Domain.OtpCode", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -275,6 +275,10 @@ namespace ServiceDesk.Infrastructure.Persistence.Migrations
                     b.Property<DateTime>("ExpiresAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("expires_at");
+
+                    b.Property<int>("FailedAttempts")
+                        .HasColumnType("integer")
+                        .HasColumnName("failed_attempts");
 
                     b.Property<bool>("IsUsed")
                         .HasColumnType("boolean")
@@ -299,7 +303,7 @@ namespace ServiceDesk.Infrastructure.Persistence.Migrations
                     b.ToTable("otp_codes", "public");
                 });
 
-            modelBuilder.Entity("ServiceDesk.Domain.Identity.RefreshToken", b =>
+            modelBuilder.Entity("ServiceDesk.Modules.Identity.Domain.RefreshToken", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -318,6 +322,10 @@ namespace ServiceDesk.Infrastructure.Persistence.Migrations
                     b.Property<DateTime>("ExpiresAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("expires_at");
+
+                    b.Property<Guid>("FamilyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("family_id");
 
                     b.Property<string>("IpAddress")
                         .HasMaxLength(64)
@@ -342,6 +350,8 @@ namespace ServiceDesk.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("FamilyId");
+
                     b.HasIndex("TokenHash");
 
                     b.HasIndex("UserId");
@@ -349,7 +359,7 @@ namespace ServiceDesk.Infrastructure.Persistence.Migrations
                     b.ToTable("refresh_tokens", "public");
                 });
 
-            modelBuilder.Entity("ServiceDesk.Domain.Knowledge.Article", b =>
+            modelBuilder.Entity("ServiceDesk.Modules.Knowledge.Domain.Article", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -413,7 +423,7 @@ namespace ServiceDesk.Infrastructure.Persistence.Migrations
                     b.ToTable("articles", "public");
                 });
 
-            modelBuilder.Entity("ServiceDesk.Domain.Knowledge.ArticleTag", b =>
+            modelBuilder.Entity("ServiceDesk.Modules.Knowledge.Domain.ArticleTag", b =>
                 {
                     b.Property<Guid>("ArticleId")
                         .HasColumnType("uuid")
@@ -429,7 +439,7 @@ namespace ServiceDesk.Infrastructure.Persistence.Migrations
                     b.ToTable("article_tags", "public");
                 });
 
-            modelBuilder.Entity("ServiceDesk.Domain.Knowledge.ArticleVersion", b =>
+            modelBuilder.Entity("ServiceDesk.Modules.Knowledge.Domain.ArticleVersion", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -469,7 +479,7 @@ namespace ServiceDesk.Infrastructure.Persistence.Migrations
                     b.ToTable("article_versions", "public");
                 });
 
-            modelBuilder.Entity("ServiceDesk.Domain.Ticketing.AttachmentUploadGrant", b =>
+            modelBuilder.Entity("ServiceDesk.Modules.Ticketing.Domain.AttachmentUploadGrant", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -530,7 +540,67 @@ namespace ServiceDesk.Infrastructure.Persistence.Migrations
                     b.ToTable("attachment_upload_grants", "public");
                 });
 
-            modelBuilder.Entity("ServiceDesk.Domain.Ticketing.Ticket", b =>
+            modelBuilder.Entity("ServiceDesk.Modules.Ticketing.Domain.SupportTeam", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("code");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<bool>("IsTriageQueue")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_triage_queue");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("name");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.HasIndex("IsTriageQueue")
+                        .IsUnique()
+                        .HasDatabaseName("UX_support_teams_single_triage_queue")
+                        .HasFilter("is_triage_queue = TRUE");
+
+                    b.ToTable("support_teams", "public");
+                });
+
+            modelBuilder.Entity("ServiceDesk.Modules.Ticketing.Domain.SupportTeamMember", b =>
+                {
+                    b.Property<Guid>("TeamId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("team_id");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<bool>("IsLead")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_lead");
+
+                    b.HasKey("TeamId", "UserId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("support_team_members", "public");
+                });
+
+            modelBuilder.Entity("ServiceDesk.Modules.Ticketing.Domain.Ticket", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -579,6 +649,10 @@ namespace ServiceDesk.Infrastructure.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("status");
 
+                    b.Property<Guid?>("SupportTeamId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("support_team_id");
+
                     b.Property<string>("TicketNumber")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -617,6 +691,8 @@ namespace ServiceDesk.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("Status");
 
+                    b.HasIndex("SupportTeamId");
+
                     b.HasIndex("TicketNumber")
                         .IsUnique();
 
@@ -626,7 +702,7 @@ namespace ServiceDesk.Infrastructure.Persistence.Migrations
                     b.ToTable("tickets", "public");
                 });
 
-            modelBuilder.Entity("ServiceDesk.Domain.Ticketing.TicketAttachment", b =>
+            modelBuilder.Entity("ServiceDesk.Modules.Ticketing.Domain.TicketAttachment", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -673,7 +749,7 @@ namespace ServiceDesk.Infrastructure.Persistence.Migrations
                     b.ToTable("ticket_attachments", "public");
                 });
 
-            modelBuilder.Entity("ServiceDesk.Domain.Ticketing.TicketComment", b =>
+            modelBuilder.Entity("ServiceDesk.Modules.Ticketing.Domain.TicketComment", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -720,7 +796,7 @@ namespace ServiceDesk.Infrastructure.Persistence.Migrations
                     b.ToTable("ticket_comments", "public");
                 });
 
-            modelBuilder.Entity("ServiceDesk.Infrastructure.Ticketing.TicketIdempotencyRecord", b =>
+            modelBuilder.Entity("ServiceDesk.Modules.Ticketing.Infrastructure.TicketIdempotencyRecord", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -839,42 +915,59 @@ namespace ServiceDesk.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("ServiceDesk.Domain.Knowledge.ArticleTag", b =>
+            modelBuilder.Entity("ServiceDesk.Modules.Knowledge.Domain.ArticleTag", b =>
                 {
-                    b.HasOne("ServiceDesk.Domain.Knowledge.Article", null)
+                    b.HasOne("ServiceDesk.Modules.Knowledge.Domain.Article", null)
                         .WithMany("Tags")
                         .HasForeignKey("ArticleId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("ServiceDesk.Domain.Knowledge.ArticleVersion", b =>
+            modelBuilder.Entity("ServiceDesk.Modules.Knowledge.Domain.ArticleVersion", b =>
                 {
-                    b.HasOne("ServiceDesk.Domain.Knowledge.Article", null)
+                    b.HasOne("ServiceDesk.Modules.Knowledge.Domain.Article", null)
                         .WithMany("Versions")
                         .HasForeignKey("ArticleId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("ServiceDesk.Domain.Ticketing.AttachmentUploadGrant", b =>
+            modelBuilder.Entity("ServiceDesk.Modules.Ticketing.Domain.AttachmentUploadGrant", b =>
                 {
-                    b.HasOne("ServiceDesk.Domain.Ticketing.TicketAttachment", null)
+                    b.HasOne("ServiceDesk.Modules.Ticketing.Domain.TicketAttachment", null)
                         .WithMany()
                         .HasForeignKey("AttachmentId")
                         .OnDelete(DeleteBehavior.Restrict);
                 });
 
-            modelBuilder.Entity("ServiceDesk.Infrastructure.Ticketing.TicketIdempotencyRecord", b =>
+            modelBuilder.Entity("ServiceDesk.Modules.Ticketing.Domain.SupportTeamMember", b =>
                 {
-                    b.HasOne("ServiceDesk.Domain.Ticketing.Ticket", null)
+                    b.HasOne("ServiceDesk.Modules.Ticketing.Domain.SupportTeam", null)
+                        .WithMany()
+                        .HasForeignKey("TeamId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ServiceDesk.Modules.Ticketing.Domain.Ticket", b =>
+                {
+                    b.HasOne("ServiceDesk.Modules.Ticketing.Domain.SupportTeam", null)
+                        .WithMany()
+                        .HasForeignKey("SupportTeamId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("ServiceDesk.Modules.Ticketing.Infrastructure.TicketIdempotencyRecord", b =>
+                {
+                    b.HasOne("ServiceDesk.Modules.Ticketing.Domain.Ticket", null)
                         .WithMany()
                         .HasForeignKey("TicketId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("ServiceDesk.Domain.Knowledge.Article", b =>
+            modelBuilder.Entity("ServiceDesk.Modules.Knowledge.Domain.Article", b =>
                 {
                     b.Navigation("Tags");
 

@@ -516,16 +516,13 @@
         "type": "Project",
         "dependencies": {
           "Microsoft.AspNetCore.Authentication.JwtBearer": "[10.0.13, )",
-          "ServiceDesk.Application": "[1.0.0, )",
           "ServiceDesk.Infrastructure": "[1.0.0, )",
+          "ServiceDesk.Modules.AIAssistance": "[1.0.0, )",
+          "ServiceDesk.Modules.Identity": "[1.0.0, )",
+          "ServiceDesk.Modules.Knowledge": "[1.0.0, )",
+          "ServiceDesk.Modules.Ticketing": "[1.0.0, )",
+          "ServiceDesk.SharedKernel.Web": "[1.0.0, )",
           "Swashbuckle.AspNetCore": "[7.3.2, )"
-        }
-      },
-      "servicedesk.application": {
-        "type": "Project",
-        "dependencies": {
-          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.11, )",
-          "ServiceDesk.Domain": "[1.0.0, )"
         }
       },
       "servicedesk.database": {
@@ -534,26 +531,68 @@
           "ServiceDesk.Infrastructure": "[1.0.0, )"
         }
       },
-      "servicedesk.domain": {
-        "type": "Project"
-      },
       "servicedesk.infrastructure": {
         "type": "Project",
         "dependencies": {
           "AspNetCore.HealthChecks.NpgSql": "[9.0.0, )",
-          "Microsoft.AspNetCore.Authentication.JwtBearer": "[10.0.13, )",
           "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "[10.0.13, )",
           "Minio": "[6.0.5, )",
           "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.3, )",
-          "ServiceDesk.Application": "[1.0.0, )",
-          "ServiceDesk.Domain": "[1.0.0, )"
+          "ServiceDesk.Modules.Identity": "[1.0.0, )",
+          "ServiceDesk.Modules.Knowledge": "[1.0.0, )",
+          "ServiceDesk.Modules.Ticketing": "[1.0.0, )",
+          "ServiceDesk.SharedKernel": "[1.0.0, )"
+        }
+      },
+      "servicedesk.modules.aiassistance": {
+        "type": "Project",
+        "dependencies": {
+          "ServiceDesk.Modules.Ticketing": "[1.0.0, )",
+          "ServiceDesk.SharedKernel": "[1.0.0, )"
+        }
+      },
+      "servicedesk.modules.identity": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.AspNetCore.Authentication.JwtBearer": "[10.0.13, )",
+          "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "[10.0.13, )",
+          "ServiceDesk.SharedKernel": "[1.0.0, )",
+          "ServiceDesk.SharedKernel.Web": "[1.0.0, )"
+        }
+      },
+      "servicedesk.modules.knowledge": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.EntityFrameworkCore.Relational": "[10.0.13, )",
+          "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.3, )",
+          "ServiceDesk.SharedKernel": "[1.0.0, )",
+          "ServiceDesk.SharedKernel.Web": "[1.0.0, )"
+        }
+      },
+      "servicedesk.modules.ticketing": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.EntityFrameworkCore.Relational": "[10.0.13, )",
+          "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.3, )",
+          "ServiceDesk.SharedKernel": "[1.0.0, )",
+          "ServiceDesk.SharedKernel.Web": "[1.0.0, )"
+        }
+      },
+      "servicedesk.sharedkernel": {
+        "type": "Project"
+      },
+      "servicedesk.sharedkernel.web": {
+        "type": "Project",
+        "dependencies": {
+          "ServiceDesk.SharedKernel": "[1.0.0, )"
         }
       },
       "servicedesk.worker": {
         "type": "Project",
         "dependencies": {
-          "ServiceDesk.Application": "[1.0.0, )",
-          "ServiceDesk.Infrastructure": "[1.0.0, )"
+          "ServiceDesk.Infrastructure": "[1.0.0, )",
+          "ServiceDesk.Modules.AIAssistance": "[1.0.0, )",
+          "ServiceDesk.Modules.Ticketing": "[1.0.0, )"
         }
       }
     }

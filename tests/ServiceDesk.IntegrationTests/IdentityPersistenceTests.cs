@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using ServiceDesk.Application.Identity.Ports;
-using ServiceDesk.Domain.Identity;
+using ServiceDesk.Modules.Identity.Application.Ports;
+using ServiceDesk.SharedKernel.Authorization;
 using ServiceDesk.Infrastructure.Persistence;
 using Xunit;
 namespace ServiceDesk.IntegrationTests;
@@ -22,22 +22,22 @@ public sealed class IdentityPersistenceTests(ServiceDeskWebApplicationFactory fa
         for (var attempt = 0; attempt < 5; attempt++)
         {
             await using var scope = factory.Services.CreateAsyncScope();
-            Assert.Null(await scope.ServiceProvider.GetRequiredService<IUserAccountGateway>().CheckPasswordAsync(email, "wrong", default));
+            Assert.Null(await scope.ServiceProvider.GetRequiredService<IUserAccountGateway>().SignInAsync(email, "wrong", DateTime.UtcNow, default));
         }
         await using (var scope = factory.Services.CreateAsyncScope())
         {
             var users = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
             var user = (await users.FindByEmailAsync(email))!;
             Assert.True(await users.IsLockedOutAsync(user));
-            Assert.Null(await scope.ServiceProvider.GetRequiredService<IUserAccountGateway>().CheckPasswordAsync(email, "Test@1234", default));
+            Assert.Null(await scope.ServiceProvider.GetRequiredService<IUserAccountGateway>().SignInAsync(email, "Test@1234", DateTime.UtcNow, default));
             await users.SetLockoutEndDateAsync(user, DateTimeOffset.UtcNow.AddMinutes(-1));
         }
         await using (var scope = factory.Services.CreateAsyncScope())
         {
             var gateway = scope.ServiceProvider.GetRequiredService<IUserAccountGateway>();
-            Assert.NotNull(await gateway.CheckPasswordAsync(email, "Test@1234", default));
-            Assert.Null(await gateway.CheckPasswordAsync(email, "wrong", default));
-            Assert.NotNull(await gateway.CheckPasswordAsync(email, "Test@1234", default));
+            Assert.NotNull(await gateway.SignInAsync(email, "Test@1234", DateTime.UtcNow, default));
+            Assert.Null(await gateway.SignInAsync(email, "wrong", DateTime.UtcNow, default));
+            Assert.NotNull(await gateway.SignInAsync(email, "Test@1234", DateTime.UtcNow, default));
             var users = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
             Assert.Equal(0, (await users.FindByEmailAsync(email))!.AccessFailedCount);
         }

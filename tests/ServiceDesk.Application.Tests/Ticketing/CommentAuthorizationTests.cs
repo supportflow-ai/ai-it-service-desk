@@ -1,10 +1,11 @@
 using Moq;
-using ServiceDesk.Application.Common.Interfaces;
-using ServiceDesk.Application.Ticketing.AddComment;
-using ServiceDesk.Application.Ticketing.Contracts;
-using ServiceDesk.Application.Ticketing.Ports;
-using ServiceDesk.Domain.Identity;
-using ServiceDesk.Domain.Ticketing;
+using ServiceDesk.SharedKernel.Application.Abstractions;
+using ServiceDesk.Modules.Ticketing.Application.AddComment;
+using ServiceDesk.Modules.Ticketing.Application.Authorization;
+using ServiceDesk.Modules.Ticketing.Application.Contracts;
+using ServiceDesk.Modules.Ticketing.Application.Ports;
+using ServiceDesk.SharedKernel.Authorization;
+using ServiceDesk.Modules.Ticketing.Domain;
 using Xunit;
 
 namespace ServiceDesk.Application.Tests.Ticketing;
@@ -38,10 +39,10 @@ public sealed class CommentAuthorizationTests
     {
         SetRoles(roleList);
         var ticket = CreateTicket(ownsTicket ? _actor : Guid.NewGuid());
-        _writer.Setup(writer => writer.GetForUpdateAsync(ticket.Id, It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
+        _writer.Setup(writer => writer.GetForUpdateAsync(ticket.Id, It.IsAny<TicketReadScope>(), It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
         _directory.Setup(directory => directory.GetDisplayNameAsync(_actor, It.IsAny<CancellationToken>())).ReturnsAsync("Người dùng kiểm thử");
         TicketComment? saved = null;
-        _timeline.Setup(store => store.AddAsync(It.IsAny<TicketComment>(), It.IsAny<CancellationToken>()))
+        _timeline.Setup(store => store.AddToOpenTicketAsync(It.IsAny<TicketComment>(), It.IsAny<CancellationToken>()))
             .Callback<TicketComment, CancellationToken>((comment, _) => saved = comment)
             .ReturnsAsync((TicketComment comment, CancellationToken _) => new TimelineItemDto(
                 comment.Id, comment.TicketId, comment.AuthorId, comment.AuthorName, comment.AuthorRole,
@@ -58,7 +59,7 @@ public sealed class CommentAuthorizationTests
         Assert.Equal(saved.Id, result.Id);
         _writer.VerifyAll();
         _directory.VerifyAll();
-        _timeline.Verify(store => store.AddAsync(It.IsAny<TicketComment>(), It.IsAny<CancellationToken>()), Times.Once);
+        _timeline.Verify(store => store.AddToOpenTicketAsync(It.IsAny<TicketComment>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -66,7 +67,7 @@ public sealed class CommentAuthorizationTests
     {
         SetRoles(RoleNames.Requester);
         var ticket = CreateTicket(Guid.NewGuid());
-        _writer.Setup(writer => writer.GetForUpdateAsync(ticket.Id, It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
+        _writer.Setup(writer => writer.GetForUpdateAsync(ticket.Id, It.IsAny<TicketReadScope>(), It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
 
         await Assert.ThrowsAsync<KeyNotFoundException>(() => CreateUseCase().ExecuteAsync(new(ticket.Id, "Không được ghi")));
 
@@ -79,7 +80,7 @@ public sealed class CommentAuthorizationTests
     {
         SetRoles(RoleNames.Requester);
         var id = Guid.NewGuid();
-        _writer.Setup(writer => writer.GetForUpdateAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync((Ticket?)null);
+        _writer.Setup(writer => writer.GetForUpdateAsync(id, It.IsAny<TicketReadScope>(), It.IsAny<CancellationToken>())).ReturnsAsync((Ticket?)null);
 
         await Assert.ThrowsAsync<KeyNotFoundException>(() => CreateUseCase().ExecuteAsync(new(id, "Không được ghi")));
 

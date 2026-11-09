@@ -1,10 +1,10 @@
 using Moq;
-using ServiceDesk.Application.Common;
-using ServiceDesk.Application.Common.Interfaces;
-using ServiceDesk.Application.Knowledge.Ports;
-using ServiceDesk.Application.Knowledge.PublishArticle;
-using ServiceDesk.Domain.Identity;
-using ServiceDesk.Domain.Knowledge;
+using ServiceDesk.SharedKernel.Application;
+using ServiceDesk.SharedKernel.Application.Abstractions;
+using ServiceDesk.Modules.Knowledge.Application.Ports;
+using ServiceDesk.Modules.Knowledge.Application.PublishArticle;
+using ServiceDesk.SharedKernel.Authorization;
+using ServiceDesk.Modules.Knowledge.Domain;
 using Xunit;
 
 namespace ServiceDesk.Application.Tests.Knowledge;

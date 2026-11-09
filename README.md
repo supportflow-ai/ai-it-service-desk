@@ -1,8 +1,8 @@
 # AI IT Service Desk — Backend
 
-Backend .NET của SupportFlow AI, tổ chức theo Clean Architecture và các mô-đun Identity, Ticketing, AIAssistance. Kho này sở hữu API, nghiệp vụ, truy cập dữ liệu, tiến trình nền, migration và kiểm thử backend.
+Backend .NET của SupportFlow AI, tổ chức theo module trước, Clean Architecture bên trong từng module (Identity, Ticketing, Knowledge, AIAssistance). Kho này sở hữu API, nghiệp vụ, truy cập dữ liệu, tiến trình nền, migration và kiểm thử backend.
 
-Mốc tài liệu: đối chiếu mã `dev` tại `47634bc8162c13bd6ae024233ec24a0076738c51`, sau PR #28 và #29; cập nhật 2026-10-20. Mốc này mô tả mã nguồn, không thay bằng chứng nghiệm thu. Xem [quy chuẩn tài liệu](docs/process/documentation-standard.md) và [bảng thuật ngữ](docs/process/technical-glossary.md).
+Mốc tài liệu: đối chiếu mã `dev` tại `a182c9fde556423d04764fe2a0b7ac16af773923`, cập nhật 2026-11-08, sau các PR #50–#55 (refactor module, Identity, Knowledge, giới hạn tần suất) và #59–#60 (nền dữ liệu nhóm hỗ trợ, chưa đổi phân quyền). Mốc này mô tả mã nguồn, không thay bằng chứng nghiệm thu. Xem [quy chuẩn tài liệu](docs/process/documentation-standard.md) và [bảng thuật ngữ](docs/process/technical-glossary.md).
 
 | Thành phần | Repo |
 |---|---|
@@ -13,7 +13,7 @@ Mốc tài liệu: đối chiếu mã `dev` tại `47634bc8162c13bd6ae024233ec24
 
 Bắt đầu tại [bản đồ tài liệu](docs/README.md) và [hợp đồng backend hiện hành](docs/architecture/current-backend-contract.md). Các hợp đồng lịch sử và đề xuất chưa duyệt được phân loại riêng.
 
-[Bảng mốc mã nguồn](docs/architecture/source-baseline.md) ghi phạm vi của nhánh đã đồng bộ trên dev sau PR #29. Tài liệu, hợp đồng OpenAPI và công cụ Python được công bố cùng mã tương ứng; đối chiếu HEAD và kết quả kiểm thử trước khi tích hợp.
+[Bảng mốc mã nguồn](docs/architecture/source-baseline.md) ghi mốc đối chiếu của tài liệu hiện hành. Hợp đồng OpenAPI và công cụ Python được công bố cùng mã tương ứng; đối chiếu HEAD và kết quả kiểm thử trước khi tích hợp.
 
 ## Khởi chạy backend trên máy phát triển
 
@@ -49,7 +49,7 @@ API chạy tại `http://localhost:5000`; mở `http://localhost:5000/swagger` �
 
 Database mới cần được người phụ trách chạy `migrate` và `seed-roles` bằng công cụ Database sau khi xác minh đích. API/Worker không tự thực hiện các bước này. Database dùng chung đã khởi tạo thì thành viên chỉ cần kết nối, không chạy migration lại theo nhánh cá nhân.
 
-Các luồng đăng ký, đăng nhập và ticket hiện chưa dùng lưu tệp, nên chưa cần MinIO để kiểm chứng chúng. Chỉ điền cấu hình MinIO khi có dịch vụ thật; tên `minio:9000` chỉ dùng được trong mạng Docker có dịch vụ tên đó. AI mặc định NoOp, không cần khóa hay dịch vụ AI. Worker chưa có tác vụ nền mới; nếu cần chạy host Worker, dùng `python scripts/run_backend.py --no-build worker` ở terminal riêng.
+Đăng ký, đăng nhập và thao tác ticket không cần MinIO; chỉ luồng tệp đính kèm cần MinIO. Chỉ điền cấu hình MinIO khi có dịch vụ thật; tên `minio:9000` chỉ dùng được trong mạng Docker có dịch vụ tên đó. Quên mật khẩu gửi mã qua SMTP khi có `Email__Smtp__*`; chưa cấu hình thì chỉ ghi cảnh báo, không gửi (xem [.env.example](.env.example)). AI mặc định NoOp, không cần khóa hay dịch vụ AI. Hàng đợi gửi mã nằm trong tiến trình API; nếu cần chạy host Worker, dùng `python scripts/run_backend.py --no-build worker` ở terminal riêng.
 
 ## JWT là gì và lấy ở đâu?
 
@@ -63,9 +63,9 @@ JWT là chuỗi thông tin xác thực có chữ ký do backend cấp sau khi đ
 1. Nếu chưa có tài khoản, gọi `POST /api/auth/register` với email, mật khẩu và `fullName` tùy chọn. Mật khẩu cần ít nhất 8 ký tự, có chữ hoa, chữ thường và chữ số. Server chỉ cấp vai trò Requester, bất kể role client gửi lên.
 2. Hoặc gọi `POST /api/auth/login` bằng email/mật khẩu của tài khoản đã có.
 3. Sao chép trường `token` từ response, nhấn **Authorize** trong Swagger và dán token. Không dán `Jwt__SecretKey`.
-4. Gọi `GET /api/auth/me` để kiểm tra phiên. Token hết hạn thì đăng nhập lại; API hiện chưa có luồng refresh token.
+4. Gọi `GET /api/auth/me` để kiểm tra phiên. Access token hết hạn thì gọi `POST /api/auth/refresh` với `refreshToken` nhận lúc đăng nhập (mỗi lần làm mới cấp token mới; dùng lại token cũ thu hồi cả chuỗi phiên); đăng xuất bằng `POST /api/auth/revoke`. Chi tiết trong [hợp đồng hiện hành](docs/architecture/current-backend-contract.md#identity-sau-pr-47-48-và-nhánh-refactor).
 
-Frontend tự nhận và gửi token khi người dùng đăng nhập. Không chia sẻ JWT cá nhân cho các thành viên khác. Đăng nhập sai 5 lần sẽ bị khóa 15 phút; API vẫn trả 401 chung.
+Frontend tự nhận và gửi token khi người dùng đăng nhập. Không chia sẻ JWT cá nhân cho các thành viên khác. Đăng nhập sai 5 lần sẽ bị khóa 15 phút; API vẫn trả 401 chung. Các endpoint xác thực còn bị giới hạn tần suất theo IP và theo email (trả 429 kèm `Retry-After`).
 
 ## Chạy frontend cùng backend
 
@@ -88,23 +88,26 @@ Có thể phát triển backend trực tiếp trên máy với PostgreSQL đư�
 
 ```text
 src/backend/
-  ServiceDesk.Domain/          # Thực thể, kiểu giá trị, quy tắc nghiệp vụ
-  ServiceDesk.Application/     # Luồng xử lý, quyền, DTO, cổng giao tiếp
-  ServiceDesk.Infrastructure/  # EF/PostgreSQL, Identity, MinIO, AI không gọi dịch vụ thật
-  ServiceDesk.Api/             # HTTP, JWT, chuyển đổi danh tính và lắp ghép dịch vụ
-  ServiceDesk.Worker/          # Chương trình xử lý nền
-  ServiceDesk.Database/        # Công cụ migration và khởi tạo có chủ đích
-tests/                        # Domain, Application, Architecture, Integration
-contracts/                    # Baseline HTTP và AI classification v1
+  BuildingBlocks/
+    ServiceDesk.SharedKernel/      # Vai trò, actor hiện tại, đồng hồ, cổng lưu trữ, ngoại lệ nghiệp vụ dùng chung
+    ServiceDesk.SharedKernel.Web/  # Thành phần HTTP dùng chung cho endpoint (bộ lọc lỗi)
+  Modules/
+    Identity/ Ticketing/ Knowledge/ AIAssistance/
+      ServiceDesk.Modules.<Module>/
+        Domain/  Application/  Infrastructure/  Presentation/  <Module>Module.cs
+  ServiceDesk.Infrastructure/      # Hạ tầng dùng chung: ApplicationDbContext, migration, bảo trì DB, MinIO, đồng hồ
+  ServiceDesk.Api/                 # Host HTTP: ghép module, JWT, middleware, health
+  ServiceDesk.Worker/              # Chương trình xử lý nền
+  ServiceDesk.Database/            # Công cụ migration và khởi tạo có chủ đích
+tests/                             # Domain, Application, Architecture, Integration
+contracts/                         # Baseline HTTP và AI classification v1
 ```
 
-Domain độc lập với nền tảng kỹ thuật; Application phụ thuộc Domain. Infrastructure triển khai giao diện do Application sở hữu. API/Worker lắp ghép các mô-đun cần dùng. Hàm xử lý HTTP không truy cập DbContext; Worker không sử dụng HttpContext hoặc danh tính người dùng ngầm định. Xem [ADR-011](docs/adr/ADR-011-backend-module-boundaries.md) và [ADR-014](docs/adr/ADR-014-feature-use-cases-and-published-contracts.md).
+Module là ranh giới ngoài cùng; bên trong mỗi module là Clean Architecture: Presentation → Application → Domain và Infrastructure → Application → Domain. Domain/Application không dùng EF Core, Npgsql hay ASP.NET Core. Mỗi module tự đăng ký DI và endpoint qua lớp `<Module>Module`; API/Worker chỉ ghép module. Giữa các module chỉ dùng kiểu đã công bố. Hàm xử lý HTTP không truy cập DbContext; Worker không sử dụng HttpContext hoặc danh tính người dùng ngầm định. Xem [ADR-015](docs/adr/ADR-015-module-first-clean-architecture.md), [ADR-011](docs/adr/ADR-011-backend-module-boundaries.md) và [ADR-014](docs/adr/ADR-014-feature-use-cases-and-published-contracts.md).
 
-Application tổ chức theo mô-đun và tính năng. Hiện có 12 luồng xử lý: Identity có RegisterUser/LoginUser/GetCurrentUser; Ticketing có CreateTicket/GetMyTickets/GetTicketDetail/UpdateTicket/ClaimTicket/ResolveTicket/ReopenTicket/CloseTicket/CancelTicket. Hàm xử lý HTTP gọi giao diện nghiệp vụ; lớp triển khai là `internal`. Các giao diện công khai và cổng tích hợp được kiểm tra riêng bằng kiểm thử kiến trúc. [Tài liệu mô-đun và luồng xử lý](docs/architecture/backend-modules-and-use-cases.md) mô tả trách nhiệm, giao dịch và phạm vi quyền hiện tại.
+Application tổ chức theo mô-đun và tính năng, mỗi tính năng một thư mục có giao diện `I<TínhNăng>` và lớp `<TínhNăng>UseCase`: Identity 11 luồng (đăng ký, đăng nhập, hồ sơ, làm mới/thu hồi phiên, đổi/quên/đặt lại mật khẩu, gán vai trò, danh sách người dùng, phòng ban), Ticketing 19 luồng (tạo, danh sách cá nhân và hàng đợi, chi tiết, cập nhật, nhận/phân công/hủy phân công, giải quyết/mở lại/đóng/hủy, bình luận, ghi chú nội bộ, timeline, tệp đính kèm), Knowledge 6 luồng (bản nháp, xuất bản, lưu trữ, chi tiết, tìm kiếm). Hàm xử lý HTTP gọi giao diện nghiệp vụ; lớp triển khai là `internal`. Các giao diện công khai và cổng tích hợp được kiểm tra riêng bằng kiểm thử kiến trúc. [Tài liệu mô-đun và luồng xử lý](docs/architecture/backend-modules-and-use-cases.md) mô tả trách nhiệm, giao dịch và phạm vi quyền hiện tại.
 
-Nhận xử lý hiện chỉ chuyển `Submitted → InProgress`, chưa lưu người phụ trách. Mở lại hiện chuyển `Resolved → InProgress`, chưa có giới hạn thời gian. Quyền và giới hạn của sáu thao tác mới được ghi trong [hợp đồng hiện hành](docs/architecture/current-backend-contract.md), gồm các điểm chưa thống nhất cần xử lý.
-
-Requester chỉ đọc chi tiết phiếu của mình; Agent/Admin hiện đọc chi tiết toàn hệ thống. Danh sách và tạo phiếu luôn theo người đang đăng nhập. Hệ thống chưa cách ly theo nhóm hoặc phân công. Identity đọc trạng thái tài khoản dưới khóa dòng PostgreSQL để giữ trạng thái khóa đăng nhập nhất quán giữa các bản API.
+Quyền, điều kiện chuyển trạng thái, `expectedRevision` và mã lỗi của từng thao tác ticket nằm trong [hợp đồng hiện hành](docs/architecture/current-backend-contract.md). Requester chỉ đọc phiếu của mình; Agent/Admin đọc toàn hệ thống vì chưa có cách ly theo nhóm hỗ trợ (quyết định còn mở DEC-02). Identity khóa dòng người dùng trong PostgreSQL khi tạo hoặc thu hồi phiên để các bản API chạy song song vẫn nhất quán.
 
 ## Build và test
 
@@ -121,13 +124,13 @@ dotnet test src/backend/ServiceDesk.sln -c Release --no-build --filter "Category
 dotnet test src/backend/ServiceDesk.sln -c Release --no-build --filter "Category=Integration"
 ```
 
-Integration tests dùng PostgreSQL 17 Testcontainers và cần Docker đang hoạt động. Application unit tests không cần EF Core/Infrastructure/database.
+Integration tests dùng PostgreSQL 17 Testcontainers và cần Docker đang hoạt động. Application unit tests không cần database: chúng tham chiếu project module nhưng thay cổng dữ liệu bằng mock.
 
-Các kiểm tra snapshot xác nhận đợt củng cố không cần migration mới. Xem [runbook kiểm chứng](docs/runbooks/backend-hardening-verification.md) để kiểm tra đúng commit và phân biệt test offline với PostgreSQL thật.
+Đợt củng cố Identity thêm hai migration (`AddOtpFailedAttempts`, `AddRefreshTokenFamily`) và một migration tương thích triển khai cuốn chiếu (`DefaultRefreshTokenFamilyForLegacyWriters`); thứ tự áp dụng và quay lui nằm trong runbook. Xem [runbook kiểm chứng](docs/runbooks/backend-hardening-verification.md) để kiểm tra đúng commit và phân biệt test offline với PostgreSQL thật.
 
 ## CI bằng GitHub Actions
 
-[Backend quality gates](.github/workflows/ci.yml) chạy khi mở/cập nhật PR, push vào main/dev/staging hoặc nhánh codex, và khi chạy thủ công trong tab Actions. Pipeline restore khóa phiên bản, build, unit/architecture/compatibility tests, integration PostgreSQL thật, kiểm tra AI contract và build ba image API/Worker/Database. Kết quả test TRX và AI contract được lưu thành workflow artifacts.
+[Backend quality gates](.github/workflows/ci.yml) chạy khi mở/cập nhật PR, push vào main/dev/staging hoặc nhánh `codex/**`, và khi chạy thủ công trong tab Actions. Pipeline restore khóa phiên bản, build, unit/architecture/compatibility tests, integration PostgreSQL thật, kiểm tra AI contract và build ba image API/Worker/Database. Kết quả test TRX và AI contract được lưu thành workflow artifacts.
 
 Frontend tự lint/test/build image trong repo web. Repo infra ghim SHA backend/web và chạy Compose, migration, smoke qua gateway. Repo AI kiểm tra contract/checksum/fixtures. Các workflow chỉ cần quyền đọc mã nguồn, không cần Jenkins hoặc secrets registry; không push image hay tự deploy production. Xem [ADR-013](docs/adr/ADR-013-github-actions.md) và [hướng dẫn chuyển CI](docs/runbooks/github-actions.md).
 
@@ -153,7 +156,7 @@ Backend mặc định dùng NoOp, chưa kết nối model hoặc AI service. Con
 
 Chạy validator bằng Python venv theo [hướng dẫn hợp đồng AI](docs/runbooks/environment-runbook.md#python-venv-và-hợp-đồng-ai).
 
-Xem [ADR-012](docs/adr/ADR-012-ai-contract-and-future-transport.md) cho thiết kế xác thực, giới hạn thời gian, thử lại và ngắt tạm kết nối của bộ tích hợp tương lai. Sau PR #28 đã có một phần thao tác vòng đời phiếu; phân công, giới hạn mở lại, tự đóng, SLA, dọn biên nhận và AI thật vẫn chưa triển khai.
+Xem [ADR-012](docs/adr/ADR-012-ai-contract-and-future-transport.md) cho thiết kế xác thực, giới hạn thời gian, thử lại và ngắt tạm kết nối của bộ tích hợp tương lai. Chưa triển khai: nhóm hỗ trợ, SLA, tự đóng phiếu, dọn biên nhận và AI thật.
 
 ## Tương thích và lịch sử
 

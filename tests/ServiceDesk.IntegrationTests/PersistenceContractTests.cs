@@ -1,9 +1,9 @@
 using Microsoft.EntityFrameworkCore;
-using ServiceDesk.Application.Ticketing.Authorization;
-using ServiceDesk.Domain.Knowledge;
-using ServiceDesk.Infrastructure.Knowledge;
+using ServiceDesk.Modules.Ticketing.Application.Authorization;
+using ServiceDesk.Modules.Knowledge.Domain;
+using ServiceDesk.Modules.Knowledge.Infrastructure;
 using ServiceDesk.Infrastructure.Persistence;
-using ServiceDesk.Infrastructure.Ticketing;
+using ServiceDesk.Modules.Ticketing.Infrastructure;
 using Xunit;
 
 namespace ServiceDesk.IntegrationTests;

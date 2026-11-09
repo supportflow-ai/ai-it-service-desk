@@ -7,18 +7,28 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using ServiceDesk.Api.Endpoints;
 using ServiceDesk.Api.Identity;
-using ServiceDesk.Application.Common.Interfaces;
-using ServiceDesk.Application;
-using ServiceDesk.Domain.Identity;
 using ServiceDesk.Infrastructure;
-using ServiceDesk.Infrastructure.Options;
+using ServiceDesk.Modules.AIAssistance;
+using ServiceDesk.Modules.Identity;
+using ServiceDesk.Modules.Identity.Infrastructure.Options;
+using ServiceDesk.Modules.Identity.Presentation;
+using ServiceDesk.Modules.Knowledge;
+using ServiceDesk.Modules.Knowledge.Presentation;
+using ServiceDesk.Modules.Ticketing;
+using ServiceDesk.Modules.Ticketing.Presentation;
+using ServiceDesk.SharedKernel.Application.Abstractions;
+using ServiceDesk.SharedKernel.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// --- Đăng ký các tầng kiến trúc (Clean Architecture layers) ---
-builder.Services.AddApplication();
+// --- Composition root: hạ tầng dùng chung rồi từng module tự đăng ký phần của mình ---
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddIdentityModule(builder.Configuration).AddIdentityStores();
+builder.Services.AddTicketingModule();
+builder.Services.AddKnowledgeModule();
+builder.Services.AddAIAssistanceModule(builder.Configuration);
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddAuthRateLimiting(builder.Configuration);
 builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 
 // --- Cấu hình xác thực người dùng (JWT Bearer Authentication) ---
@@ -134,10 +144,11 @@ else
 
 app.UseStatusCodePages();
 app.UseCors();
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Đăng ký các nhóm route API
+// Đăng ký các nhóm route API (mỗi module sở hữu endpoint của mình trong thư mục Presentation)
 app.MapAuthEndpoints();
 app.MapDiagnosticEndpoints();
 app.MapTicketEndpoints();

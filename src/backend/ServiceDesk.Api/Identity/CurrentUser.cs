@@ -1,6 +1,6 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
-using ServiceDesk.Application.Common.Interfaces;
+using ServiceDesk.SharedKernel.Application.Abstractions;
 
 namespace ServiceDesk.Api.Identity;
 

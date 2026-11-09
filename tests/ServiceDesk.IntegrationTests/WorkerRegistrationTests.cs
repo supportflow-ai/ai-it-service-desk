@@ -2,8 +2,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Configuration;
-using ServiceDesk.Application.AIAssistance.Ports;
-using ServiceDesk.Infrastructure.AI;
+using ServiceDesk.Modules.AIAssistance.Application.Ports;
+using ServiceDesk.Modules.AIAssistance.Infrastructure;
 using ServiceDesk.Infrastructure;
 using Xunit;
 
@@ -24,7 +24,7 @@ public sealed class WorkerRegistrationTests
         using var host = builder.Build();
         using var scope = host.Services.CreateScope();
         Assert.IsType<HttpTicketClassificationService>(scope.ServiceProvider.GetRequiredService<ITicketClassificationService>());
-        Assert.False(scope.ServiceProvider.GetRequiredService<ServiceDesk.Application.Common.Interfaces.ICurrentUser>().IsAuthenticated);
+        Assert.False(scope.ServiceProvider.GetRequiredService<ServiceDesk.SharedKernel.Application.Abstractions.ICurrentUser>().IsAuthenticated);
     }
 
     [Fact]
@@ -35,9 +35,9 @@ public sealed class WorkerRegistrationTests
         using var host = builder.Build();
         await host.StartAsync();
         using var scope = host.Services.CreateScope();
-        Assert.False(scope.ServiceProvider.GetRequiredService<ServiceDesk.Application.Common.Interfaces.ICurrentUser>().IsAuthenticated);
+        Assert.False(scope.ServiceProvider.GetRequiredService<ServiceDesk.SharedKernel.Application.Abstractions.ICurrentUser>().IsAuthenticated);
         Assert.Null(scope.ServiceProvider.GetService<Microsoft.AspNetCore.Http.IHttpContextAccessor>());
-        Assert.NotNull(scope.ServiceProvider.GetRequiredService<ServiceDesk.Application.Ticketing.CreateTicket.ICreateTicket>());
+        Assert.NotNull(scope.ServiceProvider.GetRequiredService<ServiceDesk.Modules.Ticketing.Application.CreateTicket.ICreateTicket>());
         await host.StopAsync();
     }
 
@@ -45,7 +45,7 @@ public sealed class WorkerRegistrationTests
     public void GenericHost_CanResolveIdentityWithoutWebHostDefaults()
     {
         var builder = Host.CreateApplicationBuilder();
-        builder.Services.AddInfrastructure(builder.Configuration);
+        builder.Services.AddInfrastructure(builder.Configuration).AddIdentityStores();
         using var host = builder.Build();
         using var scope = host.Services.CreateScope();
         // Generic Worker hosts do not implicitly register the Web host's services.

@@ -1,4 +1,4 @@
-using ServiceDesk.Domain.Common;
+using ServiceDesk.SharedKernel.Domain;
 using FluentAssertions;
 using Xunit;
 

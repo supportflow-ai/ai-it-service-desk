@@ -1,5 +1,5 @@
 using FluentAssertions;
-using ServiceDesk.Domain.Identity;
+using ServiceDesk.SharedKernel.Authorization;
 using Xunit;
 
 namespace ServiceDesk.Domain.Tests;

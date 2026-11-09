@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using ServiceDesk.Application.Identity.Ports;
+using ServiceDesk.Modules.Identity.Application.Ports;
 using ServiceDesk.Infrastructure;
 using ServiceDesk.Infrastructure.Persistence;
 using Xunit;
@@ -88,7 +88,7 @@ public sealed class IdentityConcurrencyTests(TicketIdempotencyPostgresFixture fi
         {
             await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
                 scope.ServiceProvider.GetRequiredService<IUserAccountGateway>()
-                    .CheckPasswordAsync(email, "wrong", cancellation.Token));
+                    .SignInAsync(email, "wrong", DateTime.UtcNow, cancellation.Token));
         }
         await using var db = fixture.CreateContext();
         Assert.Equal(0, (await db.Users.SingleAsync(u => u.Email == email)).AccessFailedCount);

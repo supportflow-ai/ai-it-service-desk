@@ -1,5 +1,5 @@
 using FluentAssertions;
-using ServiceDesk.Domain.Ticketing;
+using ServiceDesk.Modules.Ticketing.Domain;
 using Xunit;
 
 namespace ServiceDesk.Domain.Tests.Ticketing;
@@ -32,6 +32,26 @@ public class TicketTests
         ticket.Status.Should().Be(TicketStatus.Submitted);
         ticket.CreatedAt.Should().Be(CreatedAt);
         ticket.UpdatedAt.Should().Be(CreatedAt);
+    }
+
+    [Fact]
+    public void Create_StartsInManualTriageQueueWithoutAssignee()
+    {
+        var ticket = CreateValidTicket();
+
+        ticket.SupportTeamId.Should().Be(SupportTeam.ManualTriageId);
+        ticket.AssignedToId.Should().BeNull();
+    }
+
+    [Fact]
+    public void Assign_DoesNotChangeTeamOwnership()
+    {
+        var ticket = CreateValidTicket();
+
+        ticket.Assign(Guid.NewGuid(), CreatedAt.AddMinutes(1));
+
+        ticket.AssignedToId.Should().NotBeNull();
+        ticket.SupportTeamId.Should().Be(SupportTeam.ManualTriageId);
     }
 
     [Theory]

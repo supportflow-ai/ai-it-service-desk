@@ -1,7 +1,7 @@
-using ServiceDesk.Application.AIAssistance.Ports;
-using ServiceDesk.Application.AIAssistance.Contracts;
-using ServiceDesk.Domain.AIAssistance;
-using ServiceDesk.Domain.Ticketing;
+using ServiceDesk.Modules.AIAssistance.Application.Ports;
+using ServiceDesk.Modules.AIAssistance.Application.Contracts;
+using ServiceDesk.Modules.AIAssistance.Domain;
+using ServiceDesk.Modules.Ticketing.Domain;
 using FluentAssertions;
 using Xunit;
 

@@ -1,6 +1,6 @@
 using FluentAssertions;
-using ServiceDesk.Application.Ticketing.CreateTicket;
-using ServiceDesk.Application.Ticketing.Idempotency;
+using ServiceDesk.Modules.Ticketing.Application.CreateTicket;
+using ServiceDesk.Modules.Ticketing.Application.Idempotency;
 using Xunit;
 
 namespace ServiceDesk.Application.Tests.Ticketing;

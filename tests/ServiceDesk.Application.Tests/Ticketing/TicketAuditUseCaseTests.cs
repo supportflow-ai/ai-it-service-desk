@@ -1,16 +1,17 @@
 using Moq;
-using ServiceDesk.Application.Common.Interfaces;
-using ServiceDesk.Application.Ticketing.AssignTicket;
-using ServiceDesk.Application.Ticketing.CancelTicket;
-using ServiceDesk.Application.Ticketing.ClaimTicket;
-using ServiceDesk.Application.Ticketing.CloseTicket;
-using ServiceDesk.Application.Ticketing.Contracts;
-using ServiceDesk.Application.Ticketing.Ports;
-using ServiceDesk.Application.Ticketing.ReopenTicket;
-using ServiceDesk.Application.Ticketing.ResolveTicket;
-using ServiceDesk.Application.Ticketing.UnassignTicket;
-using ServiceDesk.Domain.Identity;
-using ServiceDesk.Domain.Ticketing;
+using ServiceDesk.SharedKernel.Application.Abstractions;
+using ServiceDesk.Modules.Ticketing.Application.AssignTicket;
+using ServiceDesk.Modules.Ticketing.Application.CancelTicket;
+using ServiceDesk.Modules.Ticketing.Application.ClaimTicket;
+using ServiceDesk.Modules.Ticketing.Application.CloseTicket;
+using ServiceDesk.Modules.Ticketing.Application.Authorization;
+using ServiceDesk.Modules.Ticketing.Application.Contracts;
+using ServiceDesk.Modules.Ticketing.Application.Ports;
+using ServiceDesk.Modules.Ticketing.Application.ReopenTicket;
+using ServiceDesk.Modules.Ticketing.Application.ResolveTicket;
+using ServiceDesk.Modules.Ticketing.Application.UnassignTicket;
+using ServiceDesk.SharedKernel.Authorization;
+using ServiceDesk.Modules.Ticketing.Domain;
 using Xunit;
 
 namespace ServiceDesk.Application.Tests.Ticketing;
@@ -45,7 +46,7 @@ public sealed class TicketAuditUseCaseTests
         var directory = new Mock<IAgentDirectory>();
         directory.Setup(value => value.IsAgentAsync(actor, It.IsAny<CancellationToken>())).ReturnsAsync(true);
         var writer = new Mock<ITicketWriter>(MockBehavior.Strict);
-        writer.Setup(value => value.GetForUpdateAsync(ticket.Id, It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
+        writer.Setup(value => value.GetForUpdateAsync(ticket.Id, It.IsAny<TicketReadScope>(), It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
         writer.Setup(value => value.GetRevision(ticket)).Returns(42);
         var failure = new InvalidOperationException("Lỗi ghi dữ liệu được chủ động tạo trong kiểm thử.");
         writer.Setup(value => value.UpdateTicketWithAuditAsync(ticket,

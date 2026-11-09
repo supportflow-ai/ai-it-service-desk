@@ -1,16 +1,12 @@
 # Bản đồ tài liệu dự án
 
-[Tài liệu chung SupportFlow AI](https://github.com/supportflow-ai/supportflow-ai-infra/blob/main/README.md) tập hợp phạm vi MVP, luồng nghiệm thu và ranh giới bốn kho. Backend sở hữu API, quy tắc nghiệp vụ, phân quyền và migration. Đọc [mốc đối chiếu liên kho](architecture/current-backend-contract.md) trước khi phối hợp với Frontend hoặc AI Service.
+[Tài liệu chung SupportFlow AI](https://github.com/supportflow-ai/supportflow-ai-infra/blob/main/README.md) tập hợp phạm vi MVP, luồng nghiệm thu và ranh giới bốn kho. Backend sở hữu API, quy tắc nghiệp vụ, phân quyền và migration. Đọc [hợp đồng backend hiện hành](architecture/current-backend-contract.md) trước khi phối hợp với Frontend hoặc AI Service.
 
-Trạng thái: hiện hành cho kho backend. Cập nhật: 2026-10-20. Phần mô tả chức năng đã đối chiếu `dev` tại `47634bc8162c13bd6ae024233ec24a0076738c51`, sau PR #28 và #29; kết quả kiểm thử phải gắn với mốc chạy riêng.
+Trạng thái: hiện hành cho kho backend. Cập nhật: 2026-11-08. Phần mô tả chức năng đã đối chiếu `dev` tại `a182c9fde556423d04764fe2a0b7ac16af773923`, sau PR #50–#55 và #59–#60 (hợp đồng API và phân quyền không đổi kể từ #55); kết quả kiểm thử phải gắn với mốc chạy riêng.
 
 [Quy chuẩn tài liệu](process/documentation-standard.md) quy định cách viết tiếng Việt, ghi mốc nguồn và cập nhật theo thay đổi. [Bảng thuật ngữ](process/technical-glossary.md) thống nhất cách gọi giữa các tài liệu.
 
-[Báo cáo rà soát toàn bộ tài liệu](reviews/documentation-audit-20261020.md) ghi các nguồn xung đột, phần đã xử lý và các điểm cần đồng bộ trước khi chốt.
-
-[Đợt củng cố SupportFlow 03/11/2026](runbooks/supportflow-hardening-phase-1.md) ghi thay đổi quyền bình luận, lưu nguyên tử ticket–timeline và các kiểm thử cần chạy trên mã mới.
-
-Đọc [bảng mốc mã nguồn](architecture/source-baseline.md) trước khi chạy: nhánh chuẩn hóa được chuẩn bị trên dev sau PR #29, gồm mã 12 luồng, bản chuẩn API và công cụ Python tương ứng. Kết quả kiểm thử cần gắn với đúng HEAD.
+[Bảng mốc mã nguồn](architecture/source-baseline.md) ghi cách xác định mốc đối chiếu. Mã nguồn tổ chức module trước, Clean bên trong module theo [ADR-015](adr/ADR-015-module-first-clean-architecture.md) (đã hợp nhất vào `dev`, ADR chờ nhóm duyệt). Bằng chứng, đề xuất và hồ sơ lịch sử vẫn ghi đường dẫn `src/backend/ServiceDesk.Domain|Application/...` của mốc cũ; dùng chúng để truy vết, không dùng làm vị trí đặt mã mới.
 
 Đọc theo thứ tự: [AGENTS.md](../AGENTS.md) → [kiến trúc hiện hành](architecture/backend-modules-and-use-cases.md) → [hợp đồng đang triển khai](architecture/current-backend-contract.md) → tài liệu của nhiệm vụ. [Hướng dẫn môi trường](runbooks/environment-runbook.md) là nguồn lệnh chạy local và thao tác database.
 
@@ -19,10 +15,10 @@ Trạng thái: hiện hành cho kho backend. Cập nhật: 2026-10-20. Phần m�
 | Loại | Nguồn | Cách sử dụng |
 | --- | --- | --- |
 | Cách làm việc | AGENTS, [Git/Jira](process/pr-branch-jira-convention.md), [DoR/DoD](process/definition-of-ready-done.md) | Phạm vi thao tác, ngôn ngữ, kiểm chứng và bàn giao |
-| Quyết định kiến trúc | [Danh mục ADR](adr/README.md), đặc biệt ADR-011–014 | Ranh giới và quyết định còn hiệu lực; đọc cả phần bổ sung/thay thế của ADR cũ |
+| Quyết định kiến trúc | [Danh mục ADR](adr/README.md), đặc biệt ADR-011–015 | Ranh giới và quyết định còn hiệu lực; đọc cả phần bổ sung/thay thế của ADR cũ |
 | Hành vi đang triển khai | [Hợp đồng backend](architecture/current-backend-contract.md), mã nguồn, [baseline HTTP](../contracts/backend/openapi-baseline.json) và kiểm thử | Đối chiếu tương thích tại cùng SHA; mã hiện tại không tự chứng minh mọi yêu cầu sản phẩm đã đúng |
 | Nghiệp vụ tương lai | [Bảng quyết định còn mở](architecture/pending-business-decisions.md), các đề xuất trong [chỉ mục kiến trúc](architecture/README.md) | Đầu vào cho quyết định tiếp theo; không tự mở rộng nhiệm vụ |
-| Vận hành | [Môi trường](runbooks/environment-runbook.md), [kiểm chứng](runbooks/backend-hardening-verification.md), [triển khai](runbooks/backend-refactor-rollout.md), [CI](runbooks/github-actions.md) | Chạy đúng môi trường và phạm vi được giao |
+| Vận hành | [Môi trường](runbooks/environment-runbook.md), [kiểm chứng](runbooks/backend-hardening-verification.md), [triển khai](runbooks/backend-refactor-rollout.md), [CI](runbooks/github-actions.md), [truy vết image GHCR](runbooks/backend-ghcr-traceability.md) | Chạy đúng môi trường và phạm vi được giao |
 | Database nhóm | [VPS phát triển dùng chung](runbooks/shared-development-database.md) | Địa chỉ, SSH tunnel, tài khoản ứng dụng và giới hạn vận hành |
 | Bằng chứng khởi chạy tại mốc cũ | [Kết quả nạp cấu hình và kết nối giao diện/backend](runbooks/local-startup-verification.md) | Chỉ phản ánh lần chạy ngày 2026-10-19; không mô tả trạng thái môi trường hôm nay |
 | Bằng chứng lịch sử | [Reviews](reviews/README.md), [Sprint 1](sprint-1/README.md), [artifacts](../artifacts/README.md) | Chỉ chứng minh phạm vi/ngày/SHA ghi trong từng hồ sơ |
@@ -39,7 +35,7 @@ Không có quy tắc “mọi tệp trong architecture luôn thắng OpenAPI”.
 
 ## Kiểm tra tài liệu
 
-Các đợt đang triển khai: [quyền bình luận và ticket–audit](runbooks/supportflow-hardening-phase-1.md), [attachment, contract, HTTP AI và phát hành](runbooks/supportflow-hardening-phase-2-6.md). Những hướng dẫn này ghi rõ phạm vi working tree và phần chưa nghiệm thu.
+Hồ sơ hai đợt củng cố đầu tháng 11 ([quyền bình luận và ticket–audit](runbooks/supportflow-hardening-phase-1.md), [attachment, contract, HTTP AI và phát hành](runbooks/supportflow-hardening-phase-2-6.md)) là lịch sử; hướng dẫn kiểm chứng hiện hành nằm ở [runbook kiểm chứng](runbooks/backend-hardening-verification.md).
 
 Chạy từ gốc repo, dùng Python theo workflow (Linux/macOS có thể cần `python3`):
 

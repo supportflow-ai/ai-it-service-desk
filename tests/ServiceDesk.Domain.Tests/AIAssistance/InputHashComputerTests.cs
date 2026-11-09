@@ -1,4 +1,4 @@
-using ServiceDesk.Domain.AIAssistance;
+using ServiceDesk.Modules.AIAssistance.Domain;
 using FluentAssertions;
 using Xunit;
 
