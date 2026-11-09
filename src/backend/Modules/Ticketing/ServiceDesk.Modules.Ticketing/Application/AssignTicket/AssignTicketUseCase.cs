@@ -35,15 +35,16 @@ internal sealed class AssignTicketUseCase(
 
         ArgumentNullException.ThrowIfNull(command);
 
-        if (!await agentDirectory.IsAgentAsync(command.AgentId, cancellationToken))
-        {
-            throw new ArgumentException("Kỹ thuật viên không tồn tại hoặc không có vai trò Agent.");
-        }
-
-        var ticket = await writer.GetForUpdateAsync(command.Id, cancellationToken);
+        var scope = TicketPermissions.ReadScopeFor(currentUser, actorId);
+        var ticket = await writer.GetForUpdateAsync(command.Id, scope, cancellationToken);
         if (ticket == null)
         {
             throw new KeyNotFoundException("Ticket not found.");
+        }
+
+        if (!await agentDirectory.IsAgentAsync(command.AgentId, cancellationToken))
+        {
+            throw new ArgumentException("Kỹ thuật viên không tồn tại hoặc không có vai trò Agent.");
         }
 
         TicketCommandGuard.RequireCurrentRevision(writer, ticket, command.ExpectedRevision);

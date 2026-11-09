@@ -39,7 +39,8 @@ internal sealed class ResolveTicketUseCase(
             throw new UnauthorizedAccessException("Only an agent or admin can resolve this ticket.");
         }
 
-        var ticket = await writer.GetForUpdateAsync(command.Id, cancellationToken);
+        var scope = TicketPermissions.ReadScopeFor(currentUser, actorId);
+        var ticket = await writer.GetForUpdateAsync(command.Id, scope, cancellationToken);
         if (ticket == null)
         {
             throw new KeyNotFoundException("Ticket not found.");

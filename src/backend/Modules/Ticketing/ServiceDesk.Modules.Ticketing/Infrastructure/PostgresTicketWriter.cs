@@ -2,6 +2,7 @@ using System.Data;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
+using ServiceDesk.Modules.Ticketing.Application.Authorization;
 using ServiceDesk.Modules.Ticketing.Application.Contracts;
 using ServiceDesk.Modules.Ticketing.Application.Idempotency;
 using ServiceDesk.Modules.Ticketing.Application.Ports;
@@ -104,8 +105,15 @@ internal sealed class PostgresTicketWriter(DbContext context) : ITicketWriter
         _context.Database.SqlQuery<DateTime>($"SELECT clock_timestamp() AS \"Value\"")
             .SingleAsync(cancellationToken);
 
-    public Task<Ticket?> GetForUpdateAsync(Guid id, CancellationToken cancellationToken)
-        => _context.Set<Ticket>().SingleOrDefaultAsync(t => t.Id == id, cancellationToken);
+    public async Task<Ticket?> GetForUpdateAsync(Guid id, TicketReadScope scope, CancellationToken cancellationToken)
+    {
+        // Kiểm phạm vi bằng truy vấn không theo dõi, rồi tải thực thể bằng truy vấn thường để EF nạp đúng
+        // concurrency token xmin. (CI: truy vấn có subquery thành viên nhóm trả xmin = 0 cho thực thể được theo dõi.)
+        var inScope = await TicketScopeQuery.Apply(_context.Set<Ticket>().AsNoTracking(), _context, scope)
+            .AnyAsync(t => t.Id == id, cancellationToken);
+        if (!inScope) return null;
+        return await _context.Set<Ticket>().SingleOrDefaultAsync(t => t.Id == id, cancellationToken);
+    }
 
     public uint GetRevision(Ticket ticket)
     {

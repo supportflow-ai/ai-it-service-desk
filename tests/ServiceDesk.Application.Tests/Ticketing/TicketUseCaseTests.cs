@@ -106,12 +106,18 @@ public sealed class TicketUseCaseTests
     }
 
     [Theory]
-    [InlineData(RoleNames.Requester, false)] [InlineData(RoleNames.Agent, true)] [InlineData(RoleNames.Admin, true)]
-    public async Task Detail_RestrictsRequesterAndAllowsAgentAdmin(string role, bool broad)
+    [InlineData(RoleNames.Requester)] [InlineData(RoleNames.Agent)] [InlineData(RoleNames.Admin)]
+    public async Task Detail_UsesScopeForRole(string role)
     {
         _user.Setup(u => u.IsInRole(role)).Returns(true);
         var id = Guid.NewGuid();
-        _queries.Setup(q => q.GetByIdAsync(id, broad ? (TicketReadScope)new TicketReadScope.AllTickets() : new TicketReadScope.OwnTickets(_actor), It.IsAny<CancellationToken>())).ReturnsAsync((TicketDto?)null);
+        TicketReadScope scope = role switch
+        {
+            RoleNames.Admin => new TicketReadScope.AllTickets(),
+            RoleNames.Agent => new TicketReadScope.AgentTickets(_actor, includeOwnTickets: true),
+            _ => new TicketReadScope.OwnTickets(_actor)
+        };
+        _queries.Setup(q => q.GetByIdAsync(id, scope, It.IsAny<CancellationToken>())).ReturnsAsync((TicketDto?)null);
         Assert.Null(await _detail.ExecuteAsync(new(id)));
         _queries.VerifyAll();
     }

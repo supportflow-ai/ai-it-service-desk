@@ -211,6 +211,11 @@ public sealed class SupportTeamTriageAndMembershipTests(TicketIdempotencyPostgre
 
         Assert.True(await reader.IsLeadAsync(team, member));
         await context.Database.ExecuteSqlInterpolatedAsync(
+            $"UPDATE public.support_team_members SET is_lead = false WHERE team_id = {team} AND user_id = {member}");
+        Assert.True(await reader.IsMemberAsync(team, member));
+        Assert.False(await reader.IsLeadAsync(team, member));
+
+        await context.Database.ExecuteSqlInterpolatedAsync(
             $"DELETE FROM public.support_team_members WHERE team_id = {team} AND user_id = {member}");
         Assert.False(await reader.IsMemberAsync(team, member));
         Assert.False(await reader.IsLeadAsync(team, member));

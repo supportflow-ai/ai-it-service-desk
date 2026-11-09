@@ -3,6 +3,7 @@ using ServiceDesk.SharedKernel.Application.Abstractions;
 using ServiceDesk.Modules.Ticketing.Application.CancelTicket;
 using ServiceDesk.Modules.Ticketing.Application.ClaimTicket;
 using ServiceDesk.Modules.Ticketing.Application.CloseTicket;
+using ServiceDesk.Modules.Ticketing.Application.Authorization;
 using ServiceDesk.Modules.Ticketing.Application.Contracts;
 using ServiceDesk.Modules.Ticketing.Application.Ports;
 using ServiceDesk.Modules.Ticketing.Application.ReopenTicket;
@@ -36,7 +37,7 @@ public sealed class TicketLifecycleUseCaseTests
         _user.Setup(u => u.IsInRole(RoleNames.Agent)).Returns(true);
         _user.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(false);
         var ticket = Ticket.Create(_actor, "Issue", "Problem description long enough", TicketCategories.VPN, _now.UtcDateTime);
-        _writer.Setup(w => w.GetForUpdateAsync(ticket.Id, It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
+        _writer.Setup(w => w.GetForUpdateAsync(ticket.Id, It.IsAny<TicketReadScope>(), It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
         _writer.Setup(w => w.GetRevision(ticket)).Returns(1);
         _writer.Setup(w => w.UpdateTicketWithAuditAsync(ticket, It.Is<TicketComment>(entry => entry.TicketId == ticket.Id && entry.AuthorId == _actor), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new TicketDto(ticket.Id, "IT-2026-0001", ticket.Title, ticket.Description, ticket.CategoryId, (int)TicketStatus.InProgress, ticket.CreatedAt));
@@ -55,7 +56,7 @@ public sealed class TicketLifecycleUseCaseTests
         _user.Setup(u => u.IsInRole(RoleNames.Agent)).Returns(true);
         _user.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(false);
         var ticket = Ticket.Create(_actor, "Issue", "Problem description long enough", TicketCategories.VPN, _now.UtcDateTime);
-        _writer.Setup(w => w.GetForUpdateAsync(ticket.Id, It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
+        _writer.Setup(w => w.GetForUpdateAsync(ticket.Id, It.IsAny<TicketReadScope>(), It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
         _writer.Setup(w => w.UpdateTicketWithAuditAsync(ticket, It.IsAny<TicketComment>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new TicketDto(ticket.Id, "IT-2026-0001", ticket.Title, ticket.Description, ticket.CategoryId, (int)TicketStatus.InProgress, ticket.CreatedAt));
 
@@ -97,7 +98,7 @@ public sealed class TicketLifecycleUseCaseTests
         var ticket = Ticket.Create(Guid.NewGuid(), "Issue", "Problem description long enough", TicketCategories.VPN, _now.UtcDateTime);
         ticket.Claim(_actor, _now.UtcDateTime);
 
-        _writer.Setup(w => w.GetForUpdateAsync(ticket.Id, It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
+        _writer.Setup(w => w.GetForUpdateAsync(ticket.Id, It.IsAny<TicketReadScope>(), It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
         _writer.Setup(w => w.GetRevision(ticket)).Returns(1);
         _writer.Setup(w => w.UpdateTicketWithAuditAsync(ticket, It.Is<TicketComment>(entry => entry.TicketId == ticket.Id && entry.AuthorId == _actor), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new TicketDto(ticket.Id, "IT-2026-0001", ticket.Title, ticket.Description, ticket.CategoryId, (int)TicketStatus.Resolved, ticket.CreatedAt));
@@ -118,7 +119,7 @@ public sealed class TicketLifecycleUseCaseTests
         ticket.Claim(_actor, _now.UtcDateTime);
         ticket.Resolve(_now.UtcDateTime);
 
-        _writer.Setup(w => w.GetForUpdateAsync(ticket.Id, It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
+        _writer.Setup(w => w.GetForUpdateAsync(ticket.Id, It.IsAny<TicketReadScope>(), It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
         _writer.Setup(w => w.GetRevision(ticket)).Returns(1);
         _writer.Setup(w => w.UpdateTicketWithAuditAsync(ticket, It.Is<TicketComment>(entry => entry.TicketId == ticket.Id && entry.AuthorId == _actor), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new TicketDto(ticket.Id, "IT-2026-0001", ticket.Title, ticket.Description, ticket.CategoryId, (int)TicketStatus.InProgress, ticket.CreatedAt));
@@ -139,7 +140,7 @@ public sealed class TicketLifecycleUseCaseTests
         ticket.Claim(_actor, _now.UtcDateTime);
         ticket.Resolve(_now.UtcDateTime);
 
-        _writer.Setup(w => w.GetForUpdateAsync(ticket.Id, It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
+        _writer.Setup(w => w.GetForUpdateAsync(ticket.Id, It.IsAny<TicketReadScope>(), It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
         _writer.Setup(w => w.GetRevision(ticket)).Returns(1);
         _writer.Setup(w => w.UpdateTicketWithAuditAsync(ticket, It.Is<TicketComment>(entry => entry.TicketId == ticket.Id && entry.AuthorId == _actor), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new TicketDto(ticket.Id, "IT-2026-0001", ticket.Title, ticket.Description, ticket.CategoryId, (int)TicketStatus.Closed, ticket.CreatedAt));
@@ -158,7 +159,7 @@ public sealed class TicketLifecycleUseCaseTests
         _user.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(false);
         var ticket = Ticket.Create(_actor, "Issue", "Problem description long enough", TicketCategories.VPN, _now.UtcDateTime);
 
-        _writer.Setup(w => w.GetForUpdateAsync(ticket.Id, It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
+        _writer.Setup(w => w.GetForUpdateAsync(ticket.Id, It.IsAny<TicketReadScope>(), It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
         _writer.Setup(w => w.GetRevision(ticket)).Returns(1);
         _writer.Setup(w => w.UpdateTicketWithAuditAsync(ticket, It.Is<TicketComment>(entry => entry.TicketId == ticket.Id && entry.AuthorId == _actor), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new TicketDto(ticket.Id, "IT-2026-0001", ticket.Title, ticket.Description, ticket.CategoryId, (int)TicketStatus.Cancelled, ticket.CreatedAt));
@@ -177,7 +178,7 @@ public sealed class TicketLifecycleUseCaseTests
         _user.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(false);
         var ticket = Ticket.Create(_actor, "Issue", "Problem description long enough", TicketCategories.VPN, _now.UtcDateTime);
 
-        _writer.Setup(w => w.GetForUpdateAsync(ticket.Id, It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
+        _writer.Setup(w => w.GetForUpdateAsync(ticket.Id, It.IsAny<TicketReadScope>(), It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
         _writer.Setup(w => w.GetRevision(ticket)).Returns(1);
         _writer.Setup(w => w.UpdateTicketAsync(ticket, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new TicketDto(ticket.Id, "IT-2026-0001", "Updated Title", "Updated description at least 10", TicketCategories.HW, (int)TicketStatus.Submitted, ticket.CreatedAt));

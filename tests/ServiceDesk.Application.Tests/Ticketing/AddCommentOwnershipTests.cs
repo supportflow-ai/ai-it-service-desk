@@ -1,6 +1,7 @@
 using Moq;
 using ServiceDesk.SharedKernel.Application.Abstractions;
 using ServiceDesk.Modules.Ticketing.Application.AddComment;
+using ServiceDesk.Modules.Ticketing.Application.Authorization;
 using ServiceDesk.Modules.Ticketing.Application.Contracts;
 using ServiceDesk.Modules.Ticketing.Application.Ports;
 using ServiceDesk.SharedKernel.Authorization;
@@ -33,7 +34,7 @@ public sealed class AddCommentOwnershipTests
         _user.SetupGet(user => user.Roles).Returns([RoleNames.Requester]);
         _user.Setup(user => user.IsInRole(RoleNames.Agent)).Returns(false);
         _user.Setup(user => user.IsInRole(RoleNames.Admin)).Returns(false);
-        _writer.Setup(writer => writer.GetForUpdateAsync(ticket.Id, It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
+        _writer.Setup(writer => writer.GetForUpdateAsync(ticket.Id, It.IsAny<TicketReadScope>(), It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
         _agentDirectory.Setup(directory => directory.GetDisplayNameAsync(_actorId, It.IsAny<CancellationToken>())).ReturnsAsync("Requester");
 
         var useCase = CreateUseCase();
@@ -60,7 +61,7 @@ public sealed class AddCommentOwnershipTests
             ticket.Cancel(_now.UtcDateTime);
         }
         _user.SetupGet(user => user.Roles).Returns([RoleNames.Requester]);
-        _writer.Setup(writer => writer.GetForUpdateAsync(ticket.Id, It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
+        _writer.Setup(writer => writer.GetForUpdateAsync(ticket.Id, It.IsAny<TicketReadScope>(), It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
 
         await Assert.ThrowsAsync<ArgumentException>(() => CreateUseCase().ExecuteAsync(new(ticket.Id, "Blocked comment")));
 
@@ -86,7 +87,7 @@ public sealed class AddCommentOwnershipTests
             ticket.Cancel(_now.UtcDateTime);
         }
         _user.SetupGet(user => user.Roles).Returns([RoleNames.Requester]);
-        _writer.Setup(writer => writer.GetForUpdateAsync(ticket.Id, It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
+        _writer.Setup(writer => writer.GetForUpdateAsync(ticket.Id, It.IsAny<TicketReadScope>(), It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
 
         // Không lộ ticket tồn tại hay đã kết thúc: giống hệt ID không tồn tại.
         await Assert.ThrowsAsync<KeyNotFoundException>(() => CreateUseCase().ExecuteAsync(new(ticket.Id, "Probe")));
@@ -98,7 +99,7 @@ public sealed class AddCommentOwnershipTests
     {
         var ticket = CreateTicket(_actorId);
         _user.SetupGet(user => user.Roles).Returns([RoleNames.Requester]);
-        _writer.Setup(writer => writer.GetForUpdateAsync(ticket.Id, It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
+        _writer.Setup(writer => writer.GetForUpdateAsync(ticket.Id, It.IsAny<TicketReadScope>(), It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
         _agentDirectory.Setup(directory => directory.GetDisplayNameAsync(_actorId, It.IsAny<CancellationToken>())).ReturnsAsync("Requester");
         _timelineStore.Setup(store => store.AddToOpenTicketAsync(It.IsAny<TicketComment>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new TimelineItemDto(Guid.NewGuid(), ticket.Id, _actorId, "Requester", RoleNames.Requester, "Owner comment", false, _now.UtcDateTime));
@@ -118,7 +119,7 @@ public sealed class AddCommentOwnershipTests
         _user.SetupGet(user => user.Roles).Returns([role]);
         _user.Setup(user => user.IsInRole(RoleNames.Agent)).Returns(role == RoleNames.Agent);
         _user.Setup(user => user.IsInRole(RoleNames.Admin)).Returns(role == RoleNames.Admin);
-        _writer.Setup(writer => writer.GetForUpdateAsync(ticket.Id, It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
+        _writer.Setup(writer => writer.GetForUpdateAsync(ticket.Id, It.IsAny<TicketReadScope>(), It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
         _agentDirectory.Setup(directory => directory.GetDisplayNameAsync(_actorId, It.IsAny<CancellationToken>())).ReturnsAsync("Staff");
         _timelineStore.Setup(store => store.AddToOpenTicketAsync(It.IsAny<TicketComment>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new TimelineItemDto(Guid.NewGuid(), ticket.Id, _actorId, "Staff", role, "Staff comment", false, _now.UtcDateTime));

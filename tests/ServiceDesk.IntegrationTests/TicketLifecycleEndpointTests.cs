@@ -2,7 +2,9 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using FluentAssertions;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using ServiceDesk.Infrastructure.Persistence;
 using ServiceDesk.Modules.Ticketing.Application.Contracts;
 using ServiceDesk.Modules.Ticketing.Application.CreateTicket;
 using ServiceDesk.Modules.Ticketing.Domain;
@@ -73,12 +75,20 @@ public class TicketLifecycleEndpointTests : IClassFixture<ServiceDeskWebApplicat
         ticket.Status.Should().Be((int)TicketStatus.Submitted);
 
         // 2. Register agent and promote
-        var (agentToken, _) = await RegisterAndPromoteRoleAsync("Agent");
+        var (agentToken, agentId) = await RegisterAndPromoteRoleAsync("Agent");
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            await context.Database.ExecuteSqlInterpolatedAsync($"""
+                INSERT INTO public.support_team_members (team_id, user_id, is_lead)
+                VALUES ({SupportTeam.ManualTriageId}, {Guid.Parse(agentId)}, false)
+                """);
+        }
 
         // 3. Agent claims ticket
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", agentToken);
         var claimRes = await _client.PostAsync($"/api/tickets/{ticket.Id}/claim?expectedRevision={ticket.Revision}", null);
-        claimRes.StatusCode.Should().Be(HttpStatusCode.OK);
+        claimRes.StatusCode.Should().Be(HttpStatusCode.OK, await claimRes.Content.ReadAsStringAsync());
         var inProgressTicket = await claimRes.Content.ReadFromJsonAsync<TicketDto>();
         inProgressTicket!.Status.Should().Be((int)TicketStatus.InProgress);
 

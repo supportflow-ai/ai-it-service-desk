@@ -23,8 +23,7 @@ internal sealed class GetTicketAttachmentsUseCase(
         var actorId = TicketActor.RequireId(currentUser);
         ArgumentNullException.ThrowIfNull(query);
 
-        var isStaff = TicketPermissions.IsStaff(currentUser);
-        var scope = isStaff ? (TicketReadScope)new TicketReadScope.AllTickets() : new TicketReadScope.OwnTickets(actorId);
+        var scope = TicketPermissions.ReadScopeFor(currentUser, actorId, includeOwner: true);
 
         var ticket = await ticketQueries.GetByIdAsync(query.TicketId, scope, cancellationToken);
         if (ticket == null) throw new KeyNotFoundException("Ticket not found.");

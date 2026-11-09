@@ -40,13 +40,7 @@ internal sealed class PostgresTicketQueries(DbContext context) : ITicketQueries
     public async Task<TicketDto?> GetByIdAsync(Guid id, TicketReadScope scope, CancellationToken cancellationToken)
     {
         var query = _context.Set<Ticket>().AsNoTracking().Where(ticket => ticket.Id == id);
-        query = scope switch
-        {
-            TicketReadScope.OwnTickets own => query.Where(ticket => ticket.RequesterId == own.ActorId),
-            TicketReadScope.AllTickets => query,
-            _ => throw new ArgumentException("Yêu cầu phạm vi quyền đọc hợp lệ.", nameof(scope))
-        };
-        return await query
+        return await TicketScopeQuery.Apply(query, _context, scope)
             .Select(ticket => TicketProjection.ToDto(ticket, EF.Property<uint>(ticket, "xmin")))
             .FirstOrDefaultAsync(cancellationToken);
     }
@@ -54,6 +48,7 @@ internal sealed class PostgresTicketQueries(DbContext context) : ITicketQueries
     /// <summary>Truy vấn hàng đợi vé cho nhân viên hỗ trợ (Agent Queue) có lọc và phân trang.</summary>
     public async Task<PagedTicketResult> GetAgentQueueAsync(
         Guid currentUserId,
+        TicketReadScope readScope,
         int? status,
         string? categoryId,
         string? scope,
@@ -63,7 +58,7 @@ internal sealed class PostgresTicketQueries(DbContext context) : ITicketQueries
         int pageSize,
         CancellationToken cancellationToken = default)
     {
-        var query = _context.Set<Ticket>().AsNoTracking();
+        var query = TicketScopeQuery.Apply(_context.Set<Ticket>().AsNoTracking(), _context, readScope);
 
         if (status.HasValue)
         {

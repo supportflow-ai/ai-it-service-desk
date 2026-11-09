@@ -2,9 +2,12 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using ServiceDesk.Modules.Identity.Application.Contracts;
 using ServiceDesk.Modules.Ticketing.Application.Contracts;
+using ServiceDesk.Modules.Ticketing.Domain;
+using ServiceDesk.SharedKernel.Authorization;
 using Xunit;
 
 namespace ServiceDesk.IntegrationTests;
@@ -33,7 +36,7 @@ public sealed class TicketCommentAccessTests(TicketIdempotencyPostgresFixture fi
     [Theory]
     [InlineData("Agent")]
     [InlineData("Admin")]
-    public async Task Staff_CanCommentOnAnotherRequestersTicket(string role)
+    public async Task StaffWithTicketScope_CanCommentOnAnotherRequestersTicket(string role)
     {
         using var owner = fixture.First!.CreateClient();
         var ownerIdentity = await RegisterAsync(owner);
@@ -43,6 +46,14 @@ public sealed class TicketCommentAccessTests(TicketIdempotencyPostgresFixture fi
         using var staff = fixture.Second!.CreateClient();
         var staffIdentity = await RegisterAsync(staff);
         await PromoteAsync(staffIdentity.User.UserId, role);
+        if (role == RoleNames.Agent)
+        {
+            await using var context = fixture.CreateContext();
+            await context.Database.ExecuteSqlInterpolatedAsync($"""
+                INSERT INTO public.support_team_members (team_id, user_id, is_lead)
+                VALUES ({SupportTeam.ManualTriageId}, {Guid.Parse(staffIdentity.User.UserId)}, false)
+                """);
+        }
         staff.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", (await LoginAsync(staff, staffIdentity.User.Email)).Token);
 
         using var response = await staff.PostAsJsonAsync($"/api/tickets/{ticket.Id}/comments", new { content = "Staff comment" });

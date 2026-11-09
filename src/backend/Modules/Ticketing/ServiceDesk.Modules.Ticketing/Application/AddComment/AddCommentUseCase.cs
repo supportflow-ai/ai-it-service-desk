@@ -26,7 +26,8 @@ internal sealed class AddCommentUseCase(
         var actorId = TicketActor.RequireId(currentUser);
         ArgumentNullException.ThrowIfNull(command);
 
-        var ticket = await writer.GetForUpdateAsync(command.TicketId, cancellationToken);
+        var scope = TicketPermissions.ReadScopeFor(currentUser, actorId, includeOwner: true);
+        var ticket = await writer.GetForUpdateAsync(command.TicketId, scope, cancellationToken);
         if (ticket == null) throw new KeyNotFoundException("Ticket not found.");
 
         // Kiểm quyền xem trước trạng thái: ticket của người khác luôn trả 404, không lộ là đã đóng hay hủy.

@@ -13,7 +13,7 @@ internal sealed class PostgresSupportTeamMembershipReader(DbContext context) : I
     public async Task<IReadOnlyList<Guid>> GetTeamIdsAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         if (userId == Guid.Empty) return [];
-        return await ActiveMembers()
+        return await ActiveMembers(context)
             .Where(member => member.UserId == userId)
             .Select(member => member.TeamId)
             .OrderBy(teamId => teamId)
@@ -23,16 +23,16 @@ internal sealed class PostgresSupportTeamMembershipReader(DbContext context) : I
     public Task<bool> IsMemberAsync(Guid teamId, Guid userId, CancellationToken cancellationToken = default) =>
         teamId == Guid.Empty || userId == Guid.Empty
             ? Task.FromResult(false)
-            : ActiveMembers().AnyAsync(member => member.TeamId == teamId && member.UserId == userId, cancellationToken);
+            : ActiveMembers(context).AnyAsync(member => member.TeamId == teamId && member.UserId == userId, cancellationToken);
 
     public Task<bool> IsLeadAsync(Guid teamId, Guid userId, CancellationToken cancellationToken = default) =>
         teamId == Guid.Empty || userId == Guid.Empty
             ? Task.FromResult(false)
-            : ActiveMembers().AnyAsync(
+            : ActiveMembers(context).AnyAsync(
                 member => member.TeamId == teamId && member.UserId == userId && member.IsLead, cancellationToken);
 
     /// <summary>Dòng thành viên của nhóm đang hoạt động.</summary>
-    private IQueryable<SupportTeamMember> ActiveMembers() =>
+    internal static IQueryable<SupportTeamMember> ActiveMembers(DbContext context) =>
         context.Set<SupportTeamMember>().AsNoTracking()
             .Where(member => context.Set<SupportTeam>().Any(team => team.Id == member.TeamId && team.IsActive));
 }

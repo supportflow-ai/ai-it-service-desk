@@ -39,6 +39,7 @@ internal sealed class GetAgentQueueUseCase(ITicketQueries queries, ICurrentUser 
             throw new ArgumentException("page must be at least 1 and pageSize must be between 1 and 100");
         }
 
-        return queries.GetAgentQueueAsync(actorId, query.Status, query.CategoryId, query.Scope, query.Priority, query.SortByPriority, query.Page, query.PageSize, cancellationToken);
+        var readScope = TicketPermissions.ReadScopeFor(currentUser, actorId);
+        return queries.GetAgentQueueAsync(actorId, readScope, query.Status, query.CategoryId, query.Scope, query.Priority, query.SortByPriority, query.Page, query.PageSize, cancellationToken);
     }
 }

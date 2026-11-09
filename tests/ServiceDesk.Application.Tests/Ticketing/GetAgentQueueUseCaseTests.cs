@@ -1,5 +1,6 @@
 using Moq;
 using ServiceDesk.SharedKernel.Application.Abstractions;
+using ServiceDesk.Modules.Ticketing.Application.Authorization;
 using ServiceDesk.Modules.Ticketing.Application.Contracts;
 using ServiceDesk.Modules.Ticketing.Application.GetAgentQueue;
 using ServiceDesk.Modules.Ticketing.Application.Ports;
@@ -27,7 +28,8 @@ public sealed class GetAgentQueueUseCaseTests
         _user.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(false);
 
         var pagedResult = new PagedTicketResult([], 1, 10, 0);
-        _queries.Setup(q => q.GetAgentQueueAsync(It.IsAny<Guid>(), null, null, "unassigned", null, false, 1, 10, It.IsAny<CancellationToken>()))
+        var actorId = Guid.Parse(_user.Object.UserId!);
+        _queries.Setup(q => q.GetAgentQueueAsync(actorId, new TicketReadScope.AgentTickets(actorId, false), null, null, "unassigned", null, false, 1, 10, It.IsAny<CancellationToken>()))
             .ReturnsAsync(pagedResult);
 
         var useCase = new GetAgentQueueUseCase(_queries.Object, _user.Object);
@@ -44,7 +46,8 @@ public sealed class GetAgentQueueUseCaseTests
         _user.Setup(u => u.IsInRole(RoleNames.Agent)).Returns(true);
         _user.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(false);
         var result = new PagedTicketResult([], 1, 10, 0);
-        _queries.Setup(q => q.GetAgentQueueAsync(It.IsAny<Guid>(), null, null, null, "P1", true, 1, 10, It.IsAny<CancellationToken>()))
+        var actorId = Guid.Parse(_user.Object.UserId!);
+        _queries.Setup(q => q.GetAgentQueueAsync(actorId, new TicketReadScope.AgentTickets(actorId, false), null, null, null, "P1", true, 1, 10, It.IsAny<CancellationToken>()))
             .ReturnsAsync(result);
 
         var useCase = new GetAgentQueueUseCase(_queries.Object, _user.Object);

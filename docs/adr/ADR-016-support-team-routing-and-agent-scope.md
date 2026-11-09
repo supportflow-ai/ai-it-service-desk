@@ -2,7 +2,7 @@
 
 ## Trạng thái và nguồn quyết định
 
-Hướng thiết kế đã được chủ dự án phê duyệt ngày 2026-11-08 qua chỉ dẫn trực tiếp trong phiên làm việc với trợ lý; chưa có biên bản riêng trong repo và chưa có mã Jira. **Triển khai theo giai đoạn.** Giai đoạn nền dữ liệu (B1-PR1) chỉ thêm bằng migration cộng thêm `AddSupportTeams`: bảng `support_teams`, `support_team_members`, cột nullable `tickets.support_team_id` và hàng đợi `MANUAL_TRIAGE` có ID cố định; không gán nhóm cho phiếu mới hay cũ. Giai đoạn B1-PR2 thêm: phiếu mới vào `MANUAL_TRIAGE` ngay khi tạo, migration dữ liệu `BackfillLegacyTicketsToManualTriage` và cổng đọc thành viên nhóm (`ISupportTeamMembershipReader`, chưa nối vào phạm vi đọc). Endpoint, định tuyến, phạm vi đọc theo nhóm và quyền Lead **chưa triển khai**: mã vẫn cho Agent/Admin đọc mọi phiếu như mô tả ở mục Bối cảnh (mốc `dev@db756d2`). Hai chi tiết ở mục "Còn mở" chưa được chốt; hai chi tiết còn lại đã được chốt ngày 2026-11-08 (mục "Đã chốt thêm"). Khi triển khai, từng thay đổi dùng nhiệm vụ riêng và thêm kiểm thử từ chối.
+Hướng thiết kế và chính sách ở mục "Đã chốt thêm" được chủ dự án phê duyệt ngày 2026-11-08 qua chỉ dẫn trực tiếp. **Triển khai theo giai đoạn.** B1-PR1 thêm bảng nhóm, thành viên, cột `tickets.support_team_id` và hàng đợi `MANUAL_TRIAGE`. B1-PR2 đưa phiếu mới và phiếu cũ chưa kết thúc vào triage, đồng thời thêm `ISupportTeamMembershipReader`. B1-PR3 áp dụng phạm vi đọc và chặn lệnh ghi vào phiếu ngoài phạm vi. Luồng chuyển nhóm, cấp phép chia sẻ lịch sử ghi chú, quyền điều phối Lead và định tuyến thuộc các đợt sau.
 
 Quan hệ: làm rõ và thay thế phần "chưa cách ly theo nhóm hoặc phân công" của [ADR-014](ADR-014-feature-use-cases-and-published-contracts.md); đóng phần hướng của DEC-02 trong [bảng quyết định còn mở](../architecture/pending-business-decisions.md); ma trận quyền ở [RBAC chính thức](../architecture/rbac-permission-matrix.md); nguồn yêu cầu cũ ở [bảng kiểm kê](../architecture/legacy-requirements-inventory.md).
 
@@ -28,14 +28,8 @@ Tại `dev@db756d2`, Agent/Admin đọc chi tiết, timeline và tệp của m�
 - **Agent thuộc nhiều nhóm.** Quyền đọc là hợp của mọi nhóm đang hoạt động mà Agent là thành viên, cộng với phiếu được phân công trực tiếp. Việc chọn "nhóm đang làm việc" trên giao diện chỉ là bộ lọc, không phải ngữ cảnh bảo mật; không lưu nhóm hiện tại trong phiên hay JWT. Lead được xét riêng từng nhóm.
 - **Thành viên hợp lệ** = có dòng trong `SupportTeamMember` và `SupportTeam.IsActive = true`. Thu hồi tư cách là xóa dòng thành viên; quyền thành viên được đọc từ cơ sở dữ liệu, không từ JWT. Chưa thêm `IsActive`, ngày bắt đầu/kết thúc hay lịch sử thành viên (chỉ nâng cấp thành bảng membership đầy đủ khi cần audit). Không tự thêm Agent nào vào `MANUAL_TRIAGE`; thành viên là dữ liệu cấp quyền có chủ đích.
 
-## Còn mở (chưa quyết định, thuộc DEC-02)
-
-- Quyền xem lịch sử ghi chú nội bộ sau khi phiếu chuyển nhóm.
-- Hiệu lực tức thời khi bị gỡ thành viên hoặc gỡ quyền Lead, khi access token đã phát vẫn còn hạn (xem giới hạn thu hồi quyền trong [hợp đồng hiện hành](../architecture/current-backend-contract.md)). Cổng đọc thành viên hiện đọc cơ sở dữ liệu ở mỗi lần gọi nên bản thân việc kiểm thành viên không bị trễ; điểm còn mở là các quyết định dựa trên claim đã phát.
-
-**Đề xuất chờ xác nhận (chưa phải quyết định):** kiểm thành viên và Lead của quyết định ghi/đọc phiếu đọc cơ sở dữ liệu ở mỗi request qua `ISupportTeamMembershipReader`, không đọc từ claim; khi đó gỡ thành viên có hiệu lực ngay cho phạm vi đọc phiếu. Giới hạn của access token (vai trò JWT còn hiệu lực tới khi hết hạn) giữ nguyên và là việc riêng. Điểm về ghi chú nội bộ sau chuyển nhóm chưa có đề xuất được duyệt.
-
-Không đặt giá trị mặc định cho hai điểm này trong mã trước khi chủ dự án chốt.
+- **Ghi chú nội bộ khi chuyển nhóm.** Ghi chú đi cùng phiếu để nhóm mới có đủ lịch sử xử lý. Agent thấy ghi chú theo quyền đọc hiện tại trên phiếu: là thành viên của một nhóm đang hoạt động đang sở hữu phiếu, hoặc đang được phân công trực tiếp. Agent mất quyền xem ghi chú nếu quyền trước đó chỉ đến từ nhóm cũ; không có cơ chế chia sẻ riêng. Admin xem toàn hệ thống. Requester, kể cả khi đồng thời là Agent nhưng chỉ có quyền chủ sở hữu, chỉ thấy nội dung công khai.
+- **Thu hồi quyền nhóm.** Mỗi request cần quyết định quyền theo nhóm kiểm tra PostgreSQL qua `ISupportTeamMembershipReader`, không đọc từ JWT. Xóa thành viên, vô hiệu hóa nhóm (`is_active = false`) hoặc gỡ `IsLead` có hiệu lực từ request kế tiếp sau khi giao dịch thay đổi đã commit, kể cả khi access token còn hạn. Agent còn được phân công trực tiếp vẫn đọc phiếu theo quyền phân công. Gỡ Lead không xóa quyền của thành viên còn hợp lệ. Quy tắc này áp dụng cho quyền theo nhóm; vòng đời các vai trò toàn hệ thống trong JWT là quyết định riêng (xem [hợp đồng hiện hành](../architecture/current-backend-contract.md)).
 
 ## Phương án đã cân nhắc
 
@@ -48,5 +42,5 @@ Không đặt giá trị mặc định cho hai điểm này trong mã trước k
 
 - Cần migration thêm bảng và cột (không đổi enum đã lưu), kế hoạch gán nhóm cho phiếu cũ, lọc phạm vi đọc ở truy vấn Ticketing, và kiểm thử PostgreSQL cho từ chối, người nhiều vai trò, thu hồi thành viên.
 - OpenAPI thay đổi có chủ đích ở endpoint nhóm và gán nhóm; giữ tương thích với API hiện có.
-- Các lệnh ghi hiện cho mọi Agent/Admin (nhận, giải quyết, bình luận) sẽ cần quyết định riêng về phạm vi theo nhóm; điều kiện đọc ở mục 4 là điều kiện cần.
+- B1-PR3 áp dụng phạm vi nhóm/phân công cho lệnh của nhân viên trước khi kiểm trạng thái và revision. Chủ sở hữu vẫn dùng các thao tác Requester trên phiếu của mình. Agent chỉ thấy timeline công khai nếu truy cập qua quyền chủ sở hữu.
 - Triển khai theo thứ tự: bảng nhóm và dữ liệu seed; gán nhóm và định tuyến thủ công; lọc đọc; Lead điều phối; auto-routing dưới policy backend và độ tin cậy do chủ dự án chọn.
