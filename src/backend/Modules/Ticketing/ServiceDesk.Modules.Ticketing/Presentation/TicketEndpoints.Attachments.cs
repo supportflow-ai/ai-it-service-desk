@@ -90,7 +90,8 @@ public static partial class TicketEndpoints
         .Produces<TicketAttachmentDto>(StatusCodes.Status201Created)
         .Produces(StatusCodes.Status400BadRequest)
         .Produces(StatusCodes.Status401Unauthorized)
-        .Produces(StatusCodes.Status404NotFound);
+        .Produces(StatusCodes.Status404NotFound)
+        .Produces(StatusCodes.Status503ServiceUnavailable);
 
         // GET /api/tickets/{id}/attachments: Lấy danh sách tệp đính kèm của ticket
         group.MapGet("/{id:guid}/attachments", async (

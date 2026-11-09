@@ -15,6 +15,9 @@ public interface IConfirmAttachmentUpload
     Task<TicketAttachmentDto> ExecuteAsync(ConfirmAttachmentUploadCommand command, CancellationToken cancellationToken = default);
 }
 
+internal sealed class AttachmentConfirmationBusyException(Exception innerException)
+    : RetryLaterException("Phiếu đang được cập nhật. Vui lòng thử xác nhận tệp lại.", innerException);
+
 internal sealed class ConfirmAttachmentUploadUseCase(
     ITicketQueries ticketQueries,
     ITicketAttachmentStore attachmentStore,
@@ -80,9 +83,9 @@ internal sealed class ConfirmAttachmentUploadUseCase(
         {
             result = await attachmentStore.ConfirmAsync(upload.Id, attachment, clock.UtcNow.UtcDateTime, cancellationToken);
         }
-        catch (ArgumentException)
+        catch (Exception error) when (error is ArgumentException or AttachmentConfirmationBusyException)
         {
-            // Bị từ chối chắc chắn (ví dụ ticket vừa đóng): giao dịch đã rollback nên object đích là mồ côi.
+            // Giao dịch bị từ chối chắc chắn nên có thể dọn bản sao đích và giữ lại nguồn để thử lại.
             await TryCleanupAsync(bucket, finalKey);
             throw;
         }

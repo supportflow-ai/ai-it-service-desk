@@ -1654,6 +1654,9 @@
           },
           "404": {
             "description": "Not Found"
+          },
+          "503": {
+            "description": "Service Unavailable"
           }
         }
       }

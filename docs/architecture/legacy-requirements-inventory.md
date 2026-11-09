@@ -89,7 +89,7 @@ Nhãn: **Đã triển khai** (có trong mã, không phải nghiệm thu) · **Đ
 
 | Nhóm quy tắc | Trạng thái | Nơi chuyển hoặc đối chiếu |
 | --- | --- | --- |
-| ATT-DEC-01, ATT-06: hạn mức tường minh | Một tệp 10 MiB: **Đã triển khai**. 10 tệp/phiếu và 50 MiB/phiếu: **Đã duyệt – chưa triển khai**. Tải đồng thời, hết hạn, lưu giữ: **Mở** | DEC-07 |
+| ATT-DEC-01, ATT-06: hạn mức tường minh | Một tệp 10 MiB: **Đã triển khai**. Ứng viên B3 kiểm 10 tệp/phiếu và 50 MiB/phiếu khi xác nhận. Giới hạn grant chờ xác nhận, hết hạn và lưu giữ: **Mở** | DEC-07 |
 | ATT-DEC-02, ATT-07: danh sách định dạng | **Lịch sử** cho ứng viên "PNG, JPEG, TXT"; chính sách chốt là pdf/png/jpg/jpeg/docx/txt/zip (**Đã triển khai** theo đuôi tệp) | DEC-07 |
 | ATT-08: kiểm tra chữ ký nội dung | **Mở** (mã đối chiếu dung lượng và loại thực tế, chưa kiểm chữ ký) | DEC-07 |
 | ATT-DEC-03, ATT-11: truyền tệp qua API (stream) thay URL ký | **Mở** (hiện dùng URL/biểu mẫu ký; chưa duyệt đổi) | DEC-06 |

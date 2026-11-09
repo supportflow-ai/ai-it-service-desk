@@ -71,13 +71,13 @@ Chính sách mục tiêu **đã được chủ dự án chốt**; tình trạng 
 | --- | --- | --- |
 | Dung lượng mỗi tệp | Tối đa 10 MiB | **Đã triển khai** |
 | Định dạng | `.pdf`, `.png`, `.jpg`, `.jpeg`, `.docx`, `.txt`, `.zip` | **Đã triển khai** (danh sách đuôi tệp) |
-| Số tệp mỗi phiếu | Tối đa 10 | **Chưa được kiểm tra trong mã** |
-| Tổng dung lượng mỗi phiếu | Tối đa 50 MiB | **Chưa được kiểm tra trong mã** |
+| Số tệp mỗi phiếu | Tối đa 10 | Ứng viên B3 kiểm khi xác nhận tệp |
+| Tổng dung lượng mỗi phiếu | Tối đa 50 MiB | Ứng viên B3 kiểm khi xác nhận tệp |
 | Tin metadata của client | Không; backend tự kiểm giới hạn và loại tệp | Xác nhận đối chiếu dung lượng và loại tệp thực tế khi hoàn tất tải lên; chưa kiểm tra chữ ký nội dung |
 | Quét mã độc | Chưa có | Chưa có |
 | Lưu giữ, xóa | Chưa chốt | Chưa có chức năng xóa |
 
-Hạn mức 10 tệp và 50 MiB mỗi phiếu là chính sách đã duyệt nhưng chưa có triển khai và kiểm thử; không ghi là "đã triển khai".
+Ứng viên B3 khóa phiếu khi ghi xác nhận để hai giao dịch không cùng dùng phần hạn mức còn lại. Hạn mức này tính theo metadata tệp đã xác nhận.
 
 ## Quy tắc chung
 
