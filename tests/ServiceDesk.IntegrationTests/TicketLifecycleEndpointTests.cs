@@ -85,10 +85,18 @@ public class TicketLifecycleEndpointTests : IClassFixture<ServiceDeskWebApplicat
                 """);
         }
 
+        uint xminBeforeClaim;
+        await using (var diagScope = _factory.Services.CreateAsyncScope())
+        {
+            var diag = diagScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            xminBeforeClaim = await diag.Tickets.Where(t => t.Id == ticket.Id)
+                .Select(t => EF.Property<uint>(t, "xmin")).SingleAsync();
+        }
+
         // 3. Agent claims ticket
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", agentToken);
         var claimRes = await _client.PostAsync($"/api/tickets/{ticket.Id}/claim?expectedRevision={ticket.Revision}", null);
-        claimRes.StatusCode.Should().Be(HttpStatusCode.OK, await claimRes.Content.ReadAsStringAsync());
+        claimRes.StatusCode.Should().Be(HttpStatusCode.OK, await claimRes.Content.ReadAsStringAsync() + $" DIAG create={ticket.Revision} dbBeforeClaim={xminBeforeClaim}");
         var inProgressTicket = await claimRes.Content.ReadFromJsonAsync<TicketDto>();
         inProgressTicket!.Status.Should().Be((int)TicketStatus.InProgress);
 
