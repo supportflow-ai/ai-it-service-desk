@@ -128,9 +128,12 @@ internal sealed class PostgresTicketWriter(DbContext context) : ITicketWriter
             await _context.SaveChangesAsync(cancellationToken);
             return TicketProjection.ToDto(ticket, GetRevision(ticket));
         }
-        catch (DbUpdateConcurrencyException)
+        catch (DbUpdateConcurrencyException exception)
         {
-            throw new ServiceDesk.SharedKernel.Application.ConcurrencyConflictException();
+            // TẠM THỜI (chẩn đoán B1-PR3): sẽ gỡ sau khi tìm ra nguyên nhân.
+            var detail = string.Join("; ", exception.Entries.Select(entry => $"{entry.Entity.GetType().Name}:{entry.State}"));
+            throw new ServiceDesk.SharedKernel.Application.ConcurrencyConflictException(
+                $"DIAG[{detail}] {exception.Message}", exception);
         }
     }
 
