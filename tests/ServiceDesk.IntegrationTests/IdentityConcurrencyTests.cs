@@ -5,8 +5,8 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using ServiceDesk.Modules.Identity.Application.Ports;
-using ServiceDesk.Infrastructure;
-using ServiceDesk.Infrastructure.Persistence;
+using ServiceDesk.Platform;
+using ServiceDesk.Platform.Persistence;
 using Xunit;
 
 namespace ServiceDesk.IntegrationTests;

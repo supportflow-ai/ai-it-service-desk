@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.OpenApi.Models;
 using ServiceDesk.Api.Authentication;
 using ServiceDesk.Api.Endpoints;
-using ServiceDesk.Infrastructure;
+using ServiceDesk.Platform;
 using ServiceDesk.Modules.AIAssistance;
 using ServiceDesk.Modules.Identity;
 using ServiceDesk.Modules.Identity.Presentation;

@@ -7,7 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Minio;
 using ServiceDesk.SharedKernel.Application.Abstractions;
-using ServiceDesk.Infrastructure.Persistence;
+using ServiceDesk.Platform.Persistence;
 using Testcontainers.PostgreSql;
 using Xunit;
 

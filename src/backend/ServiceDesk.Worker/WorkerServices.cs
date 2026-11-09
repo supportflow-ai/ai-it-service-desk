@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using ServiceDesk.Infrastructure;
+using ServiceDesk.Platform;
 using ServiceDesk.Modules.AIAssistance;
 using ServiceDesk.Modules.Identity;
 using ServiceDesk.Modules.Ticketing;

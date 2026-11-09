@@ -46,9 +46,9 @@ Linux/macOS dùng `./.venv/bin/python` thay interpreter trên; lệnh tạo venv
 Chưa có `.cache/dotnet-tools/dotnet-ef` thì dừng lệnh EF và cài **cục bộ** theo tài liệu môi trường, không tự cài/cập nhật tool global. Migration ở Infrastructure, startup project là API, context là `ApplicationDbContext`:
 
 ```sh
-./.cache/dotnet-tools/dotnet-ef migrations add TEN_MIGRATION --project src/backend/ServiceDesk.Infrastructure --startup-project src/backend/ServiceDesk.Api --context ApplicationDbContext --output-dir Persistence/Migrations --configuration Release
-./.cache/dotnet-tools/dotnet-ef migrations remove --project src/backend/ServiceDesk.Infrastructure --startup-project src/backend/ServiceDesk.Api --context ApplicationDbContext --configuration Release
-./.cache/dotnet-tools/dotnet-ef migrations has-pending-model-changes --project src/backend/ServiceDesk.Infrastructure --startup-project src/backend/ServiceDesk.Api --context ApplicationDbContext --configuration Release --no-build
+./.cache/dotnet-tools/dotnet-ef migrations add TEN_MIGRATION --project src/backend/ServiceDesk.Platform --startup-project src/backend/ServiceDesk.Api --context ApplicationDbContext --output-dir Persistence/Migrations --configuration Release
+./.cache/dotnet-tools/dotnet-ef migrations remove --project src/backend/ServiceDesk.Platform --startup-project src/backend/ServiceDesk.Api --context ApplicationDbContext --configuration Release
+./.cache/dotnet-tools/dotnet-ef migrations has-pending-model-changes --project src/backend/ServiceDesk.Platform --startup-project src/backend/ServiceDesk.Api --context ApplicationDbContext --configuration Release --no-build
 ```
 
 Các lệnh là lựa chọn theo nhiệm vụ, không chạy nối tiếp. `remove` có thể kết nối database nên chịu cùng chốt chặn ở §5; chỉ gỡ migration cuối chưa merge/phát hành/dùng chung và đã xác minh không còn được áp dụng. Đã thử áp dụng ở local: theo quy trình gỡ trong tài liệu môi trường, không xóa tay hoặc dùng `--force`.
@@ -67,7 +67,7 @@ Modular Monolith, tổ chức **module trước, Clean Architecture bên trong m
 | Endpoint và request body | `.../Presentation/` |
 | Đăng ký DI của module | `<Module>Module.cs`: `Add<Module>Application`, `Add<Module>Infrastructure`, `Add<Module>Module` |
 | Kiểu dùng chung nhiều module (vai trò, actor, đồng hồ, cổng lưu trữ, ngoại lệ nghiệp vụ) | `src/backend/BuildingBlocks/ServiceDesk.SharedKernel/`; thành phần HTTP dùng chung ở `ServiceDesk.SharedKernel.Web/` |
-| `ApplicationDbContext`, migration, bảo trì DB, MinIO, đồng hồ hệ thống | `src/backend/ServiceDesk.Infrastructure/` (không đặt nghiệp vụ ở đây) |
+| `ApplicationDbContext`, migration, bảo trì DB, MinIO, đồng hồ hệ thống | `src/backend/ServiceDesk.Platform/` (không đặt nghiệp vụ ở đây) |
 | Ghép module, middleware | `ServiceDesk.Api/Program.cs`, `ServiceDesk.Worker/WorkerServices.cs`; Identity đăng ký JWT qua `AddIdentityAuthentication` |
 
 - Trong module, phụ thuộc chỉ đi vào trong: Presentation → Application → Domain; Infrastructure → Application → Domain. Domain không dùng EF Core, Npgsql, ASP.NET Core. Application không dùng Infrastructure, EF Core, Npgsql hoặc HTTP context. Các tầng cùng nằm trong một project nên vi phạm chỉ bị chặn khi chạy `ServiceDesk.ArchitectureTests`; chạy project này sau mọi thay đổi chạm `using`/tham chiếu.
@@ -79,7 +79,7 @@ Modular Monolith, tổ chức **module trước, Clean Architecture bên trong m
 - Thay đổi Identity có thu hồi phiên (đổi vai trò, đổi/đặt lại mật khẩu, xoay vòng refresh token) phải ghi và thu hồi trong cùng một giao dịch; có kiểm thử PostgreSQL cho trường hợp chạy đồng thời.
 - Ngoại lệ nghiệp vụ cần mã HTTP chung thì kế thừa lớp cơ sở trong SharedKernel (`ConflictException` → 409, `RetryLaterException` → 503 + Retry-After); không thêm `catch` theo kiểu của module vào `ApiErrorFilter`.
 - Thêm tính năng: tạo thư mục trong `Application`, đăng ký trong `<Module>Module.cs`, map endpoint trong `Presentation`, rồi cập nhật [baseline OpenAPI](contracts/backend/openapi-baseline.json) có chủ đích. Khi có hợp đồng xuyên module mới, cập nhật `Published` và chỉ rõ module tiêu thụ trong `ModuleRules`.
-- Thêm module mới (chỉ khi nhiệm vụ yêu cầu, không tạo module rỗng): project `ServiceDesk.Modules.<Module>` theo mẫu module hiện có, thêm vào `ServiceDesk.sln`, `Modules`/`ProductionAssemblies` trong ArchitectureTests, tham chiếu từ host và Dockerfile của API/Worker/Database. Nếu module có bảng: thêm assembly vào `ModuleModelAssemblies` và `DbSet` trong `ApplicationDbContext`, tham chiếu project từ `ServiceDesk.Infrastructure`, rồi tạo migration. Project mới cần `packages.lock.json` sinh bằng `dotnet restore`, review diff trước khi commit.
+- Thêm module mới (chỉ khi nhiệm vụ yêu cầu, không tạo module rỗng): project `ServiceDesk.Modules.<Module>` theo mẫu module hiện có, thêm vào `ServiceDesk.sln`, `Modules`/`ProductionAssemblies` trong ArchitectureTests, tham chiếu từ host và Dockerfile của API/Worker/Migrator. Nếu module có bảng: thêm assembly vào `ModuleModelAssemblies` và `DbSet` trong `ApplicationDbContext`, tham chiếu project từ `ServiceDesk.Platform`, rồi tạo migration. Project mới cần `packages.lock.json` sinh bằng `dotnet restore`, review diff trước khi commit.
 - API/Worker không tự migration/seed khi khởi động.
 - Khi sửa luồng tạo phiếu, giữ ticket và receipt trong cùng transaction; kiểm tra rollback, replay và đồng thời theo bảng §6.
 - Không tự kết nối AI thật ngoài nhiệm vụ.

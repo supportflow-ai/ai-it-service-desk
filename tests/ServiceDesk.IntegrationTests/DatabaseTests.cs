@@ -8,7 +8,7 @@ using ServiceDesk.Modules.Ticketing.Application.ConfirmAttachmentUpload;
 using ServiceDesk.Modules.Ticketing.Application.Contracts;
 using ServiceDesk.Modules.Ticketing.Application.Ports;
 using ServiceDesk.Modules.Ticketing.Domain;
-using ServiceDesk.Infrastructure.Persistence;
+using ServiceDesk.Platform.Persistence;
 using ServiceDesk.Modules.Ticketing.Infrastructure;
 using Xunit;
 

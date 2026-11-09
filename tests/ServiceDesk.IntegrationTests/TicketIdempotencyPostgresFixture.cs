@@ -10,9 +10,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using ServiceDesk.Modules.Identity.Infrastructure;
-using ServiceDesk.Infrastructure.Clock;
+using ServiceDesk.Platform.Clock;
 using ServiceDesk.Modules.Identity.Application.Contracts;
-using ServiceDesk.Infrastructure.Persistence;
+using ServiceDesk.Platform.Persistence;
 using Testcontainers.PostgreSql;
 using Xunit;
 

@@ -14,7 +14,7 @@ Phạm vi: working tree trên `dev`, đã hợp nhất ba commit và fast-forwar
 
 Chỉ dùng Domain `AttachmentUploadGrant`, DbSet `AttachmentUploadGrants` và bảng `attachment_upload_grants`. Cơ chế `TicketAttachmentUpload` và hai tệp migration local `AddAttachmentUploadIntents` chưa áp dụng đã được lưu vào bản sao trước hợp nhất, đưa ra khỏi code đang hoạt động.
 
-Giữ nguyên nội dung migration [AddAttachmentUploadGrant](../../src/backend/ServiceDesk.Infrastructure/Persistence/Migrations/20261103090000_AddAttachmentUploadGrant.cs) từ nhánh tích hợp. Migration bổ sung [LinkAttachmentUploadGrant](../../src/backend/ServiceDesk.Infrastructure/Persistence/Migrations/20261103090001_LinkAttachmentUploadGrant.cs) thêm `attachment_id` nullable, index và FK; thứ tự đứng sau migration cũ. Chưa áp dụng migration mới vào database nào.
+Giữ nguyên nội dung migration [AddAttachmentUploadGrant](../../src/backend/ServiceDesk.Platform/Persistence/Migrations/20261103090000_AddAttachmentUploadGrant.cs) từ nhánh tích hợp. Migration bổ sung [LinkAttachmentUploadGrant](../../src/backend/ServiceDesk.Platform/Persistence/Migrations/20261103090001_LinkAttachmentUploadGrant.cs) thêm `attachment_id` nullable, index và FK; thứ tự đứng sau migration cũ. Chưa áp dụng migration mới vào database nào.
 
 Backfill chỉ nối grant đã consume khi có duy nhất một attachment khớp ticket, actor, key, tên, kích thước và MIME. Grant thiếu hoặc mơ hồ vẫn giữ nguyên và không được xác nhận lại thành một tệp khác. Metadata/key của tệp cũ không bị đổi; danh sách/download cũ vẫn dùng metadata đã có.
 
