@@ -1,4 +1,4 @@
-﻿Microsoft Visual Studio Solution File, Format Version 12.00
+Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
@@ -14,7 +14,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServiceDesk.SharedKernel", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServiceDesk.SharedKernel.Web", "BuildingBlocks\ServiceDesk.SharedKernel.Web\ServiceDesk.SharedKernel.Web.csproj", "{83CF5C06-09D1-5448-ACFD-83BDC5C69352}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServiceDesk.Infrastructure", "ServiceDesk.Infrastructure\ServiceDesk.Infrastructure.csproj", "{3EA90DE2-87AC-46BA-A9B2-DD04A52CDD0A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServiceDesk.Platform", "ServiceDesk.Platform\ServiceDesk.Platform.csproj", "{3EA90DE2-87AC-46BA-A9B2-DD04A52CDD0A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Identity", "Modules\Identity\ServiceDesk.Modules.Identity.csproj", "{F3F6CB3A-4D00-5F74-8795-227B0FAC4B3F}"
 EndProject
@@ -28,7 +28,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServiceDesk.Api", "ServiceD
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServiceDesk.Worker", "ServiceDesk.Worker\ServiceDesk.Worker.csproj", "{6104CC7E-BAC8-4197-8056-4EE13F1CB1B1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServiceDesk.Database", "ServiceDesk.Database\ServiceDesk.Database.csproj", "{43255191-35AD-4E31-A171-40D0441736AC}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServiceDesk.Migrator", "ServiceDesk.Migrator\ServiceDesk.Migrator.csproj", "{43255191-35AD-4E31-A171-40D0441736AC}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServiceDesk.Domain.Tests", "..\..\tests\ServiceDesk.Domain.Tests\ServiceDesk.Domain.Tests.csproj", "{6235007C-5328-46B9-BBF0-DED96C786AC4}"
 EndProject

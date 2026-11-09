@@ -4,7 +4,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Configuration;
 using ServiceDesk.Modules.AIAssistance.Application.Ports;
 using ServiceDesk.Modules.AIAssistance.Infrastructure;
-using ServiceDesk.Infrastructure;
+using ServiceDesk.Platform;
 using Xunit;
 
 namespace ServiceDesk.IntegrationTests;

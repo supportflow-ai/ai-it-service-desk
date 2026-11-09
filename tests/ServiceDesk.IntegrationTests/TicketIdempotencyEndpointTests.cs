@@ -21,7 +21,7 @@ using ServiceDesk.Modules.Ticketing.Application.Idempotency;
 using ServiceDesk.Modules.Ticketing.Application.Ports;
 using ServiceDesk.SharedKernel.Authorization;
 using ServiceDesk.Modules.Identity.Infrastructure;
-using ServiceDesk.Infrastructure.Clock;
+using ServiceDesk.Platform.Clock;
 using ServiceDesk.Modules.Identity.Application.Contracts;
 using ServiceDesk.Api.Authentication;
 using ServiceDesk.Modules.Identity.Infrastructure.Options;

@@ -28,7 +28,7 @@ public class CleanArchitectureTests
         foreach (var forbidden in new[]
                  {
                      $"ServiceDesk.Modules.{module}.Application", $"ServiceDesk.Modules.{module}.Infrastructure",
-                     $"ServiceDesk.Modules.{module}.Presentation", "ServiceDesk.Infrastructure", "ServiceDesk.Api",
+                     $"ServiceDesk.Modules.{module}.Presentation", "ServiceDesk.Platform", "ServiceDesk.Api",
                      "Microsoft.EntityFrameworkCore", "Npgsql", "Microsoft.AspNetCore"
                  })
         {
@@ -45,7 +45,7 @@ public class CleanArchitectureTests
         foreach (var forbidden in new[]
                  {
                      $"ServiceDesk.Modules.{module}.Infrastructure", $"ServiceDesk.Modules.{module}.Presentation",
-                     "ServiceDesk.Infrastructure", "ServiceDesk.Api", "ServiceDesk.SharedKernel.Web",
+                     "ServiceDesk.Platform", "ServiceDesk.Api", "ServiceDesk.SharedKernel.Web",
                      "Microsoft.EntityFrameworkCore", "Npgsql", "Microsoft.AspNetCore"
                  })
         {
@@ -61,7 +61,7 @@ public class CleanArchitectureTests
     {
         foreach (var forbidden in new[]
                  {
-                     $"ServiceDesk.Modules.{module}.Infrastructure", "ServiceDesk.Infrastructure",
+                     $"ServiceDesk.Modules.{module}.Infrastructure", "ServiceDesk.Platform",
                      "Microsoft.EntityFrameworkCore", "Npgsql"
                  })
         {
@@ -76,7 +76,7 @@ public class CleanArchitectureTests
     {
         foreach (var forbidden in new[]
                  {
-                     "ServiceDesk.Modules", "ServiceDesk.Infrastructure", "ServiceDesk.Api",
+                     "ServiceDesk.Modules", "ServiceDesk.Platform", "ServiceDesk.Api",
                      "Microsoft.EntityFrameworkCore", "Npgsql", "Microsoft.AspNetCore"
                  })
         {

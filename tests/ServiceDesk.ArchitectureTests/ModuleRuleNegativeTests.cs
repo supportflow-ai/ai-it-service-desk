@@ -10,9 +10,9 @@ public sealed class ModuleRuleNegativeTests
     // SharedKernel không được phụ thuộc module.
     [InlineData("ServiceDesk.SharedKernel.Application", "Helper", "ServiceDesk.Modules.Ticketing.Domain", "Ticket")]
     // Kiểu chưa phân loại trong host.
-    [InlineData("ServiceDesk.Api.Other", "Helper", "ServiceDesk.Infrastructure.Persistence", "ApplicationDbContext")]
+    [InlineData("ServiceDesk.Api.Other", "Helper", "ServiceDesk.Platform.Persistence", "ApplicationDbContext")]
     // Endpoint của host không được chạm DbContext.
-    [InlineData("ServiceDesk.Api.Endpoints", "Helper", "ServiceDesk.Infrastructure.Persistence", "ApplicationDbContext")]
+    [InlineData("ServiceDesk.Api.Endpoints", "Helper", "ServiceDesk.Platform.Persistence", "ApplicationDbContext")]
     [InlineData("ServiceDesk.Api.Endpoints", "Helper", "ServiceDesk.Modules.Ticketing.Application.CreateTicket", "ICreateTicket")]
     [InlineData("ServiceDesk.Api.Authentication", "Helper", "Microsoft.EntityFrameworkCore", "DbContext")]
     // Composition root ghép module qua điểm đăng ký và map route, không gọi use case hoặc đọc cấu hình nội bộ.
@@ -38,7 +38,7 @@ public sealed class ModuleRuleNegativeTests
     [InlineData("ServiceDesk.Modules.Ticketing.Domain", "Helper", "Microsoft.EntityFrameworkCore", "DbContext")]
     [InlineData("ServiceDesk.Modules.Ticketing.Application", "Helper", "Microsoft.AspNetCore.Http", "HttpContext")]
     // Hạ tầng dùng chung không được gọi use case.
-    [InlineData("ServiceDesk.Infrastructure.Persistence", "Helper", "ServiceDesk.Modules.Ticketing.Application.CreateTicket", "ICreateTicket")]
+    [InlineData("ServiceDesk.Platform.Persistence", "Helper", "ServiceDesk.Modules.Ticketing.Application.CreateTicket", "ICreateTicket")]
     public void ForbiddenOrUnclassifiedTypesAreDetected(string sourceNamespace, string sourceName, string targetNamespace, string targetName)
     {
         using var module = ModuleDefinition.CreateModule("ServiceDesk.Api", ModuleKind.Dll);
@@ -74,7 +74,7 @@ public sealed class ModuleRuleNegativeTests
     [InlineData("ServiceDesk.Modules.Ticketing.Application", "Helper", "ServiceDesk.SharedKernel.Application.Abstractions", "IClock")]
     [InlineData("ServiceDesk.Modules.AIAssistance.Domain", "Helper", "ServiceDesk.Modules.Ticketing.Domain", "TicketCategory")]
     [InlineData("ServiceDesk.Modules.Knowledge.Presentation", "Helper", "ServiceDesk.SharedKernel.Web", "ApiErrorFilter")]
-    [InlineData("ServiceDesk.Infrastructure.Persistence", "Helper", "ServiceDesk.Modules.Ticketing.Domain", "Ticket")]
+    [InlineData("ServiceDesk.Platform.Persistence", "Helper", "ServiceDesk.Modules.Ticketing.Domain", "Ticket")]
     public void AllowedDependenciesAreAccepted(string sourceNamespace, string sourceName, string targetNamespace, string targetName)
     {
         using var module = ModuleDefinition.CreateModule("ServiceDesk.Modules.Test", ModuleKind.Dll);

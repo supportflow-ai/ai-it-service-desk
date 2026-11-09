@@ -9,8 +9,8 @@ COPY src/backend/Modules/Identity/ServiceDesk.Modules.Identity.csproj src/backen
 COPY src/backend/Modules/Knowledge/ServiceDesk.Modules.Knowledge.csproj src/backend/Modules/Knowledge/packages.lock.json src/backend/Modules/Knowledge/
 COPY src/backend/Modules/Ticketing/ServiceDesk.Modules.Ticketing.csproj src/backend/Modules/Ticketing/packages.lock.json src/backend/Modules/Ticketing/
 COPY src/backend/ServiceDesk.Api/ServiceDesk.Api.csproj src/backend/ServiceDesk.Api/packages.lock.json src/backend/ServiceDesk.Api/
-COPY src/backend/ServiceDesk.Database/ServiceDesk.Database.csproj src/backend/ServiceDesk.Database/packages.lock.json src/backend/ServiceDesk.Database/
-COPY src/backend/ServiceDesk.Infrastructure/ServiceDesk.Infrastructure.csproj src/backend/ServiceDesk.Infrastructure/packages.lock.json src/backend/ServiceDesk.Infrastructure/
+COPY src/backend/ServiceDesk.Migrator/ServiceDesk.Migrator.csproj src/backend/ServiceDesk.Migrator/packages.lock.json src/backend/ServiceDesk.Migrator/
+COPY src/backend/ServiceDesk.Platform/ServiceDesk.Platform.csproj src/backend/ServiceDesk.Platform/packages.lock.json src/backend/ServiceDesk.Platform/
 COPY src/backend/ServiceDesk.Worker/ServiceDesk.Worker.csproj src/backend/ServiceDesk.Worker/packages.lock.json src/backend/ServiceDesk.Worker/
 RUN dotnet restore src/backend/ServiceDesk.Api/ServiceDesk.Api.csproj --locked-mode
 COPY src/backend/ src/backend/

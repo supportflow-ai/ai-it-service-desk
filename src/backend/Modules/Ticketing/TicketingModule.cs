@@ -27,7 +27,7 @@ namespace ServiceDesk.Modules.Ticketing;
 /// Điểm vào duy nhất của module Ticketing cho composition root (API, Worker).
 /// Module tự đăng ký use case và adapter của mình; host chỉ gọi <see cref="AddTicketingModule"/>
 /// và <c>MapTicketEndpoints</c>, không cần biết lớp triển khai bên trong.
-/// Adapter persistence nhận <c>DbContext</c> dùng chung do host đăng ký (xem ServiceDesk.Infrastructure).
+/// Adapter persistence nhận <c>DbContext</c> dùng chung do host đăng ký (xem ServiceDesk.Platform).
 /// </summary>
 public static class TicketingModule
 {

@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-PROJECTS = {"api": "ServiceDesk.Api", "worker": "ServiceDesk.Worker", "database": "ServiceDesk.Database"}
+PROJECTS = {"api": "ServiceDesk.Api", "worker": "ServiceDesk.Worker", "migrator": "ServiceDesk.Migrator", "database": "ServiceDesk.Migrator"}
 ALIASES = {
     "DATABASE_CONNECTION_STRING": "Database__ConnectionString",
     "JWT_SECRET_KEY": "Jwt__SecretKey",

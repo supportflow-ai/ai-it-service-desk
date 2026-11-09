@@ -9,7 +9,7 @@ namespace ServiceDesk.ArchitectureTests;
 /// và một lớp điểm vào {Module}Module. Trong module, phụ thuộc chỉ đi vào trong:
 /// Presentation → Application → Domain; Infrastructure → Application → Domain.</item>
 /// <item>Giữa các module chỉ được dùng kiểu trong <see cref="Published"/>.</item>
-/// <item>SharedKernel chỉ phụ thuộc SharedKernel; hạ tầng dùng chung (ServiceDesk.Infrastructure) không được
+/// <item>SharedKernel chỉ phụ thuộc SharedKernel; hạ tầng dùng chung (ServiceDesk.Platform) không được
 /// dùng Application/Presentation của module; host chỉ ghép module.</item>
 /// </list>
 /// </summary>
@@ -28,7 +28,7 @@ internal static class ModuleRules
 
     private static readonly HashSet<string> Composition = new(StringComparer.Ordinal)
     {
-        "ServiceDesk.Infrastructure.DependencyInjection", "ServiceDesk.Worker.WorkerServices", "ServiceDesk.Api.Program", "Program"
+        "ServiceDesk.Platform.DependencyInjection", "ServiceDesk.Worker.WorkerServices", "ServiceDesk.Api.Program", "Program"
     };
 
     private static readonly string[] PersistenceFrameworks = ["Microsoft.EntityFrameworkCore.", "Npgsql."];
@@ -48,7 +48,7 @@ internal static class ModuleRules
             return new("Generated");
         if (name.StartsWith("ServiceDesk.SharedKernel.Web.", StringComparison.Ordinal)) return new("SharedWeb");
         if (name.StartsWith("ServiceDesk.SharedKernel.", StringComparison.Ordinal)) return new("Shared");
-        if (name.StartsWith("ServiceDesk.Infrastructure.", StringComparison.Ordinal)) return new("Platform");
+        if (name.StartsWith("ServiceDesk.Platform.", StringComparison.Ordinal)) return new("Platform");
         if (name.StartsWith("ServiceDesk.Api.Endpoints.", StringComparison.Ordinal)) return new("HostPresentation");
         if (name.StartsWith("ServiceDesk.Api.Authentication.", StringComparison.Ordinal)) return new("HostAdapter");
         foreach (var module in Modules)

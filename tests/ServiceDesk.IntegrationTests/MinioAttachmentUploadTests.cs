@@ -3,8 +3,8 @@ using DotNet.Testcontainers.Builders;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Minio;
-using ServiceDesk.Infrastructure.Options;
-using ServiceDesk.Infrastructure.Storage;
+using ServiceDesk.Platform.Options;
+using ServiceDesk.Platform.Storage;
 using Xunit;
 
 namespace ServiceDesk.IntegrationTests;

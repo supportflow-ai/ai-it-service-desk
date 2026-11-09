@@ -1,6 +1,6 @@
 using System.Reflection;
 using NetArchTest.Rules;
-using ServiceDesk.Infrastructure.Persistence;
+using ServiceDesk.Platform.Persistence;
 using ServiceDesk.Modules.AIAssistance.Domain;
 using ServiceDesk.Modules.Identity;
 using ServiceDesk.Modules.Identity.Application.RegisterUser;
@@ -22,7 +22,7 @@ public sealed class BoundaryTests
 
     [Theory]
     [InlineData("Microsoft.EntityFrameworkCore")] [InlineData("Npgsql")]
-    [InlineData("Microsoft.AspNetCore")] [InlineData("ServiceDesk.Infrastructure")]
+    [InlineData("Microsoft.AspNetCore")] [InlineData("ServiceDesk.Platform")]
     public void ApplicationCannotDependOnFrameworkAdapters(string forbidden)
     {
         foreach (var module in ModuleRules.Modules)
@@ -34,7 +34,7 @@ public sealed class BoundaryTests
     [Fact]
     public void EndpointsCannotAccessInfrastructureOrEf()
     {
-        foreach (var forbidden in new[] { "ServiceDesk.Infrastructure", "Microsoft.EntityFrameworkCore", "Npgsql" })
+        foreach (var forbidden in new[] { "ServiceDesk.Platform", "Microsoft.EntityFrameworkCore", "Npgsql" })
         {
             Assert.True(Types.InAssembly(typeof(ServiceDesk.Api.Program).Assembly).That()
                 .ResideInNamespace("ServiceDesk.Api.Endpoints").ShouldNot().HaveDependencyOn(forbidden).GetResult().IsSuccessful);

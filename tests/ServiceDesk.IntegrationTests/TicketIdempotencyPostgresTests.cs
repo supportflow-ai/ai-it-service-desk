@@ -12,7 +12,7 @@ using ServiceDesk.Modules.Ticketing.Application.CreateTicket;
 using ServiceDesk.Modules.Ticketing.Application.Contracts;
 using ServiceDesk.Modules.Ticketing.Application.Idempotency;
 using ServiceDesk.Modules.Identity.Infrastructure;
-using ServiceDesk.Infrastructure.Clock;
+using ServiceDesk.Platform.Clock;
 using ServiceDesk.Modules.Identity.Application.Contracts;
 using ServiceDesk.Modules.Identity.Infrastructure.Options;
 using Xunit;
@@ -28,9 +28,9 @@ public sealed class TicketIdempotencyPostgresTests : IClassFixture<TicketIdempot
         using var cancellation = new CancellationTokenSource();
         var requester = Guid.NewGuid();
         var fingerprint = CreateTicketFingerprint.Create(requester, Guid.NewGuid().ToString(), Payload);
-        var options = new DbContextOptionsBuilder<ServiceDesk.Infrastructure.Persistence.ApplicationDbContext>()
+        var options = new DbContextOptionsBuilder<ServiceDesk.Platform.Persistence.ApplicationDbContext>()
             .UseNpgsql(_fixture.ConnectionString).AddInterceptors(new CancelAfterInsert(cancellation)).Options;
-        await using (var context = new ServiceDesk.Infrastructure.Persistence.ApplicationDbContext(options))
+        await using (var context = new ServiceDesk.Platform.Persistence.ApplicationDbContext(options))
         {
             var ticket = ServiceDesk.Modules.Ticketing.Domain.Ticket.Create(requester, Payload.Title, Payload.Description, Payload.CategoryId, DateTime.UtcNow);
             await Assert.ThrowsAnyAsync<OperationCanceledException>(() => new ServiceDesk.Modules.Ticketing.Infrastructure.PostgresTicketWriter(context)

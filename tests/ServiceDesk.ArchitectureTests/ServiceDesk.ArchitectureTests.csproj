@@ -8,8 +8,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\backend\ServiceDesk.Api\ServiceDesk.Api.csproj" />
-    <ProjectReference Include="..\..\src\backend\ServiceDesk.Database\ServiceDesk.Database.csproj" />
-    <ProjectReference Include="..\..\src\backend\ServiceDesk.Infrastructure\ServiceDesk.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\backend\ServiceDesk.Migrator\ServiceDesk.Migrator.csproj" />
+    <ProjectReference Include="..\..\src\backend\ServiceDesk.Platform\ServiceDesk.Platform.csproj" />
     <ProjectReference Include="..\..\src\backend\ServiceDesk.Worker\ServiceDesk.Worker.csproj" />
     <ProjectReference Include="..\..\src\backend\BuildingBlocks\ServiceDesk.SharedKernel\ServiceDesk.SharedKernel.csproj" />
     <ProjectReference Include="..\..\src\backend\BuildingBlocks\ServiceDesk.SharedKernel.Web\ServiceDesk.SharedKernel.Web.csproj" />
