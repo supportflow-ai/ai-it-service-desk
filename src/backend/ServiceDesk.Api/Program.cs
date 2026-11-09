@@ -1,16 +1,11 @@
-using System.Text;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.HttpOverrides;
-using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using ServiceDesk.Api.Authentication;
 using ServiceDesk.Api.Endpoints;
-using ServiceDesk.Api.Identity;
 using ServiceDesk.Infrastructure;
 using ServiceDesk.Modules.AIAssistance;
 using ServiceDesk.Modules.Identity;
-using ServiceDesk.Modules.Identity.Infrastructure.Options;
 using ServiceDesk.Modules.Identity.Presentation;
 using ServiceDesk.Modules.Knowledge;
 using ServiceDesk.Modules.Knowledge.Presentation;
@@ -29,32 +24,9 @@ builder.Services.AddKnowledgeModule();
 builder.Services.AddAIAssistanceModule(builder.Configuration);
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddAuthRateLimiting(builder.Configuration);
-builder.Services.AddScoped<ICurrentUser, CurrentUser>();
+builder.Services.AddScoped<ICurrentUser, HttpCurrentUser>();
 
-// --- Cấu hình xác thực người dùng (JWT Bearer Authentication) ---
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer();
-builder.Services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
-.Configure<IOptions<JwtOptions>>((options, configured) =>
-{
-    var jwtOptions = configured.Value;
-    options.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = jwtOptions.Issuer,
-        ValidAudience = jwtOptions.Audience,
-        RoleClaimType = System.Security.Claims.ClaimTypes.Role,
-        IssuerSigningKey = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(jwtOptions.SecretKey))
-    };
-});
+builder.Services.AddIdentityAuthentication();
 
 // --- Cấu hình chính sách phân quyền theo vai trò (Authorization Policies) ---
 builder.Services.AddAuthorization(options =>

@@ -18,17 +18,15 @@ src/backend/
     ServiceDesk.SharedKernel/        # vai trò, actor hiện tại, đồng hồ, cổng lưu trữ, ngoại lệ nghiệp vụ dùng chung; không package
     ServiceDesk.SharedKernel.Web/    # thành phần HTTP dùng chung cho Presentation (bộ lọc lỗi)
   Modules/
-    Identity/ServiceDesk.Modules.Identity/
-    Ticketing/ServiceDesk.Modules.Ticketing/
-    Knowledge/ServiceDesk.Modules.Knowledge/
-    AIAssistance/ServiceDesk.Modules.AIAssistance/
+    <Module>/          # Identity, Ticketing, Knowledge, AIAssistance
+      ServiceDesk.Modules.<Module>.csproj
       Domain/            # thực thể, giá trị, quy tắc
       Application/       # một thư mục cho mỗi tính năng: interface, lệnh/truy vấn, use case internal; Contracts, Ports
       Infrastructure/    # adapter PostgreSQL/HTTP, cấu hình ánh xạ EF, options
       Presentation/      # endpoint và request body của module
       {Module}Module.cs  # điểm vào duy nhất: Add{Module}Module / Add{Module}Application / Add{Module}Infrastructure
   ServiceDesk.Infrastructure/  # hạ tầng kỹ thuật dùng chung: ApplicationDbContext, migration, bảo trì DB, MinIO, đồng hồ
-  ServiceDesk.Api/             # host HTTP: composition root, JWT, middleware, health
+  ServiceDesk.Api/             # host HTTP: composition root, middleware, health
   ServiceDesk.Worker/          # host nền
   ServiceDesk.Database/        # công cụ migration/seed
 ```
@@ -47,16 +45,16 @@ flowchart TD
     AI["Modules.AIAssistance"] --> Ticketing["Modules.Ticketing (kiểu đã công bố)"]
 ```
 
-Bên trong module, phụ thuộc chỉ đi vào trong: Presentation → Application → Domain và Infrastructure → Application → Domain. Domain và Application không dùng EF Core, Npgsql hoặc ASP.NET Core. Giữa các module chỉ dùng kiểu trong danh sách `Published` của [ModuleRules](../../tests/ServiceDesk.ArchitectureTests/ModuleRules.cs); AIAssistance chỉ dùng `TicketCategory`, `Impact`, `Urgency` của Ticketing.
+Bên trong module, phụ thuộc chỉ đi vào trong: Presentation → Application → Domain và Infrastructure → Application → Domain. Domain và Application không dùng EF Core, Npgsql hoặc ASP.NET Core. [ModuleRules](../../tests/ServiceDesk.ArchitectureTests/ModuleRules.cs) cho AIAssistance dùng ba kiểu Ticketing trong `Published`: `TicketCategory`, `Impact`, `Urgency`. Host HTTP gọi điểm đăng ký và map route của module. Worker gọi điểm đăng ký module.
 
 Các quyết định đi kèm:
 
-- **Một project cho mỗi module, tầng tách bằng thư mục/namespace.** Ranh giới tầng trong module được kiểm bằng `ServiceDesk.ArchitectureTests` (IL qua Mono.Cecil và NetArchTest), không bằng tham chiếu project. Lý do: bốn module × bốn tầng sẽ thành 16 project nhỏ, tốn công bảo trì csproj/lock file mà không thêm luật nào kiểm thử chưa bắt được.
+- **Một project cho mỗi module, tầng tách bằng thư mục/namespace.** Project nằm trực tiếp trong `Modules/<Module>/`. Solution hiển thị tên module. Tên tệp `.csproj`, assembly và namespace giữ tiền tố `ServiceDesk.Modules.`. Ranh giới tầng trong module được kiểm bằng `ServiceDesk.ArchitectureTests` (IL qua Mono.Cecil và NetArchTest). Cách này giúp bốn module dùng bốn project và một bộ luật kiểm thử chung.
 - **Một `DbContext` và một chuỗi migration giữ nguyên.** `ApplicationDbContext` vẫn ở `ServiceDesk.Infrastructure.Persistence` để migration đã phát hành không phải đổi. Context gom cấu hình ánh xạ từ assembly của Identity, Ticketing và Knowledge. Adapter trong module nhận `DbContext` (bí danh do host đăng ký) và dùng `Set<T>()`, nên module không phụ thuộc kiểu context cụ thể. Không đổi schema; chỉ cập nhật tên kiểu CLR trong model snapshot.
 - **Module tự đăng ký.** Host gọi `AddInfrastructure` (chỉ hạ tầng dùng chung, không đăng ký module), rồi `AddIdentityModule(...).AddIdentityStores()`, `AddTicketingModule`, `AddKnowledgeModule`, `AddAIAssistanceModule`. `AddIdentityStores` truyền `ApplicationDbContext` cho phần lưu trữ của Identity vì module không biết kiểu context cụ thể. Thêm module mới không phải sửa module khác (Open/Closed).
 - **`RoleNames`/`PolicyNames` chuyển vào SharedKernel.** Vai trò là khái niệm phân quyền xuyên module; nhờ vậy Ticketing và Knowledge không còn phải tham chiếu Identity.
-- **Ngoại lệ nghiệp vụ dùng chung.** `ConflictException` (409) và `RetryLaterException` (503 + Retry-After) nằm trong SharedKernel; `ConcurrencyConflictException`, `IdempotencyConflictException`, `IdempotencyInProgressException` kế thừa chúng. Bộ lọc `LegacyErrorFilter` chỉ biết các lớp cơ sở nên không phụ thuộc Ticketing và giữ nguyên mã trạng thái HTTP cũ.
-- **Phiên đăng nhập là trách nhiệm của Identity.** Tạo và thu hồi refresh token đi qua khóa dòng người dùng; đăng xuất và phát hiện token bị dùng lại thu hồi theo chuỗi phiên (`family_id`). Quy tắc chi tiết nằm ở [hợp đồng Identity](../architecture/current-backend-contract.md#identity-sau-pr-47-48-và-nhánh-refactor); module khác không đọc hay ghi bảng phiên.
+- **Ngoại lệ nghiệp vụ dùng chung.** `ConflictException` (409) và `RetryLaterException` (503 + Retry-After) nằm trong SharedKernel; `ConcurrencyConflictException`, `IdempotencyConflictException`, `IdempotencyInProgressException` kế thừa chúng. Bộ lọc `ApiErrorFilter` chỉ biết các lớp cơ sở nên không phụ thuộc Ticketing và giữ nguyên mã trạng thái HTTP cũ.
+- **Xác thực và phiên đăng nhập là trách nhiệm của Identity.** API gọi `AddIdentityAuthentication` để đăng ký JWT Bearer. Identity dùng chung cấu hình khi cấp và xác thực token. Tạo và thu hồi refresh token đi qua khóa dòng người dùng; đăng xuất và phát hiện token bị dùng lại thu hồi theo chuỗi phiên (`family_id`). Quy tắc chi tiết nằm ở [hợp đồng Identity](../architecture/current-backend-contract.md#identity-sau-pr-47-48-và-nhánh-refactor); module khác không đọc hay ghi bảng phiên.
 - **Không đổi hợp đồng HTTP, hợp đồng AI v1, tên bảng, migration hay hành vi nghiệp vụ.** Đường dẫn route, tên schema OpenAPI và thứ tự đăng ký endpoint giữ nguyên.
 
 ## Hệ quả

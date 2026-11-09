@@ -19,51 +19,8 @@ internal static class ModuleRules
 
     private static readonly string[] Layers = ["Domain", "Application", "Infrastructure", "Presentation"];
 
-    internal static readonly HashSet<string> Published = new(StringComparer.Ordinal)
-    {
-        "ServiceDesk.Modules.Ticketing.Domain.TicketCategory", "ServiceDesk.Modules.Ticketing.Domain.Impact",
-        "ServiceDesk.Modules.Ticketing.Domain.Urgency", "ServiceDesk.Modules.Identity.Application.RegisterUser.IRegisterUser",
-        "ServiceDesk.Modules.Identity.Application.LoginUser.ILoginUser", "ServiceDesk.Modules.Identity.Application.GetCurrentUser.IGetCurrentUser",
-        "ServiceDesk.Modules.Identity.Application.Contracts.RegisterRequest", "ServiceDesk.Modules.Identity.Application.Contracts.LoginRequest",
-        "ServiceDesk.Modules.Identity.Application.Contracts.AuthResult", "ServiceDesk.Modules.Identity.Application.Contracts.UserInfo",
-        "ServiceDesk.Modules.Ticketing.Application.CreateTicket.ICreateTicket", "ServiceDesk.Modules.Ticketing.Application.CreateTicket.CreateTicketCommand",
-        "ServiceDesk.Modules.Ticketing.Application.GetMyTickets.IGetMyTickets", "ServiceDesk.Modules.Ticketing.Application.GetMyTickets.GetMyTicketsQuery",
-        "ServiceDesk.Modules.Ticketing.Application.GetTicketDetail.IGetTicketDetail", "ServiceDesk.Modules.Ticketing.Application.GetTicketDetail.GetTicketDetailQuery",
-        "ServiceDesk.Modules.Ticketing.Application.Contracts.TicketDto", "ServiceDesk.Modules.Ticketing.Application.Contracts.PagedTicketResult",
-        "ServiceDesk.Modules.Ticketing.Application.UpdateTicket.IUpdateTicket", "ServiceDesk.Modules.Ticketing.Application.UpdateTicket.UpdateTicketCommand",
-        "ServiceDesk.Modules.Ticketing.Application.ClaimTicket.IClaimTicket", "ServiceDesk.Modules.Ticketing.Application.ClaimTicket.ClaimTicketCommand",
-        "ServiceDesk.Modules.Ticketing.Application.ResolveTicket.IResolveTicket", "ServiceDesk.Modules.Ticketing.Application.ResolveTicket.ResolveTicketCommand",
-        "ServiceDesk.Modules.Ticketing.Application.ReopenTicket.IReopenTicket", "ServiceDesk.Modules.Ticketing.Application.ReopenTicket.ReopenTicketCommand",
-        "ServiceDesk.Modules.Ticketing.Application.CloseTicket.ICloseTicket", "ServiceDesk.Modules.Ticketing.Application.CloseTicket.CloseTicketCommand",
-        "ServiceDesk.Modules.Ticketing.Application.CancelTicket.ICancelTicket", "ServiceDesk.Modules.Ticketing.Application.CancelTicket.CancelTicketCommand",
-        "ServiceDesk.Modules.Ticketing.Application.GetAgentQueue.IGetAgentQueue", "ServiceDesk.Modules.Ticketing.Application.GetAgentQueue.GetAgentQueueQuery",
-        "ServiceDesk.Modules.Ticketing.Application.AssignTicket.IAssignTicket", "ServiceDesk.Modules.Ticketing.Application.AssignTicket.AssignTicketCommand",
-        "ServiceDesk.Modules.Ticketing.Application.UnassignTicket.IUnassignTicket", "ServiceDesk.Modules.Ticketing.Application.UnassignTicket.UnassignTicketCommand",
-        "ServiceDesk.Modules.Ticketing.Application.AddComment.IAddComment", "ServiceDesk.Modules.Ticketing.Application.AddComment.AddCommentCommand",
-        "ServiceDesk.Modules.Ticketing.Application.AddInternalNote.IAddInternalNote", "ServiceDesk.Modules.Ticketing.Application.AddInternalNote.AddInternalNoteCommand",
-        "ServiceDesk.Modules.Ticketing.Application.GetTicketTimeline.IGetTicketTimeline", "ServiceDesk.Modules.Ticketing.Application.GetTicketTimeline.GetTicketTimelineQuery",
-        "ServiceDesk.Modules.Ticketing.Application.Contracts.TimelineItemDto", "ServiceDesk.Modules.Ticketing.Application.GenerateAttachmentUploadUrl.IGenerateAttachmentUploadUrl",
-        "ServiceDesk.Modules.Ticketing.Application.GenerateAttachmentUploadUrl.GenerateAttachmentUploadUrlCommand", "ServiceDesk.Modules.Ticketing.Application.GetAttachmentDownloadUrl.IGetAttachmentDownloadUrl",
-        "ServiceDesk.Modules.Ticketing.Application.GetAttachmentDownloadUrl.GetAttachmentDownloadUrlQuery", "ServiceDesk.Modules.Ticketing.Application.Contracts.GenerateUploadUrlRequest",
-        "ServiceDesk.Modules.Ticketing.Application.Contracts.UploadUrlResult", "ServiceDesk.Modules.Ticketing.Application.Contracts.DownloadUrlResult",
-        "ServiceDesk.Modules.Ticketing.Application.ConfirmAttachmentUpload.IConfirmAttachmentUpload", "ServiceDesk.Modules.Ticketing.Application.ConfirmAttachmentUpload.ConfirmAttachmentUploadCommand",
-        "ServiceDesk.Modules.Ticketing.Application.GetTicketAttachments.IGetTicketAttachments", "ServiceDesk.Modules.Ticketing.Application.GetTicketAttachments.GetTicketAttachmentsQuery",
-        "ServiceDesk.Modules.Ticketing.Application.Contracts.ConfirmAttachmentUploadRequest", "ServiceDesk.Modules.Ticketing.Application.Contracts.TicketAttachmentDto",
-        "ServiceDesk.Modules.Identity.Application.GetUsersByRole.IGetUsersByRole", "ServiceDesk.Modules.Identity.Application.GetUsersByRole.GetUsersByRoleQuery",
-        "ServiceDesk.Modules.Identity.Application.GetUsersByRole.UserDirectoryEntry", "ServiceDesk.Modules.Ticketing.Application.Idempotency.IdempotencyConflictException",
-        "ServiceDesk.Modules.Ticketing.Application.Idempotency.IdempotencyInProgressException", "ServiceDesk.Modules.Knowledge.Domain.ArticleStatus",
-        "ServiceDesk.Modules.Knowledge.Application.Contracts.ArticleDto", "ServiceDesk.Modules.Knowledge.Application.Contracts.ArticleDraftDto",
-        "ServiceDesk.Modules.Knowledge.Application.Contracts.PagedArticleResult", "ServiceDesk.Modules.Knowledge.Application.CreateDraftArticle.ICreateDraftArticle",
-        "ServiceDesk.Modules.Knowledge.Application.CreateDraftArticle.CreateDraftArticleCommand", "ServiceDesk.Modules.Knowledge.Application.UpdateDraftArticle.IUpdateDraftArticle",
-        "ServiceDesk.Modules.Knowledge.Application.UpdateDraftArticle.UpdateDraftArticleCommand", "ServiceDesk.Modules.Knowledge.Application.PublishArticle.IPublishArticle",
-        "ServiceDesk.Modules.Knowledge.Application.PublishArticle.PublishArticleCommand", "ServiceDesk.Modules.Knowledge.Application.ArchiveArticle.IArchiveArticle",
-        "ServiceDesk.Modules.Knowledge.Application.ArchiveArticle.ArchiveArticleCommand", "ServiceDesk.Modules.Knowledge.Application.GetArticleDetail.IGetArticleDetail",
-        "ServiceDesk.Modules.Knowledge.Application.GetArticleDetail.GetArticleDetailQuery", "ServiceDesk.Modules.Knowledge.Application.SearchKnowledge.ISearchKnowledge",
-        "ServiceDesk.Modules.Knowledge.Application.SearchKnowledge.SearchKnowledgeQuery"
-    };
-
     /// <summary>Kiểu Ticketing mà AIAssistance được phép dùng (giá trị phân loại, không phải aggregate Ticket).</summary>
-    private static readonly HashSet<string> AiAllowedTicketingTypes = new(StringComparer.Ordinal)
+    internal static readonly HashSet<string> Published = new(StringComparer.Ordinal)
     {
         "ServiceDesk.Modules.Ticketing.Domain.TicketCategory", "ServiceDesk.Modules.Ticketing.Domain.Impact",
         "ServiceDesk.Modules.Ticketing.Domain.Urgency"
@@ -93,14 +50,15 @@ internal static class ModuleRules
         if (name.StartsWith("ServiceDesk.SharedKernel.", StringComparison.Ordinal)) return new("Shared");
         if (name.StartsWith("ServiceDesk.Infrastructure.", StringComparison.Ordinal)) return new("Platform");
         if (name.StartsWith("ServiceDesk.Api.Endpoints.", StringComparison.Ordinal)) return new("HostPresentation");
-        if (name.StartsWith("ServiceDesk.Api.Identity.", StringComparison.Ordinal)) return new("HostAdapter");
+        if (name.StartsWith("ServiceDesk.Api.Authentication.", StringComparison.Ordinal)) return new("HostAdapter");
         foreach (var module in Modules)
         {
             var prefix = $"ServiceDesk.Modules.{module}.";
             if (!name.StartsWith(prefix, StringComparison.Ordinal)) continue;
             var rest = name[prefix.Length..];
-            if (!rest.Contains('.', StringComparison.Ordinal)) return new("Module", module, "Module");
-            var layer = rest[..rest.IndexOf('.', StringComparison.Ordinal)];
+            var separator = rest.IndexOf('.', StringComparison.Ordinal);
+            if (separator < 0) return rest == $"{module}Module" ? new("Module", module, "Module") : null;
+            var layer = rest[..separator];
             return Layers.Contains(layer) ? new("Module", module, layer) : null;
         }
         return null;
@@ -150,10 +108,13 @@ internal static class ModuleRules
             case "Generated":
                 return true;
             case "Composition":
-                // Host không phải lối tắt để truy cập database: chỉ được dùng DI và Options của hạ tầng dùng chung.
-                if (other.Kind == "Platform" && assembly is "ServiceDesk.Api" or "ServiceDesk.Worker")
-                    return name == "ServiceDesk.Infrastructure.DependencyInjection" ||
-                           name.StartsWith("ServiceDesk.Infrastructure.Options.", StringComparison.Ordinal);
+                if (assembly is "ServiceDesk.Api" or "ServiceDesk.Worker")
+                {
+                    // Điểm đăng ký DependencyInjection được phân loại là Composition.
+                    if (other.Kind == "Platform") return false;
+                    if (other.Kind == "Module")
+                        return other.Layer == "Module" || (assembly == "ServiceDesk.Api" && other.Layer == "Presentation");
+                }
                 return true;
             case "Shared":
                 return other.Kind == "Shared";
@@ -162,7 +123,7 @@ internal static class ModuleRules
             case "HostAdapter":
                 return other.Kind is "Shared" or "HostAdapter";
             case "HostPresentation":
-                return other.Kind is "Shared" or "SharedWeb" or "HostPresentation" || Published.Contains(name);
+                return other.Kind is "Shared" or "SharedWeb" or "HostPresentation";
             case "Platform":
                 // DbContext, migration và bảo trì database cần thực thể, cấu hình ánh xạ và điểm vào module;
                 // không bao giờ dùng use case hay endpoint.
@@ -183,12 +144,7 @@ internal static class ModuleRules
         if (other.Kind == "SharedWeb") return source.Layer is "Presentation" or "Module";
         if (other.Kind != "Module") return false;
         if (other.Module != source.Module)
-        {
-            if (source.Module == "AIAssistance" && other.Module == "Ticketing") return AiAllowedTicketingTypes.Contains(name);
-            if (!Published.Contains(name)) return false;
-            // Domain chỉ được dùng kiểu Domain đã công bố của module khác.
-            return source.Layer != "Domain" || other.Layer == "Domain";
-        }
+            return source.Module == "AIAssistance" && other.Module == "Ticketing" && Published.Contains(name);
         return source.Layer switch
         {
             "Module" => true,

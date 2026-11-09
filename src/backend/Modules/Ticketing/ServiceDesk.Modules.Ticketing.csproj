@@ -1,9 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- Module Knowledge: Domain, Application, Infrastructure và Presentation nằm trong cùng một project,
+  <!-- Module Ticketing: Domain, Application, Infrastructure và Presentation nằm trong cùng một project,
        tách bằng thư mục/namespace; ranh giới tầng được kiểm bằng ServiceDesk.ArchitectureTests. -->
   <PropertyGroup>
-    <RootNamespace>ServiceDesk.Modules.Knowledge</RootNamespace>
+    <RootNamespace>ServiceDesk.Modules.Ticketing</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
@@ -11,8 +11,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\BuildingBlocks\ServiceDesk.SharedKernel\ServiceDesk.SharedKernel.csproj" />
-    <ProjectReference Include="..\..\..\BuildingBlocks\ServiceDesk.SharedKernel.Web\ServiceDesk.SharedKernel.Web.csproj" />
+    <ProjectReference Include="..\..\BuildingBlocks\ServiceDesk.SharedKernel\ServiceDesk.SharedKernel.csproj" />
+    <ProjectReference Include="..\..\BuildingBlocks\ServiceDesk.SharedKernel.Web\ServiceDesk.SharedKernel.Web.csproj" />
   </ItemGroup>
 
   <ItemGroup>

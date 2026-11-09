@@ -13,13 +13,20 @@ public sealed class ModuleRuleNegativeTests
     [InlineData("ServiceDesk.Api.Other", "Helper", "ServiceDesk.Infrastructure.Persistence", "ApplicationDbContext")]
     // Endpoint của host không được chạm DbContext.
     [InlineData("ServiceDesk.Api.Endpoints", "Helper", "ServiceDesk.Infrastructure.Persistence", "ApplicationDbContext")]
-    [InlineData("ServiceDesk.Api.Identity", "Helper", "Microsoft.EntityFrameworkCore", "DbContext")]
+    [InlineData("ServiceDesk.Api.Endpoints", "Helper", "ServiceDesk.Modules.Ticketing.Application.CreateTicket", "ICreateTicket")]
+    [InlineData("ServiceDesk.Api.Authentication", "Helper", "Microsoft.EntityFrameworkCore", "DbContext")]
+    // Composition root ghép module qua điểm đăng ký và map route, không gọi use case hoặc đọc cấu hình nội bộ.
+    [InlineData("ServiceDesk.Api", "Program", "ServiceDesk.Modules.Ticketing.Application.CreateTicket", "ICreateTicket")]
+    [InlineData("ServiceDesk.Api", "Program", "ServiceDesk.Modules.Identity.Infrastructure.Options", "JwtOptions")]
     // Module không được dùng phần chưa công bố của module khác.
     [InlineData("ServiceDesk.Modules.Identity.Application", "Helper", "ServiceDesk.Modules.Ticketing.Infrastructure", "PostgresTicketWriter")]
+    [InlineData("ServiceDesk.Modules.Identity.Application", "Helper", "ServiceDesk.Modules.Ticketing.Application.Contracts", "TicketDto")]
+    [InlineData("ServiceDesk.Modules.Identity.Application", "Helper", "ServiceDesk.Modules.Ticketing.Domain", "TicketCategory")]
     // Module không có trong danh sách.
     [InlineData("ServiceDesk.Modules.Unregistered.Application", "Feature", "System", "String")]
     // Tầng không có trong danh sách.
     [InlineData("ServiceDesk.Modules.Ticketing.Helpers", "Feature", "System", "String")]
+    [InlineData("ServiceDesk.Modules.Ticketing", "Feature", "System", "String")]
     // AIAssistance chỉ dùng giá trị phân loại của Ticketing, không dùng DTO hay vai trò.
     [InlineData("ServiceDesk.Modules.AIAssistance.Application", "Helper", "ServiceDesk.Modules.Ticketing.Application.Contracts", "TicketDto")]
     [InlineData("ServiceDesk.Modules.AIAssistance.Application", "Helper", "ServiceDesk.SharedKernel.Authorization", "RoleNames")]
@@ -66,7 +73,7 @@ public sealed class ModuleRuleNegativeTests
     [InlineData("ServiceDesk.Modules.Ticketing.Infrastructure", "Helper", "ServiceDesk.Modules.Ticketing.Domain", "Ticket")]
     [InlineData("ServiceDesk.Modules.Ticketing.Application", "Helper", "ServiceDesk.SharedKernel.Application.Abstractions", "IClock")]
     [InlineData("ServiceDesk.Modules.AIAssistance.Domain", "Helper", "ServiceDesk.Modules.Ticketing.Domain", "TicketCategory")]
-    [InlineData("ServiceDesk.Modules.Knowledge.Presentation", "Helper", "ServiceDesk.SharedKernel.Web", "LegacyErrorFilter")]
+    [InlineData("ServiceDesk.Modules.Knowledge.Presentation", "Helper", "ServiceDesk.SharedKernel.Web", "ApiErrorFilter")]
     [InlineData("ServiceDesk.Infrastructure.Persistence", "Helper", "ServiceDesk.Modules.Ticketing.Domain", "Ticket")]
     public void AllowedDependenciesAreAccepted(string sourceNamespace, string sourceName, string targetNamespace, string targetName)
     {
