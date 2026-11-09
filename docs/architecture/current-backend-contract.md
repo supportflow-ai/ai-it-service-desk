@@ -25,11 +25,11 @@ Tại mốc đối chiếu trên, Agent và Admin đọc chi tiết toàn hệ t
 
 Application từ chối actor chưa xác thực, ID không phải GUID hợp lệ hoặc GUID rỗng trước persistence. Endpoint còn có policy role; role không được cấp bị từ chối tại HTTP. Worker dùng actor anonymous, không đăng ký HttpContext. Không chỉ dựa vào middleware để bảo vệ use case.
 
-Nguồn: [AuthEndpoints](../../src/backend/Modules/Identity/ServiceDesk.Modules.Identity/Presentation/AuthEndpoints.cs), [TicketEndpoints](../../src/backend/Modules/Ticketing/ServiceDesk.Modules.Ticketing/Presentation/TicketEndpoints.cs) (tách thành các tệp `TicketEndpoints.*.cs` cùng thư mục), [KnowledgeEndpoints](../../src/backend/Modules/Knowledge/ServiceDesk.Modules.Knowledge/Presentation/KnowledgeEndpoints.cs), [GetTicketDetail](../../src/backend/Modules/Ticketing/ServiceDesk.Modules.Ticketing/Application/GetTicketDetail/GetTicketDetailUseCase.cs).
+Nguồn: [AuthEndpoints](../../src/backend/Modules/Identity/Presentation/AuthEndpoints.cs), [TicketEndpoints](../../src/backend/Modules/Ticketing/Presentation/TicketEndpoints.cs) (tách thành các tệp `TicketEndpoints.*.cs` cùng thư mục), [KnowledgeEndpoints](../../src/backend/Modules/Knowledge/Presentation/KnowledgeEndpoints.cs), [GetTicketDetail](../../src/backend/Modules/Ticketing/Application/GetTicketDetail/GetTicketDetailUseCase.cs).
 
 ## Identity sau PR #47, #48 và nhánh refactor
 
-Cập nhật 2026-11-07, đối chiếu PR #50 đến #53 vào `dev`. Mã ở [AuthEndpoints](../../src/backend/Modules/Identity/ServiceDesk.Modules.Identity/Presentation/AuthEndpoints.cs) và [DepartmentEndpoints](../../src/backend/Modules/Identity/ServiceDesk.Modules.Identity/Presentation/DepartmentEndpoints.cs).
+Cập nhật 2026-11-07, đối chiếu PR #50 đến #53 vào `dev`. Mã ở [AuthEndpoints](../../src/backend/Modules/Identity/Presentation/AuthEndpoints.cs) và [DepartmentEndpoints](../../src/backend/Modules/Identity/Presentation/DepartmentEndpoints.cs).
 
 | Thao tác | Đường dẫn | Quyền | Hành vi |
 | --- | --- | --- | --- |
@@ -46,7 +46,7 @@ Giới hạn tần suất hai lớp. Theo IP: đăng ký, đăng nhập, quên v
 
 Mọi thao tác tạo hoặc thu hồi refresh token (đăng nhập, làm mới phiên, đăng xuất, đổi/đặt lại mật khẩu, đổi vai trò, thu hồi chuỗi phiên khi phát hiện token bị dùng lại) lấy khóa dòng người dùng (`AspNetUsers ... FOR UPDATE`) trước trong giao dịch của mình. Lệnh thu hồi vì vậy luôn chạy sau khi token mới đã commit; đăng nhập kiểm mật khẩu và lưu refresh token trong cùng một giao dịch. Đổi vai trò cũng đổi security stamp.
 
-Bộ lọc lỗi `LegacyErrorFilter` giữ mã 400/403/404/409/503. Thông điệp của `ArgumentException` và `UnauthorizedAccessException` chỉ được trả khi mã ServiceDesk ném ra; lỗi cùng loại từ .NET hoặc thư viện trả thông điệp chung ("Yêu cầu không hợp lệ.", "Bạn không có quyền thực hiện thao tác này.") và chỉ ghi chi tiết vào log. Knowledge chỉ trả 422 kèm thông điệp cho `InvalidOperationException` ném từ `ServiceDesk.Modules.Knowledge.Domain`; ngoại lệ cùng loại từ adapter hay thư viện thành lỗi 500 chung.
+Bộ lọc lỗi `ApiErrorFilter` giữ mã 400/403/404/409/503. Thông điệp của `ArgumentException` và `UnauthorizedAccessException` chỉ được trả khi mã ServiceDesk ném ra; lỗi cùng loại từ .NET hoặc thư viện trả thông điệp chung ("Yêu cầu không hợp lệ.", "Bạn không có quyền thực hiện thao tác này.") và chỉ ghi chi tiết vào log. Knowledge chỉ trả 422 kèm thông điệp cho `InvalidOperationException` ném từ `ServiceDesk.Modules.Knowledge.Domain`; ngoại lệ cùng loại từ adapter hay thư viện thành lỗi 500 chung.
 
 ## Thao tác vòng đời phiếu
 
@@ -103,11 +103,11 @@ Mọi lệnh ghi phiếu (cập nhật, nhận xử lý, phân công, hủy phâ
 | 8 | Assigned |
 | 9 | PendingExternal |
 
-Nguồn: [TicketStatus](../../src/backend/Modules/Ticketing/ServiceDesk.Modules.Ticketing/Domain/TicketStatus.cs), [Ticket](../../src/backend/Modules/Ticketing/ServiceDesk.Modules.Ticketing/Domain/Ticket.cs), [TicketDto](../../src/backend/Modules/Ticketing/ServiceDesk.Modules.Ticketing/Application/Contracts/TicketDto.cs), [mapping](../../src/backend/Modules/Ticketing/ServiceDesk.Modules.Ticketing/Infrastructure/Configurations/TicketConfiguration.cs). Có enum không có nghĩa đã triển khai lệnh chuyển trạng thái. Không đổi nghĩa 0–6, loại Cancelled hoặc đổi JSON sang chuỗi để khớp bảng 0–8 trong tài liệu lịch sử.
+Nguồn: [TicketStatus](../../src/backend/Modules/Ticketing/Domain/TicketStatus.cs), [Ticket](../../src/backend/Modules/Ticketing/Domain/Ticket.cs), [TicketDto](../../src/backend/Modules/Ticketing/Application/Contracts/TicketDto.cs), [mapping](../../src/backend/Modules/Ticketing/Infrastructure/Configurations/TicketConfiguration.cs). Có enum không có nghĩa đã triển khai lệnh chuyển trạng thái. Không đổi nghĩa 0–6, loại Cancelled hoặc đổi JSON sang chuỗi để khớp bảng 0–8 trong tài liệu lịch sử.
 
 ## Lỗi và idempotency
 
-- Giữ hình dạng phản hồi lỗi hiện hành, không chuyển đồng loạt sang ProblemDetails. [LegacyErrorFilter](../../src/backend/BuildingBlocks/ServiceDesk.SharedKernel.Web/LegacyErrorFilter.cs) giữ `{ error }` cho lỗi đầu vào/chống tạo trùng; 404 chi tiết không dựng một DTO lỗi mới.
+- Giữ hình dạng phản hồi lỗi hiện hành, không chuyển đồng loạt sang ProblemDetails. [ApiErrorFilter](../../src/backend/BuildingBlocks/ServiceDesk.SharedKernel.Web/ApiErrorFilter.cs) giữ `{ error }` cho lỗi đầu vào/chống tạo trùng; 404 chi tiết không dựng một DTO lỗi mới.
 - Tạo ticket hỗ trợ `Idempotency-Key` tùy chọn. Receipt nằm trong phạm vi requester + method + resource + key hash; khác payload cùng key trả 409.
 - Advisory lock và transaction PostgreSQL giữ ticket/receipt nguyên tử. Receipt dùng giờ DB, hiệu lực 10 phút; lock timeout 5 giây; timeout trả 503 và `Retry-After: 1`.
 - Replay trả response đã lưu sau kiểm tra quyền sở hữu, không dựng lại từ ticket có thể thay đổi. Không dùng cache trong tiến trình thay cơ chế này.

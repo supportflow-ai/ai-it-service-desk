@@ -12,12 +12,12 @@ namespace ServiceDesk.IntegrationTests;
 /// lỗi cùng loại từ .NET hoặc thư viện trả thông điệp chung.
 /// </summary>
 [Trait("Category", "Unit")]
-public sealed class LegacyErrorFilterTests
+public sealed class ApiErrorFilterTests
 {
     private static async Task<(int? Status, string? Error)> RunAsync(Func<object?> endpoint)
     {
         var context = new DefaultEndpointFilterInvocationContext(new DefaultHttpContext());
-        var result = await new LegacyErrorFilter().InvokeAsync(context, _ => ValueTask.FromResult(endpoint()));
+        var result = await new ApiErrorFilter().InvokeAsync(context, _ => ValueTask.FromResult(endpoint()));
         var status = Assert.IsAssignableFrom<IStatusCodeHttpResult>(result).StatusCode;
         var value = (result as IValueHttpResult)?.Value;
         if (value is null) return (status, null);
@@ -54,7 +54,7 @@ public sealed class LegacyErrorFilterTests
     {
         var (status, error) = await RunAsync(ThrowLibraryArgument);
         Assert.Equal(StatusCodes.Status400BadRequest, status);
-        Assert.Equal(LegacyErrorFilter.GenericBadRequestMessage, error);
+        Assert.Equal(ApiErrorFilter.GenericBadRequestMessage, error);
     }
 
     [Fact]
@@ -62,7 +62,7 @@ public sealed class LegacyErrorFilterTests
     {
         var (status, error) = await RunAsync(ThrowGuard);
         Assert.Equal(StatusCodes.Status400BadRequest, status);
-        Assert.Equal(LegacyErrorFilter.GenericBadRequestMessage, error);
+        Assert.Equal(ApiErrorFilter.GenericBadRequestMessage, error);
     }
 
     [Fact]

@@ -4,9 +4,9 @@ Trạng thái: hướng dẫn kỹ thuật hiện hành, cập nhật 2026-10-20
 
 ## Module sở hữu quyền nghiệp vụ
 
-Logic quyền Ticketing nằm trong `Application/Authorization` và các use case của module Ticketing (`src/backend/Modules/Ticketing/ServiceDesk.Modules.Ticketing`). `ServiceDesk.SharedKernel` chỉ xác thực danh tính dùng chung (`AuthenticatedActor`, `ICurrentUser`, tên vai trò); không đọc Ticket hoặc persistence của module. `Infrastructure` của module Identity quản lý tài khoản/token, không quyết định ai được sửa ticket. Cập nhật đường dẫn ngày 2026-11-07 theo [ADR-015](../adr/ADR-015-module-first-clean-architecture.md); quy tắc không đổi.
+Logic quyền Ticketing nằm trong `Application/Authorization` và các use case của module Ticketing (`src/backend/Modules/Ticketing`). `ServiceDesk.SharedKernel` chỉ xác thực danh tính dùng chung (`AuthenticatedActor`, `ICurrentUser`, tên vai trò); không đọc Ticket hoặc persistence của module. `Infrastructure` của module Identity quản lý tài khoản/token, không quyết định ai được sửa ticket. Cập nhật đường dẫn ngày 2026-11-07 theo [ADR-015](../adr/ADR-015-module-first-clean-architecture.md); quy tắc không đổi.
 
-Mẫu đang chạy: [GetTicketDetailUseCase](../../src/backend/Modules/Ticketing/ServiceDesk.Modules.Ticketing/Application/GetTicketDetail/GetTicketDetailUseCase.cs) xác thực actor, tạo [TicketReadScope](../../src/backend/Modules/Ticketing/ServiceDesk.Modules.Ticketing/Application/Authorization/TicketReadScope.cs), rồi gọi gateway. Gateway nhận phạm vi tường minh, không tự đọc claims hoặc coi null là AllTickets. Xuyên module chỉ dùng kiểu được cho phép trong [ModuleRules](../../tests/ServiceDesk.ArchitectureTests/ModuleRules.cs).
+Mẫu đang chạy: [GetTicketDetailUseCase](../../src/backend/Modules/Ticketing/Application/GetTicketDetail/GetTicketDetailUseCase.cs) xác thực actor, tạo [TicketReadScope](../../src/backend/Modules/Ticketing/Application/Authorization/TicketReadScope.cs), rồi gọi gateway. Gateway nhận phạm vi tường minh, không tự đọc claims hoặc coi null là AllTickets. Xuyên module chỉ dùng kiểu được cho phép trong [ModuleRules](../../tests/ServiceDesk.ArchitectureTests/ModuleRules.cs).
 
 ## Thứ tự kiểm tra khi triển khai lệnh trên tài nguyên
 

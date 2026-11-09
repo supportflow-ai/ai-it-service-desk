@@ -802,7 +802,6 @@
       "servicedesk.api": {
         "type": "Project",
         "dependencies": {
-          "Microsoft.AspNetCore.Authentication.JwtBearer": "[10.0.13, )",
           "ServiceDesk.Infrastructure": "[1.0.0, )",
           "ServiceDesk.Modules.AIAssistance": "[1.0.0, )",
           "ServiceDesk.Modules.Identity": "[1.0.0, )",

@@ -135,7 +135,7 @@ public static class AuthEndpoints
 
             return Results.Ok(new { message = "Đổi mật khẩu thành công." });
         })
-        .AddEndpointFilter<LegacyErrorFilter>()
+        .AddEndpointFilter<ApiErrorFilter>()
         .WithName("ChangePassword")
         .RequireAuthorization();
 
@@ -189,7 +189,7 @@ public static class AuthEndpoints
 
             return Results.Ok(user);
         })
-        .AddEndpointFilter<LegacyErrorFilter>()
+        .AddEndpointFilter<ApiErrorFilter>()
         .WithName("GetCurrentUser")
         .RequireAuthorization();
 
@@ -203,7 +203,7 @@ public static class AuthEndpoints
             var users = await getUsersByRole.ExecuteAsync(new(targetRole), ct);
             return Results.Ok(users.Select(user => new { user.UserId, user.FullName }));
         })
-        .AddEndpointFilter<LegacyErrorFilter>()
+        .AddEndpointFilter<ApiErrorFilter>()
         .WithName("GetUsers")
         .RequireAuthorization(PolicyNames.RequireAgent)
         .Produces<IReadOnlyList<object>>(StatusCodes.Status200OK)
@@ -225,7 +225,7 @@ public static class AuthEndpoints
 
             return Results.Ok(new { message = "Cập nhật vai trò thành công." });
         })
-        .AddEndpointFilter<LegacyErrorFilter>()
+        .AddEndpointFilter<ApiErrorFilter>()
         .WithName("AssignUserRoles")
         .RequireAuthorization(PolicyNames.RequireAdmin)
         .Produces(StatusCodes.Status200OK)

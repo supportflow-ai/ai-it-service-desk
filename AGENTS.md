@@ -61,24 +61,24 @@ Modular Monolith, tổ chức **module trước, Clean Architecture bên trong m
 
 | Cần viết | Đặt ở |
 | --- | --- |
-| Thực thể, giá trị, quy tắc | `src/backend/Modules/<Module>/ServiceDesk.Modules.<Module>/Domain/` |
+| Thực thể, giá trị, quy tắc | `src/backend/Modules/<Module>/Domain/` |
 | Luồng xử lý | `.../Application/<TínhNăng>/`: interface `I<TínhNăng>` có `ExecuteAsync`, lệnh/truy vấn, lớp `<TínhNăng>UseCase` `internal sealed`; DTO dùng chung ở `Application/Contracts`, cổng ở `Application/Ports` |
 | Adapter PostgreSQL/HTTP, ánh xạ EF, options | `.../Infrastructure/` (ánh xạ EF ở `Infrastructure/Configurations`) |
 | Endpoint và request body | `.../Presentation/` |
 | Đăng ký DI của module | `<Module>Module.cs`: `Add<Module>Application`, `Add<Module>Infrastructure`, `Add<Module>Module` |
 | Kiểu dùng chung nhiều module (vai trò, actor, đồng hồ, cổng lưu trữ, ngoại lệ nghiệp vụ) | `src/backend/BuildingBlocks/ServiceDesk.SharedKernel/`; thành phần HTTP dùng chung ở `ServiceDesk.SharedKernel.Web/` |
 | `ApplicationDbContext`, migration, bảo trì DB, MinIO, đồng hồ hệ thống | `src/backend/ServiceDesk.Infrastructure/` (không đặt nghiệp vụ ở đây) |
-| Ghép module, JWT, middleware | `ServiceDesk.Api/Program.cs`, `ServiceDesk.Worker/WorkerServices.cs` |
+| Ghép module, middleware | `ServiceDesk.Api/Program.cs`, `ServiceDesk.Worker/WorkerServices.cs`; Identity đăng ký JWT qua `AddIdentityAuthentication` |
 
 - Trong module, phụ thuộc chỉ đi vào trong: Presentation → Application → Domain; Infrastructure → Application → Domain. Domain không dùng EF Core, Npgsql, ASP.NET Core. Application không dùng Infrastructure, EF Core, Npgsql hoặc HTTP context. Các tầng cùng nằm trong một project nên vi phạm chỉ bị chặn khi chạy `ServiceDesk.ArchitectureTests`; chạy project này sau mọi thay đổi chạm `using`/tham chiếu.
-- Application xác thực actor và phân quyền nghiệp vụ, không chỉ dựa vào middleware HTTP. Mẫu: [CreateTicketUseCase](src/backend/Modules/Ticketing/ServiceDesk.Modules.Ticketing/Application/CreateTicket/CreateTicketUseCase.cs). Tách ghi/truy vấn; không tự thêm mediator hoặc Generic Repository.
+- Application xác thực actor và phân quyền nghiệp vụ, không chỉ dựa vào middleware HTTP. Mẫu: [CreateTicketUseCase](src/backend/Modules/Ticketing/Application/CreateTicket/CreateTicketUseCase.cs). Tách ghi/truy vấn; không tự thêm mediator hoặc Generic Repository.
 - Dùng gateway chuyên biệt, không đưa `DbSet`/`IQueryable`/transaction EF qua cổng Application. Adapter persistence nhận `DbContext` dùng chung (bí danh của `ApplicationDbContext` theo scope) và dùng `Set<T>()`; không tham chiếu `ApplicationDbContext` từ module. API không truy cập persistence để xử lý nghiệp vụ; Worker không phụ thuộc HTTP context.
 - Xuyên module chỉ dùng kiểu trong `Published` của [ModuleRules](tests/ServiceDesk.ArchitectureTests/ModuleRules.cs); `public` không tự cấp quyền. Hiện chỉ AIAssistance tham chiếu Ticketing và chỉ dùng `TicketCategory`, `Impact`, `Urgency`. Không đi vòng qua SharedKernel, helper hoặc generic; SharedKernel không được chứa thực thể hay quy tắc của một module.
 - Chỉ Identity đọc bảng ASP.NET Core Identity. Module khác cần vai trò hoặc tên hiển thị thì dùng `IUserDirectory` (SharedKernel, Identity cài đặt); host nào ghép module đó phải gọi `AddIdentityUserDirectory`.
 - Lệnh ghi Ticketing dùng `TicketCommandGuard` (revision, lỗi quy tắc → 400, audit hệ thống) và `TicketPermissions`; Knowledge dùng `KnowledgePermissions`; không chép lại khung tải/kiểm/lưu trong use case mới.
 - Thay đổi Identity có thu hồi phiên (đổi vai trò, đổi/đặt lại mật khẩu, xoay vòng refresh token) phải ghi và thu hồi trong cùng một giao dịch; có kiểm thử PostgreSQL cho trường hợp chạy đồng thời.
-- Ngoại lệ nghiệp vụ cần mã HTTP chung thì kế thừa lớp cơ sở trong SharedKernel (`ConflictException` → 409, `RetryLaterException` → 503 + Retry-After); không thêm `catch` theo kiểu của module vào `LegacyErrorFilter`.
-- Thêm tính năng: tạo thư mục trong `Application`, đăng ký trong `<Module>Module.cs`, map endpoint trong `Presentation`, rồi cập nhật [baseline OpenAPI](contracts/backend/openapi-baseline.json) có chủ đích và `Published` nếu module khác cần dùng.
+- Ngoại lệ nghiệp vụ cần mã HTTP chung thì kế thừa lớp cơ sở trong SharedKernel (`ConflictException` → 409, `RetryLaterException` → 503 + Retry-After); không thêm `catch` theo kiểu của module vào `ApiErrorFilter`.
+- Thêm tính năng: tạo thư mục trong `Application`, đăng ký trong `<Module>Module.cs`, map endpoint trong `Presentation`, rồi cập nhật [baseline OpenAPI](contracts/backend/openapi-baseline.json) có chủ đích. Khi có hợp đồng xuyên module mới, cập nhật `Published` và chỉ rõ module tiêu thụ trong `ModuleRules`.
 - Thêm module mới (chỉ khi nhiệm vụ yêu cầu, không tạo module rỗng): project `ServiceDesk.Modules.<Module>` theo mẫu module hiện có, thêm vào `ServiceDesk.sln`, `Modules`/`ProductionAssemblies` trong ArchitectureTests, tham chiếu từ host và Dockerfile của API/Worker/Database. Nếu module có bảng: thêm assembly vào `ModuleModelAssemblies` và `DbSet` trong `ApplicationDbContext`, tham chiếu project từ `ServiceDesk.Infrastructure`, rồi tạo migration. Project mới cần `packages.lock.json` sinh bằng `dotnet restore`, review diff trước khi commit.
 - API/Worker không tự migration/seed khi khởi động.
 - Khi sửa luồng tạo phiếu, giữ ticket và receipt trong cùng transaction; kiểm tra rollback, replay và đồng thời theo bảng §6.

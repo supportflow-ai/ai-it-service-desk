@@ -2,17 +2,17 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using ServiceDesk.SharedKernel.Application.Abstractions;
 
-namespace ServiceDesk.Api.Identity;
+namespace ServiceDesk.Api.Authentication;
 
 /// <summary>
 /// Đọc thông tin và quyền hạn của người dùng hiện tại từ Claims trong HttpContext.
 /// Được đăng ký ở mức Scoped — một instance cho mỗi HTTP request.
 /// </summary>
-public sealed class CurrentUser : ICurrentUser
+public sealed class HttpCurrentUser : ICurrentUser
 {
     private readonly IHttpContextAccessor _httpContextAccessor;
 
-    public CurrentUser(IHttpContextAccessor httpContextAccessor)
+    public HttpCurrentUser(IHttpContextAccessor httpContextAccessor)
     {
         _httpContextAccessor = httpContextAccessor;
     }

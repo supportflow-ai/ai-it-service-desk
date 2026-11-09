@@ -23,7 +23,7 @@ using ServiceDesk.SharedKernel.Authorization;
 using ServiceDesk.Modules.Identity.Infrastructure;
 using ServiceDesk.Infrastructure.Clock;
 using ServiceDesk.Modules.Identity.Application.Contracts;
-using ServiceDesk.Api.Identity;
+using ServiceDesk.Api.Authentication;
 using ServiceDesk.Modules.Identity.Infrastructure.Options;
 using Xunit;
 
@@ -41,7 +41,7 @@ public class TicketIdempotencyEndpointTests
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseTestServer();
         builder.Services.AddHttpContextAccessor();
-        builder.Services.AddScoped<ICurrentUser, CurrentUser>();
+        builder.Services.AddScoped<ICurrentUser, HttpCurrentUser>();
         builder.Services.AddSingleton(service);
         builder.Services.AddSingleton(Mock.Of<ServiceDesk.Modules.Ticketing.Application.GetMyTickets.IGetMyTickets>());
         builder.Services.AddSingleton(Mock.Of<ServiceDesk.Modules.Ticketing.Application.GetTicketDetail.IGetTicketDetail>());
