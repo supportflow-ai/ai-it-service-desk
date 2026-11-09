@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using ServiceDesk.Modules.Identity.Application.Ports;
 using ServiceDesk.SharedKernel.Authorization;
-using ServiceDesk.Infrastructure.Persistence;
+using ServiceDesk.Platform.Persistence;
 using Xunit;
 namespace ServiceDesk.IntegrationTests;
 

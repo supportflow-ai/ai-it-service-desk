@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ServiceDesk.Infrastructure\ServiceDesk.Infrastructure.csproj" />
+    <ProjectReference Include="..\ServiceDesk.Platform\ServiceDesk.Platform.csproj" />
     <ProjectReference Include="..\Modules\AIAssistance\ServiceDesk.Modules.AIAssistance.csproj" />
     <ProjectReference Include="..\Modules\Ticketing\ServiceDesk.Modules.Ticketing.csproj" />
   </ItemGroup>

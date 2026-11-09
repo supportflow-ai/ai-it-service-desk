@@ -13,7 +13,7 @@ public sealed class ModuleEncapsulationTests
     [
         "ServiceDesk.SharedKernel", "ServiceDesk.SharedKernel.Web",
         "ServiceDesk.Modules.Identity", "ServiceDesk.Modules.Ticketing", "ServiceDesk.Modules.Knowledge", "ServiceDesk.Modules.AIAssistance",
-        "ServiceDesk.Infrastructure", "ServiceDesk.Api", "ServiceDesk.Worker", "ServiceDesk.Database"
+        "ServiceDesk.Platform", "ServiceDesk.Api", "ServiceDesk.Worker", "ServiceDesk.Migrator"
     ];
 
     internal static IEnumerable<Assembly> ModuleAssemblies() =>

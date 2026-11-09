@@ -96,10 +96,10 @@ src/backend/
       ServiceDesk.Modules.<Module>.csproj
       <Module>Module.cs
       Domain/  Application/  Infrastructure/  Presentation/
-  ServiceDesk.Infrastructure/      # Hạ tầng dùng chung: ApplicationDbContext, migration, bảo trì DB, MinIO, đồng hồ
+  ServiceDesk.Platform/            # Nền tảng dùng chung: ApplicationDbContext, migration, bảo trì DB, MinIO, đồng hồ
   ServiceDesk.Api/                 # Host HTTP: ghép module, middleware, health
   ServiceDesk.Worker/              # Chương trình xử lý nền
-  ServiceDesk.Database/            # Công cụ migration và khởi tạo có chủ đích
+  ServiceDesk.Migrator/            # Công cụ migration và khởi tạo có chủ đích
 tests/                             # Domain, Application, Architecture, Integration
 contracts/                         # Baseline HTTP và AI classification v1
 ```
@@ -141,14 +141,14 @@ Frontend tự lint/test/build image trong repo web. Repo infra ghim SHA backend/
 
 Production bắt buộc khóa JWT riêng ít nhất 32 byte UTF-8; khóa mẫu/thiếu bị từ chối. Giữ khóa mạnh, issuer và audience đang dùng để duy trì token hợp lệ. Tài khoản demo chỉ được tạo bằng lệnh riêng `seed-demo` trong Development/Test khi được bật rõ ràng, không được seed lúc API/Worker khởi động.
 
-Công cụ `ServiceDesk.Database` hỗ trợ `migrate`, `seed-roles`, `seed-demo`, `bootstrap-admin`, `check-production`. Bootstrap Admin chỉ tạo tài khoản mới, nhận credential qua biến môi trường trên tiến trình một lần. Mã lỗi an toàn gồm `demo_seed_forbidden`, `bootstrap_existing_account`, `demo_default_password_present`.
+Công cụ `ServiceDesk.Migrator` hỗ trợ `migrate`, `seed-roles`, `seed-demo`, `bootstrap-admin`, `check-production`. Bootstrap Admin chỉ tạo tài khoản mới, nhận credential qua biến môi trường trên tiến trình một lần. Mã lỗi an toàn gồm `demo_seed_forbidden`, `bootstrap_existing_account`, `demo_default_password_present`.
 
 Dockerfile API, Worker và Database nằm cạnh từng project, build từ gốc repo:
 
 ```sh
 docker build -f src/backend/ServiceDesk.Api/Dockerfile -t servicedesk-api:local .
 docker build -f src/backend/ServiceDesk.Worker/Dockerfile -t servicedesk-worker:local .
-docker build -f src/backend/ServiceDesk.Database/Dockerfile -t servicedesk-database:local .
+docker build -f src/backend/ServiceDesk.Migrator/Dockerfile -t servicedesk-database:local .
 ```
 
 Gateway và cách ghép hệ thống nằm trong repo infra. `/health/live` kiểm tra tiến trình, `/health/ready` kiểm tra PostgreSQL; `/health` giữ response tương thích. AI không hoạt động không làm readiness thất bại. Quy trình nâng cấp, bảo toàn volume/data và rollback nằm trong [runbook](docs/runbooks/backend-refactor-rollout.md).

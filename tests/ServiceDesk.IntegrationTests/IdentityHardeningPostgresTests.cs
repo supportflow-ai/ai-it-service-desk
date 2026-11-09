@@ -9,7 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using ServiceDesk.Modules.Identity.Application.Ports;
 using ServiceDesk.SharedKernel.Authorization;
 using ServiceDesk.Modules.Identity.Domain;
-using ServiceDesk.Infrastructure.Persistence;
+using ServiceDesk.Platform.Persistence;
 using ServiceDesk.SharedKernel.Application.Abstractions;
 using Xunit;
 

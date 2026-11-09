@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using ServiceDesk.Modules.Ticketing.Application.Authorization;
 using ServiceDesk.Modules.Knowledge.Domain;
 using ServiceDesk.Modules.Knowledge.Infrastructure;
-using ServiceDesk.Infrastructure.Persistence;
+using ServiceDesk.Platform.Persistence;
 using ServiceDesk.Modules.Ticketing.Infrastructure;
 using Xunit;
 

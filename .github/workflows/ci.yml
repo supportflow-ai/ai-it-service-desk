@@ -55,7 +55,7 @@ jobs:
       - name: Build Worker image
         run: docker build -f src/backend/ServiceDesk.Worker/Dockerfile -t servicedesk-worker:ci .
       - name: Build database tool image
-        run: docker build -f src/backend/ServiceDesk.Database/Dockerfile -t servicedesk-database:ci .
+        run: docker build -f src/backend/ServiceDesk.Migrator/Dockerfile -t servicedesk-database:ci .
 
   publish:
     name: Phát hành image bất biến
@@ -73,7 +73,7 @@ jobs:
           - image: servicedesk-worker
             dockerfile: src/backend/ServiceDesk.Worker/Dockerfile
           - image: servicedesk-database
-            dockerfile: src/backend/ServiceDesk.Database/Dockerfile
+            dockerfile: src/backend/ServiceDesk.Migrator/Dockerfile
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
