@@ -61,10 +61,25 @@ internal sealed class PostgresTicketAttachmentStore(DbContext context) : ITicket
             await transaction.CommitAsync(cancellationToken);
             return ToDto(attachment);
         }
-        catch (PostgresException error) when (error.SqlState == PostgresErrorCodes.LockNotAvailable)
+        catch (Exception error) when (FindLockTimeout(error) is not null)
         {
-            throw new AttachmentConfirmationBusyException(error);
+            // Giao dịch đã rollback khi thoát khối using; upload grant vẫn chưa bị tiêu thụ nên client thử lại được.
+            throw new AttachmentConfirmationBusyException(FindLockTimeout(error)!);
         }
+    }
+
+    /// <summary>
+    /// Npgsql EF bọc lỗi tạm thời (kể cả 55P03) trong <see cref="InvalidOperationException"/>, nên phải tìm
+    /// <see cref="PostgresException"/> trong chuỗi ngoại lệ thay vì bắt trực tiếp.
+    /// </summary>
+    private static PostgresException? FindLockTimeout(Exception? error)
+    {
+        while (error is not null)
+        {
+            if (error is PostgresException { SqlState: PostgresErrorCodes.LockNotAvailable } postgres) return postgres;
+            error = error.InnerException;
+        }
+        return null;
     }
 
     private static TicketAttachmentDto ToDto(TicketAttachment value) => new(value.Id, value.TicketId,
