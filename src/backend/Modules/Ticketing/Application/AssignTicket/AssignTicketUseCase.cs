@@ -1,11 +1,8 @@
 using ServiceDesk.SharedKernel.Application;
 using ServiceDesk.SharedKernel.Application.Abstractions;
-using ServiceDesk.Modules.Ticketing.Application.Authorization;
 using ServiceDesk.Modules.Ticketing.Application.Common;
 using ServiceDesk.Modules.Ticketing.Application.Contracts;
 using ServiceDesk.Modules.Ticketing.Application.Ports;
-using ServiceDesk.SharedKernel.Authorization;
-using ServiceDesk.Modules.Ticketing.Domain;
 
 namespace ServiceDesk.Modules.Ticketing.Application.AssignTicket;
 
@@ -18,6 +15,10 @@ public interface IAssignTicket
     Task<TicketDto> ExecuteAsync(AssignTicketCommand command, CancellationToken cancellationToken = default);
 }
 
+/// <summary>
+/// Xử lý phân công vé cho kỹ thuật viên (khung chung: <see cref="TicketTransitions"/>): chỉ Agent hoặc Admin;
+/// người được phân công phải tồn tại và có vai trò Agent (kiểm trước khi kiểm revision); ghi log vào timeline.
+/// </summary>
 internal sealed class AssignTicketUseCase(
     ITicketWriter writer,
     IAgentDirectory agentDirectory,
@@ -26,32 +27,19 @@ internal sealed class AssignTicketUseCase(
 {
     public async Task<TicketDto> ExecuteAsync(AssignTicketCommand command, CancellationToken cancellationToken = default)
     {
-        var actorId = TicketActor.RequireId(currentUser);
-        var isStaff = TicketPermissions.IsStaff(currentUser);
-        if (!isStaff)
-        {
-            throw TicketErrors.StaffRequired("phân công phiếu");
-        }
-
         ArgumentNullException.ThrowIfNull(command);
 
-        var scope = TicketPermissions.ReadScopeFor(currentUser, actorId);
-        var ticket = await writer.GetForUpdateAsync(command.Id, scope, cancellationToken);
-        if (ticket == null)
-        {
-            throw TicketErrors.NotFound();
-        }
-
-        if (!await agentDirectory.IsAgentAsync(command.AgentId, cancellationToken))
-        {
-            throw new InvalidInputException("ticket_assignee_invalid", "Kỹ thuật viên không tồn tại hoặc không có vai trò Agent.");
-        }
-
-        TicketCommandGuard.RequireCurrentRevision(writer, ticket, command.ExpectedRevision);
-
-        var now = clock.UtcNow.UtcDateTime;
-        ticket.Assign(command.AgentId, now);
-
-        return await TicketCommandGuard.SaveWithSystemAuditAsync(writer, ticket, actorId, "Yêu cầu đã được phân công cho kỹ thuật viên.", now, cancellationToken);
+        return await new TicketTransitions(writer, currentUser, clock).RunAsStaffAsync(
+            command.Id, command.ExpectedRevision, "phân công phiếu",
+            apply: (ticket, _, now) => ticket.Assign(command.AgentId, now),
+            auditMessage: "Yêu cầu đã được phân công cho kỹ thuật viên.",
+            cancellationToken: cancellationToken,
+            beforeRevisionCheck: async (_, _, token) =>
+            {
+                if (!await agentDirectory.IsAgentAsync(command.AgentId, token))
+                {
+                    throw new InvalidInputException("ticket_assignee_invalid", "Kỹ thuật viên không tồn tại hoặc không có vai trò Agent.");
+                }
+            });
     }
 }

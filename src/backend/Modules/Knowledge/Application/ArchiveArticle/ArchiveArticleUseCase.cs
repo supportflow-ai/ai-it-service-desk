@@ -2,12 +2,14 @@ namespace ServiceDesk.Modules.Knowledge.Application.ArchiveArticle;
 
 using ServiceDesk.SharedKernel.Application;
 using ServiceDesk.SharedKernel.Application.Abstractions;
-using ServiceDesk.Modules.Knowledge.Application.Authorization;
 using ServiceDesk.Modules.Knowledge.Application.Contracts;
 using ServiceDesk.Modules.Knowledge.Application.Ports;
-using ServiceDesk.SharedKernel.Authorization;
-using ServiceDesk.Modules.Knowledge.Domain;
+using ServiceDesk.Modules.Knowledge.Application.Common;
 
+/// <summary>
+/// Xử lý lưu trữ bài viết đã xuất bản (Agent/Admin; tác giả hoặc Admin).
+/// Các bước chung (vai trò, tải bài viết, quyền tác giả, revision, lưu) nằm ở <see cref="ArticleTransitions"/>.
+/// </summary>
 internal sealed class ArchiveArticleUseCase(
     IKnowledgeWriter writer,
     ICurrentUser currentUser,
@@ -17,36 +19,9 @@ internal sealed class ArchiveArticleUseCase(
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        if (!KnowledgePermissions.IsStaff(currentUser))
-        {
-            throw KnowledgeErrors.StaffRequired("lưu trữ bài viết");
-        }
-
-        var article = await writer.GetForUpdateAsync(command.Id, cancellationToken);
-        if (article == null)
-        {
-            throw KnowledgeErrors.NotFound();
-        }
-
-        var callerId = AuthenticatedActor.RequireId(currentUser);
-        if (!KnowledgePermissions.CanManage(article, callerId, currentUser))
-        {
-            throw KnowledgeErrors.AuthorRequired("lưu trữ bài viết");
-        }
-
-        if (!command.ExpectedRevision.HasValue || command.ExpectedRevision.Value == 0)
-        {
-            throw KnowledgeErrors.ExpectedRevisionRequired();
-        }
-
-        if (writer.GetRevision(article) != command.ExpectedRevision.Value)
-        {
-            throw new ConcurrencyConflictException("Phiên bản bài viết đã thay đổi. Vui lòng tải lại.");
-        }
-
-        article.Archive(clock.UtcNow.UtcDateTime);
-
-        var updated = await writer.UpdateArticleAsync(article, command.ExpectedRevision, cancellationToken);
-        return ArticleDtoMapper.ToDto(updated, writer.GetRevision(updated));
+        return await new ArticleTransitions(writer, currentUser, clock).RunAsync(
+            command.Id, command.ExpectedRevision, "lưu trữ bài viết", "lưu trữ bài viết",
+            apply: (article, _, now) => article.Archive(now),
+            cancellationToken: cancellationToken);
     }
 }

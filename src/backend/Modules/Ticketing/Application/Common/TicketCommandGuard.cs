@@ -18,19 +18,11 @@ internal static class TicketCommandGuard
         "Dữ liệu đã bị thay đổi bởi người khác hoặc phiên làm việc đã cũ. Vui lòng tải lại trang.";
 
     /// <summary>Bắt buộc có revision mong đợi khác 0 và khớp revision hiện tại của ticket.</summary>
-    /// <exception cref="InvalidInputException">Thiếu revision mong đợi.</exception>
+    /// <exception cref="InvalidInputException">Thiếu revision mong đợi (xem <see cref="ExpectedRevision"/>).</exception>
     /// <exception cref="ConcurrencyConflictException">Revision đã thay đổi.</exception>
     public static void RequireCurrentRevision(ITicketWriter writer, Ticket ticket, uint? expectedRevision)
     {
-        if (!expectedRevision.HasValue || expectedRevision.Value == 0)
-        {
-            throw TicketErrors.ExpectedRevisionRequired();
-        }
-
-        if (writer.GetRevision(ticket) != expectedRevision.Value)
-        {
-            throw new ConcurrencyConflictException(StaleRevisionMessage);
-        }
+        ExpectedRevision.Require(expectedRevision, () => writer.GetRevision(ticket), StaleRevisionMessage);
     }
 
     /// <summary>Lưu ticket cùng một bình luận công khai do hệ thống ghi lại thao tác của <paramref name="actorId"/>.</summary>

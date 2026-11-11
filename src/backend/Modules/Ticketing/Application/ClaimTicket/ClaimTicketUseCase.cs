@@ -4,7 +4,6 @@ using ServiceDesk.Modules.Ticketing.Application.Authorization;
 using ServiceDesk.Modules.Ticketing.Application.Common;
 using ServiceDesk.Modules.Ticketing.Application.Contracts;
 using ServiceDesk.Modules.Ticketing.Application.Ports;
-using ServiceDesk.SharedKernel.Authorization;
 using ServiceDesk.Modules.Ticketing.Domain;
 
 namespace ServiceDesk.Modules.Ticketing.Application.ClaimTicket;
@@ -19,10 +18,10 @@ public interface IClaimTicket
 }
 
 /// <summary>
-/// Xử lý tiếp nhận vé:
+/// Xử lý tiếp nhận vé (khung chung của lệnh chuyển trạng thái: <see cref="TicketTransitions"/>):
 /// - Yêu cầu người gọi có vai trò Agent hoặc Admin.
-/// - Kiểm tra trạng thái vé phải là Submitted hoặc Assigned.
-/// - Chuyển trạng thái sang InProgress, gán AssigneeId và ghi log vào timeline.
+/// - Vé đã phân công cho người khác chỉ Admin mới nhận thay được.
+/// - Chuyển Submitted/Assigned sang InProgress, gán AssigneeId và ghi log vào timeline.
 /// </summary>
 internal sealed class ClaimTicketUseCase(
     ITicketWriter writer,
@@ -31,32 +30,21 @@ internal sealed class ClaimTicketUseCase(
 {
     public async Task<TicketDto> ExecuteAsync(ClaimTicketCommand command, CancellationToken cancellationToken = default)
     {
-        var actorId = TicketActor.RequireId(currentUser);
-        var isStaff = TicketPermissions.IsStaff(currentUser);
-        if (!isStaff)
-        {
-            throw TicketErrors.StaffRequired("nhận xử lý phiếu");
-        }
-
         ArgumentNullException.ThrowIfNull(command);
 
-        var scope = TicketPermissions.ReadScopeFor(currentUser, actorId);
-        var ticket = await writer.GetForUpdateAsync(command.Id, scope, cancellationToken);
-        if (ticket == null)
-        {
-            throw TicketErrors.NotFound();
-        }
+        return await new TicketTransitions(writer, currentUser, clock).RunAsStaffAsync(
+            command.Id, command.ExpectedRevision, "nhận xử lý phiếu",
+            apply: (ticket, actorId, now) => ticket.Claim(actorId, now),
+            auditMessage: "Kỹ thuật viên đã tiếp nhận xử lý yêu cầu.",
+            cancellationToken: cancellationToken,
+            beforeRevisionCheck: (ticket, actorId, _) =>
+            {
+                if (ticket.Status == TicketStatus.Assigned && ticket.AssignedToId != actorId && !TicketPermissions.IsAdmin(currentUser))
+                {
+                    throw new ForbiddenException("ticket_assigned_to_other", "Vé đã được phân công cho kỹ thuật viên khác.");
+                }
 
-        if (ticket.Status == TicketStatus.Assigned && ticket.AssignedToId != actorId && !TicketPermissions.IsAdmin(currentUser))
-        {
-            throw new ForbiddenException("ticket_assigned_to_other", "Vé đã được phân công cho kỹ thuật viên khác.");
-        }
-
-        TicketCommandGuard.RequireCurrentRevision(writer, ticket, command.ExpectedRevision);
-
-        var now = clock.UtcNow.UtcDateTime;
-        ticket.Claim(actorId, now);
-
-        return await TicketCommandGuard.SaveWithSystemAuditAsync(writer, ticket, actorId, "Kỹ thuật viên đã tiếp nhận xử lý yêu cầu.", now, cancellationToken);
+                return Task.CompletedTask;
+            });
     }
 }

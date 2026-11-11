@@ -26,9 +26,6 @@ internal static class TicketErrors
     public static InvalidInputException PagingInvalid() =>
         new("paging_invalid", "page phải từ 1 trở lên và pageSize phải từ 1 đến 100.");
 
-    public static InvalidInputException ExpectedRevisionRequired() =>
-        new("expected_revision_required", "Cần cung cấp expectedRevision khác 0.");
-
     public static InvalidInputException FileSizeInvalid() =>
         new("attachment_size_invalid", "Kích thước tệp phải từ 1 byte đến 10MB.");
 }

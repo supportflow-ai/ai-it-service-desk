@@ -1,11 +1,8 @@
 using ServiceDesk.SharedKernel.Application;
 using ServiceDesk.SharedKernel.Application.Abstractions;
-using ServiceDesk.Modules.Ticketing.Application.Authorization;
 using ServiceDesk.Modules.Ticketing.Application.Common;
 using ServiceDesk.Modules.Ticketing.Application.Contracts;
 using ServiceDesk.Modules.Ticketing.Application.Ports;
-using ServiceDesk.SharedKernel.Authorization;
-using ServiceDesk.Modules.Ticketing.Domain;
 
 namespace ServiceDesk.Modules.Ticketing.Application.CancelTicket;
 
@@ -19,10 +16,8 @@ public interface ICancelTicket
 }
 
 /// <summary>
-/// Xử lý hủy ticket:
-/// - Chỉ chủ sở hữu (Requester tạo vé) hoặc Admin mới có quyền thực thi.
-/// - Trạng thái vé bắt buộc phải là Submitted (chưa được kỹ thuật viên nhận xử lý).
-/// - Chuyển trạng thái sang Cancelled (trạng thái kết thúc - terminal state, không thể sửa đổi tiếp).
+/// Xử lý hủy vé khi còn Submitted (chủ sở hữu hoặc Admin) và ghi log vào timeline.
+/// Khung chung của lệnh chuyển trạng thái: <see cref="TicketTransitions"/>; phiếu không có hoặc không thuộc quyền trả 404.
 /// </summary>
 internal sealed class CancelTicketUseCase(
     ITicketWriter writer,
@@ -31,21 +26,12 @@ internal sealed class CancelTicketUseCase(
 {
     public async Task<TicketDto> ExecuteAsync(CancelTicketCommand command, CancellationToken cancellationToken = default)
     {
-        var actorId = TicketActor.RequireId(currentUser);
         ArgumentNullException.ThrowIfNull(command);
 
-        var scope = TicketPermissions.OwnerScopeFor(currentUser, actorId);
-        var ticket = await writer.GetForUpdateAsync(command.Id, scope, cancellationToken);
-        if (ticket == null || !TicketPermissions.CanActAsOwner(ticket, actorId, currentUser))
-        {
-            throw TicketErrors.NotFound();
-        }
-
-        TicketCommandGuard.RequireCurrentRevision(writer, ticket, command.ExpectedRevision);
-
-        var now = clock.UtcNow.UtcDateTime;
-        ticket.Cancel(now);
-
-        return await TicketCommandGuard.SaveWithSystemAuditAsync(writer, ticket, actorId, "Yêu cầu đã được hủy bỏ.", now, cancellationToken);
+        return await new TicketTransitions(writer, currentUser, clock).RunAsOwnerAsync(
+            command.Id, command.ExpectedRevision,
+            apply: (ticket, now) => ticket.Cancel(now),
+            auditMessage: "Yêu cầu đã được hủy bỏ.",
+            cancellationToken: cancellationToken);
     }
 }

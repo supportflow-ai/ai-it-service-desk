@@ -19,9 +19,6 @@ internal static class KnowledgeErrors
     public static ForbiddenException AuthorRequired(string action) =>
         new("knowledge_author_required", $"Chỉ tác giả hoặc quản trị viên mới có quyền {action}.");
 
-    public static InvalidInputException ExpectedRevisionRequired() =>
-        new("expected_revision_required", "Cần cung cấp expectedRevision khác 0.");
-
     public static InvalidInputException PagingInvalid() =>
         new("paging_invalid", "page quá lớn so với pageSize.");
 
