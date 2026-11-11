@@ -4,6 +4,7 @@ using ServiceDesk.Modules.Identity.Application.GetCurrentUser;
 using ServiceDesk.Modules.Identity.Application.Ports;
 using ServiceDesk.Modules.Identity.Application.Contracts;
 using Xunit;
+using ServiceDesk.SharedKernel.Application;
 
 namespace ServiceDesk.Application.Tests.Identity;
 
@@ -20,7 +21,7 @@ public sealed class GetCurrentUserTests
         actor.SetupGet(u => u.IsAuthenticated).Returns(authenticated);
         actor.SetupGet(u => u.UserId).Returns(id);
         var accounts = new Mock<IUserAccountGateway>(MockBehavior.Strict);
-        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => new GetCurrentUserUseCase(accounts.Object, actor.Object).ExecuteAsync());
+        await Assert.ThrowsAsync<ForbiddenException>(() => new GetCurrentUserUseCase(accounts.Object, actor.Object).ExecuteAsync());
         accounts.VerifyNoOtherCalls();
     }
 

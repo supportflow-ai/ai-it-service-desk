@@ -6,6 +6,7 @@ using ServiceDesk.Modules.Knowledge.Application.Authorization;
 using ServiceDesk.Modules.Knowledge.Application.Contracts;
 using ServiceDesk.Modules.Knowledge.Application.Ports;
 using ServiceDesk.SharedKernel.Authorization;
+using ServiceDesk.Modules.Knowledge.Domain;
 
 internal sealed class ArchiveArticleUseCase(
     IKnowledgeWriter writer,
@@ -18,24 +19,24 @@ internal sealed class ArchiveArticleUseCase(
 
         if (!KnowledgePermissions.IsStaff(currentUser))
         {
-            throw new UnauthorizedAccessException("Chỉ kỹ thuật viên hoặc quản trị viên mới có thể lưu trữ bài viết.");
+            throw KnowledgeErrors.StaffRequired("lưu trữ bài viết");
         }
 
         var article = await writer.GetForUpdateAsync(command.Id, cancellationToken);
         if (article == null)
         {
-            throw new KeyNotFoundException("Không tìm thấy bài viết.");
+            throw KnowledgeErrors.NotFound();
         }
 
         var callerId = AuthenticatedActor.RequireId(currentUser);
         if (!KnowledgePermissions.CanManage(article, callerId, currentUser))
         {
-            throw new UnauthorizedAccessException("Chỉ tác giả hoặc quản trị viên mới có quyền lưu trữ bài viết.");
+            throw KnowledgeErrors.AuthorRequired("lưu trữ bài viết");
         }
 
         if (!command.ExpectedRevision.HasValue || command.ExpectedRevision.Value == 0)
         {
-            throw new ArgumentException("Expected revision is required.");
+            throw KnowledgeErrors.ExpectedRevisionRequired();
         }
 
         if (writer.GetRevision(article) != command.ExpectedRevision.Value)

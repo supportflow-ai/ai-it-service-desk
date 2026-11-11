@@ -2,6 +2,7 @@ using System.Buffers.Binary;
 using System.Security.Cryptography;
 using System.Text.Json;
 using ServiceDesk.Modules.Ticketing.Application.CreateTicket;
+using ServiceDesk.SharedKernel.Application;
 
 namespace ServiceDesk.Modules.Ticketing.Application.Idempotency;
 
@@ -25,7 +26,7 @@ public sealed record CreateTicketFingerprint(string KeyHash, string PayloadHash,
         if (normalizedKey.Length is 0 or > MaximumKeyLength ||
             normalizedKey.Any(character => character < '!' || character > '~'))
         {
-            throw new ArgumentException("Idempotency-Key phải chứa từ 1 đến 200 ký tự ASCII hiển thị được.");
+            throw new InvalidInputException("idempotency_key_invalid", "Idempotency-Key phải chứa từ 1 đến 200 ký tự ASCII hiển thị được.");
         }
 
         var keyHash = Hash([normalizedKey]);

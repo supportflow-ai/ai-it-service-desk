@@ -35,7 +35,7 @@ internal sealed class ClaimTicketUseCase(
         var isStaff = TicketPermissions.IsStaff(currentUser);
         if (!isStaff)
         {
-            throw new UnauthorizedAccessException("Only an agent or admin can claim a ticket.");
+            throw TicketErrors.StaffRequired("nhận xử lý phiếu");
         }
 
         ArgumentNullException.ThrowIfNull(command);
@@ -44,18 +44,18 @@ internal sealed class ClaimTicketUseCase(
         var ticket = await writer.GetForUpdateAsync(command.Id, scope, cancellationToken);
         if (ticket == null)
         {
-            throw new KeyNotFoundException("Ticket not found.");
+            throw TicketErrors.NotFound();
         }
 
         if (ticket.Status == TicketStatus.Assigned && ticket.AssignedToId != actorId && !TicketPermissions.IsAdmin(currentUser))
         {
-            throw new UnauthorizedAccessException("Vé đã được phân công cho kỹ thuật viên khác.");
+            throw new ForbiddenException("ticket_assigned_to_other", "Vé đã được phân công cho kỹ thuật viên khác.");
         }
 
         TicketCommandGuard.RequireCurrentRevision(writer, ticket, command.ExpectedRevision);
 
         var now = clock.UtcNow.UtcDateTime;
-        TicketCommandGuard.ApplyRule(ticket, t => t.Claim(actorId, now));
+        ticket.Claim(actorId, now);
 
         return await TicketCommandGuard.SaveWithSystemAuditAsync(writer, ticket, actorId, "Kỹ thuật viên đã tiếp nhận xử lý yêu cầu.", now, cancellationToken);
     }

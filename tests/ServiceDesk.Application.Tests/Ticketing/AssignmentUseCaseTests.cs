@@ -9,6 +9,7 @@ using ServiceDesk.Modules.Ticketing.Application.UnassignTicket;
 using ServiceDesk.SharedKernel.Authorization;
 using ServiceDesk.Modules.Ticketing.Domain;
 using Xunit;
+using ServiceDesk.SharedKernel.Application;
 
 namespace ServiceDesk.Application.Tests.Ticketing;
 
@@ -137,7 +138,7 @@ public sealed class AssignmentUseCaseTests
 
         var useCase = new AssignTicketUseCase(_writer.Object, _agentDirectory.Object, _user.Object, _clock.Object);
 
-        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+        await Assert.ThrowsAsync<ForbiddenException>(() =>
             useCase.ExecuteAsync(new(Guid.NewGuid(), _agentId)));
     }
 }

@@ -14,7 +14,7 @@ public static class AuthenticatedActor
     public static Guid RequireId(ICurrentUser user)
     {
         if (!user.IsAuthenticated || !Guid.TryParse(user.UserId, out var id) || id == Guid.Empty)
-            throw new UnauthorizedAccessException("Yêu cầu danh tính người dùng đã được xác thực.");
+            throw new ForbiddenException("actor_identity_required", "Yêu cầu danh tính người dùng đã được xác thực.");
         return id;
     }
 }

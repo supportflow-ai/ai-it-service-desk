@@ -6,6 +6,7 @@ using ServiceDesk.Modules.Ticketing.Application.GetAgentQueue;
 using ServiceDesk.Modules.Ticketing.Application.Ports;
 using ServiceDesk.SharedKernel.Authorization;
 using Xunit;
+using ServiceDesk.SharedKernel.Application;
 
 namespace ServiceDesk.Application.Tests.Ticketing;
 
@@ -65,7 +66,7 @@ public sealed class GetAgentQueueUseCaseTests
 
         var useCase = new GetAgentQueueUseCase(_queries.Object, _user.Object);
 
-        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+        await Assert.ThrowsAsync<ForbiddenException>(() =>
             useCase.ExecuteAsync(new()));
     }
 
@@ -81,7 +82,7 @@ public sealed class GetAgentQueueUseCaseTests
 
         var useCase = new GetAgentQueueUseCase(_queries.Object, _user.Object);
 
-        await Assert.ThrowsAsync<ArgumentException>(() =>
+        await Assert.ThrowsAsync<InvalidInputException>(() =>
             useCase.ExecuteAsync(new(Page: page, PageSize: pageSize)));
     }
 }

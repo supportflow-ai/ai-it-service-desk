@@ -1,3 +1,4 @@
+using ServiceDesk.SharedKernel.Application;
 namespace ServiceDesk.Modules.Ticketing.Domain;
 
 /// <summary>
@@ -77,34 +78,34 @@ public class Ticket
     {
         if (requesterId == Guid.Empty)
         {
-            throw new ArgumentException("Requester ID is required");
+            throw new InvalidInputException("ticket_requester_required", "Cần có mã người gửi yêu cầu.");
         }
 
         var normalizedTitle = title?.Trim();
         if (string.IsNullOrWhiteSpace(normalizedTitle))
         {
-            throw new ArgumentException("Title is required");
+            throw new InvalidInputException("ticket_title_required", "Tiêu đề không được để trống.");
         }
 
         if (normalizedTitle.Length > 100)
         {
-            throw new ArgumentException("Title must not exceed 100 characters");
+            throw new InvalidInputException("ticket_title_too_long", "Tiêu đề không được vượt quá 100 ký tự.");
         }
 
         var normalizedDescription = description?.Trim();
         if (string.IsNullOrWhiteSpace(normalizedDescription))
         {
-            throw new ArgumentException("Description is required");
+            throw new InvalidInputException("ticket_description_required", "Mô tả không được để trống.");
         }
 
         if (normalizedDescription.Length < 10)
         {
-            throw new ArgumentException("Description must be at least 10 characters");
+            throw new InvalidInputException("ticket_description_too_short", "Mô tả phải có ít nhất 10 ký tự.");
         }
 
         if (!TicketCategories.All.Contains(categoryId, StringComparer.Ordinal))
         {
-            throw new ArgumentException("Invalid category");
+            throw new InvalidInputException("ticket_category_invalid", "Danh mục không hợp lệ.");
         }
 
         return new Ticket
@@ -145,9 +146,9 @@ public class Ticket
     /// </summary>
     public void Assign(Guid agentId, DateTime now)
     {
-        if (agentId == Guid.Empty) throw new ArgumentException("Agent ID is required.");
+        if (agentId == Guid.Empty) throw new InvalidInputException("ticket_agent_required", "Cần có mã kỹ thuật viên.");
         if (Status == TicketStatus.Closed || Status == TicketStatus.Cancelled)
-            throw new InvalidOperationException($"Cannot assign ticket in status {Status}");
+            throw new RuleViolationException("ticket_cannot_assign", $"Không thể phân công phiếu ở trạng thái {Status}.");
         AssignedToId = agentId;
         AssignedAt = now;
         if (Status == TicketStatus.Submitted) Status = TicketStatus.Assigned;
@@ -160,11 +161,11 @@ public class Ticket
     public void Unassign(DateTime now)
     {
         if (Status == TicketStatus.Closed || Status == TicketStatus.Cancelled)
-            throw new InvalidOperationException($"Cannot unassign ticket in status {Status}");
+            throw new RuleViolationException("ticket_cannot_unassign", $"Không thể hủy phân công phiếu ở trạng thái {Status}.");
         if (AssignedToId == null)
-            throw new InvalidOperationException("Ticket is not assigned.");
+            throw new RuleViolationException("ticket_not_assigned", "Phiếu chưa được phân công.");
         if (Status != TicketStatus.Assigned)
-            throw new InvalidOperationException($"Cannot unassign ticket in status {Status}. Only Assigned tickets can be unassigned.");
+            throw new RuleViolationException("ticket_cannot_unassign", $"Không thể hủy phân công phiếu ở trạng thái {Status}. Chỉ phiếu ở trạng thái Assigned mới được hủy phân công.");
         AssignedToId = null;
         AssignedAt = null;
         Status = TicketStatus.Submitted;
@@ -176,10 +177,10 @@ public class Ticket
     /// </summary>
     public void Claim(Guid agentId, DateTime now)
     {
-        if (agentId == Guid.Empty) throw new ArgumentException("Agent ID is required.");
+        if (agentId == Guid.Empty) throw new InvalidInputException("ticket_agent_required", "Cần có mã kỹ thuật viên.");
         if (Status != TicketStatus.Submitted && Status != TicketStatus.Assigned)
         {
-            throw new InvalidOperationException($"Cannot claim ticket in status {Status}");
+            throw new RuleViolationException("ticket_cannot_claim", $"Không thể nhận xử lý phiếu ở trạng thái {Status}.");
         }
 
         AssignedToId = agentId;
@@ -195,7 +196,7 @@ public class Ticket
     {
         if (Status != TicketStatus.InProgress)
         {
-            throw new InvalidOperationException($"Cannot resolve ticket in status {Status}");
+            throw new RuleViolationException("ticket_cannot_resolve", $"Không thể giải quyết phiếu ở trạng thái {Status}.");
         }
 
         Status = TicketStatus.Resolved;
@@ -209,7 +210,7 @@ public class Ticket
     {
         if (Status != TicketStatus.Resolved)
         {
-            throw new InvalidOperationException($"Cannot reopen ticket in status {Status}");
+            throw new RuleViolationException("ticket_cannot_reopen", $"Không thể mở lại phiếu ở trạng thái {Status}.");
         }
 
         Status = TicketStatus.InProgress;
@@ -223,7 +224,7 @@ public class Ticket
     {
         if (Status != TicketStatus.Resolved)
         {
-            throw new InvalidOperationException($"Cannot close ticket in status {Status}");
+            throw new RuleViolationException("ticket_cannot_close", $"Không thể đóng phiếu ở trạng thái {Status}.");
         }
 
         Status = TicketStatus.Closed;
@@ -237,7 +238,7 @@ public class Ticket
     {
         if (Status != TicketStatus.Submitted)
         {
-            throw new InvalidOperationException($"Cannot cancel ticket in status {Status}");
+            throw new RuleViolationException("ticket_cannot_cancel", $"Không thể hủy phiếu ở trạng thái {Status}.");
         }
 
         Status = TicketStatus.Cancelled;
@@ -251,34 +252,34 @@ public class Ticket
     {
         if (Status != TicketStatus.Submitted)
         {
-            throw new InvalidOperationException("Ticket can only be updated when Submitted");
+            throw new RuleViolationException("ticket_update_requires_submitted", "Chỉ có thể cập nhật phiếu khi đang ở trạng thái Submitted.");
         }
 
         var normalizedTitle = title?.Trim();
         if (string.IsNullOrWhiteSpace(normalizedTitle))
         {
-            throw new ArgumentException("Title is required");
+            throw new InvalidInputException("ticket_title_required", "Tiêu đề không được để trống.");
         }
 
         if (normalizedTitle.Length > 100)
         {
-            throw new ArgumentException("Title must not exceed 100 characters");
+            throw new InvalidInputException("ticket_title_too_long", "Tiêu đề không được vượt quá 100 ký tự.");
         }
 
         var normalizedDescription = description?.Trim();
         if (string.IsNullOrWhiteSpace(normalizedDescription))
         {
-            throw new ArgumentException("Description is required");
+            throw new InvalidInputException("ticket_description_required", "Mô tả không được để trống.");
         }
 
         if (normalizedDescription.Length < 10)
         {
-            throw new ArgumentException("Description must be at least 10 characters");
+            throw new InvalidInputException("ticket_description_too_short", "Mô tả phải có ít nhất 10 ký tự.");
         }
 
         if (!TicketCategories.All.Contains(categoryId, StringComparer.Ordinal))
         {
-            throw new ArgumentException("Invalid category");
+            throw new InvalidInputException("ticket_category_invalid", "Danh mục không hợp lệ.");
         }
 
         Title = normalizedTitle;

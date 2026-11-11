@@ -17,7 +17,7 @@ internal static class TicketRowLock
             : context.Database.SqlQuery<int>($"SELECT status AS \"Value\" FROM public.tickets WHERE \"Id\" = {ticketId} FOR SHARE");
         // ToListAsync giữ nguyên câu lệnh lấy khóa, không bọc vào truy vấn con.
         var status = (await query.ToListAsync(cancellationToken)).SingleOrDefault(-1);
-        if (status < 0) throw new KeyNotFoundException("Ticket not found.");
-        if (status is (int)TicketStatus.Closed or (int)TicketStatus.Cancelled) throw new ArgumentException(terminalMessage);
+        if (status < 0) throw TicketErrors.NotFound();
+        if (status is (int)TicketStatus.Closed or (int)TicketStatus.Cancelled) throw TicketErrors.TicketClosed(terminalMessage);
     }
 }

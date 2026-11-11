@@ -10,6 +10,7 @@ using ServiceDesk.Modules.Ticketing.Application.Ports;
 using ServiceDesk.SharedKernel.Authorization;
 using ServiceDesk.Modules.Ticketing.Domain;
 using Xunit;
+using ServiceDesk.SharedKernel.Application;
 
 namespace ServiceDesk.Application.Tests.Ticketing;
 
@@ -69,19 +70,19 @@ public sealed class TicketUseCaseTests
     [InlineData("Valid", "Valid description", "INVALID")]
     public async Task InvalidDomainInput_DoesNotReachPersistence(string title, string description, string category)
     {
-        await Assert.ThrowsAsync<ArgumentException>(() => _create.ExecuteAsync(new(title, description, category)));
+        await Assert.ThrowsAsync<InvalidInputException>(() => _create.ExecuteAsync(new(title, description, category)));
         _writer.VerifyNoOtherCalls();
     }
 
     [Fact]
     public async Task TitleOver100Characters_IsRejectedBeforePersistence() =>
-        await Assert.ThrowsAsync<ArgumentException>(() => _create.ExecuteAsync(Valid with { Title = new string('x', 101) }));
+        await Assert.ThrowsAsync<InvalidInputException>(() => _create.ExecuteAsync(Valid with { Title = new string('x', 101) }));
 
     [Theory]
     [InlineData(0, 10)] [InlineData(1, 0)] [InlineData(1, 101)] [InlineData(int.MaxValue, 100)]
     public async Task InvalidPaging_IsRejected(int page, int pageSize)
     {
-        await Assert.ThrowsAsync<ArgumentException>(() => _list.ExecuteAsync(new(page, pageSize)));
+        await Assert.ThrowsAsync<InvalidInputException>(() => _list.ExecuteAsync(new(page, pageSize)));
         _queries.VerifyNoOtherCalls();
     }
 
@@ -129,10 +130,10 @@ public sealed class TicketUseCaseTests
         _user.SetupGet(u => u.IsAuthenticated).Returns(mode != "anonymous");
         _user.SetupGet(u => u.UserId).Returns(mode switch { "missing" => null, "invalid" => "bad", "empty" => Guid.Empty.ToString(), _ => _actor.ToString() });
         if (mode == "no-role") _user.SetupGet(u => u.Roles).Returns([]);
-        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _create.ExecuteAsync(Valid));
-        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _create.ExecuteAsync(Valid, "key"));
-        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _list.ExecuteAsync(new()));
-        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _detail.ExecuteAsync(new(Guid.NewGuid())));
+        await Assert.ThrowsAsync<ForbiddenException>(() => _create.ExecuteAsync(Valid));
+        await Assert.ThrowsAsync<ForbiddenException>(() => _create.ExecuteAsync(Valid, "key"));
+        await Assert.ThrowsAsync<ForbiddenException>(() => _list.ExecuteAsync(new()));
+        await Assert.ThrowsAsync<ForbiddenException>(() => _detail.ExecuteAsync(new(Guid.NewGuid())));
         _writer.VerifyNoOtherCalls(); _queries.VerifyNoOtherCalls();
     }
 }

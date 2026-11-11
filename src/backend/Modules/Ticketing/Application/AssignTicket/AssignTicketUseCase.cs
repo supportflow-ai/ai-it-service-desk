@@ -30,7 +30,7 @@ internal sealed class AssignTicketUseCase(
         var isStaff = TicketPermissions.IsStaff(currentUser);
         if (!isStaff)
         {
-            throw new UnauthorizedAccessException("Only agents or admins can assign tickets.");
+            throw TicketErrors.StaffRequired("phân công phiếu");
         }
 
         ArgumentNullException.ThrowIfNull(command);
@@ -39,18 +39,18 @@ internal sealed class AssignTicketUseCase(
         var ticket = await writer.GetForUpdateAsync(command.Id, scope, cancellationToken);
         if (ticket == null)
         {
-            throw new KeyNotFoundException("Ticket not found.");
+            throw TicketErrors.NotFound();
         }
 
         if (!await agentDirectory.IsAgentAsync(command.AgentId, cancellationToken))
         {
-            throw new ArgumentException("Kỹ thuật viên không tồn tại hoặc không có vai trò Agent.");
+            throw new InvalidInputException("ticket_assignee_invalid", "Kỹ thuật viên không tồn tại hoặc không có vai trò Agent.");
         }
 
         TicketCommandGuard.RequireCurrentRevision(writer, ticket, command.ExpectedRevision);
 
         var now = clock.UtcNow.UtcDateTime;
-        TicketCommandGuard.ApplyRule(ticket, t => t.Assign(command.AgentId, now), includeArgumentErrors: true);
+        ticket.Assign(command.AgentId, now);
 
         return await TicketCommandGuard.SaveWithSystemAuditAsync(writer, ticket, actorId, "Yêu cầu đã được phân công cho kỹ thuật viên.", now, cancellationToken);
     }

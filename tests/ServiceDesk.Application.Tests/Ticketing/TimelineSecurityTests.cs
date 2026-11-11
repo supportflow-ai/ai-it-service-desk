@@ -10,6 +10,7 @@ using ServiceDesk.Modules.Ticketing.Application.Ports;
 using ServiceDesk.SharedKernel.Authorization;
 using ServiceDesk.Modules.Ticketing.Domain;
 using Xunit;
+using ServiceDesk.SharedKernel.Application;
 
 namespace ServiceDesk.Application.Tests.Ticketing;
 
@@ -67,7 +68,7 @@ public sealed class TimelineSecurityTests
 
         var useCase = new AddInternalNoteUseCase(_ticketWriter.Object, _timelineStore.Object, _agentDirectory.Object, _user.Object, _clock.Object);
 
-        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+        await Assert.ThrowsAsync<ForbiddenException>(() =>
             useCase.ExecuteAsync(new(_ticketId, "Leaked secret internal diagnostic")));
     }
 

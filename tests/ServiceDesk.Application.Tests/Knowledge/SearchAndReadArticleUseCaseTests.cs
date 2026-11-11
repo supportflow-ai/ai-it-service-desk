@@ -8,6 +8,7 @@ using ServiceDesk.Modules.Knowledge.Application.SearchKnowledge;
 using ServiceDesk.SharedKernel.Authorization;
 using ServiceDesk.Modules.Knowledge.Domain;
 using Xunit;
+using ServiceDesk.SharedKernel.Application;
 
 namespace ServiceDesk.Application.Tests.Knowledge;
 
@@ -135,7 +136,7 @@ public sealed class SearchAndReadArticleUseCaseTests
         }
         else
         {
-            await Assert.ThrowsAsync<ArgumentException>(() => useCase.ExecuteAsync(query));
+            await Assert.ThrowsAsync<InvalidInputException>(() => useCase.ExecuteAsync(query));
             _queries.VerifyNoOtherCalls();
         }
     }

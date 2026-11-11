@@ -29,7 +29,7 @@ internal sealed class UnassignTicketUseCase(
         var isStaff = TicketPermissions.IsStaff(currentUser);
         if (!isStaff)
         {
-            throw new UnauthorizedAccessException("Only agents or admins can unassign tickets.");
+            throw TicketErrors.StaffRequired("hủy phân công phiếu");
         }
 
         ArgumentNullException.ThrowIfNull(command);
@@ -38,13 +38,13 @@ internal sealed class UnassignTicketUseCase(
         var ticket = await writer.GetForUpdateAsync(command.Id, scope, cancellationToken);
         if (ticket == null)
         {
-            throw new KeyNotFoundException("Ticket not found.");
+            throw TicketErrors.NotFound();
         }
 
         TicketCommandGuard.RequireCurrentRevision(writer, ticket, command.ExpectedRevision);
 
         var now = clock.UtcNow.UtcDateTime;
-        TicketCommandGuard.ApplyRule(ticket, t => t.Unassign(now));
+        ticket.Unassign(now);
 
         return await TicketCommandGuard.SaveWithSystemAuditAsync(writer, ticket, actorId, "Yêu cầu đã được hủy phân công xử lý.", now, cancellationToken);
     }

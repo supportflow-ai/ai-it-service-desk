@@ -4,6 +4,7 @@ using ServiceDesk.Modules.Ticketing.Application.ConfirmAttachmentUpload;
 using ServiceDesk.Modules.Ticketing.Domain;
 using ServiceDesk.Modules.Ticketing.Infrastructure;
 using Xunit;
+using ServiceDesk.SharedKernel.Application;
 
 namespace ServiceDesk.IntegrationTests;
 
@@ -64,7 +65,7 @@ public sealed class TicketAttachmentPersistenceTests(TicketIdempotencyPostgresFi
         start.SetResult();
         var results = await Task.WhenAll(firstAttempt, secondAttempt);
         Assert.Single(results, result => result is null);
-        Assert.Contains(quotaMessage, Assert.IsType<ArgumentException>(Assert.Single(results.OfType<Exception>())).Message);
+        Assert.Contains(quotaMessage, Assert.IsType<RuleViolationException>(Assert.Single(results.OfType<Exception>())).Message);
 
         await using var verification = fixture.CreateContext();
         var confirmed = verification.TicketAttachments.Where(file => file.TicketId == first.TicketId);
@@ -122,7 +123,7 @@ public sealed class TicketAttachmentPersistenceTests(TicketIdempotencyPostgresFi
         await using var context = fixture.CreateContext();
         var attachment = TicketAttachment.Create(upload.TicketId, upload.FileName, upload.FileSizeBytes,
             upload.ContentType, $"tickets/{upload.TicketId}/attachments/{Guid.NewGuid()}", upload.ActorId, DateTime.UtcNow);
-        await Assert.ThrowsAsync<ArgumentException>(() => new PostgresTicketAttachmentStore(context)
+        await Assert.ThrowsAsync<RuleViolationException>(() => new PostgresTicketAttachmentStore(context)
             .ConfirmAsync(upload.Id, attachment, upload.ExpiresAt));
         await using var verification = fixture.CreateContext();
         Assert.False(await verification.TicketAttachments.AnyAsync(value => value.TicketId == upload.TicketId));
@@ -140,7 +141,7 @@ public sealed class TicketAttachmentPersistenceTests(TicketIdempotencyPostgresFi
         }
         await using var context = fixture.CreateContext();
         var rejected = AttachmentUploadGrant.CreatePending(upload.TicketId, upload.ActorId, "file.txt", 10, "text/plain", DateTime.UtcNow.AddHours(1));
-        await Assert.ThrowsAsync<ArgumentException>(() => new PostgresTicketAttachmentStore(context).CreateUploadGrantAsync(rejected));
+        await Assert.ThrowsAsync<RuleViolationException>(() => new PostgresTicketAttachmentStore(context).CreateUploadGrantAsync(rejected));
         await using var verification = fixture.CreateContext();
         Assert.Equal(20, await verification.AttachmentUploadGrants.CountAsync(value => value.ActorId == upload.ActorId));
     }

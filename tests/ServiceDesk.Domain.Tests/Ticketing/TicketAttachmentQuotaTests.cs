@@ -1,5 +1,6 @@
 using ServiceDesk.Modules.Ticketing.Domain;
 using Xunit;
+using ServiceDesk.SharedKernel.Application;
 
 namespace ServiceDesk.Domain.Tests.Ticketing;
 
@@ -20,7 +21,7 @@ public sealed class TicketAttachmentQuotaTests
     {
         var attachment = Create(1);
 
-        Assert.Throws<ArgumentException>(() =>
+        Assert.Throws<RuleViolationException>(() =>
             attachment.RequireTicketCapacity(Enumerable.Repeat(1L, 10).ToArray()));
     }
 
@@ -29,7 +30,7 @@ public sealed class TicketAttachmentQuotaTests
     {
         var attachment = Create(10 * MiB);
 
-        Assert.Throws<ArgumentException>(() => attachment.RequireTicketCapacity(
+        Assert.Throws<RuleViolationException>(() => attachment.RequireTicketCapacity(
             [10 * MiB, 10 * MiB, 10 * MiB, 10 * MiB, 1]));
     }
 

@@ -47,7 +47,7 @@ internal static class TicketActor
     {
         var id = AuthenticatedActor.RequireId(currentUser);
         if (!currentUser.Roles.Any(RoleNames.All.Contains))
-            throw new UnauthorizedAccessException("Yêu cầu vai trò hợp lệ trong hệ thống.");
+            throw new ForbiddenException("ticket_role_required", "Yêu cầu vai trò hợp lệ trong hệ thống.");
         return id;
     }
 }

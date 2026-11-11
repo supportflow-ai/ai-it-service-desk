@@ -9,6 +9,7 @@ using ServiceDesk.Modules.Ticketing.Application.GetMyTickets;
 using ServiceDesk.Modules.Ticketing.Application.GetTicketDetail;
 using ServiceDesk.Modules.Ticketing.Application.UpdateTicket;
 using ServiceDesk.SharedKernel.Authorization;
+using ServiceDesk.SharedKernel.Application;
 
 namespace ServiceDesk.Modules.Ticketing.Presentation;
 
@@ -29,7 +30,7 @@ public static partial class TicketEndpoints
         {
             var hasKey = context.Request.Headers.TryGetValue("Idempotency-Key", out var keyValues);
             if (hasKey && (keyValues.Count != 1 || string.IsNullOrWhiteSpace(keyValues[0])))
-                return Results.BadRequest(new { error = "Supply a single non-empty Idempotency-Key." });
+                throw new InvalidInputException("idempotency_key_invalid", "Chỉ được gửi một header Idempotency-Key không rỗng.");
 
             var ticket = await createTicket.ExecuteAsync(command, hasKey ? keyValues[0]! : null, ct);
             return Results.Created($"/api/tickets/{ticket.Id}", ticket);

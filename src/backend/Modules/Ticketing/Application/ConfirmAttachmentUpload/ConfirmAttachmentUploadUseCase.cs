@@ -16,7 +16,7 @@ public interface IConfirmAttachmentUpload
 }
 
 internal sealed class AttachmentConfirmationBusyException(Exception innerException)
-    : RetryLaterException("Phiếu đang được cập nhật. Vui lòng thử xác nhận tệp lại.", innerException);
+    : RetryLaterException("attachment_confirmation_busy", "Phiếu đang được cập nhật. Vui lòng thử xác nhận tệp lại.", innerException);
 
 internal sealed class ConfirmAttachmentUploadUseCase(
     ITicketQueries ticketQueries,
@@ -37,28 +37,28 @@ internal sealed class ConfirmAttachmentUploadUseCase(
             (!req.StorageKey.StartsWith(pendingPrefix, StringComparison.Ordinal) &&
              !req.StorageKey.StartsWith(legacyPrefix, StringComparison.Ordinal)))
         {
-            throw new ArgumentException("Storage key không hợp lệ hoặc không thuộc về vé này.");
+            throw new InvalidInputException("attachment_storage_key_invalid", "Storage key không hợp lệ hoặc không thuộc về vé này.");
         }
 
         var scope = TicketPermissions.ReadScopeFor(currentUser, actorId, includeOwner: true);
 
         var ticket = await ticketQueries.GetByIdAsync(command.TicketId, scope, cancellationToken);
-        if (ticket == null) throw new KeyNotFoundException("Ticket not found.");
+        if (ticket == null) throw TicketErrors.NotFound();
         if (ticket.Status is (int)TicketStatus.Closed or (int)TicketStatus.Cancelled)
-            throw new ArgumentException("Không thể xác nhận tệp cho vé đã kết thúc.");
+            throw TicketErrors.TicketClosed("Không thể xác nhận tệp cho vé đã kết thúc.");
 
         var upload = await attachmentStore.GetUploadGrantAsync(command.TicketId, req.StorageKey, actorId, cancellationToken)
-            ?? throw new KeyNotFoundException("Upload not found.");
+            ?? throw TicketErrors.UploadNotFound();
         if ((req.FileName ?? string.Empty).Trim() != upload.FileName || req.FileSizeBytes != upload.FileSizeBytes ||
             !string.Equals(req.ContentType, upload.ContentType, StringComparison.OrdinalIgnoreCase))
-            throw new ArgumentException("Metadata không khớp yêu cầu upload đã cấp.");
+            throw new InvalidInputException("attachment_metadata_mismatch", "Metadata không khớp yêu cầu upload đã cấp.");
         if (upload.AttachmentId is { } existingId)
             return await attachmentStore.GetByIdAsync(existingId, cancellationToken)
-                ?? throw new KeyNotFoundException("Attachment not found.");
+                ?? throw TicketErrors.AttachmentNotFound();
         if (upload.ConsumedAt.HasValue)
-            throw new ArgumentException("Quyền tải tệp đã được sử dụng. Vui lòng tải lại danh sách tệp.");
+            throw new RuleViolationException("attachment_upload_consumed", "Quyền tải tệp đã được sử dụng. Vui lòng tải lại danh sách tệp.");
         if (upload.ExpiresAt <= clock.UtcNow.UtcDateTime)
-            throw new ArgumentException("Yêu cầu upload đã hết hạn. Vui lòng tải lại tệp.");
+            throw new RuleViolationException("attachment_upload_expired", "Yêu cầu upload đã hết hạn. Vui lòng tải lại tệp.");
 
         var bucket = storageService.DefaultBucket;
         var finalKey = $"tickets/{command.TicketId}/attachments/{Guid.NewGuid()}";
@@ -69,7 +69,7 @@ internal sealed class ConfirmAttachmentUploadUseCase(
             await storageService.CopyAsync(bucket, upload.StorageKey, finalKey, source!.ETag, cancellationToken);
             VerifyObject(await storageService.StatAsync(bucket, finalKey, cancellationToken), upload);
         }
-        catch (Exception ex) when (ex is not ArgumentException and not OperationCanceledException)
+        catch (Exception ex) when (ex is not ArgumentException and not DomainException and not OperationCanceledException)
         {
             throw new ServiceUnavailableException("Không thể xác minh tệp đã tải lên. Vui lòng thử xác nhận lại.");
         }
@@ -83,7 +83,7 @@ internal sealed class ConfirmAttachmentUploadUseCase(
         {
             result = await attachmentStore.ConfirmAsync(upload.Id, attachment, clock.UtcNow.UtcDateTime, cancellationToken);
         }
-        catch (Exception error) when (error is ArgumentException or AttachmentConfirmationBusyException)
+        catch (Exception error) when (error is ArgumentException or InvalidInputException or RuleViolationException or AttachmentConfirmationBusyException)
         {
             // Giao dịch bị từ chối chắc chắn nên có thể dọn bản sao đích và giữ lại nguồn để thử lại.
             await TryCleanupAsync(bucket, finalKey);
@@ -96,11 +96,11 @@ internal sealed class ConfirmAttachmentUploadUseCase(
 
     private static void VerifyObject(StoredObject? value, AttachmentUploadGrant upload)
     {
-        if (value is null) throw new ArgumentException("Chưa tìm thấy tệp đã tải lên.");
+        if (value is null) throw new RuleViolationException("attachment_object_missing", "Chưa tìm thấy tệp đã tải lên.");
         if (value.Size != upload.FileSizeBytes || value.Size <= 0 || value.Size > 10 * 1024 * 1024 ||
             string.IsNullOrWhiteSpace(value.ContentType) ||
             !string.Equals(value.ContentType.Split(';')[0].Trim(), upload.ContentType.Split(';')[0].Trim(), StringComparison.OrdinalIgnoreCase))
-            throw new ArgumentException("Kích thước hoặc loại tệp thực tế không khớp yêu cầu upload.");
+            throw new RuleViolationException("attachment_object_mismatch", "Kích thước hoặc loại tệp thực tế không khớp yêu cầu upload.");
     }
 
     private async Task TryCleanupAsync(string bucket, string key)

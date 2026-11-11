@@ -1,6 +1,7 @@
 using FluentAssertions;
 using ServiceDesk.Modules.Ticketing.Domain;
 using Xunit;
+using ServiceDesk.SharedKernel.Application;
 
 namespace ServiceDesk.Domain.Tests.Ticketing;
 
@@ -61,7 +62,7 @@ public class TicketTests
     {
         var act = () => CreateValidTicket(title: title);
 
-        act.Should().Throw<ArgumentException>();
+        act.Should().Throw<InvalidInputException>();
     }
 
     [Fact]
@@ -69,7 +70,7 @@ public class TicketTests
     {
         var act = () => CreateValidTicket(title: new string('x', 101));
 
-        act.Should().Throw<ArgumentException>();
+        act.Should().Throw<InvalidInputException>();
     }
 
     [Theory]
@@ -80,7 +81,7 @@ public class TicketTests
     {
         var act = () => CreateValidTicket(description: description);
 
-        act.Should().Throw<ArgumentException>();
+        act.Should().Throw<InvalidInputException>();
     }
 
     [Theory]
@@ -90,7 +91,7 @@ public class TicketTests
     {
         var act = () => CreateValidTicket(categoryId: categoryId);
 
-        act.Should().Throw<ArgumentException>();
+        act.Should().Throw<InvalidInputException>();
     }
 
     [Fact]
@@ -103,7 +104,7 @@ public class TicketTests
             TicketCategories.VPN,
             CreatedAt);
 
-        act.Should().Throw<ArgumentException>();
+        act.Should().Throw<InvalidInputException>();
     }
 
     [Fact]
@@ -139,7 +140,7 @@ public class TicketTests
         ticket.Claim(agentId, DateTime.UtcNow);
 
         var act = () => ticket.Claim(agentId, DateTime.UtcNow);
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<RuleViolationException>();
     }
 
     [Fact]
@@ -179,7 +180,7 @@ public class TicketTests
         ticket.Claim(Guid.NewGuid(), DateTime.UtcNow);
 
         var act = () => ticket.Cancel(DateTime.UtcNow);
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<RuleViolationException>();
     }
 
     [Fact]

@@ -1,3 +1,4 @@
+using ServiceDesk.SharedKernel.Application;
 namespace ServiceDesk.Modules.Ticketing.Domain;
 
 /// <summary>
@@ -23,9 +24,9 @@ public sealed class TicketAttachment
     public void RequireTicketCapacity(IReadOnlyCollection<long> confirmedFileSizes)
     {
         if (confirmedFileSizes.Count >= MaxFilesPerTicket)
-            throw new ArgumentException("Mỗi phiếu chỉ được đính kèm tối đa 10 tệp.");
+            throw new RuleViolationException("attachment_quota_files", "Mỗi phiếu chỉ được đính kèm tối đa 10 tệp.");
         if (confirmedFileSizes.Sum(size => (decimal)size) + FileSizeBytes > MaxBytesPerTicket)
-            throw new ArgumentException("Tổng dung lượng tệp đính kèm của mỗi phiếu không được vượt quá 50 MiB.");
+            throw new RuleViolationException("attachment_quota_bytes", "Tổng dung lượng tệp đính kèm của mỗi phiếu không được vượt quá 50 MiB.");
     }
 
     public static TicketAttachment Create(
@@ -37,11 +38,11 @@ public sealed class TicketAttachment
         Guid uploadedBy,
         DateTime now)
     {
-        if (ticketId == Guid.Empty) throw new ArgumentException("Ticket ID is required.");
-        if (string.IsNullOrWhiteSpace(fileName)) throw new ArgumentException("File name is required.");
-        if (fileSizeBytes <= 0) throw new ArgumentException("File size must be positive.");
-        if (string.IsNullOrWhiteSpace(storageKey)) throw new ArgumentException("Storage key is required.");
-        if (uploadedBy == Guid.Empty) throw new ArgumentException("Uploader ID is required.");
+        if (ticketId == Guid.Empty) throw new InvalidInputException("ticket_id_required", "Cần có mã phiếu.");
+        if (string.IsNullOrWhiteSpace(fileName)) throw new InvalidInputException("attachment_file_name_required", "Cần có tên tệp.");
+        if (fileSizeBytes <= 0) throw new InvalidInputException("attachment_size_invalid", "Kích thước tệp phải lớn hơn 0.");
+        if (string.IsNullOrWhiteSpace(storageKey)) throw new InvalidInputException("attachment_storage_key_required", "Cần có storageKey.");
+        if (uploadedBy == Guid.Empty) throw new InvalidInputException("attachment_uploader_required", "Cần có mã người tải lên.");
 
         return new TicketAttachment
         {

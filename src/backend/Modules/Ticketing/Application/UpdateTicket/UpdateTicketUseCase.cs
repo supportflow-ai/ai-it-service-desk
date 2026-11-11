@@ -5,6 +5,7 @@ using ServiceDesk.Modules.Ticketing.Application.Common;
 using ServiceDesk.Modules.Ticketing.Application.Contracts;
 using ServiceDesk.Modules.Ticketing.Application.Ports;
 using ServiceDesk.SharedKernel.Authorization;
+using ServiceDesk.Modules.Ticketing.Domain;
 
 namespace ServiceDesk.Modules.Ticketing.Application.UpdateTicket;
 
@@ -34,12 +35,12 @@ internal sealed class UpdateTicketUseCase(ITicketWriter writer, ICurrentUser cur
         var ticket = await writer.GetForUpdateAsync(command.Id, scope, cancellationToken);
         if (ticket == null || !TicketPermissions.CanActAsOwner(ticket, actorId, currentUser))
         {
-            throw new KeyNotFoundException("Ticket not found or outside access scope.");
+            throw TicketErrors.NotFound();
         }
 
         TicketCommandGuard.RequireCurrentRevision(writer, ticket, command.ExpectedRevision);
 
-        TicketCommandGuard.ApplyRule(ticket, t => t.Update(command.Title, command.Description, command.CategoryId, clock.UtcNow.UtcDateTime));
+        ticket.Update(command.Title, command.Description, command.CategoryId, clock.UtcNow.UtcDateTime);
 
         return await writer.UpdateTicketAsync(ticket, cancellationToken);
     }

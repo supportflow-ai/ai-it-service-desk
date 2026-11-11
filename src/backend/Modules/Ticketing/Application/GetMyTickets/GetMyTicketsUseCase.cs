@@ -2,6 +2,7 @@ using ServiceDesk.SharedKernel.Application.Abstractions;
 using ServiceDesk.Modules.Ticketing.Application.Authorization;
 using ServiceDesk.Modules.Ticketing.Application.Contracts;
 using ServiceDesk.Modules.Ticketing.Application.Ports;
+using ServiceDesk.Modules.Ticketing.Domain;
 
 namespace ServiceDesk.Modules.Ticketing.Application.GetMyTickets;
 
@@ -27,7 +28,7 @@ internal sealed class GetMyTicketsUseCase(ITicketQueries queries, ICurrentUser c
         var requester = TicketActor.RequireId(currentUser);
         ArgumentNullException.ThrowIfNull(query);
         if (query.Page < 1 || query.PageSize < 1 || query.PageSize > 100 || ((long)query.Page - 1) * query.PageSize > int.MaxValue)
-            throw new ArgumentException("page must be at least 1 and pageSize must be between 1 and 100");
+            throw TicketErrors.PagingInvalid();
 
         return queries.GetForRequesterAsync(requester, query.Page, query.PageSize, cancellationToken);
     }

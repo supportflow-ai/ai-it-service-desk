@@ -38,13 +38,13 @@ internal sealed class ReopenTicketUseCase(
         var ticket = await writer.GetForUpdateAsync(command.Id, scope, cancellationToken);
         if (ticket == null || !TicketPermissions.CanActAsOwner(ticket, actorId, currentUser))
         {
-            throw new KeyNotFoundException("Ticket not found or outside access scope.");
+            throw TicketErrors.NotFound();
         }
 
         TicketCommandGuard.RequireCurrentRevision(writer, ticket, command.ExpectedRevision);
 
         var now = clock.UtcNow.UtcDateTime;
-        TicketCommandGuard.ApplyRule(ticket, t => t.Reopen(now));
+        ticket.Reopen(now);
 
         return await TicketCommandGuard.SaveWithSystemAuditAsync(writer, ticket, actorId, "Người dùng đã mở lại yêu cầu.", now, cancellationToken);
     }

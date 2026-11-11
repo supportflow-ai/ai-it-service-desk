@@ -1,3 +1,4 @@
+using ServiceDesk.SharedKernel.Application;
 namespace ServiceDesk.Modules.Ticketing.Domain;
 
 /// <summary>
@@ -65,11 +66,11 @@ public sealed class TicketComment
 
     private static void Validate(Guid ticketId, Guid authorId, string content)
     {
-        if (ticketId == Guid.Empty) throw new ArgumentException("Ticket ID is required.");
-        if (authorId == Guid.Empty) throw new ArgumentException("Author ID is required.");
+        if (ticketId == Guid.Empty) throw new InvalidInputException("ticket_id_required", "Cần có mã phiếu.");
+        if (authorId == Guid.Empty) throw new InvalidInputException("comment_author_required", "Cần có mã tác giả.");
         if (string.IsNullOrWhiteSpace(content) || content.Trim().Length < 2)
-            throw new ArgumentException("Content must be at least 2 characters.");
+            throw new InvalidInputException("comment_content_too_short", "Nội dung phải có ít nhất 2 ký tự.");
         if (content.Trim().Length > 4000)
-            throw new ArgumentException("Content must not exceed 4000 characters.");
+            throw new InvalidInputException("comment_content_too_long", "Nội dung không được vượt quá 4000 ký tự.");
     }
 }

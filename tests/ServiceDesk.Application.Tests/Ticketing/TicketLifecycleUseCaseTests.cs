@@ -12,6 +12,7 @@ using ServiceDesk.Modules.Ticketing.Application.UpdateTicket;
 using ServiceDesk.SharedKernel.Authorization;
 using ServiceDesk.Modules.Ticketing.Domain;
 using Xunit;
+using ServiceDesk.SharedKernel.Application;
 
 namespace ServiceDesk.Application.Tests.Ticketing;
 
@@ -62,7 +63,7 @@ public sealed class TicketLifecycleUseCaseTests
 
         var useCase = new ClaimTicketUseCase(_writer.Object, _user.Object, _clock.Object);
 
-        await Assert.ThrowsAsync<ArgumentException>(() => useCase.ExecuteAsync(new(ticket.Id)));
+        await Assert.ThrowsAsync<InvalidInputException>(() => useCase.ExecuteAsync(new(ticket.Id)));
     }
 
     [Fact]
@@ -73,7 +74,7 @@ public sealed class TicketLifecycleUseCaseTests
         _user.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(false);
         var useCase = new ClaimTicketUseCase(_writer.Object, _user.Object, _clock.Object);
 
-        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => useCase.ExecuteAsync(new(Guid.NewGuid())));
+        await Assert.ThrowsAsync<ForbiddenException>(() => useCase.ExecuteAsync(new(Guid.NewGuid())));
     }
 
     [Fact]
@@ -84,7 +85,7 @@ public sealed class TicketLifecycleUseCaseTests
         _user.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(false);
         var useCase = new ResolveTicketUseCase(_writer.Object, _user.Object, _clock.Object);
 
-        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => useCase.ExecuteAsync(new(Guid.NewGuid(), 1)));
+        await Assert.ThrowsAsync<ForbiddenException>(() => useCase.ExecuteAsync(new(Guid.NewGuid(), 1)));
 
         _writer.VerifyNoOtherCalls();
     }

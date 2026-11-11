@@ -36,20 +36,20 @@ internal sealed class ResolveTicketUseCase(
         var isStaff = TicketPermissions.IsStaff(currentUser);
         if (!isStaff)
         {
-            throw new UnauthorizedAccessException("Only an agent or admin can resolve this ticket.");
+            throw TicketErrors.StaffRequired("giải quyết phiếu");
         }
 
         var scope = TicketPermissions.ReadScopeFor(currentUser, actorId);
         var ticket = await writer.GetForUpdateAsync(command.Id, scope, cancellationToken);
         if (ticket == null)
         {
-            throw new KeyNotFoundException("Ticket not found.");
+            throw TicketErrors.NotFound();
         }
 
         TicketCommandGuard.RequireCurrentRevision(writer, ticket, command.ExpectedRevision);
 
         var now = clock.UtcNow.UtcDateTime;
-        TicketCommandGuard.ApplyRule(ticket, t => t.Resolve(now));
+        ticket.Resolve(now);
 
         return await TicketCommandGuard.SaveWithSystemAuditAsync(writer, ticket, actorId, "Yêu cầu đã được đánh dấu giải quyết xong.", now, cancellationToken);
     }

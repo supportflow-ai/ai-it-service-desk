@@ -5,9 +5,12 @@ namespace ServiceDesk.SharedKernel.Application;
 /// (ví dụ một request cùng Idempotency-Key đang được xử lý).
 /// Tầng trình bày chuyển nhóm này thành HTTP 503 kèm header Retry-After.
 /// </summary>
-public abstract class RetryLaterException : Exception
+public abstract class RetryLaterException : DomainException
 {
-    protected RetryLaterException(string message, Exception innerException) : base(message, innerException) { }
+    protected RetryLaterException(string code, string message, Exception innerException)
+        : base(code, message, innerException) { }
+
+    public sealed override int StatusCode => 503;
 
     /// <summary>Số giây gợi ý cho header Retry-After.</summary>
     public virtual int RetryAfterSeconds => 1;

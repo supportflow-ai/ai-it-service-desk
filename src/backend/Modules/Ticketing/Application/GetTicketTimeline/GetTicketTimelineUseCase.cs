@@ -3,6 +3,7 @@ using ServiceDesk.Modules.Ticketing.Application.Authorization;
 using ServiceDesk.Modules.Ticketing.Application.Contracts;
 using ServiceDesk.Modules.Ticketing.Application.Ports;
 using ServiceDesk.SharedKernel.Authorization;
+using ServiceDesk.Modules.Ticketing.Domain;
 
 namespace ServiceDesk.Modules.Ticketing.Application.GetTicketTimeline;
 
@@ -35,7 +36,7 @@ internal sealed class GetTicketTimelineUseCase(
 
         if (ticket == null)
         {
-            throw new KeyNotFoundException("Ticket not found.");
+            throw TicketErrors.NotFound();
         }
 
         return await timelineStore.GetForTicketAsync(query.TicketId, includeInternal, cancellationToken);

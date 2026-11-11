@@ -1,6 +1,7 @@
 using FluentAssertions;
 using ServiceDesk.Modules.Knowledge.Domain;
 using Xunit;
+using ServiceDesk.SharedKernel.Application;
 
 namespace ServiceDesk.Domain.Tests.Knowledge;
 
@@ -61,8 +62,8 @@ public class ArticleTests
             null,
             Now);
 
-        act.Should().Throw<ArgumentException>()
-            .WithMessage("*Author ID is required.*");
+        act.Should().Throw<InvalidInputException>()
+            .WithMessage("*Cần có mã tác giả.*");
     }
 
     [Theory]
@@ -78,8 +79,8 @@ public class ArticleTests
             null,
             Now);
 
-        act.Should().Throw<ArgumentException>()
-            .WithMessage("*Title is required.*");
+        act.Should().Throw<InvalidInputException>()
+            .WithMessage("*Tiêu đề không được để trống.*");
     }
 
     [Fact]
@@ -93,8 +94,8 @@ public class ArticleTests
             null,
             Now);
 
-        act.Should().Throw<ArgumentException>()
-            .WithMessage("*Title must not exceed 200 characters.*");
+        act.Should().Throw<InvalidInputException>()
+            .WithMessage("*Tiêu đề không được vượt quá 200 ký tự.*");
     }
 
     [Fact]
@@ -124,8 +125,8 @@ public class ArticleTests
             null,
             Now);
 
-        act.Should().Throw<ArgumentException>()
-            .WithMessage("*Content is required.*");
+        act.Should().Throw<InvalidInputException>()
+            .WithMessage("*Nội dung không được để trống.*");
     }
 
     [Theory]
@@ -141,8 +142,8 @@ public class ArticleTests
             null,
             Now);
 
-        act.Should().Throw<ArgumentException>()
-            .WithMessage("*Content must be at least 10 characters.*");
+        act.Should().Throw<InvalidInputException>()
+            .WithMessage("*Nội dung phải có ít nhất 10 ký tự.*");
     }
 
     [Fact]
@@ -170,8 +171,8 @@ public class ArticleTests
             tags,
             Now);
 
-        act.Should().Throw<ArgumentException>()
-            .WithMessage("*Article cannot have more than 10 tags.*");
+        act.Should().Throw<InvalidInputException>()
+            .WithMessage("*Bài viết không được có quá 10 thẻ.*");
     }
 
     [Fact]
@@ -186,8 +187,8 @@ public class ArticleTests
             tags,
             Now);
 
-        act.Should().Throw<ArgumentException>()
-            .WithMessage("*Tag must not exceed 50 characters.*");
+        act.Should().Throw<InvalidInputException>()
+            .WithMessage("*Thẻ không được vượt quá 50 ký tự.*");
     }
 
     [Theory]
@@ -204,8 +205,8 @@ public class ArticleTests
             tags,
             Now);
 
-        act.Should().Throw<ArgumentException>()
-            .WithMessage("*Tag cannot be empty or whitespace.*");
+        act.Should().Throw<InvalidInputException>()
+            .WithMessage("*Thẻ không được để trống.*");
     }
 
     [Fact]
@@ -234,7 +235,7 @@ public class ArticleTests
         publishedArticle.Publish(Guid.NewGuid(), Later);
 
         var actPublished = () => publishedArticle.UpdateDraft("New Title", "New content 10 chars", null, ArchiveTime);
-        actPublished.Should().Throw<InvalidOperationException>()
+        actPublished.Should().Throw<RuleViolationException>()
             .WithMessage("Chỉ có thể chỉnh sửa bài viết ở trạng thái nháp.");
 
         var archivedArticle = CreateValidDraft();
@@ -242,7 +243,7 @@ public class ArticleTests
         archivedArticle.Archive(ArchiveTime);
 
         var actArchived = () => archivedArticle.UpdateDraft("New Title", "New content 10 chars", null, ArchiveTime);
-        actArchived.Should().Throw<InvalidOperationException>()
+        actArchived.Should().Throw<RuleViolationException>()
             .WithMessage("Chỉ có thể chỉnh sửa bài viết ở trạng thái nháp.");
     }
 
@@ -252,13 +253,13 @@ public class ArticleTests
         var article = CreateValidDraft();
 
         var actInvalidTitle = () => article.UpdateDraft("", "Valid content 10 chars", null, Later);
-        actInvalidTitle.Should().Throw<ArgumentException>();
+        actInvalidTitle.Should().Throw<InvalidInputException>();
 
         var actInvalidContent = () => article.UpdateDraft("Valid Title", "short", null, Later);
-        actInvalidContent.Should().Throw<ArgumentException>();
+        actInvalidContent.Should().Throw<InvalidInputException>();
 
         var actInvalidTags = () => article.UpdateDraft("Valid Title", "Valid content 10 chars", Enumerable.Range(1, 11).Select(i => $"t{i}"), Later);
-        actInvalidTags.Should().Throw<ArgumentException>();
+        actInvalidTags.Should().Throw<InvalidInputException>();
     }
 
     [Fact]
@@ -291,8 +292,8 @@ public class ArticleTests
 
         var act = () => article.Publish(Guid.Empty, Later);
 
-        act.Should().Throw<ArgumentException>()
-            .WithMessage("*PublishedBy ID is required.*");
+        act.Should().Throw<InvalidInputException>()
+            .WithMessage("*Cần có mã người xuất bản.*");
     }
 
     [Fact]
@@ -302,12 +303,12 @@ public class ArticleTests
         article.Publish(Guid.NewGuid(), Later);
 
         var actAlreadyPublished = () => article.Publish(Guid.NewGuid(), ArchiveTime);
-        actAlreadyPublished.Should().Throw<InvalidOperationException>()
+        actAlreadyPublished.Should().Throw<RuleViolationException>()
             .WithMessage("Chỉ có thể xuất bản bài viết từ trạng thái nháp.");
 
         article.Archive(ArchiveTime);
         var actArchived = () => article.Publish(Guid.NewGuid(), ArchiveTime);
-        actArchived.Should().Throw<InvalidOperationException>()
+        actArchived.Should().Throw<RuleViolationException>()
             .WithMessage("Chỉ có thể xuất bản bài viết từ trạng thái nháp.");
     }
 
@@ -329,7 +330,7 @@ public class ArticleTests
     {
         var draftArticle = CreateValidDraft();
         var actDraft = () => draftArticle.Archive(Later);
-        actDraft.Should().Throw<InvalidOperationException>()
+        actDraft.Should().Throw<RuleViolationException>()
             .WithMessage("Chỉ có thể lưu trữ bài viết đang ở trạng thái đã xuất bản.");
 
         var archivedArticle = CreateValidDraft();
@@ -337,7 +338,7 @@ public class ArticleTests
         archivedArticle.Archive(ArchiveTime);
 
         var actAlreadyArchived = () => archivedArticle.Archive(ArchiveTime.AddHours(1));
-        actAlreadyArchived.Should().Throw<InvalidOperationException>()
+        actAlreadyArchived.Should().Throw<RuleViolationException>()
             .WithMessage("Chỉ có thể lưu trữ bài viết đang ở trạng thái đã xuất bản.");
     }
 
@@ -359,13 +360,13 @@ public class ArticleTests
         var articleId = Guid.NewGuid();
 
         var actEmptyArticleId = () => new ArticleTag(Guid.Empty, "tag");
-        actEmptyArticleId.Should().Throw<ArgumentException>();
+        actEmptyArticleId.Should().Throw<InvalidInputException>();
 
         var actEmptyName = () => new ArticleTag(articleId, "   ");
-        actEmptyName.Should().Throw<ArgumentException>();
+        actEmptyName.Should().Throw<InvalidInputException>();
 
         var actTooLongName = () => new ArticleTag(articleId, new string('x', 51));
-        actTooLongName.Should().Throw<ArgumentException>();
+        actTooLongName.Should().Throw<InvalidInputException>();
 
         var validTag = new ArticleTag(articleId, "  TAG-name  ");
         validTag.Name.Should().Be("tag-name");
@@ -380,22 +381,22 @@ public class ArticleTests
         var publisherId = Guid.NewGuid();
 
         var actEmptyId = () => new ArticleVersion(Guid.Empty, articleId, 1, "Title", "Content 10 chars", publisherId, Now);
-        actEmptyId.Should().Throw<ArgumentException>();
+        actEmptyId.Should().Throw<InvalidInputException>();
 
         var actEmptyArticleId = () => new ArticleVersion(versionId, Guid.Empty, 1, "Title", "Content 10 chars", publisherId, Now);
-        actEmptyArticleId.Should().Throw<ArgumentException>();
+        actEmptyArticleId.Should().Throw<InvalidInputException>();
 
         var actZeroVersion = () => new ArticleVersion(versionId, articleId, 0, "Title", "Content 10 chars", publisherId, Now);
-        actZeroVersion.Should().Throw<ArgumentException>();
+        actZeroVersion.Should().Throw<InvalidInputException>();
 
         var actEmptyTitle = () => new ArticleVersion(versionId, articleId, 1, "  ", "Content 10 chars", publisherId, Now);
-        actEmptyTitle.Should().Throw<ArgumentException>();
+        actEmptyTitle.Should().Throw<InvalidInputException>();
 
         var actEmptyContent = () => new ArticleVersion(versionId, articleId, 1, "Title", "  ", publisherId, Now);
-        actEmptyContent.Should().Throw<ArgumentException>();
+        actEmptyContent.Should().Throw<InvalidInputException>();
 
         var actEmptyPublisher = () => new ArticleVersion(versionId, articleId, 1, "Title", "Content 10 chars", Guid.Empty, Now);
-        actEmptyPublisher.Should().Throw<ArgumentException>();
+        actEmptyPublisher.Should().Throw<InvalidInputException>();
 
         var version = new ArticleVersion(versionId, articleId, 2, "  Title  ", "  Content 10 chars  ", publisherId, Now);
         version.Title.Should().Be("Title");

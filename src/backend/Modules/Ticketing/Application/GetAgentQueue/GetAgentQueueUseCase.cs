@@ -3,6 +3,7 @@ using ServiceDesk.Modules.Ticketing.Application.Authorization;
 using ServiceDesk.Modules.Ticketing.Application.Contracts;
 using ServiceDesk.Modules.Ticketing.Application.Ports;
 using ServiceDesk.SharedKernel.Authorization;
+using ServiceDesk.Modules.Ticketing.Domain;
 
 namespace ServiceDesk.Modules.Ticketing.Application.GetAgentQueue;
 
@@ -31,12 +32,12 @@ internal sealed class GetAgentQueueUseCase(ITicketQueries queries, ICurrentUser 
         var isStaff = TicketPermissions.IsStaff(currentUser);
         if (!isStaff)
         {
-            throw new UnauthorizedAccessException("Only agents or admins can access the agent queue.");
+            throw TicketErrors.StaffRequired("truy cập hàng đợi phiếu");
         }
 
         if (query.Page < 1 || query.PageSize < 1 || query.PageSize > 100 || ((long)query.Page - 1) * query.PageSize > int.MaxValue)
         {
-            throw new ArgumentException("page must be at least 1 and pageSize must be between 1 and 100");
+            throw TicketErrors.PagingInvalid();
         }
 
         var readScope = TicketPermissions.ReadScopeFor(currentUser, actorId);

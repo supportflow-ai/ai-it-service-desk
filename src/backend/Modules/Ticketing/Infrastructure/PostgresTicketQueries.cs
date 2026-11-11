@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using ServiceDesk.Modules.Ticketing.Application.Contracts;
 using ServiceDesk.Modules.Ticketing.Application.Ports;
 using ServiceDesk.Modules.Ticketing.Application.Authorization;
+using ServiceDesk.SharedKernel.Application;
 
 namespace ServiceDesk.Modules.Ticketing.Infrastructure;
 
@@ -73,7 +74,7 @@ internal sealed class PostgresTicketQueries(DbContext context) : ITicketQueries
         if (!string.IsNullOrWhiteSpace(priority))
         {
             if (!Enum.TryParse<Domain.Priority>(priority, true, out var parsedPriority))
-                throw new ArgumentException("priority must be one of P1, P2, P3, P4");
+                throw new InvalidInputException("priority_invalid", "priority phải là một trong P1, P2, P3, P4.");
             query = query.Where(ticket => ticket.Priority == parsedPriority);
         }
 
