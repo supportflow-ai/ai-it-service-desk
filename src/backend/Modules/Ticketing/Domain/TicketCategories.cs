@@ -38,6 +38,9 @@ public static class TicketCategories
     /// <summary>Yêu cầu khác (Other)</summary>
     public const string OTHER = "OTHER";
 
-    /// <summary>Tập hợp tất cả các danh mục hợp lệ.</summary>
-    public static readonly string[] All = { ACC, NET, VPN, MAIL, SW, HW, PRINT, ACCESS, EQUIP, SEC, OTHER };
+    /// <summary>
+    /// Tập hợp tất cả các danh mục hợp lệ. Lấy từ <see cref="TicketCategory"/> (nguồn duy nhất, theo thứ tự khai báo)
+    /// nên thêm một danh mục chỉ cần thêm vào enum; các hằng số ở trên giữ để mã hiện có tiếp tục dùng chuỗi.
+    /// </summary>
+    public static readonly string[] All = Enum.GetNames<TicketCategory>();
 }

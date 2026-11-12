@@ -81,41 +81,19 @@ public class Ticket
             throw new InvalidInputException("ticket_requester_required", "Cần có mã người gửi yêu cầu.");
         }
 
-        var normalizedTitle = title?.Trim();
-        if (string.IsNullOrWhiteSpace(normalizedTitle))
-        {
-            throw new InvalidInputException("ticket_title_required", "Tiêu đề không được để trống.");
-        }
-
-        if (normalizedTitle.Length > 100)
-        {
-            throw new InvalidInputException("ticket_title_too_long", "Tiêu đề không được vượt quá 100 ký tự.");
-        }
-
-        var normalizedDescription = description?.Trim();
-        if (string.IsNullOrWhiteSpace(normalizedDescription))
-        {
-            throw new InvalidInputException("ticket_description_required", "Mô tả không được để trống.");
-        }
-
-        if (normalizedDescription.Length < 10)
-        {
-            throw new InvalidInputException("ticket_description_too_short", "Mô tả phải có ít nhất 10 ký tự.");
-        }
-
-        if (!TicketCategories.All.Contains(categoryId, StringComparer.Ordinal))
-        {
-            throw new InvalidInputException("ticket_category_invalid", "Danh mục không hợp lệ.");
-        }
+        // Thứ tự kiểm giữ nguyên: tiêu đề, mô tả, danh mục; quy tắc nằm ở value object để Create và Update dùng chung.
+        var validTitle = TicketTitle.Parse(title);
+        var validDescription = TicketDescription.Parse(description);
+        var validCategory = TicketCategoryCode.Parse(categoryId);
 
         return new Ticket
         {
             Id = Guid.NewGuid(),
             RequesterId = requesterId,
             RequesterDepartmentId = requesterDepartmentId,
-            Title = normalizedTitle,
-            Description = normalizedDescription,
-            CategoryId = categoryId,
+            Title = validTitle.Value,
+            Description = validDescription.Value,
+            CategoryId = validCategory.Value,
             Status = TicketStatus.Submitted,
             SupportTeamId = SupportTeam.ManualTriageId,
             Impact = Domain.Impact.Medium,
@@ -255,36 +233,14 @@ public class Ticket
             throw new RuleViolationException("ticket_update_requires_submitted", "Chỉ có thể cập nhật phiếu khi đang ở trạng thái Submitted.");
         }
 
-        var normalizedTitle = title?.Trim();
-        if (string.IsNullOrWhiteSpace(normalizedTitle))
-        {
-            throw new InvalidInputException("ticket_title_required", "Tiêu đề không được để trống.");
-        }
+        // Thứ tự kiểm giữ nguyên: tiêu đề, mô tả, danh mục; quy tắc nằm ở value object để Create và Update dùng chung.
+        var validTitle = TicketTitle.Parse(title);
+        var validDescription = TicketDescription.Parse(description);
+        var validCategory = TicketCategoryCode.Parse(categoryId);
 
-        if (normalizedTitle.Length > 100)
-        {
-            throw new InvalidInputException("ticket_title_too_long", "Tiêu đề không được vượt quá 100 ký tự.");
-        }
-
-        var normalizedDescription = description?.Trim();
-        if (string.IsNullOrWhiteSpace(normalizedDescription))
-        {
-            throw new InvalidInputException("ticket_description_required", "Mô tả không được để trống.");
-        }
-
-        if (normalizedDescription.Length < 10)
-        {
-            throw new InvalidInputException("ticket_description_too_short", "Mô tả phải có ít nhất 10 ký tự.");
-        }
-
-        if (!TicketCategories.All.Contains(categoryId, StringComparer.Ordinal))
-        {
-            throw new InvalidInputException("ticket_category_invalid", "Danh mục không hợp lệ.");
-        }
-
-        Title = normalizedTitle;
-        Description = normalizedDescription;
-        CategoryId = categoryId;
+        Title = validTitle.Value;
+        Description = validDescription.Value;
+        CategoryId = validCategory.Value;
         UpdatedAt = now;
     }
 }
