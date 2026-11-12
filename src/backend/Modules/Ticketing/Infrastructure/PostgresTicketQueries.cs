@@ -50,45 +50,42 @@ internal sealed class PostgresTicketQueries(DbContext context) : ITicketQueries
     public async Task<PagedTicketResult> GetAgentQueueAsync(
         Guid currentUserId,
         TicketReadScope readScope,
-        int? status,
-        string? categoryId,
-        string? scope,
-        string? priority,
-        bool sortByPriority,
+        AgentQueueFilter filter,
         int page,
         int pageSize,
         CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(filter);
         var query = TicketScopeQuery.Apply(_context.Set<Ticket>().AsNoTracking(), _context, readScope);
 
-        if (status.HasValue)
+        if (filter.Status is { } status)
         {
-            query = query.Where(ticket => (int)ticket.Status == status.Value);
+            query = query.Where(ticket => (int)ticket.Status == status);
         }
 
+        var categoryId = filter.CategoryId;
         if (!string.IsNullOrWhiteSpace(categoryId))
         {
             query = query.Where(ticket => ticket.CategoryId == categoryId);
         }
 
-        if (!string.IsNullOrWhiteSpace(priority))
+        if (filter.Priority is { } priority)
         {
-            if (!Enum.TryParse<Domain.Priority>(priority, true, out var parsedPriority))
-                throw new InvalidInputException("priority_invalid", "priority phải là một trong P1, P2, P3, P4.");
-            query = query.Where(ticket => ticket.Priority == parsedPriority);
+            query = query.Where(ticket => ticket.Priority == priority);
         }
 
-        if (string.Equals(scope, "unassigned", StringComparison.OrdinalIgnoreCase))
+        switch (filter.Scope)
         {
-            query = query.Where(ticket => ticket.AssignedToId == null && ticket.Status != Domain.TicketStatus.Closed && ticket.Status != Domain.TicketStatus.Cancelled);
-        }
-        else if (string.Equals(scope, "my", StringComparison.OrdinalIgnoreCase))
-        {
-            query = query.Where(ticket => ticket.AssignedToId == currentUserId && ticket.Status != Domain.TicketStatus.Closed && ticket.Status != Domain.TicketStatus.Cancelled);
+            case AgentQueueScope.Unassigned:
+                query = query.Where(ticket => ticket.AssignedToId == null && ticket.Status != Domain.TicketStatus.Closed && ticket.Status != Domain.TicketStatus.Cancelled);
+                break;
+            case AgentQueueScope.Mine:
+                query = query.Where(ticket => ticket.AssignedToId == currentUserId && ticket.Status != Domain.TicketStatus.Closed && ticket.Status != Domain.TicketStatus.Cancelled);
+                break;
         }
 
         var totalCount = await query.CountAsync(cancellationToken);
-        var ordered = sortByPriority
+        var ordered = filter.SortByPriority
             ? query.OrderBy(ticket => ticket.Priority).ThenByDescending(ticket => ticket.CreatedAt).ThenByDescending(ticket => ticket.Id)
             : query.OrderByDescending(ticket => ticket.CreatedAt).ThenByDescending(ticket => ticket.Id);
         var tickets = await ordered

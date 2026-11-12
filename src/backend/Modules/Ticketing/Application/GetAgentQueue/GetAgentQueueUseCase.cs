@@ -20,7 +20,7 @@ public interface IGetAgentQueue
 /// Xử lý lấy danh sách vé trong hàng đợi Agent:
 /// - Yêu cầu người gọi có vai trò Agent hoặc Admin.
 /// - Kiểm tra ràng buộc phân trang (Page >= 1, 1 <= PageSize <= 100).
-/// - Lọc theo trạng thái, danh mục, hoặc phân loại phạm vi (my/unassigned/all).
+/// - Dựng bộ lọc hợp lệ (<see cref="AgentQueueFilter"/>): trạng thái, danh mục, ưu tiên, phạm vi (my/unassigned/all).
 /// </summary>
 internal sealed class GetAgentQueueUseCase(ITicketQueries queries, ICurrentUser currentUser) : IGetAgentQueue
 {
@@ -40,7 +40,10 @@ internal sealed class GetAgentQueueUseCase(ITicketQueries queries, ICurrentUser 
             throw TicketErrors.PagingInvalid();
         }
 
+        // Kiểm priority ở đây (sau kiểm phân trang, đúng thứ tự cũ); adapter không còn tự kiểm đầu vào.
+        var filter = AgentQueueFilter.FromRaw(query.Status, query.CategoryId, query.Scope, query.Priority, query.SortByPriority);
+
         var readScope = TicketPermissions.ReadScopeFor(currentUser, actorId);
-        return queries.GetAgentQueueAsync(actorId, readScope, query.Status, query.CategoryId, query.Scope, query.Priority, query.SortByPriority, query.Page, query.PageSize, cancellationToken);
+        return queries.GetAgentQueueAsync(actorId, readScope, filter, query.Page, query.PageSize, cancellationToken);
     }
 }
