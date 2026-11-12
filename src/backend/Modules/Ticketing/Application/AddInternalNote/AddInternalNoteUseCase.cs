@@ -4,6 +4,7 @@ using ServiceDesk.Modules.Ticketing.Application.Contracts;
 using ServiceDesk.Modules.Ticketing.Application.Ports;
 using ServiceDesk.SharedKernel.Authorization;
 using ServiceDesk.Modules.Ticketing.Domain;
+using ServiceDesk.SharedKernel.Application;
 
 namespace ServiceDesk.Modules.Ticketing.Application.AddInternalNote;
 
@@ -29,12 +30,12 @@ internal sealed class AddInternalNoteUseCase(
         var isStaff = TicketPermissions.IsStaff(currentUser);
         if (!isStaff)
         {
-            throw new UnauthorizedAccessException("Requester không có quyền tạo ghi chú nội bộ.");
+            throw new ForbiddenException("internal_note_forbidden", "Người yêu cầu không có quyền tạo ghi chú nội bộ.");
         }
 
         var scope = TicketPermissions.ReadScopeFor(currentUser, actorId);
         var ticket = await writer.GetForUpdateAsync(command.TicketId, scope, cancellationToken);
-        if (ticket == null) throw new KeyNotFoundException("Ticket not found.");
+        if (ticket == null) throw TicketErrors.NotFound();
 
         var authorName = await agentDirectory.GetDisplayNameAsync(actorId, cancellationToken);
         var authorRole = currentUser.Roles.FirstOrDefault() ?? "Agent";

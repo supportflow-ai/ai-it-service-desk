@@ -1,3 +1,4 @@
+using ServiceDesk.SharedKernel.Application;
 namespace ServiceDesk.Modules.Knowledge.Domain;
 
 /// <summary>
@@ -18,34 +19,34 @@ public sealed class ArticleVersion
     {
         if (id == Guid.Empty)
         {
-            throw new ArgumentException("Version ID is required.", nameof(id));
+            throw new InvalidInputException("article_version_id_required", "Cần có mã phiên bản.");
         }
 
         if (articleId == Guid.Empty)
         {
-            throw new ArgumentException("Article ID is required.", nameof(articleId));
+            throw new InvalidInputException("article_id_required", "Cần có mã bài viết.");
         }
 
         if (versionNumber <= 0)
         {
-            throw new ArgumentException("Version number must be positive.", nameof(versionNumber));
+            throw new InvalidInputException("article_version_number_invalid", "Số phiên bản phải lớn hơn 0.");
         }
 
         var normalizedTitle = title?.Trim();
         if (string.IsNullOrWhiteSpace(normalizedTitle))
         {
-            throw new ArgumentException("Title is required.", nameof(title));
+            throw new InvalidInputException("article_title_required", "Tiêu đề không được để trống.");
         }
 
         var normalizedContent = content?.Trim();
         if (string.IsNullOrWhiteSpace(normalizedContent))
         {
-            throw new ArgumentException("Content is required.", nameof(content));
+            throw new InvalidInputException("article_content_required", "Nội dung không được để trống.");
         }
 
         if (publishedById == Guid.Empty)
         {
-            throw new ArgumentException("PublishedBy ID is required.", nameof(publishedById));
+            throw new InvalidInputException("article_publisher_required", "Cần có mã người xuất bản.");
         }
 
         Id = id;

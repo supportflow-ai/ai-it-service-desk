@@ -6,7 +6,10 @@ namespace ServiceDesk.Modules.Ticketing.Domain;
 /// </summary>
 public enum TicketStatus
 {
-    /// <summary>Bản nháp, chưa gửi chính thức.</summary>
+    /// <summary>
+    /// Bản nháp, chưa gửi chính thức.
+    /// Chưa dùng: không có thao tác Domain nào chuyển phiếu vào trạng thái này; giữ giá trị số để bảo toàn dữ liệu và hợp đồng đã lưu.
+    /// </summary>
     Draft = 0,
 
     /// <summary>Đã gửi, đang chờ tiếp nhận và phân công.</summary>
@@ -15,7 +18,10 @@ public enum TicketStatus
     /// <summary>Đang được kỹ thuật viên xử lý.</summary>
     InProgress = 2,
 
-    /// <summary>Đang chờ người dùng phản hồi thông tin bổ sung.</summary>
+    /// <summary>
+    /// Đang chờ người dùng phản hồi thông tin bổ sung.
+    /// Chưa dùng: không có thao tác Domain nào chuyển phiếu vào trạng thái này; giữ giá trị số để bảo toàn dữ liệu và hợp đồng đã lưu.
+    /// </summary>
     PendingUser = 3,
 
     /// <summary>Đã xử lý xong, chờ người dùng nghiệm thu.</summary>
@@ -27,12 +33,18 @@ public enum TicketStatus
     /// <summary>Đã hủy yêu cầu (trạng thái kết thúc).</summary>
     Cancelled = 6,
 
-    /// <summary>Đã phân loại danh mục và độ ưu tiên sơ bộ.</summary>
+    /// <summary>
+    /// Đã phân loại danh mục và độ ưu tiên sơ bộ.
+    /// Chưa dùng: không có thao tác Domain nào chuyển phiếu vào trạng thái này; giữ giá trị số để bảo toàn dữ liệu và hợp đồng đã lưu.
+    /// </summary>
     Triaged = 7,
 
     /// <summary>Đã phân công cho kỹ thuật viên hoặc đội hỗ trợ.</summary>
     Assigned = 8,
 
-    /// <summary>Đang tạm dừng chờ đối tác / bên thứ ba xử lý.</summary>
+    /// <summary>
+    /// Đang tạm dừng chờ đối tác / bên thứ ba xử lý.
+    /// Chưa dùng: không có thao tác Domain nào chuyển phiếu vào trạng thái này; giữ giá trị số để bảo toàn dữ liệu và hợp đồng đã lưu.
+    /// </summary>
     PendingExternal = 9
 }

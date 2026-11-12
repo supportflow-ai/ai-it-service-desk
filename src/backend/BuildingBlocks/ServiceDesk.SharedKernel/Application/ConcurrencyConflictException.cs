@@ -6,13 +6,16 @@ namespace ServiceDesk.SharedKernel.Application;
 /// </summary>
 public class ConcurrencyConflictException : ConflictException
 {
+    /// <summary>Mã lỗi ổn định của xung đột ghi đồng thời.</summary>
+    public const string ErrorCode = "concurrency_conflict";
+
     public ConcurrencyConflictException(string message = "Dữ liệu đã bị thay đổi bởi người khác hoặc phiên làm việc đã cũ. Vui lòng tải lại trang.")
-        : base(message)
+        : base(ErrorCode, message)
     {
     }
 
     public ConcurrencyConflictException(string message, Exception innerException)
-        : base(message, innerException)
+        : base(ErrorCode, message, innerException)
     {
     }
 }

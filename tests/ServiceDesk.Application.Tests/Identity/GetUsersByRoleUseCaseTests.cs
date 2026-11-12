@@ -5,6 +5,7 @@ using ServiceDesk.Modules.Identity.Application.GetUsersByRole;
 using ServiceDesk.Modules.Identity.Application.Ports;
 using ServiceDesk.SharedKernel.Authorization;
 using Xunit;
+using ServiceDesk.SharedKernel.Application;
 
 namespace ServiceDesk.Application.Tests.Identity;
 
@@ -48,7 +49,7 @@ public sealed class GetUsersByRoleUseCaseTests
         _user.Setup(u => u.IsInRole(RoleNames.Agent)).Returns(true);
         var useCase = new GetUsersByRoleUseCase(_userGateway.Object, _user.Object);
 
-        await Assert.ThrowsAsync<ArgumentException>(() => useCase.ExecuteAsync(new(RoleNames.Requester)));
+        await Assert.ThrowsAsync<InvalidInputException>(() => useCase.ExecuteAsync(new(RoleNames.Requester)));
         _userGateway.Verify(g => g.GetUsersInRoleAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -61,7 +62,7 @@ public sealed class GetUsersByRoleUseCaseTests
 
         var useCase = new GetUsersByRoleUseCase(_userGateway.Object, _user.Object);
 
-        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+        await Assert.ThrowsAsync<ForbiddenException>(() =>
             useCase.ExecuteAsync(new(RoleNames.Agent)));
     }
 }

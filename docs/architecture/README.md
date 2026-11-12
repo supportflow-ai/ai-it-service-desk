@@ -8,6 +8,7 @@ Trạng thái: hiện hành cho kho backend. Đối chiếu `dev` tại `8036e2c
 | --- | --- |
 | [Mốc mã nguồn](source-baseline.md) | Mốc đối chiếu của tài liệu hiện hành và cách xác định mã nguồn |
 | [Mô-đun và luồng xử lý](backend-modules-and-use-cases.md) | Tổ chức module trước, Clean bên trong module (ADR-015), 12 luồng nghiệp vụ, giao diện công khai và giao dịch |
+| [Mẫu một tính năng](feature-template.md) | Bố cục, thứ tự bước của lệnh ghi, hệ lỗi, endpoint và kiểm thử khi viết tính năng backend mới |
 | [Hợp đồng backend](current-backend-contract.md) | API, mười mã trạng thái, dữ liệu và quyền đã triển khai tại SHA được ghi |
 | [Quy tắc thiết kế bảo mật](security-design-rules.md) | Quyền trước revision, vị trí policy Ticketing, tình huống phủ định |
 | [Danh mục ADR](../adr/README.md) | Quan hệ giữa quyết định nền tảng và ADR-011–016 |

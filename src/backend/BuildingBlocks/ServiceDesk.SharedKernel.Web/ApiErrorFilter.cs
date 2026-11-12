@@ -7,18 +7,17 @@ using ServiceDesk.SharedKernel.Application;
 namespace ServiceDesk.SharedKernel.Web;
 
 /// <summary>
-/// Bộ lọc xử lý ngoại lệ nghiệp vụ tại tầng Endpoint, dùng chung cho mọi module:
-/// - UnauthorizedAccessException -> 403 Forbidden
-/// - KeyNotFoundException -> 404 Not Found
-/// - ConflictException (xung đột ghi đồng thời, Idempotency-Key tái sử dụng sai payload) -> 409 Conflict
-/// - ServiceUnavailableException -> 503 Service Unavailable
-/// - RetryLaterException (ví dụ request cùng Idempotency-Key đang xử lý) -> 503 Service Unavailable kèm Retry-After
-/// - ArgumentException -> 400 Bad Request
-/// Với UnauthorizedAccessException và ArgumentException, thông điệp chỉ được trả cho client khi ngoại lệ do mã
-/// ServiceDesk ném ra (quy tắc nghiệp vụ). Ngoại lệ cùng loại đến từ .NET hoặc thư viện (ví dụ kiểm tra tham số
-/// <c>ArgumentNullException.ThrowIfNull</c>, EF Core, Npgsql) vẫn giữ mã trạng thái nhưng trả thông điệp chung và
-/// chỉ ghi chi tiết vào log, để không lộ thông tin nội bộ.
-/// Bộ lọc chỉ biết các ngoại lệ trong SharedKernel nên module mới không phải sửa lớp này (Open/Closed).
+/// Nơi duy nhất chuyển lỗi của endpoint thành phản hồi HTTP, dùng chung cho mọi module.
+/// <list type="bullet">
+/// <item><see cref="DomainException"/> (lỗi do mã ServiceDesk chủ động ném): mã HTTP lấy từ
+/// <see cref="DomainException.StatusCode"/> (400, 403, 404, 409, 422, 503); thông điệp được trả cho client;
+/// <see cref="RetryLaterException"/> kèm <c>Retry-After</c>; 404 không có body.</item>
+/// <item><see cref="UnauthorizedAccessException"/>, <see cref="ArgumentException"/> (kể cả
+/// <see cref="ArgumentNullException"/>) và <see cref="KeyNotFoundException"/> thuần: chỉ đến từ .NET hoặc thư viện nên giữ mã
+/// 403/400/404 như trước nhưng KHÔNG trả thông điệp gốc, chỉ ghi chi tiết vào log.</item>
+/// </list>
+/// Body lỗi giữ trường <c>error</c> như hợp đồng cũ và bổ sung <c>code</c>, <c>type</c>, <c>title</c> (xem <see cref="ApiProblem"/>).
+/// Module mới chỉ cần ném <see cref="DomainException"/>; không phải sửa lớp này.
 /// </summary>
 public sealed class ApiErrorFilter : IEndpointFilter
 {
@@ -28,35 +27,40 @@ public sealed class ApiErrorFilter : IEndpointFilter
     /// <summary>Thông điệp 403 khi lỗi truy cập không đến từ quy tắc nghiệp vụ.</summary>
     public const string GenericForbiddenMessage = "Bạn không có quyền thực hiện thao tác này.";
 
+    /// <summary>Mã lỗi của 400 chung (lỗi tham số từ .NET hoặc thư viện).</summary>
+    public const string InvalidRequestCode = "invalid_request";
+
+    /// <summary>Mã lỗi của 403 chung (lỗi truy cập từ .NET hoặc thư viện).</summary>
+    public const string ForbiddenCode = "forbidden";
+
     public async ValueTask<object?> InvokeAsync(EndpointFilterInvocationContext context, EndpointFilterDelegate next)
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(next);
         try { return await next(context); }
+        catch (DomainException ex) { return Map(context.HttpContext, ex); }
         catch (UnauthorizedAccessException ex)
         {
-            return Results.Json(new { error = PublicMessage(context, ex, GenericForbiddenMessage) }, statusCode: StatusCodes.Status403Forbidden);
+            LogHidden(context, ex);
+            return ApiProblem.Result(StatusCodes.Status403Forbidden, ForbiddenCode, GenericForbiddenMessage);
         }
         catch (KeyNotFoundException) { return Results.NotFound(); }
-        catch (ConflictException ex) { return Results.Conflict(new { error = ex.Message }); }
-        catch (ServiceUnavailableException ex)
+        catch (ArgumentException ex)
         {
-            return Results.Json(new { error = ex.Message }, statusCode: StatusCodes.Status503ServiceUnavailable);
+            LogHidden(context, ex);
+            return ApiProblem.Result(StatusCodes.Status400BadRequest, InvalidRequestCode, GenericBadRequestMessage);
         }
-        catch (RetryLaterException ex)
-        {
-            context.HttpContext.Response.Headers.RetryAfter = ex.RetryAfterSeconds.ToString(CultureInfo.InvariantCulture);
-            return Results.Json(new { error = ex.Message }, statusCode: StatusCodes.Status503ServiceUnavailable);
-        }
-        catch (ArgumentException ex) { return Results.BadRequest(new { error = PublicMessage(context, ex, GenericBadRequestMessage) }); }
     }
 
-    private static string PublicMessage(EndpointFilterInvocationContext context, Exception exception, string fallback)
+    private static IResult Map(HttpContext http, DomainException exception)
     {
-        if (ExceptionOrigin.IsRaisedByApplication(exception)) return exception.Message;
+        if (exception.StatusCode == StatusCodes.Status404NotFound) return Results.NotFound();
+        if (exception is RetryLaterException retry)
+            http.Response.Headers.RetryAfter = retry.RetryAfterSeconds.ToString(CultureInfo.InvariantCulture);
+        return ApiProblem.Result(exception.StatusCode, exception.Code, exception.Message);
+    }
 
+    private static void LogHidden(EndpointFilterInvocationContext context, Exception exception) =>
         context.HttpContext.RequestServices?.GetService<ILoggerFactory>()?.CreateLogger<ApiErrorFilter>()
             .LogWarning(exception, "Ngoại lệ {ExceptionType} từ thư viện được trả về dạng thông điệp chung.", exception.GetType().Name);
-        return fallback;
-    }
 }

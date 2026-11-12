@@ -19,7 +19,7 @@ internal sealed class CreateDraftArticleUseCase(
 
         if (!KnowledgePermissions.IsStaff(currentUser))
         {
-            throw new UnauthorizedAccessException("Chỉ kỹ thuật viên hoặc quản trị viên mới có thể tạo bài viết nháp.");
+            throw KnowledgeErrors.StaffRequired("tạo bài viết nháp");
         }
 
         var authorId = AuthenticatedActor.RequireId(currentUser);

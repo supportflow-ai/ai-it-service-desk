@@ -1,11 +1,8 @@
 using ServiceDesk.SharedKernel.Application;
 using ServiceDesk.SharedKernel.Application.Abstractions;
-using ServiceDesk.Modules.Ticketing.Application.Authorization;
 using ServiceDesk.Modules.Ticketing.Application.Common;
 using ServiceDesk.Modules.Ticketing.Application.Contracts;
 using ServiceDesk.Modules.Ticketing.Application.Ports;
-using ServiceDesk.SharedKernel.Authorization;
-using ServiceDesk.Modules.Ticketing.Domain;
 
 namespace ServiceDesk.Modules.Ticketing.Application.ResolveTicket;
 
@@ -19,7 +16,7 @@ public interface IResolveTicket
 }
 
 /// <summary>
-/// Xử lý đánh dấu hoàn thành vé:
+/// Xử lý đánh dấu hoàn thành vé (khung chung: <see cref="TicketTransitions"/>):
 /// - Yêu cầu người gọi có vai trò Agent hoặc Admin.
 /// - Trạng thái vé bắt buộc phải là InProgress.
 /// - Chuyển trạng thái sang Resolved và ghi log vào timeline.
@@ -31,26 +28,12 @@ internal sealed class ResolveTicketUseCase(
 {
     public async Task<TicketDto> ExecuteAsync(ResolveTicketCommand command, CancellationToken cancellationToken = default)
     {
-        var actorId = TicketActor.RequireId(currentUser);
         ArgumentNullException.ThrowIfNull(command);
-        var isStaff = TicketPermissions.IsStaff(currentUser);
-        if (!isStaff)
-        {
-            throw new UnauthorizedAccessException("Only an agent or admin can resolve this ticket.");
-        }
 
-        var scope = TicketPermissions.ReadScopeFor(currentUser, actorId);
-        var ticket = await writer.GetForUpdateAsync(command.Id, scope, cancellationToken);
-        if (ticket == null)
-        {
-            throw new KeyNotFoundException("Ticket not found.");
-        }
-
-        TicketCommandGuard.RequireCurrentRevision(writer, ticket, command.ExpectedRevision);
-
-        var now = clock.UtcNow.UtcDateTime;
-        TicketCommandGuard.ApplyRule(ticket, t => t.Resolve(now));
-
-        return await TicketCommandGuard.SaveWithSystemAuditAsync(writer, ticket, actorId, "Yêu cầu đã được đánh dấu giải quyết xong.", now, cancellationToken);
+        return await new TicketTransitions(writer, currentUser, clock).RunAsStaffAsync(
+            command.Id, command.ExpectedRevision, "giải quyết phiếu",
+            apply: (ticket, _, now) => ticket.Resolve(now),
+            auditMessage: "Yêu cầu đã được đánh dấu giải quyết xong.",
+            cancellationToken: cancellationToken);
     }
 }

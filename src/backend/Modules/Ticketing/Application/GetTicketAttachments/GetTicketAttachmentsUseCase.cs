@@ -3,6 +3,7 @@ using ServiceDesk.Modules.Ticketing.Application.Authorization;
 using ServiceDesk.Modules.Ticketing.Application.Contracts;
 using ServiceDesk.Modules.Ticketing.Application.Ports;
 using ServiceDesk.SharedKernel.Authorization;
+using ServiceDesk.Modules.Ticketing.Domain;
 
 namespace ServiceDesk.Modules.Ticketing.Application.GetTicketAttachments;
 
@@ -26,7 +27,7 @@ internal sealed class GetTicketAttachmentsUseCase(
         var scope = TicketPermissions.ReadScopeFor(currentUser, actorId, includeOwner: true);
 
         var ticket = await ticketQueries.GetByIdAsync(query.TicketId, scope, cancellationToken);
-        if (ticket == null) throw new KeyNotFoundException("Ticket not found.");
+        if (ticket == null) throw TicketErrors.NotFound();
 
         return await attachmentStore.GetForTicketAsync(query.TicketId, cancellationToken);
     }

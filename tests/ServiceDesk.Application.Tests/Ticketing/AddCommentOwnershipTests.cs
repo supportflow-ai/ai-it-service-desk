@@ -7,6 +7,7 @@ using ServiceDesk.Modules.Ticketing.Application.Ports;
 using ServiceDesk.SharedKernel.Authorization;
 using ServiceDesk.Modules.Ticketing.Domain;
 using Xunit;
+using ServiceDesk.SharedKernel.Application;
 
 namespace ServiceDesk.Application.Tests.Ticketing;
 
@@ -39,7 +40,7 @@ public sealed class AddCommentOwnershipTests
 
         var useCase = CreateUseCase();
 
-        await Assert.ThrowsAsync<KeyNotFoundException>(() =>
+        await Assert.ThrowsAsync<NotFoundException>(() =>
             useCase.ExecuteAsync(new(ticket.Id, "Attempt to comment on another ticket.")));
         _timelineStore.Verify(store => store.AddToOpenTicketAsync(It.IsAny<TicketComment>(), It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -63,7 +64,7 @@ public sealed class AddCommentOwnershipTests
         _user.SetupGet(user => user.Roles).Returns([RoleNames.Requester]);
         _writer.Setup(writer => writer.GetForUpdateAsync(ticket.Id, It.IsAny<TicketReadScope>(), It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
 
-        await Assert.ThrowsAsync<ArgumentException>(() => CreateUseCase().ExecuteAsync(new(ticket.Id, "Blocked comment")));
+        await Assert.ThrowsAsync<RuleViolationException>(() => CreateUseCase().ExecuteAsync(new(ticket.Id, "Blocked comment")));
 
         _agentDirectory.VerifyNoOtherCalls();
         _timelineStore.VerifyNoOtherCalls();
@@ -90,7 +91,7 @@ public sealed class AddCommentOwnershipTests
         _writer.Setup(writer => writer.GetForUpdateAsync(ticket.Id, It.IsAny<TicketReadScope>(), It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
 
         // Không lộ ticket tồn tại hay đã kết thúc: giống hệt ID không tồn tại.
-        await Assert.ThrowsAsync<KeyNotFoundException>(() => CreateUseCase().ExecuteAsync(new(ticket.Id, "Probe")));
+        await Assert.ThrowsAsync<NotFoundException>(() => CreateUseCase().ExecuteAsync(new(ticket.Id, "Probe")));
         _timelineStore.VerifyNoOtherCalls();
     }
 

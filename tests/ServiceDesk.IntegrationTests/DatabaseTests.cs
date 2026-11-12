@@ -11,6 +11,7 @@ using ServiceDesk.Modules.Ticketing.Domain;
 using ServiceDesk.Platform.Persistence;
 using ServiceDesk.Modules.Ticketing.Infrastructure;
 using Xunit;
+using ServiceDesk.SharedKernel.Application;
 
 namespace ServiceDesk.IntegrationTests;
 
@@ -89,9 +90,13 @@ public class DatabaseTests : IClassFixture<ServiceDeskWebApplicationFactory>
         var confirmationTicket = scenario == "wrong-ticket" ? Guid.NewGuid() : ticketId;
         Func<Task> confirm = () => ConfirmThroughUseCaseAsync(context, confirmationTicket, confirmationActor, request, objectInfo, now);
         if (scenario is "unissued" or "wrong-actor")
-            await Assert.ThrowsAsync<KeyNotFoundException>(confirm);
+            await Assert.ThrowsAsync<NotFoundException>(confirm);
         else
-            await Assert.ThrowsAsync<ArgumentException>(confirm);
+        {
+            // Hợp đồng HTTP: mọi từ chối xác nhận tệp (đầu vào sai hoặc vi phạm quy tắc) đều là 400.
+            var rejection = await Assert.ThrowsAnyAsync<DomainException>(confirm);
+            Assert.Equal(400, rejection.StatusCode);
+        }
 
         Assert.Equal(0, await context.TicketAttachments.CountAsync(a => a.StorageKey == key));
         if (scenario != "unissued")

@@ -1,6 +1,7 @@
 using ServiceDesk.SharedKernel.Application.Abstractions;
 using ServiceDesk.Modules.Identity.Application.Ports;
 using ServiceDesk.SharedKernel.Authorization;
+using ServiceDesk.SharedKernel.Application;
 
 namespace ServiceDesk.Modules.Identity.Application.GetUsersByRole;
 
@@ -20,13 +21,13 @@ internal sealed class GetUsersByRoleUseCase(IUserAccountGateway userGateway, ICu
         var isStaff = currentUser.IsInRole(RoleNames.Agent) || currentUser.IsInRole(RoleNames.Admin);
         if (!isStaff)
         {
-            throw new UnauthorizedAccessException("Only agents or admins can query user lists.");
+            throw new ForbiddenException("staff_required", "Only agents or admins can query user lists.");
         }
 
         ArgumentNullException.ThrowIfNull(query);
         var role = query.Role.Equals(RoleNames.Agent, StringComparison.OrdinalIgnoreCase) ? RoleNames.Agent
             : query.Role.Equals(RoleNames.Admin, StringComparison.OrdinalIgnoreCase) ? RoleNames.Admin
-            : throw new ArgumentException("Only agents or admins can be queried.");
+            : throw new InvalidInputException("role_query_invalid", "Only agents or admins can be queried.");
 
         var users = await userGateway.GetUsersInRoleAsync(role, cancellationToken);
         return users.Select(user => new UserDirectoryEntry(user.UserId, user.FullName)).ToArray();

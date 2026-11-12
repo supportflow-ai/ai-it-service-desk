@@ -2,6 +2,7 @@ using FluentAssertions;
 using ServiceDesk.Modules.Ticketing.Application.CreateTicket;
 using ServiceDesk.Modules.Ticketing.Application.Idempotency;
 using Xunit;
+using ServiceDesk.SharedKernel.Application;
 
 namespace ServiceDesk.Application.Tests.Ticketing;
 
@@ -73,14 +74,14 @@ public class CreateTicketFingerprintTests
     public void EmptyOrNonVisibleAsciiKey_IsRejected(string key)
     {
         var action = () => CreateTicketFingerprint.Create(Guid.NewGuid(), key, Payload);
-        action.Should().Throw<ArgumentException>();
+        action.Should().Throw<InvalidInputException>();
     }
 
     [Fact]
     public void OversizedKey_IsRejectedBeforeStorage()
     {
         var action = () => CreateTicketFingerprint.Create(Guid.NewGuid(), new string('K', 201), Payload);
-        action.Should().Throw<ArgumentException>();
+        action.Should().Throw<InvalidInputException>();
         CreateTicketFingerprint.Create(Guid.NewGuid(), new string('K', 200), Payload).KeyHash.Length.Should().Be(64);
     }
 }

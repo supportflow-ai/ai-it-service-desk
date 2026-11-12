@@ -34,7 +34,7 @@ public sealed class DraftArticleUseCaseTests
         var useCase = new CreateDraftArticleUseCase(_writer.Object, _user.Object, _clock.Object);
         var command = new CreateDraftArticleCommand("Tiêu đề bài viết", "Nội dung bài viết hợp lệ từ 10 ký tự", null);
 
-        var ex = await Assert.ThrowsAsync<UnauthorizedAccessException>(() => useCase.ExecuteAsync(command));
+        var ex = await Assert.ThrowsAsync<ForbiddenException>(() => useCase.ExecuteAsync(command));
         Assert.Contains("Chỉ kỹ thuật viên hoặc quản trị viên", ex.Message);
     }
 
@@ -78,7 +78,7 @@ public sealed class DraftArticleUseCaseTests
         var useCase = new UpdateDraftArticleUseCase(_writer.Object, _user.Object, _clock.Object);
         var command = new UpdateDraftArticleCommand(Guid.NewGuid(), "Tiêu đề mới", "Nội dung bài viết mới cập nhật", ExpectedRevision: 1u);
 
-        await Assert.ThrowsAsync<KeyNotFoundException>(() => useCase.ExecuteAsync(command));
+        await Assert.ThrowsAsync<NotFoundException>(() => useCase.ExecuteAsync(command));
     }
 
     [Fact]
@@ -96,7 +96,7 @@ public sealed class DraftArticleUseCaseTests
         var useCase = new UpdateDraftArticleUseCase(_writer.Object, _user.Object, _clock.Object);
         var command = new UpdateDraftArticleCommand(article.Id, "Tiêu đề bị sửa", "Nội dung cố tình bị sửa", ExpectedRevision: 1u);
 
-        var ex = await Assert.ThrowsAsync<UnauthorizedAccessException>(() => useCase.ExecuteAsync(command));
+        var ex = await Assert.ThrowsAsync<ForbiddenException>(() => useCase.ExecuteAsync(command));
         Assert.Contains("Chỉ tác giả hoặc quản trị viên mới có quyền chỉnh sửa bản nháp.", ex.Message);
     }
 
@@ -164,7 +164,7 @@ public sealed class DraftArticleUseCaseTests
         var useCase = new UpdateDraftArticleUseCase(_writer.Object, _user.Object, _clock.Object);
         var command = new UpdateDraftArticleCommand(article.Id, "Tiêu đề mới", "Nội dung mới sau khi xuất bản", ExpectedRevision: 1u);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => useCase.ExecuteAsync(command));
+        await Assert.ThrowsAsync<RuleViolationException>(() => useCase.ExecuteAsync(command));
     }
 
     [Fact]
@@ -185,7 +185,7 @@ public sealed class DraftArticleUseCaseTests
         var useCase = new UpdateDraftArticleUseCase(_writer.Object, _user.Object, _clock.Object);
         var command = new UpdateDraftArticleCommand(article.Id, "Tiêu đề mới", "Nội dung mới sau khi lưu trữ", ExpectedRevision: 1u);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => useCase.ExecuteAsync(command));
+        await Assert.ThrowsAsync<RuleViolationException>(() => useCase.ExecuteAsync(command));
     }
 
     [Theory]
@@ -205,7 +205,7 @@ public sealed class DraftArticleUseCaseTests
         var useCase = new UpdateDraftArticleUseCase(_writer.Object, _user.Object, _clock.Object);
         var command = new UpdateDraftArticleCommand(article.Id, "Tiêu đề mới", "Nội dung bài viết mới cập nhật", null, ExpectedRevision: revision);
 
-        var ex = await Assert.ThrowsAsync<ArgumentException>(() => useCase.ExecuteAsync(command));
-        Assert.Equal("Expected revision is required.", ex.Message);
+        var ex = await Assert.ThrowsAsync<InvalidInputException>(() => useCase.ExecuteAsync(command));
+        Assert.Equal("Cần cung cấp expectedRevision khác 0.", ex.Message);
     }
 }

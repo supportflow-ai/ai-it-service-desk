@@ -7,7 +7,8 @@ namespace ServiceDesk.Modules.Ticketing.Application.Common;
 
 /// <summary>
 /// Các bước chung của lệnh ghi ticket, dùng lại ở mọi use case thay đổi ticket:
-/// kiểm revision mong đợi, đổi lỗi quy tắc Domain thành lỗi đầu vào (400) và lưu kèm bản ghi audit của hệ thống.
+/// kiểm revision mong đợi và lưu kèm bản ghi audit của hệ thống. Quy tắc trạng thái do Domain tự ném
+/// <see cref="RuleViolationException"/> nên không cần bước đổi kiểu lỗi ở đây.
 /// Kiểm quyền và tải ticket vẫn nằm trong từng use case vì mỗi lệnh có luật riêng.
 /// </summary>
 internal static class TicketCommandGuard
@@ -17,38 +18,11 @@ internal static class TicketCommandGuard
         "Dữ liệu đã bị thay đổi bởi người khác hoặc phiên làm việc đã cũ. Vui lòng tải lại trang.";
 
     /// <summary>Bắt buộc có revision mong đợi khác 0 và khớp revision hiện tại của ticket.</summary>
-    /// <exception cref="ArgumentException">Thiếu revision mong đợi.</exception>
+    /// <exception cref="InvalidInputException">Thiếu revision mong đợi (xem <see cref="ExpectedRevision"/>).</exception>
     /// <exception cref="ConcurrencyConflictException">Revision đã thay đổi.</exception>
     public static void RequireCurrentRevision(ITicketWriter writer, Ticket ticket, uint? expectedRevision)
     {
-        if (!expectedRevision.HasValue || expectedRevision.Value == 0)
-        {
-            throw new ArgumentException("Expected revision is required.");
-        }
-
-        if (writer.GetRevision(ticket) != expectedRevision.Value)
-        {
-            throw new ConcurrencyConflictException(StaleRevisionMessage);
-        }
-    }
-
-    /// <summary>
-    /// Thực hiện thay đổi trên aggregate; vi phạm quy tắc (<see cref="InvalidOperationException"/>, và
-    /// <see cref="ArgumentException"/> khi <paramref name="includeArgumentErrors"/> bật) trả về dạng <see cref="ArgumentException"/>
-    /// với cùng thông điệp để giữ mã HTTP 400 hiện có.
-    /// </summary>
-    public static void ApplyRule(Ticket ticket, Action<Ticket> change, bool includeArgumentErrors = false)
-    {
-        ArgumentNullException.ThrowIfNull(ticket);
-        ArgumentNullException.ThrowIfNull(change);
-        try
-        {
-            change(ticket);
-        }
-        catch (Exception ex) when (ex is InvalidOperationException || (includeArgumentErrors && ex is ArgumentException))
-        {
-            throw new ArgumentException(ex.Message);
-        }
+        ExpectedRevision.Require(expectedRevision, () => writer.GetRevision(ticket), StaleRevisionMessage);
     }
 
     /// <summary>Lưu ticket cùng một bình luận công khai do hệ thống ghi lại thao tác của <paramref name="actorId"/>.</summary>

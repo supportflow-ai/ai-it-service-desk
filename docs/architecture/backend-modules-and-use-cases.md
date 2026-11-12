@@ -9,13 +9,13 @@ Mã nguồn tổ chức theo module trước, Clean bên trong module theo [ADR-
 ```mermaid
 flowchart TD
     Hosts["API và Worker"] --> Modules["ServiceDesk.Modules.* (Identity, Ticketing, Knowledge, AIAssistance)"]
-    Hosts --> Infrastructure["ServiceDesk.Infrastructure (DbContext, migration, MinIO, đồng hồ)"]
-    Database["Công cụ Database"] --> Infrastructure
+    Hosts --> Infrastructure["ServiceDesk.Platform (DbContext, migration, MinIO, đồng hồ)"]
+    Migrator["ServiceDesk.Migrator (migration, khởi tạo)"] --> Infrastructure
     Infrastructure --> Modules
     Modules --> SharedKernel["SharedKernel / SharedKernel.Web"]
 ```
 
-Trong mỗi module: `Presentation` → `Application` → `Domain` và `Infrastructure` → `Application` → `Domain`. API/Worker gọi `Add<Module>Module` để module tự đăng ký use case và adapter; đăng ký kiểm tra PostgreSQL sẵn sàng thuộc `ServiceDesk.Infrastructure`. Hàm xử lý HTTP nằm trong `Presentation` của module và chỉ gọi giao diện nghiệp vụ. Application không sử dụng EF Core hoặc ngữ cảnh HTTP.
+Trong mỗi module: `Presentation` → `Application` → `Domain` và `Infrastructure` → `Application` → `Domain`. API/Worker gọi `Add<Module>Module` để module tự đăng ký use case và adapter; đăng ký kiểm tra PostgreSQL sẵn sàng thuộc `ServiceDesk.Platform`. Hàm xử lý HTTP nằm trong `Presentation` của module và chỉ gọi giao diện nghiệp vụ. Application không sử dụng EF Core hoặc ngữ cảnh HTTP.
 
 ## Trách nhiệm từng mô-đun
 
@@ -36,9 +36,11 @@ Phần này mô tả mã sau PR #50 và PR #51 vào `dev`. Số luồng hiện t
 
 - Identity có Domain riêng: `RefreshToken` (`Issue`, `Revoke`, `IsActiveAt`), `OtpCode` (`Issue`, `IsValid`, `Matches`) và `Department`; ba bảng `refresh_tokens`, `otp_codes`, `departments` ánh xạ trong `Infrastructure/Configurations` của module. Luồng refresh, revoke, đổi/quên/đặt lại mật khẩu, gán vai trò và phòng ban được mô tả ở [hợp đồng hiện hành](current-backend-contract.md#identity-sau-pr-47-48-và-nhánh-refactor).
 - Identity công bố `IUserDirectory` trong SharedKernel. `AgentDirectory` của Ticketing tra vai trò và tên hiển thị qua cổng này, không đọc bảng ASP.NET Core Identity; kiểm thử kiến trúc chặn Ticketing, Knowledge, AIAssistance phụ thuộc `Microsoft.AspNetCore.Identity`.
-- Tám lệnh ghi Ticketing dùng chung `TicketCommandGuard` (kiểm revision, đổi vi phạm quy tắc Domain thành lỗi 400, lưu kèm audit của hệ thống) và `TicketPermissions` (Agent/Admin, chủ sở hữu hoặc Admin). Kiểm quyền và tải ticket vẫn ở từng use case; thông điệp, thứ tự kiểm và mã HTTP không đổi.
+- Tám lệnh chuyển trạng thái/cập nhật phiếu của Ticketing dùng chung khung `TicketTransitions` (nhân viên: nhận, phân công, hủy phân công, giải quyết; chủ sở hữu hoặc Admin: cập nhật, mở lại, đóng, hủy) với một thứ tự bước duy nhất: danh tính → vai trò → tải phiếu trong phạm vi (404) → điều kiện riêng của lệnh → `expectedRevision` → quy tắc Domain → lưu kèm audit của hệ thống (trừ cập nhật nội dung). `TicketCommandGuard` giữ bước kiểm revision và ghi audit; Domain tự ném `RuleViolationException` nên không còn bước đổi kiểu lỗi. `TicketPermissions` giữ quyền Agent/Admin, chủ sở hữu hoặc Admin. Thông điệp và mã HTTP không đổi.
 - Endpoint Ticketing tách thành các tệp partial theo nhóm trong `Presentation`; thứ tự đăng ký giữ nguyên nên OpenAPI không đổi.
-- Knowledge dùng `KnowledgePermissions` cho quyền soạn/xuất bản/lưu trữ và phạm vi đọc (Admin: mọi bài; Agent: bài đã xuất bản và bài của mình; người khác: bài đã xuất bản).
+- Knowledge dùng `KnowledgePermissions` cho quyền soạn/xuất bản/lưu trữ và phạm vi đọc (Admin: mọi bài; Agent: bài đã xuất bản và bài của mình; người khác: bài đã xuất bản). Ba lệnh sửa bản nháp, xuất bản và lưu trữ dùng khung `ArticleTransitions` cùng thứ tự bước (vai trò → tải bài viết → quyền tác giả/Admin → `expectedRevision` → quy tắc Domain 422 → lưu). Kiểm `expectedRevision` của cả hai module dùng chung `ExpectedRevision` trong SharedKernel (thiếu hoặc bằng 0 trả 400 mã `expected_revision_required`, lệch revision trả 409 với thông điệp riêng của module).
+- Hàng đợi Agent nhận bộ lọc đã kiểm tra `AgentQueueFilter` (cổng `ITicketQueries.GetAgentQueueAsync` không còn nhận chuỗi thô): Application dựng bằng `AgentQueueFilter.FromRaw` (sau kiểm phân trang), từ chối `priority` không đọc được bằng `InvalidInputException` mã `priority_invalid`, còn `scope` không nhận diện được nghĩa là không lọc như trước; adapter PostgreSQL chỉ áp dụng bộ lọc.
+- Cách viết một tính năng mới (bố cục, thứ tự bước của lệnh ghi, hệ lỗi, endpoint, kiểm thử): [mẫu một tính năng](feature-template.md).
 - PR #51: xoay vòng refresh token, đổi vai trò, đổi mật khẩu đều ghi và thu hồi phiên trong một giao dịch; gán vai trò khóa dòng vai trò Admin. OTP gửi qua SMTP khi có cấu hình `Email:Smtp`.
 
 ## Mười hai luồng ban đầu

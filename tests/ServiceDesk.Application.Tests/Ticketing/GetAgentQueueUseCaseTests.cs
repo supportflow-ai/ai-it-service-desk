@@ -4,8 +4,10 @@ using ServiceDesk.Modules.Ticketing.Application.Authorization;
 using ServiceDesk.Modules.Ticketing.Application.Contracts;
 using ServiceDesk.Modules.Ticketing.Application.GetAgentQueue;
 using ServiceDesk.Modules.Ticketing.Application.Ports;
+using ServiceDesk.Modules.Ticketing.Domain;
 using ServiceDesk.SharedKernel.Authorization;
 using Xunit;
+using ServiceDesk.SharedKernel.Application;
 
 namespace ServiceDesk.Application.Tests.Ticketing;
 
@@ -29,7 +31,8 @@ public sealed class GetAgentQueueUseCaseTests
 
         var pagedResult = new PagedTicketResult([], 1, 10, 0);
         var actorId = Guid.Parse(_user.Object.UserId!);
-        _queries.Setup(q => q.GetAgentQueueAsync(actorId, new TicketReadScope.AgentTickets(actorId, false), null, null, "unassigned", null, false, 1, 10, It.IsAny<CancellationToken>()))
+        var expectedFilter = new AgentQueueFilter(Scope: AgentQueueScope.Unassigned);
+        _queries.Setup(q => q.GetAgentQueueAsync(actorId, new TicketReadScope.AgentTickets(actorId, false), expectedFilter, 1, 10, It.IsAny<CancellationToken>()))
             .ReturnsAsync(pagedResult);
 
         var useCase = new GetAgentQueueUseCase(_queries.Object, _user.Object);
@@ -47,7 +50,8 @@ public sealed class GetAgentQueueUseCaseTests
         _user.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(false);
         var result = new PagedTicketResult([], 1, 10, 0);
         var actorId = Guid.Parse(_user.Object.UserId!);
-        _queries.Setup(q => q.GetAgentQueueAsync(actorId, new TicketReadScope.AgentTickets(actorId, false), null, null, null, "P1", true, 1, 10, It.IsAny<CancellationToken>()))
+        var expectedFilter = new AgentQueueFilter(Priority: Priority.P1, SortByPriority: true);
+        _queries.Setup(q => q.GetAgentQueueAsync(actorId, new TicketReadScope.AgentTickets(actorId, false), expectedFilter, 1, 10, It.IsAny<CancellationToken>()))
             .ReturnsAsync(result);
 
         var useCase = new GetAgentQueueUseCase(_queries.Object, _user.Object);
@@ -65,7 +69,7 @@ public sealed class GetAgentQueueUseCaseTests
 
         var useCase = new GetAgentQueueUseCase(_queries.Object, _user.Object);
 
-        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+        await Assert.ThrowsAsync<ForbiddenException>(() =>
             useCase.ExecuteAsync(new()));
     }
 
@@ -81,7 +85,40 @@ public sealed class GetAgentQueueUseCaseTests
 
         var useCase = new GetAgentQueueUseCase(_queries.Object, _user.Object);
 
-        await Assert.ThrowsAsync<ArgumentException>(() =>
+        await Assert.ThrowsAsync<InvalidInputException>(() =>
             useCase.ExecuteAsync(new(Page: page, PageSize: pageSize)));
+    }
+
+    [Theory]
+    [InlineData("P5")]
+    [InlineData("urgent")]
+    [InlineData("P1,P9")]
+    public async Task Execute_InvalidPriority_IsRejectedBeforeReachingTheQueryPort(string priority)
+    {
+        _user.SetupGet(u => u.Roles).Returns([RoleNames.Agent]);
+        _user.Setup(u => u.IsInRole(RoleNames.Agent)).Returns(true);
+        _user.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(false);
+
+        var useCase = new GetAgentQueueUseCase(_queries.Object, _user.Object);
+
+        var error = await Assert.ThrowsAsync<InvalidInputException>(() => useCase.ExecuteAsync(new(Priority: priority)));
+
+        Assert.Equal("priority_invalid", error.Code);
+        Assert.Equal(400, error.StatusCode);
+        _queries.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task Execute_InvalidPagingIsReportedBeforeInvalidPriority()
+    {
+        _user.SetupGet(u => u.Roles).Returns([RoleNames.Agent]);
+        _user.Setup(u => u.IsInRole(RoleNames.Agent)).Returns(true);
+        _user.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(false);
+
+        var useCase = new GetAgentQueueUseCase(_queries.Object, _user.Object);
+
+        var error = await Assert.ThrowsAsync<InvalidInputException>(() => useCase.ExecuteAsync(new(Page: 0, Priority: "nope")));
+
+        Assert.Equal("paging_invalid", error.Code);
     }
 }

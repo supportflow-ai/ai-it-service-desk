@@ -15,5 +15,7 @@ public interface ITicketQueries
     Task<TicketDto?> GetByIdAsync(Guid id, TicketReadScope scope, CancellationToken cancellationToken);
 
     /// <summary>Truy vấn hàng đợi vé cho nhân viên hỗ trợ (Agent Queue) có lọc và phân trang.</summary>
-    Task<PagedTicketResult> GetAgentQueueAsync(Guid currentUserId, TicketReadScope readScope, int? status, string? categoryId, string? scope, string? priority, bool sortByPriority, int page, int pageSize, CancellationToken cancellationToken);
+    /// <param name="currentUserId">Người gọi; dùng cho phạm vi <see cref="AgentQueueScope.Mine"/>.</param>
+    /// <param name="filter">Bộ lọc đã được Application kiểm tra; adapter chỉ áp dụng, không tự kiểm đầu vào.</param>
+    Task<PagedTicketResult> GetAgentQueueAsync(Guid currentUserId, TicketReadScope readScope, AgentQueueFilter filter, int page, int pageSize, CancellationToken cancellationToken);
 }

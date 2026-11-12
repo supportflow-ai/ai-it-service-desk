@@ -1,3 +1,5 @@
+using ServiceDesk.SharedKernel.Application;
+using ServiceDesk.Modules.Ticketing.Domain;
 namespace ServiceDesk.Modules.Ticketing.Domain;
 
 /// <summary>
@@ -22,7 +24,7 @@ public sealed class AttachmentUploadGrant
     public void Consume(DateTime now)
     {
         if (ConsumedAt.HasValue || ExpiresAt <= now)
-            throw new ArgumentException("Quyền tải tệp đã được sử dụng hoặc hết hạn.");
+            throw new RuleViolationException("attachment_upload_unusable", "Quyền tải tệp đã được sử dụng hoặc hết hạn.");
         ConsumedAt = now;
     }
 
@@ -30,12 +32,12 @@ public sealed class AttachmentUploadGrant
     {
         ArgumentNullException.ThrowIfNull(attachment);
         if (ConsumedAt.HasValue || ExpiresAt <= now)
-            throw new ArgumentException("Quyền tải tệp đã được sử dụng hoặc hết hạn.");
+            throw new RuleViolationException("attachment_upload_unusable", "Quyền tải tệp đã được sử dụng hoặc hết hạn.");
         if (attachment.TicketId != TicketId || attachment.UploadedBy != ActorId ||
             attachment.FileName != FileName || attachment.FileSizeBytes != FileSizeBytes ||
             attachment.ContentType != ContentType ||
             !attachment.StorageKey.StartsWith($"tickets/{TicketId}/attachments/", StringComparison.Ordinal))
-            throw new ArgumentException("Metadata không khớp quyền tải tệp đã cấp.");
+            throw new RuleViolationException("attachment_metadata_mismatch", "Metadata không khớp quyền tải tệp đã cấp.");
         ConsumedAt = now;
         AttachmentId = attachment.Id;
     }
@@ -54,15 +56,15 @@ public sealed class AttachmentUploadGrant
         string storageKey,
         DateTime expiresAt)
     {
-        if (ticketId == Guid.Empty) throw new ArgumentException("Ticket ID is required.");
-        if (actorId == Guid.Empty) throw new ArgumentException("Actor ID is required.");
-        if (string.IsNullOrWhiteSpace(fileName)) throw new ArgumentException("File name is required.");
+        if (ticketId == Guid.Empty) throw new InvalidInputException("ticket_id_required", "Cần có mã phiếu.");
+        if (actorId == Guid.Empty) throw new InvalidInputException("actor_id_required", "Cần có mã người thực hiện.");
+        if (string.IsNullOrWhiteSpace(fileName)) throw new InvalidInputException("attachment_file_name_required", "Cần có tên tệp.");
         if (fileSizeBytes <= 0 || fileSizeBytes > 10 * 1024 * 1024)
-            throw new ArgumentException("File size must be between 1 byte and 10MB.");
-        if (string.IsNullOrWhiteSpace(contentType)) throw new ArgumentException("Content type is required.");
-        if (string.IsNullOrWhiteSpace(storageKey)) throw new ArgumentException("Storage key is required.");
+            throw TicketErrors.FileSizeInvalid();
+        if (string.IsNullOrWhiteSpace(contentType)) throw new InvalidInputException("attachment_content_type_required", "Cần có loại nội dung (content type).");
+        if (string.IsNullOrWhiteSpace(storageKey)) throw new InvalidInputException("attachment_storage_key_required", "Cần có storageKey.");
         if (fileName.Trim().Length > 255 || contentType.Trim().Length > 100 || storageKey.Trim().Length > 500)
-            throw new ArgumentException("Metadata vượt quá độ dài cho phép.");
+            throw new InvalidInputException("attachment_metadata_too_long", "Metadata vượt quá độ dài cho phép.");
 
         return new AttachmentUploadGrant
         {

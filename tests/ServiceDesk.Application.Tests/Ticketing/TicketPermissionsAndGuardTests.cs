@@ -56,9 +56,11 @@ public sealed class TicketPermissionsAndGuardTests
     public void MissingExpectedRevisionIsBadRequest(uint? expected)
     {
         var ticket = NewTicket(Guid.NewGuid());
-        var error = Assert.Throws<ArgumentException>(() =>
+        var error = Assert.Throws<InvalidInputException>(() =>
             TicketCommandGuard.RequireCurrentRevision(Mock.Of<ITicketWriter>(), ticket, expected));
-        Assert.Equal("Expected revision is required.", error.Message);
+        Assert.Equal("expected_revision_required", error.Code);
+        Assert.Equal(400, error.StatusCode);
+        Assert.Equal("Cần cung cấp expectedRevision khác 0.", error.Message);
     }
 
     [Fact]
@@ -72,23 +74,25 @@ public sealed class TicketPermissionsAndGuardTests
         TicketCommandGuard.RequireCurrentRevision(writer.Object, ticket, 3);
     }
 
+    // Thay cho hai test của TicketCommandGuard.ApplyRule (đã gỡ vì Domain tự ném lỗi nghiệp vụ có mã):
+    // cùng ý định "vi phạm quy tắc giữ nguyên thông điệp và vẫn là lỗi 400", kiểm ngay trên Domain.
     [Fact]
-    public void RuleViolationBecomesArgumentExceptionWithSameMessage()
+    public void DomainStateRuleViolationKeepsCodeMessageAndStatus400()
     {
         var ticket = NewTicket(Guid.NewGuid());
-        var error = Assert.Throws<ArgumentException>(() =>
-            TicketCommandGuard.ApplyRule(ticket, _ => throw new InvalidOperationException("Không thể chuyển trạng thái.")));
-        Assert.Equal("Không thể chuyển trạng thái.", error.Message);
+        var error = Assert.Throws<RuleViolationException>(() => ticket.Resolve(Now));
+        Assert.Equal("ticket_cannot_resolve", error.Code);
+        Assert.Equal(400, error.StatusCode);
+        Assert.Equal("Không thể giải quyết phiếu ở trạng thái Submitted.", error.Message);
     }
 
     [Fact]
-    public void ArgumentErrorsAreOnlyRewrappedWhenRequested()
+    public void DomainInputErrorsAreInvalidInputWithStableCode()
     {
         var ticket = NewTicket(Guid.NewGuid());
-        var original = new ArgumentOutOfRangeException("agentId");
-
-        Assert.Same(original, Assert.Throws<ArgumentOutOfRangeException>(() => TicketCommandGuard.ApplyRule(ticket, _ => throw original)));
-        Assert.Throws<ArgumentException>(() => TicketCommandGuard.ApplyRule(ticket, _ => throw original, includeArgumentErrors: true));
+        var error = Assert.Throws<InvalidInputException>(() => ticket.Assign(Guid.Empty, Now));
+        Assert.Equal("ticket_agent_required", error.Code);
+        Assert.Equal(400, error.StatusCode);
     }
 
     [Fact]

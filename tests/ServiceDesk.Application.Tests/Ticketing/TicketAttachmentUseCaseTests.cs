@@ -52,7 +52,7 @@ public sealed class TicketAttachmentUseCaseTests
             .ReturnsAsync((TicketDto?)null);
         var useCase = new GetAttachmentDownloadUrlUseCase(_ticketQueries.Object, _storageService.Object, _attachmentStore.Object, _user.Object);
 
-        await Assert.ThrowsAsync<KeyNotFoundException>(() => useCase.ExecuteAsync(new(_ticketId, "tickets/other/secret.pdf")));
+        await Assert.ThrowsAsync<NotFoundException>(() => useCase.ExecuteAsync(new(_ticketId, "tickets/other/secret.pdf")));
 
         _attachmentStore.VerifyNoOtherCalls();
         _storageService.VerifyNoOtherCalls();
@@ -64,7 +64,7 @@ public sealed class TicketAttachmentUseCaseTests
         var otherTicketId = Guid.NewGuid();
         var useCase = new GetAttachmentDownloadUrlUseCase(_ticketQueries.Object, _storageService.Object, _attachmentStore.Object, _user.Object);
 
-        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+        await Assert.ThrowsAsync<ForbiddenException>(() =>
             useCase.ExecuteAsync(new(_ticketId, $"tickets/{otherTicketId}/malicious.pdf")));
     }
 
@@ -91,7 +91,7 @@ public sealed class TicketAttachmentUseCaseTests
         var useCase = new GenerateAttachmentUploadUrlUseCase(_ticketQueries.Object, _storageService.Object,
             _attachmentStore.Object, _clock.Object, _user.Object);
 
-        await Assert.ThrowsAsync<ArgumentException>(() => useCase.ExecuteAsync(new(_ticketId, new("evidence.pdf", 1024, "application/pdf"))));
+        await Assert.ThrowsAsync<RuleViolationException>(() => useCase.ExecuteAsync(new(_ticketId, new("evidence.pdf", 1024, "application/pdf"))));
 
         _storageService.VerifyNoOtherCalls();
         _attachmentStore.VerifyNoOtherCalls();
@@ -106,7 +106,7 @@ public sealed class TicketAttachmentUseCaseTests
         var useCase = new ConfirmAttachmentUploadUseCase(_ticketQueries.Object, _attachmentStore.Object,
             _storageService.Object, _user.Object, _clock.Object);
 
-        await Assert.ThrowsAsync<ArgumentException>(() => useCase.ExecuteAsync(new(_ticketId,
+        await Assert.ThrowsAsync<RuleViolationException>(() => useCase.ExecuteAsync(new(_ticketId,
             new ConfirmAttachmentUploadRequest("evidence.png", 1024, "image/png", $"tickets/{_ticketId}/attachments/existing"))));
 
         _attachmentStore.VerifyNoOtherCalls();
@@ -120,7 +120,7 @@ public sealed class TicketAttachmentUseCaseTests
         var useCase = new ConfirmAttachmentUploadUseCase(_ticketQueries.Object, _attachmentStore.Object,
             _storageService.Object, _user.Object, _clock.Object);
 
-        await Assert.ThrowsAsync<ArgumentException>(() => useCase.ExecuteAsync(new(_ticketId,
+        await Assert.ThrowsAsync<RuleViolationException>(() => useCase.ExecuteAsync(new(_ticketId,
             new ConfirmAttachmentUploadRequest("evidence.png", 1024, "image/png", $"tickets/{_ticketId}/attachments/existing"))));
 
         _attachmentStore.VerifyNoOtherCalls();
@@ -152,7 +152,7 @@ public sealed class TicketAttachmentUseCaseTests
     {
         var key = $"tickets/{_ticketId}/unissued.png";
         var useCase = new ConfirmAttachmentUploadUseCase(_ticketQueries.Object, _attachmentStore.Object, _storageService.Object, _user.Object, _clock.Object);
-        await Assert.ThrowsAsync<KeyNotFoundException>(() => useCase.ExecuteAsync(new(_ticketId, new("evidence.png", 1024, "image/png", key))));
+        await Assert.ThrowsAsync<NotFoundException>(() => useCase.ExecuteAsync(new(_ticketId, new("evidence.png", 1024, "image/png", key))));
         _storageService.Verify(s => s.StatAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -164,7 +164,7 @@ public sealed class TicketAttachmentUseCaseTests
         _storageService.Setup(s => s.StatAsync("servicedesk-test", grant.StorageKey, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new StoredObject(2048, "image/png", "etag"));
         var useCase = new ConfirmAttachmentUploadUseCase(_ticketQueries.Object, _attachmentStore.Object, _storageService.Object, _user.Object, _clock.Object);
-        await Assert.ThrowsAsync<ArgumentException>(() => useCase.ExecuteAsync(new(_ticketId, new("evidence.png", 1024, "image/png", grant.StorageKey))));
+        await Assert.ThrowsAsync<RuleViolationException>(() => useCase.ExecuteAsync(new(_ticketId, new("evidence.png", 1024, "image/png", grant.StorageKey))));
         _attachmentStore.Verify(s => s.ConfirmAsync(It.IsAny<Guid>(), It.IsAny<TicketAttachment>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 

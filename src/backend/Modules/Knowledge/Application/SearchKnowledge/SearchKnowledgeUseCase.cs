@@ -6,6 +6,7 @@ using ServiceDesk.Modules.Knowledge.Application.Authorization;
 using ServiceDesk.Modules.Knowledge.Application.Contracts;
 using ServiceDesk.Modules.Knowledge.Application.Ports;
 using ServiceDesk.SharedKernel.Authorization;
+using ServiceDesk.Modules.Knowledge.Domain;
 
 internal sealed class SearchKnowledgeUseCase(
     IKnowledgeQueries queries,
@@ -21,7 +22,7 @@ internal sealed class SearchKnowledgeUseCase(
         // thay vì để phép nhân tràn số thành một offset nhỏ và trả nhầm trang đầu.
         if (((long)page - 1) * pageSize > int.MaxValue)
         {
-            throw new ArgumentException("page quá lớn so với pageSize.");
+            throw KnowledgeErrors.PagingInvalid();
         }
 
         var scope = KnowledgePermissions.ReadScope(currentUser);

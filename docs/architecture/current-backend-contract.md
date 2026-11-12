@@ -46,7 +46,7 @@ Giới hạn tần suất hai lớp. Theo IP: đăng ký, đăng nhập, quên v
 
 Mọi thao tác tạo hoặc thu hồi refresh token (đăng nhập, làm mới phiên, đăng xuất, đổi/đặt lại mật khẩu, đổi vai trò, thu hồi chuỗi phiên khi phát hiện token bị dùng lại) lấy khóa dòng người dùng (`AspNetUsers ... FOR UPDATE`) trước trong giao dịch của mình. Lệnh thu hồi vì vậy luôn chạy sau khi token mới đã commit; đăng nhập kiểm mật khẩu và lưu refresh token trong cùng một giao dịch. Đổi vai trò cũng đổi security stamp.
 
-Bộ lọc lỗi `ApiErrorFilter` giữ mã 400/403/404/409/503. Thông điệp của `ArgumentException` và `UnauthorizedAccessException` chỉ được trả khi mã ServiceDesk ném ra; lỗi cùng loại từ .NET hoặc thư viện trả thông điệp chung ("Yêu cầu không hợp lệ.", "Bạn không có quyền thực hiện thao tác này.") và chỉ ghi chi tiết vào log. Knowledge chỉ trả 422 kèm thông điệp cho `InvalidOperationException` ném từ `ServiceDesk.Modules.Knowledge.Domain`; ngoại lệ cùng loại từ adapter hay thư viện thành lỗi 500 chung.
+Mọi lỗi nghiệp vụ do mã ServiceDesk chủ động ném đều là `DomainException` (SharedKernel) mang `Code` ổn định và `StatusCode` tương thích: `InvalidInputException` 400, `RuleViolationException` 400 (Ticketing) hoặc 422 (Knowledge) do module chọn, `ForbiddenException` 403, `NotFoundException` 404, `ConflictException` 409, `RetryLaterException`/`ServiceUnavailableException` 503. [ApiErrorFilter](../../src/backend/BuildingBlocks/ServiceDesk.SharedKernel.Web/ApiErrorFilter.cs) là nơi duy nhất đổi các lỗi này thành phản hồi HTTP và chỉ trả thông điệp của `DomainException`. `ArgumentException`, `UnauthorizedAccessException` và `KeyNotFoundException` thuần (đến từ .NET hoặc thư viện) vẫn giữ mã 400/403/404 nhưng chỉ trả thông điệp chung ("Yêu cầu không hợp lệ.", "Bạn không có quyền thực hiện thao tác này.") và ghi chi tiết vào log; `InvalidOperationException` thuần thành lỗi 500 chung. Không còn suy đoán nơi ném lỗi bằng reflection.
 
 ## Thao tác vòng đời phiếu
 
@@ -61,7 +61,7 @@ Các thao tác đều dùng POST. Chỉ `update` nhận nội dung JSON; các th
 | Đóng | Resolved | Closed | Chưa có tác vụ đóng tự động |
 | Hủy | Submitted | Cancelled | Chưa nhận lý do hủy hoặc lưu lịch sử nghiệp vụ |
 
-Mọi lệnh ghi phiếu (cập nhật, nhận xử lý, phân công, hủy phân công, giải quyết, mở lại, đóng, hủy) bắt buộc `expectedRevision`: thiếu hoặc bằng 0 trả 400, khác revision hiện tại (`xmin`) trả 409. Trạng thái khác bị Domain từ chối; `TicketCommandGuard` chuyển lỗi trạng thái thành `ArgumentException`, bộ lọc HTTP trả 400 với `{ error }`. Phiếu thiếu hoặc ngoài quyền chủ sở hữu của các lệnh `update/reopen/close/cancel` trả 404. Các lệnh mới chưa có cơ chế khóa chống tạo trùng hoặc phát lại phản hồi như thao tác tạo phiếu. Yêu cầu đã thực hiện thành công rồi gửi lại có thể nhận lỗi trạng thái.
+Mọi lệnh ghi phiếu (cập nhật, nhận xử lý, phân công, hủy phân công, giải quyết, mở lại, đóng, hủy) bắt buộc `expectedRevision`: thiếu hoặc bằng 0 trả 400, khác revision hiện tại (`xmin`) trả 409. Trạng thái khác bị Domain từ chối bằng `RuleViolationException` (mã `ticket_cannot_*`), bộ lọc HTTP trả 400 với `{ error, code, type, title }`. Phiếu thiếu hoặc ngoài quyền chủ sở hữu của các lệnh `update/reopen/close/cancel` trả 404. Các lệnh mới chưa có cơ chế khóa chống tạo trùng hoặc phát lại phản hồi như thao tác tạo phiếu. Yêu cầu đã thực hiện thành công rồi gửi lại có thể nhận lỗi trạng thái.
 
 ## Các điểm đã xử lý sau refactor
 
@@ -107,7 +107,7 @@ Nguồn: [TicketStatus](../../src/backend/Modules/Ticketing/Domain/TicketStatus.
 
 ## Lỗi và idempotency
 
-- Giữ hình dạng phản hồi lỗi hiện hành, không chuyển đồng loạt sang ProblemDetails. [ApiErrorFilter](../../src/backend/BuildingBlocks/ServiceDesk.SharedKernel.Web/ApiErrorFilter.cs) giữ `{ error }` cho lỗi đầu vào/chống tạo trùng; 404 chi tiết không dựng một DTO lỗi mới.
+- Giữ hình dạng phản hồi lỗi hiện hành, không chuyển đồng loạt sang ProblemDetails và giữ `Content-Type: application/json`. [ApiErrorFilter](../../src/backend/BuildingBlocks/ServiceDesk.SharedKernel.Web/ApiErrorFilter.cs) giữ `{ error }` cho lỗi đầu vào/chống tạo trùng và **bổ sung** `code` (mã ổn định, snake_case), `type` (`urn:servicedesk:error:{code}`) và `title` (tiêu đề ngắn theo mã HTTP); không thêm `errors` dạng object. 404 do `NotFoundException` hoặc `KeyNotFoundException` vẫn không có body; Identity vẫn trả `{ errors: [...] }` từ kết quả nghiệp vụ và thông điệp tiếng Anh của Identity không đổi.
 - Tạo ticket hỗ trợ `Idempotency-Key` tùy chọn. Receipt nằm trong phạm vi requester + method + resource + key hash; khác payload cùng key trả 409.
 - Advisory lock và transaction PostgreSQL giữ ticket/receipt nguyên tử. Receipt dùng giờ DB, hiệu lực 10 phút; lock timeout 5 giây; timeout trả 503 và `Retry-After: 1`.
 - Replay trả response đã lưu sau kiểm tra quyền sở hữu, không dựng lại từ ticket có thể thay đổi. Không dùng cache trong tiến trình thay cơ chế này.

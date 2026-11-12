@@ -45,7 +45,7 @@ public sealed class AttachmentConfirmationSecurityTests
     {
         _storage.Setup(value => value.StatAsync("configured-bucket", _upload.StorageKey, It.IsAny<CancellationToken>()))
             .ReturnsAsync(size == 0 ? null : new StoredObject(size, type, "etag"));
-        await Assert.ThrowsAsync<ArgumentException>(() => Confirm().ExecuteAsync(new(_ticket, Request())));
+        await Assert.ThrowsAsync<RuleViolationException>(() => Confirm().ExecuteAsync(new(_ticket, Request())));
         _store.Verify(value => value.ConfirmAsync(It.IsAny<Guid>(), It.IsAny<TicketAttachment>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -54,14 +54,14 @@ public sealed class AttachmentConfirmationSecurityTests
     {
         _storage.Setup(value => value.StatAsync("configured-bucket", _upload.StorageKey, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new StoredObject(1024, null!, "etag"));
-        await Assert.ThrowsAsync<ArgumentException>(() => Confirm().ExecuteAsync(new(_ticket, Request())));
+        await Assert.ThrowsAsync<RuleViolationException>(() => Confirm().ExecuteAsync(new(_ticket, Request())));
         _store.Verify(value => value.ConfirmAsync(It.IsAny<Guid>(), It.IsAny<TicketAttachment>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
     public async Task MetadataCannotBeReplacedAtConfirmation()
     {
-        await Assert.ThrowsAsync<ArgumentException>(() => Confirm().ExecuteAsync(new(_ticket, Request() with { FileSizeBytes = 2048 })));
+        await Assert.ThrowsAsync<InvalidInputException>(() => Confirm().ExecuteAsync(new(_ticket, Request() with { FileSizeBytes = 2048 })));
         _storage.Verify(value => value.StatAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -69,7 +69,7 @@ public sealed class AttachmentConfirmationSecurityTests
     public async Task ExpiredUpload_IsRejectedBeforeStorage()
     {
         _clock.SetupGet(value => value.UtcNow).Returns(new DateTimeOffset(_now.AddHours(2)));
-        await Assert.ThrowsAsync<ArgumentException>(() => Confirm().ExecuteAsync(new(_ticket, Request())));
+        await Assert.ThrowsAsync<RuleViolationException>(() => Confirm().ExecuteAsync(new(_ticket, Request())));
         _storage.Verify(value => value.StatAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -77,7 +77,7 @@ public sealed class AttachmentConfirmationSecurityTests
     public async Task UnknownUpload_IsNotFoundBeforeStorage()
     {
         _store.Setup(value => value.GetUploadGrantAsync(_ticket, _upload.StorageKey, _user, It.IsAny<CancellationToken>())).ReturnsAsync((AttachmentUploadGrant?)null);
-        await Assert.ThrowsAsync<KeyNotFoundException>(() => Confirm().ExecuteAsync(new(_ticket, Request())));
+        await Assert.ThrowsAsync<NotFoundException>(() => Confirm().ExecuteAsync(new(_ticket, Request())));
         _storage.Verify(value => value.StatAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -148,7 +148,7 @@ public sealed class AttachmentConfirmationSecurityTests
     public async Task LegacyConsumedGrantWithoutLink_IsRejectedWithoutStorageAccess()
     {
         _upload.Consume(_now);
-        await Assert.ThrowsAsync<ArgumentException>(() => Confirm().ExecuteAsync(new(_ticket, Request())));
+        await Assert.ThrowsAsync<RuleViolationException>(() => Confirm().ExecuteAsync(new(_ticket, Request())));
         _storage.Verify(value => value.StatAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -176,7 +176,7 @@ public sealed class AttachmentConfirmationSecurityTests
         var key = $"tickets/{_ticket}/unconfirmed";
         _store.Setup(value => value.ExistsAsync(_ticket, key, It.IsAny<CancellationToken>())).ReturnsAsync(false);
         var useCase = new GetAttachmentDownloadUrlUseCase(_tickets.Object, _storage.Object, _store.Object, _actor.Object);
-        await Assert.ThrowsAsync<KeyNotFoundException>(() => useCase.ExecuteAsync(new(_ticket, key)));
+        await Assert.ThrowsAsync<NotFoundException>(() => useCase.ExecuteAsync(new(_ticket, key)));
         _storage.Verify(value => value.GetPresignedDownloadUrlAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 

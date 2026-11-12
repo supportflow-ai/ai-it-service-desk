@@ -1,3 +1,5 @@
+using ServiceDesk.SharedKernel.Application;
+using ServiceDesk.Modules.Knowledge.Domain;
 namespace ServiceDesk.Modules.Knowledge.Domain;
 
 /// <summary>
@@ -33,7 +35,7 @@ public class Article
     {
         if (authorId == Guid.Empty)
         {
-            throw new ArgumentException("Author ID is required.");
+            throw new InvalidInputException("article_author_required", "Cần có mã tác giả.");
         }
 
         var normalizedTitle = ValidateAndNormalizeTitle(title);
@@ -62,7 +64,7 @@ public class Article
     {
         if (Status != ArticleStatus.Draft)
         {
-            throw new InvalidOperationException("Chỉ có thể chỉnh sửa bài viết ở trạng thái nháp.");
+            throw KnowledgeErrors.StateViolation("article_not_draft", "Chỉ có thể chỉnh sửa bài viết ở trạng thái nháp.");
         }
 
         var normalizedTitle = ValidateAndNormalizeTitle(title);
@@ -80,12 +82,12 @@ public class Article
     {
         if (Status != ArticleStatus.Draft)
         {
-            throw new InvalidOperationException("Chỉ có thể xuất bản bài viết từ trạng thái nháp.");
+            throw KnowledgeErrors.StateViolation("article_publish_requires_draft", "Chỉ có thể xuất bản bài viết từ trạng thái nháp.");
         }
 
         if (publishedById == Guid.Empty)
         {
-            throw new ArgumentException("PublishedBy ID is required.");
+            throw new InvalidInputException("article_publisher_required", "Cần có mã người xuất bản.");
         }
 
         Status = ArticleStatus.Published;
@@ -98,7 +100,7 @@ public class Article
     {
         if (Status != ArticleStatus.Published)
         {
-            throw new InvalidOperationException("Chỉ có thể lưu trữ bài viết đang ở trạng thái đã xuất bản.");
+            throw KnowledgeErrors.StateViolation("article_archive_requires_published", "Chỉ có thể lưu trữ bài viết đang ở trạng thái đã xuất bản.");
         }
 
         Status = ArticleStatus.Archived;
@@ -113,12 +115,12 @@ public class Article
         var normalized = title?.Trim();
         if (string.IsNullOrWhiteSpace(normalized))
         {
-            throw new ArgumentException("Title is required.");
+            throw new InvalidInputException("article_title_required", "Tiêu đề không được để trống.");
         }
 
         if (normalized.Length > 200)
         {
-            throw new ArgumentException("Title must not exceed 200 characters.");
+            throw new InvalidInputException("article_title_too_long", "Tiêu đề không được vượt quá 200 ký tự.");
         }
 
         return normalized;
@@ -129,12 +131,12 @@ public class Article
         var normalized = content?.Trim();
         if (string.IsNullOrWhiteSpace(normalized))
         {
-            throw new ArgumentException("Content is required.");
+            throw new InvalidInputException("article_content_required", "Nội dung không được để trống.");
         }
 
         if (normalized.Length < 10)
         {
-            throw new ArgumentException("Content must be at least 10 characters.");
+            throw new InvalidInputException("article_content_too_short", "Nội dung phải có ít nhất 10 ký tự.");
         }
 
         return normalized;
@@ -151,13 +153,13 @@ public class Article
         {
             if (string.IsNullOrWhiteSpace(tag))
             {
-                throw new ArgumentException("Tag cannot be empty or whitespace.");
+                throw new InvalidInputException("article_tag_empty", "Thẻ không được để trống.");
             }
 
             var normalized = tag.Trim().ToLowerInvariant();
             if (normalized.Length > 50)
             {
-                throw new ArgumentException("Tag must not exceed 50 characters.");
+                throw new InvalidInputException("article_tag_too_long", "Thẻ không được vượt quá 50 ký tự.");
             }
 
             if (seen.Add(normalized))
@@ -168,7 +170,7 @@ public class Article
 
         if (result.Count > 10)
         {
-            throw new ArgumentException("Article cannot have more than 10 tags.");
+            throw new InvalidInputException("article_too_many_tags", "Bài viết không được có quá 10 thẻ.");
         }
 
         return result;

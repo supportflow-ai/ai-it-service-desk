@@ -7,6 +7,7 @@ using ServiceDesk.Modules.Ticketing.Application.Ports;
 using ServiceDesk.SharedKernel.Authorization;
 using ServiceDesk.Modules.Ticketing.Domain;
 using Xunit;
+using ServiceDesk.SharedKernel.Application;
 
 namespace ServiceDesk.Application.Tests.Ticketing;
 
@@ -69,7 +70,7 @@ public sealed class CommentAuthorizationTests
         var ticket = CreateTicket(Guid.NewGuid());
         _writer.Setup(writer => writer.GetForUpdateAsync(ticket.Id, It.IsAny<TicketReadScope>(), It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
 
-        await Assert.ThrowsAsync<KeyNotFoundException>(() => CreateUseCase().ExecuteAsync(new(ticket.Id, "Không được ghi")));
+        await Assert.ThrowsAsync<NotFoundException>(() => CreateUseCase().ExecuteAsync(new(ticket.Id, "Không được ghi")));
 
         _directory.VerifyNoOtherCalls();
         _timeline.VerifyNoOtherCalls();
@@ -82,7 +83,7 @@ public sealed class CommentAuthorizationTests
         var id = Guid.NewGuid();
         _writer.Setup(writer => writer.GetForUpdateAsync(id, It.IsAny<TicketReadScope>(), It.IsAny<CancellationToken>())).ReturnsAsync((Ticket?)null);
 
-        await Assert.ThrowsAsync<KeyNotFoundException>(() => CreateUseCase().ExecuteAsync(new(id, "Không được ghi")));
+        await Assert.ThrowsAsync<NotFoundException>(() => CreateUseCase().ExecuteAsync(new(id, "Không được ghi")));
 
         _directory.VerifyNoOtherCalls();
         _timeline.VerifyNoOtherCalls();
@@ -96,7 +97,7 @@ public sealed class CommentAuthorizationTests
         SetRoles(role);
         _user.SetupGet(user => user.IsAuthenticated).Returns(authenticated);
 
-        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => CreateUseCase().ExecuteAsync(new(Guid.NewGuid(), "Không được ghi")));
+        await Assert.ThrowsAsync<ForbiddenException>(() => CreateUseCase().ExecuteAsync(new(Guid.NewGuid(), "Không được ghi")));
 
         _writer.VerifyNoOtherCalls();
         _directory.VerifyNoOtherCalls();

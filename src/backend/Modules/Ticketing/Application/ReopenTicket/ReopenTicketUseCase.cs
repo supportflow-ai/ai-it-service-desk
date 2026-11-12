@@ -1,11 +1,8 @@
 using ServiceDesk.SharedKernel.Application;
 using ServiceDesk.SharedKernel.Application.Abstractions;
-using ServiceDesk.Modules.Ticketing.Application.Authorization;
 using ServiceDesk.Modules.Ticketing.Application.Common;
 using ServiceDesk.Modules.Ticketing.Application.Contracts;
 using ServiceDesk.Modules.Ticketing.Application.Ports;
-using ServiceDesk.SharedKernel.Authorization;
-using ServiceDesk.Modules.Ticketing.Domain;
 
 namespace ServiceDesk.Modules.Ticketing.Application.ReopenTicket;
 
@@ -19,10 +16,8 @@ public interface IReopenTicket
 }
 
 /// <summary>
-/// Xử lý mở lại ticket:
-/// - Chỉ chủ sở hữu (Requester tạo vé) hoặc Admin mới có quyền thực thi.
-/// - Trạng thái vé bắt buộc phải là Resolved.
-/// - Chuyển trạng thái quay trở lại InProgress để kỹ thuật viên tiếp tục xử lý.
+/// Xử lý mở lại vé, Resolved sang InProgress (chủ sở hữu hoặc Admin), và ghi log vào timeline.
+/// Khung chung của lệnh chuyển trạng thái: <see cref="TicketTransitions"/>; phiếu không có hoặc không thuộc quyền trả 404.
 /// </summary>
 internal sealed class ReopenTicketUseCase(
     ITicketWriter writer,
@@ -31,21 +26,12 @@ internal sealed class ReopenTicketUseCase(
 {
     public async Task<TicketDto> ExecuteAsync(ReopenTicketCommand command, CancellationToken cancellationToken = default)
     {
-        var actorId = TicketActor.RequireId(currentUser);
         ArgumentNullException.ThrowIfNull(command);
 
-        var scope = TicketPermissions.OwnerScopeFor(currentUser, actorId);
-        var ticket = await writer.GetForUpdateAsync(command.Id, scope, cancellationToken);
-        if (ticket == null || !TicketPermissions.CanActAsOwner(ticket, actorId, currentUser))
-        {
-            throw new KeyNotFoundException("Ticket not found or outside access scope.");
-        }
-
-        TicketCommandGuard.RequireCurrentRevision(writer, ticket, command.ExpectedRevision);
-
-        var now = clock.UtcNow.UtcDateTime;
-        TicketCommandGuard.ApplyRule(ticket, t => t.Reopen(now));
-
-        return await TicketCommandGuard.SaveWithSystemAuditAsync(writer, ticket, actorId, "Người dùng đã mở lại yêu cầu.", now, cancellationToken);
+        return await new TicketTransitions(writer, currentUser, clock).RunAsOwnerAsync(
+            command.Id, command.ExpectedRevision,
+            apply: (ticket, now) => ticket.Reopen(now),
+            auditMessage: "Người dùng đã mở lại yêu cầu.",
+            cancellationToken: cancellationToken);
     }
 }

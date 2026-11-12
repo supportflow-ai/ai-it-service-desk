@@ -1,5 +1,6 @@
 using ServiceDesk.Modules.Ticketing.Domain;
 using Xunit;
+using ServiceDesk.SharedKernel.Application;
 
 namespace ServiceDesk.Domain.Tests.Ticketing;
 
@@ -15,7 +16,7 @@ public sealed class AttachmentUploadGrantTests
         grant.Confirm(attachment, Now);
         Assert.Equal(attachment.Id, grant.AttachmentId);
         Assert.Equal(Now, grant.ConsumedAt);
-        Assert.Throws<ArgumentException>(() => grant.Confirm(Attachment(grant), Now));
+        Assert.Throws<RuleViolationException>(() => grant.Confirm(Attachment(grant), Now));
         Assert.Equal(attachment.Id, grant.AttachmentId);
     }
 
@@ -23,7 +24,7 @@ public sealed class AttachmentUploadGrantTests
     public void ExpiryBoundaryRejectsWithoutChangingGrant()
     {
         var grant = Grant();
-        Assert.Throws<ArgumentException>(() => grant.Confirm(Attachment(grant), grant.ExpiresAt));
+        Assert.Throws<RuleViolationException>(() => grant.Confirm(Attachment(grant), grant.ExpiresAt));
         Assert.Null(grant.AttachmentId);
         Assert.Null(grant.ConsumedAt);
     }
@@ -40,7 +41,7 @@ public sealed class AttachmentUploadGrantTests
             mismatch == "metadata" ? "other.txt" : grant.FileName, grant.FileSizeBytes, grant.ContentType,
             mismatch == "mutable-key" ? grant.StorageKey : $"tickets/{grant.TicketId}/attachments/{Guid.NewGuid()}",
             mismatch == "actor" ? Guid.NewGuid() : grant.ActorId, Now);
-        Assert.Throws<ArgumentException>(() => grant.Confirm(attachment, Now));
+        Assert.Throws<RuleViolationException>(() => grant.Confirm(attachment, Now));
         Assert.Null(grant.AttachmentId);
         Assert.Null(grant.ConsumedAt);
     }
@@ -50,7 +51,7 @@ public sealed class AttachmentUploadGrantTests
     {
         var grant = Grant();
         grant.Consume(Now);
-        Assert.Throws<ArgumentException>(() => grant.Confirm(Attachment(grant), Now));
+        Assert.Throws<RuleViolationException>(() => grant.Confirm(Attachment(grant), Now));
         Assert.Null(grant.AttachmentId);
         Assert.Equal(Now, grant.ConsumedAt);
     }

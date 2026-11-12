@@ -5,6 +5,7 @@ using ServiceDesk.Modules.Ticketing.Application.ConfirmAttachmentUpload;
 using ServiceDesk.Modules.Ticketing.Application.Contracts;
 using ServiceDesk.Modules.Ticketing.Application.Ports;
 using ServiceDesk.Modules.Ticketing.Domain;
+using ServiceDesk.SharedKernel.Application;
 
 namespace ServiceDesk.Modules.Ticketing.Infrastructure;
 
@@ -20,7 +21,7 @@ internal sealed class PostgresTicketAttachmentStore(DbContext context) : ITicket
         await context.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock(hashtextextended({scope}, 0))", cancellationToken);
         var now = await context.Database.SqlQuery<DateTime>($"SELECT clock_timestamp() AS \"Value\"").SingleAsync(cancellationToken);
         if (await context.Set<AttachmentUploadGrant>().CountAsync(value => value.ActorId == upload.ActorId && value.ConsumedAt == null && value.ExpiresAt > now, cancellationToken) >= 20)
-            throw new ArgumentException("Đang có quá nhiều tệp chờ xác nhận. Vui lòng xác nhận hoặc chờ yêu cầu cũ hết hạn.");
+            throw new RuleViolationException("attachment_pending_limit", "Đang có quá nhiều tệp chờ xác nhận. Vui lòng xác nhận hoặc chờ yêu cầu cũ hết hạn.");
         context.Set<AttachmentUploadGrant>().Add(upload);
         await context.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
@@ -45,7 +46,7 @@ internal sealed class PostgresTicketAttachmentStore(DbContext context) : ITicket
             await context.Database.ExecuteSqlInterpolatedAsync(
                 $"SELECT pg_advisory_xact_lock(hashtextextended({uploadId.ToString()}, 0))", cancellationToken);
             var upload = await context.Set<AttachmentUploadGrant>().SingleOrDefaultAsync(value => value.Id == uploadId, cancellationToken)
-                ?? throw new KeyNotFoundException("Upload grant not found.");
+                ?? throw TicketErrors.UploadNotFound();
             if (upload.AttachmentId is { } existingId)
             {
                 var existing = await GetByIdAsync(existingId, cancellationToken)

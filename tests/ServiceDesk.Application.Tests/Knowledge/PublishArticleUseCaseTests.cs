@@ -32,7 +32,7 @@ public sealed class PublishArticleUseCaseTests
         var useCase = new PublishArticleUseCase(_writer.Object, _user.Object, _clock.Object);
         var command = new PublishArticleCommand(Guid.NewGuid(), ExpectedRevision: 1u);
 
-        var ex = await Assert.ThrowsAsync<UnauthorizedAccessException>(() => useCase.ExecuteAsync(command));
+        var ex = await Assert.ThrowsAsync<ForbiddenException>(() => useCase.ExecuteAsync(command));
         Assert.Contains("Chỉ kỹ thuật viên hoặc quản trị viên mới có thể xuất bản bài viết.", ex.Message);
     }
 
@@ -87,7 +87,7 @@ public sealed class PublishArticleUseCaseTests
         var useCase = new PublishArticleUseCase(_writer.Object, _user.Object, _clock.Object);
         var command = new PublishArticleCommand(article.Id, ExpectedRevision: 1u);
 
-        var ex = await Assert.ThrowsAsync<UnauthorizedAccessException>(() => useCase.ExecuteAsync(command));
+        var ex = await Assert.ThrowsAsync<ForbiddenException>(() => useCase.ExecuteAsync(command));
         Assert.Contains("Chỉ tác giả hoặc quản trị viên mới có quyền xuất bản bài viết.", ex.Message);
     }
 
@@ -102,7 +102,7 @@ public sealed class PublishArticleUseCaseTests
         var useCase = new PublishArticleUseCase(_writer.Object, _user.Object, _clock.Object);
         var command = new PublishArticleCommand(Guid.NewGuid(), ExpectedRevision: 1u);
 
-        await Assert.ThrowsAsync<KeyNotFoundException>(() => useCase.ExecuteAsync(command));
+        await Assert.ThrowsAsync<NotFoundException>(() => useCase.ExecuteAsync(command));
     }
 
     [Fact]
@@ -141,7 +141,7 @@ public sealed class PublishArticleUseCaseTests
         var useCase = new PublishArticleUseCase(_writer.Object, _user.Object, _clock.Object);
         var command = new PublishArticleCommand(article.Id, ExpectedRevision: 1u);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => useCase.ExecuteAsync(command));
+        await Assert.ThrowsAsync<RuleViolationException>(() => useCase.ExecuteAsync(command));
     }
 
     [Theory]
@@ -161,7 +161,7 @@ public sealed class PublishArticleUseCaseTests
         var useCase = new PublishArticleUseCase(_writer.Object, _user.Object, _clock.Object);
         var command = new PublishArticleCommand(article.Id, ExpectedRevision: revision);
 
-        var ex = await Assert.ThrowsAsync<ArgumentException>(() => useCase.ExecuteAsync(command));
-        Assert.Equal("Expected revision is required.", ex.Message);
+        var ex = await Assert.ThrowsAsync<InvalidInputException>(() => useCase.ExecuteAsync(command));
+        Assert.Equal("Cần cung cấp expectedRevision khác 0.", ex.Message);
     }
 }

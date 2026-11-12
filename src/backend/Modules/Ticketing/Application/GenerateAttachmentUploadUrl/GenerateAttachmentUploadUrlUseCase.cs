@@ -36,21 +36,21 @@ internal sealed class GenerateAttachmentUploadUrlUseCase(
         var req = command.Request;
 
         if (string.IsNullOrWhiteSpace(req.FileName))
-            throw new ArgumentException("File name is required.");
+            throw new InvalidInputException("attachment_file_name_required", "Cần có tên tệp.");
 
         var ext = Path.GetExtension(req.FileName);
         if (string.IsNullOrEmpty(ext) || !AllowedExtensions.Contains(ext))
-            throw new ArgumentException($"File type '{ext}' is not allowed. Allowed types: PDF, PNG, JPG, DOCX, TXT, ZIP.");
+            throw new InvalidInputException("attachment_type_not_allowed", $"Loại tệp '{ext}' không được phép. Các loại được phép: PDF, PNG, JPG, DOCX, TXT, ZIP.");
 
         if (req.FileSizeBytes <= 0 || req.FileSizeBytes > MaxSizeBytes)
-            throw new ArgumentException("File size must be between 1 byte and 10MB.");
+            throw TicketErrors.FileSizeInvalid();
 
         var scope = TicketPermissions.ReadScopeFor(currentUser, actorId, includeOwner: true);
 
         var ticket = await ticketQueries.GetByIdAsync(command.TicketId, scope, cancellationToken);
-        if (ticket == null) throw new KeyNotFoundException("Ticket not found.");
+        if (ticket == null) throw TicketErrors.NotFound();
         if (ticket.Status is (int)TicketStatus.Closed or (int)TicketStatus.Cancelled)
-            throw new ArgumentException("Không thể tải tệp lên vé đã kết thúc.");
+            throw TicketErrors.TicketClosed("Không thể tải tệp lên vé đã kết thúc.");
 
         const int expirySeconds = 3600;
         var upload = AttachmentUploadGrant.CreatePending(command.TicketId, actorId, Path.GetFileName(req.FileName),
@@ -62,7 +62,7 @@ internal sealed class GenerateAttachmentUploadUrlUseCase(
             await attachmentStore.CreateUploadGrantAsync(upload, cancellationToken);
             return new UploadUrlResult(signed.Url, upload.StorageKey, expirySeconds, signed.FormData);
         }
-        catch (Exception ex) when (ex is not OperationCanceledException and not ArgumentException)
+        catch (Exception ex) when (ex is not OperationCanceledException and not ArgumentException and not DomainException)
         {
             throw new ServiceUnavailableException("Dịch vụ lưu trữ tệp hiện không khả dụng.");
         }

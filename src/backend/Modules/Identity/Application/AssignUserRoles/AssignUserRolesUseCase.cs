@@ -2,6 +2,7 @@ using ServiceDesk.SharedKernel.Application.Abstractions;
 using ServiceDesk.Modules.Identity.Application.Contracts;
 using ServiceDesk.Modules.Identity.Application.Ports;
 using ServiceDesk.SharedKernel.Authorization;
+using ServiceDesk.SharedKernel.Application;
 
 namespace ServiceDesk.Modules.Identity.Application.AssignUserRoles;
 
@@ -25,12 +26,12 @@ internal sealed class AssignUserRolesUseCase(
         ArgumentNullException.ThrowIfNull(request);
         if (targetUserId == Guid.Empty)
         {
-            throw new ArgumentException("Target user ID is required.");
+            throw new InvalidInputException("user_id_required", "Target user ID is required.");
         }
 
         if (!currentUser.IsInRole(RoleNames.Admin))
         {
-            throw new UnauthorizedAccessException("Chỉ quản trị viên mới có quyền phân quyền người dùng.");
+            throw new ForbiddenException("admin_required", "Chỉ quản trị viên mới có quyền phân quyền người dùng.");
         }
 
         if (request.Roles is null || request.Roles.Count == 0)

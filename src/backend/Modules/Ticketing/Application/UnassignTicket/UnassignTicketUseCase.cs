@@ -1,11 +1,8 @@
 using ServiceDesk.SharedKernel.Application;
 using ServiceDesk.SharedKernel.Application.Abstractions;
-using ServiceDesk.Modules.Ticketing.Application.Authorization;
 using ServiceDesk.Modules.Ticketing.Application.Common;
 using ServiceDesk.Modules.Ticketing.Application.Contracts;
 using ServiceDesk.Modules.Ticketing.Application.Ports;
-using ServiceDesk.SharedKernel.Authorization;
-using ServiceDesk.Modules.Ticketing.Domain;
 
 namespace ServiceDesk.Modules.Ticketing.Application.UnassignTicket;
 
@@ -18,6 +15,10 @@ public interface IUnassignTicket
     Task<TicketDto> ExecuteAsync(UnassignTicketCommand command, CancellationToken cancellationToken = default);
 }
 
+/// <summary>
+/// Xử lý hủy phân công vé (khung chung: <see cref="TicketTransitions"/>): chỉ Agent hoặc Admin;
+/// vé phải đang Assigned và có người phụ trách; đưa vé về Submitted và ghi log vào timeline.
+/// </summary>
 internal sealed class UnassignTicketUseCase(
     ITicketWriter writer,
     ICurrentUser currentUser,
@@ -25,27 +26,12 @@ internal sealed class UnassignTicketUseCase(
 {
     public async Task<TicketDto> ExecuteAsync(UnassignTicketCommand command, CancellationToken cancellationToken = default)
     {
-        var actorId = TicketActor.RequireId(currentUser);
-        var isStaff = TicketPermissions.IsStaff(currentUser);
-        if (!isStaff)
-        {
-            throw new UnauthorizedAccessException("Only agents or admins can unassign tickets.");
-        }
-
         ArgumentNullException.ThrowIfNull(command);
 
-        var scope = TicketPermissions.ReadScopeFor(currentUser, actorId);
-        var ticket = await writer.GetForUpdateAsync(command.Id, scope, cancellationToken);
-        if (ticket == null)
-        {
-            throw new KeyNotFoundException("Ticket not found.");
-        }
-
-        TicketCommandGuard.RequireCurrentRevision(writer, ticket, command.ExpectedRevision);
-
-        var now = clock.UtcNow.UtcDateTime;
-        TicketCommandGuard.ApplyRule(ticket, t => t.Unassign(now));
-
-        return await TicketCommandGuard.SaveWithSystemAuditAsync(writer, ticket, actorId, "Yêu cầu đã được hủy phân công xử lý.", now, cancellationToken);
+        return await new TicketTransitions(writer, currentUser, clock).RunAsStaffAsync(
+            command.Id, command.ExpectedRevision, "hủy phân công phiếu",
+            apply: (ticket, _, now) => ticket.Unassign(now),
+            auditMessage: "Yêu cầu đã được hủy phân công xử lý.",
+            cancellationToken: cancellationToken);
     }
 }

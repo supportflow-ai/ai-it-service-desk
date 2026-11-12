@@ -2,11 +2,14 @@ namespace ServiceDesk.Modules.Knowledge.Application.PublishArticle;
 
 using ServiceDesk.SharedKernel.Application;
 using ServiceDesk.SharedKernel.Application.Abstractions;
-using ServiceDesk.Modules.Knowledge.Application.Authorization;
 using ServiceDesk.Modules.Knowledge.Application.Contracts;
 using ServiceDesk.Modules.Knowledge.Application.Ports;
-using ServiceDesk.SharedKernel.Authorization;
+using ServiceDesk.Modules.Knowledge.Application.Common;
 
+/// <summary>
+/// Xử lý xuất bản bài viết nháp (Agent/Admin; tác giả hoặc Admin).
+/// Các bước chung (vai trò, tải bài viết, quyền tác giả, revision, lưu) nằm ở <see cref="ArticleTransitions"/>.
+/// </summary>
 internal sealed class PublishArticleUseCase(
     IKnowledgeWriter writer,
     ICurrentUser currentUser,
@@ -16,38 +19,9 @@ internal sealed class PublishArticleUseCase(
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        if (!KnowledgePermissions.IsStaff(currentUser))
-        {
-            throw new UnauthorizedAccessException("Chỉ kỹ thuật viên hoặc quản trị viên mới có thể xuất bản bài viết.");
-        }
-
-        var article = await writer.GetForUpdateAsync(command.Id, cancellationToken);
-        if (article == null)
-        {
-            throw new KeyNotFoundException("Không tìm thấy bài viết.");
-        }
-
-        var callerId = AuthenticatedActor.RequireId(currentUser);
-        if (!KnowledgePermissions.CanManage(article, callerId, currentUser))
-        {
-            throw new UnauthorizedAccessException("Chỉ tác giả hoặc quản trị viên mới có quyền xuất bản bài viết.");
-        }
-
-        if (!command.ExpectedRevision.HasValue || command.ExpectedRevision.Value == 0)
-        {
-            throw new ArgumentException("Expected revision is required.");
-        }
-
-        if (writer.GetRevision(article) != command.ExpectedRevision.Value)
-        {
-            throw new ConcurrencyConflictException("Phiên bản bài viết đã thay đổi. Vui lòng tải lại.");
-        }
-
-        var publisherId = AuthenticatedActor.RequireId(currentUser);
-        article.Publish(publisherId, clock.UtcNow.UtcDateTime);
-
-        var updated = await writer.UpdateArticleAsync(article, command.ExpectedRevision, cancellationToken);
-        var revision = writer.GetRevision(updated);
-        return ArticleDtoMapper.ToDto(updated, revision);
+        return await new ArticleTransitions(writer, currentUser, clock).RunAsync(
+            command.Id, command.ExpectedRevision, "xuất bản bài viết", "xuất bản bài viết",
+            apply: (article, actorId, now) => article.Publish(actorId, now),
+            cancellationToken: cancellationToken);
     }
 }

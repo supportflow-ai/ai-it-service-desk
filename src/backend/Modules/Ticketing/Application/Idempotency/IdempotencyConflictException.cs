@@ -8,7 +8,7 @@ namespace ServiceDesk.Modules.Ticketing.Application.Idempotency;
 public sealed class IdempotencyConflictException : ConflictException
 {
     public IdempotencyConflictException()
-        : base("Idempotency-Key đã được sử dụng trước đó với nội dung payload khác.") { }
+        : base("idempotency_key_reused", "Idempotency-Key đã được sử dụng trước đó với nội dung payload khác.") { }
 }
 
 /// <summary>
@@ -17,5 +17,5 @@ public sealed class IdempotencyConflictException : ConflictException
 public sealed class IdempotencyInProgressException : RetryLaterException
 {
     public IdempotencyInProgressException(Exception innerException)
-        : base("Một request khác cùng Idempotency-Key đang được xử lý. Vui lòng thử lại sau.", innerException) { }
+        : base("idempotency_in_progress", "Một request khác cùng Idempotency-Key đang được xử lý. Vui lòng thử lại sau.", innerException) { }
 }

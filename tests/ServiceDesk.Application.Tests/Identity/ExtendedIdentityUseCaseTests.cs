@@ -13,6 +13,7 @@ using ServiceDesk.Modules.Identity.Application.RevokeToken;
 using ServiceDesk.SharedKernel.Authorization;
 using ServiceDesk.Modules.Identity.Domain;
 using Xunit;
+using ServiceDesk.SharedKernel.Application;
 
 namespace ServiceDesk.Application.Tests.Identity;
 
@@ -279,7 +280,7 @@ public sealed class ExtendedIdentityUseCaseTests
     {
         _currentUser.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(false);
 
-        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+        await Assert.ThrowsAsync<ForbiddenException>(() =>
             AssignRoles().ExecuteAsync(Guid.NewGuid(), new AssignRolesRequest([RoleNames.Agent])));
     }
 

@@ -82,7 +82,7 @@ from urllib.parse import urlsplit
 try:
     tool = Path(".cache/dotnet-tools/dotnet-ef" + (".exe" if os.name == "nt" else ""))
     result = subprocess.run([str(tool), "dbcontext", "info",
-        "--project", "src/backend/ServiceDesk.Infrastructure",
+        "--project", "src/backend/ServiceDesk.Platform",
         "--startup-project", "src/backend/ServiceDesk.Api",
         "--context", "ApplicationDbContext", "--configuration", "Release",
         "--no-build", "--json"], stdin=subprocess.DEVNULL,
@@ -137,8 +137,8 @@ Không rõ một điều kiện thì dừng thao tác database và hỏi ngườ
 Sau khi xác nhận đích và build thành công:
 
 ```sh
-dotnet run --project src/backend/ServiceDesk.Database -c Release --no-build -- migrate
-dotnet run --project src/backend/ServiceDesk.Database -c Release --no-build -- seed-roles
+dotnet run --project src/backend/ServiceDesk.Migrator -c Release --no-build -- migrate
+dotnet run --project src/backend/ServiceDesk.Migrator -c Release --no-build -- seed-roles
 ```
 
 API/Worker không tự migration hoặc seed. Khởi chạy từng tiến trình trong terminal riêng đã nạp cấu hình:
@@ -212,7 +212,7 @@ Kiểm tra `Up`/`Down` không có `DROP` hoặc mất dữ liệu ngoài ý mu�
 Nếu được phép hạ local: dừng ứng dụng liên quan, sao lưu và xác minh phục hồi nếu có dữ liệu cần giữ, xem kỹ `Down`, xác định chính xác migration trước đó rồi chạy:
 
 ```sh
-./.cache/dotnet-tools/dotnet-ef database update MIGRATION_TRUOC --project src/backend/ServiceDesk.Infrastructure --startup-project src/backend/ServiceDesk.Api --context ApplicationDbContext --configuration Release
+./.cache/dotnet-tools/dotnet-ef database update MIGRATION_TRUOC --project src/backend/ServiceDesk.Platform --startup-project src/backend/ServiceDesk.Api --context ApplicationDbContext --configuration Release
 ```
 
 `MIGRATION_TRUOC` là ID thực tế của migration liền trước, không tự dùng `0`. Chỉ sau khi xác minh hạ thành công và migration không còn trong lịch sử local mới chạy `migrations remove`. Nếu hạ bị lỗi, dừng; không cưỡng ép gỡ. Sau đó build và kiểm tra model lại.

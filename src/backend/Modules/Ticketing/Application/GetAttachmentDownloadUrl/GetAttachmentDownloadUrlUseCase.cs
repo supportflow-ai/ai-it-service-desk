@@ -4,6 +4,7 @@ using ServiceDesk.Modules.Ticketing.Application.Authorization;
 using ServiceDesk.Modules.Ticketing.Application.Contracts;
 using ServiceDesk.Modules.Ticketing.Application.Ports;
 using ServiceDesk.SharedKernel.Authorization;
+using ServiceDesk.Modules.Ticketing.Domain;
 
 namespace ServiceDesk.Modules.Ticketing.Application.GetAttachmentDownloadUrl;
 
@@ -26,19 +27,19 @@ internal sealed class GetAttachmentDownloadUrlUseCase(
         ArgumentNullException.ThrowIfNull(query);
 
         if (string.IsNullOrWhiteSpace(query.StorageKey))
-            throw new ArgumentException("Storage key is required.");
+            throw new InvalidInputException("attachment_storage_key_required", "Cần có storageKey.");
 
         var scope = TicketPermissions.ReadScopeFor(currentUser, actorId, includeOwner: true);
 
         var ticket = await ticketQueries.GetByIdAsync(query.TicketId, scope, cancellationToken);
-        if (ticket == null) throw new KeyNotFoundException("Ticket not found.");
+        if (ticket == null) throw TicketErrors.NotFound();
 
         var expectedPrefix = $"tickets/{query.TicketId}/";
         if (!query.StorageKey.StartsWith(expectedPrefix, StringComparison.OrdinalIgnoreCase))
-            throw new UnauthorizedAccessException("Tệp đính kèm không thuộc về yêu cầu này.");
+            throw new ForbiddenException("attachment_wrong_ticket", "Tệp đính kèm không thuộc về yêu cầu này.");
 
         if (!await attachmentStore.ExistsAsync(query.TicketId, query.StorageKey, cancellationToken))
-            throw new KeyNotFoundException("Attachment not found.");
+            throw TicketErrors.AttachmentNotFound();
 
         const int expirySeconds = 3600;
         try
