@@ -25,21 +25,21 @@ src/backend/
       Infrastructure/    # adapter PostgreSQL/HTTP, cấu hình ánh xạ EF, options
       Presentation/      # endpoint và request body của module
       {Module}Module.cs  # điểm vào duy nhất: Add{Module}Module / Add{Module}Application / Add{Module}Infrastructure
-  ServiceDesk.Infrastructure/  # hạ tầng kỹ thuật dùng chung: ApplicationDbContext, migration, bảo trì DB, MinIO, đồng hồ
+  ServiceDesk.Platform/        # hạ tầng kỹ thuật dùng chung: ApplicationDbContext, migration, bảo trì DB, MinIO, đồng hồ
   ServiceDesk.Api/             # host HTTP: composition root, middleware, health
   ServiceDesk.Worker/          # host nền
-  ServiceDesk.Database/        # công cụ migration/seed
+  ServiceDesk.Migrator/        # công cụ migration/seed
 ```
 
 Chiều phụ thuộc giữa project:
 
 ```mermaid
 flowchart TD
-    Api["ServiceDesk.Api"] --> Infra["ServiceDesk.Infrastructure (dùng chung)"]
+    Api["ServiceDesk.Api"] --> Infra["ServiceDesk.Platform (dùng chung)"]
     Api --> Mods["Modules.*"]
     Worker["ServiceDesk.Worker"] --> Infra
     Worker --> Mods
-    Database["ServiceDesk.Database"] --> Infra
+    Database["ServiceDesk.Migrator"] --> Infra
     Infra --> Mods
     Mods --> SK["SharedKernel / SharedKernel.Web"]
     AI["Modules.AIAssistance"] --> Ticketing["Modules.Ticketing (kiểu đã công bố)"]
@@ -50,7 +50,7 @@ Bên trong module, phụ thuộc chỉ đi vào trong: Presentation → Applicat
 Các quyết định đi kèm:
 
 - **Một project cho mỗi module, tầng tách bằng thư mục/namespace.** Project nằm trực tiếp trong `Modules/<Module>/`. Solution hiển thị tên module. Tên tệp `.csproj`, assembly và namespace giữ tiền tố `ServiceDesk.Modules.`. Ranh giới tầng trong module được kiểm bằng `ServiceDesk.ArchitectureTests` (IL qua Mono.Cecil và NetArchTest). Cách này giúp bốn module dùng bốn project và một bộ luật kiểm thử chung.
-- **Một `DbContext` và một chuỗi migration giữ nguyên.** `ApplicationDbContext` vẫn ở `ServiceDesk.Infrastructure.Persistence` để migration đã phát hành không phải đổi. Context gom cấu hình ánh xạ từ assembly của Identity, Ticketing và Knowledge. Adapter trong module nhận `DbContext` (bí danh do host đăng ký) và dùng `Set<T>()`, nên module không phụ thuộc kiểu context cụ thể. Không đổi schema; chỉ cập nhật tên kiểu CLR trong model snapshot.
+- **Một `DbContext` và một chuỗi migration giữ nguyên.** `ApplicationDbContext` vẫn ở `ServiceDesk.Platform.Persistence` để migration đã phát hành không phải đổi. Context gom cấu hình ánh xạ từ assembly của Identity, Ticketing và Knowledge. Adapter trong module nhận `DbContext` (bí danh do host đăng ký) và dùng `Set<T>()`, nên module không phụ thuộc kiểu context cụ thể. Không đổi schema; chỉ cập nhật tên kiểu CLR trong model snapshot.
 - **Module tự đăng ký.** Host gọi `AddInfrastructure` (chỉ hạ tầng dùng chung, không đăng ký module), rồi `AddIdentityModule(...).AddIdentityStores()`, `AddTicketingModule`, `AddKnowledgeModule`, `AddAIAssistanceModule`. `AddIdentityStores` truyền `ApplicationDbContext` cho phần lưu trữ của Identity vì module không biết kiểu context cụ thể. Thêm module mới không phải sửa module khác (Open/Closed).
 - **`RoleNames`/`PolicyNames` chuyển vào SharedKernel.** Vai trò là khái niệm phân quyền xuyên module; nhờ vậy Ticketing và Knowledge không còn phải tham chiếu Identity.
 - **Ngoại lệ nghiệp vụ dùng chung.** `ConflictException` (409) và `RetryLaterException` (503 + Retry-After) nằm trong SharedKernel; `ConcurrencyConflictException`, `IdempotencyConflictException`, `IdempotencyInProgressException` kế thừa chúng. Các lớp này cùng `InvalidInputException`, `RuleViolationException`, `NotFoundException`, `ForbiddenException` và `ServiceUnavailableException` kế thừa `DomainException` (mã lỗi ổn định + mã HTTP tương thích). Bộ lọc `ApiErrorFilter` chỉ biết `DomainException` nên không phụ thuộc module nào và giữ nguyên mã trạng thái HTTP cũ.
@@ -69,7 +69,7 @@ Mất/đánh đổi:
 
 - Trong một module, Domain có thể biên dịch được khi lỡ dùng EF Core; vi phạm chỉ bị chặn khi chạy kiểm thử kiến trúc, không phải lúc biên dịch.
 - Adapter dùng `DbContext` chung vẫn nhìn thấy toàn bộ model; ranh giới dữ liệu giữa module tiếp tục dựa vào kiểm thử kiến trúc. Ticketing tra người dùng qua `IUserDirectory` do Identity công bố; kiểm thử kiến trúc chặn module khác phụ thuộc `Microsoft.AspNetCore.Identity`.
-- `ServiceDesk.Infrastructure` tham chiếu module để gom thực thể và cấu hình ánh xạ; đây là tầng ghép persistence, không chứa nghiệp vụ.
+- `ServiceDesk.Platform` tham chiếu module để gom thực thể và cấu hình ánh xạ; đây là tầng ghép persistence, không chứa nghiệp vụ.
 
 ## Kiểm chứng cần có trước khi chấp nhận
 

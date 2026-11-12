@@ -19,6 +19,9 @@
     "docs/architecture/current-backend-contract.md": {
       "kind": "current"
     },
+    "docs/architecture/feature-template.md": {
+      "kind": "current"
+    },
     "docs/architecture/security-design-rules.md": {
       "kind": "current"
     },

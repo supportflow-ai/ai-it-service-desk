@@ -8,7 +8,7 @@ Trạng thái: hiện hành cho kho backend. Cập nhật: 2026-11-08. Phần m�
 
 [Bảng mốc mã nguồn](architecture/source-baseline.md) ghi cách xác định mốc đối chiếu. Mã nguồn tổ chức module trước, Clean bên trong module theo [ADR-015](adr/ADR-015-module-first-clean-architecture.md) (đã hợp nhất vào `dev`, ADR chờ nhóm duyệt). Bằng chứng, đề xuất và hồ sơ lịch sử vẫn ghi đường dẫn `src/backend/ServiceDesk.Domain|Application/...` của mốc cũ; dùng chúng để truy vết, không dùng làm vị trí đặt mã mới.
 
-Đọc theo thứ tự: [AGENTS.md](../AGENTS.md) → [kiến trúc hiện hành](architecture/backend-modules-and-use-cases.md) → [hợp đồng đang triển khai](architecture/current-backend-contract.md) → tài liệu của nhiệm vụ. [Hướng dẫn môi trường](runbooks/environment-runbook.md) là nguồn lệnh chạy local và thao tác database.
+Đọc theo thứ tự: [AGENTS.md](../AGENTS.md) → [kiến trúc hiện hành](architecture/backend-modules-and-use-cases.md) → [hợp đồng đang triển khai](architecture/current-backend-contract.md) → tài liệu của nhiệm vụ. Khi viết tính năng backend mới, theo [mẫu một tính năng](architecture/feature-template.md). [Hướng dẫn môi trường](runbooks/environment-runbook.md) là nguồn lệnh chạy local và thao tác database.
 
 ## Chọn đúng loại nguồn
 

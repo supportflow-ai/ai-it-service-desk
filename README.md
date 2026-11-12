@@ -110,7 +110,7 @@ Module là ranh giới ngoài cùng. Bên trong module, Presentation và Infrast
 
 Application tổ chức theo mô-đun và tính năng, mỗi tính năng một thư mục có giao diện `I<TínhNăng>` và lớp `<TínhNăng>UseCase`: Identity 11 luồng (đăng ký, đăng nhập, hồ sơ, làm mới/thu hồi phiên, đổi/quên/đặt lại mật khẩu, gán vai trò, danh sách người dùng, phòng ban), Ticketing 19 luồng (tạo, danh sách cá nhân và hàng đợi, chi tiết, cập nhật, nhận/phân công/hủy phân công, giải quyết/mở lại/đóng/hủy, bình luận, ghi chú nội bộ, timeline, tệp đính kèm), Knowledge 6 luồng (bản nháp, xuất bản, lưu trữ, chi tiết, tìm kiếm). Hàm xử lý HTTP gọi giao diện nghiệp vụ; lớp triển khai là `internal`. Các giao diện công khai và cổng tích hợp được kiểm tra riêng bằng kiểm thử kiến trúc. [Tài liệu mô-đun và luồng xử lý](docs/architecture/backend-modules-and-use-cases.md) mô tả trách nhiệm, giao dịch và phạm vi quyền hiện tại.
 
-Quyền, điều kiện chuyển trạng thái, `expectedRevision` và mã lỗi của từng thao tác ticket nằm trong [hợp đồng hiện hành](docs/architecture/current-backend-contract.md). Requester chỉ đọc phiếu của mình; Agent/Admin đọc toàn hệ thống vì chưa có cách ly theo nhóm hỗ trợ (quyết định còn mở DEC-02). Identity khóa dòng người dùng trong PostgreSQL khi tạo hoặc thu hồi phiên để các bản API chạy song song vẫn nhất quán.
+Quyền, điều kiện chuyển trạng thái, `expectedRevision` và mã lỗi của từng thao tác ticket nằm trong [hợp đồng hiện hành](docs/architecture/current-backend-contract.md). Requester chỉ đọc phiếu của mình; Agent chỉ đọc phiếu thuộc nhóm hỗ trợ đang hoạt động mà Agent là thành viên hoặc được phân công trực tiếp, phiếu ngoài phạm vi trả 404 (từ B1-PR3, sau mốc tài liệu ở đầu trang; xem [ADR-016](docs/adr/ADR-016-support-team-routing-and-agent-scope.md)); Admin đọc toàn hệ thống. Phiếu mới luôn vào hàng đợi phân loại thủ công. Identity khóa dòng người dùng trong PostgreSQL khi tạo hoặc thu hồi phiên để các bản API chạy song song vẫn nhất quán.
 
 ## Build và test
 
@@ -159,7 +159,7 @@ Backend mặc định dùng NoOp, chưa kết nối model hoặc AI service. Con
 
 Chạy validator bằng Python venv theo [hướng dẫn hợp đồng AI](docs/runbooks/environment-runbook.md#python-venv-và-hợp-đồng-ai).
 
-Xem [ADR-012](docs/adr/ADR-012-ai-contract-and-future-transport.md) cho thiết kế xác thực, giới hạn thời gian, thử lại và ngắt tạm kết nối của bộ tích hợp tương lai. Chưa triển khai: nhóm hỗ trợ, SLA, tự đóng phiếu, dọn biên nhận và AI thật.
+Xem [ADR-012](docs/adr/ADR-012-ai-contract-and-future-transport.md) cho thiết kế xác thực, giới hạn thời gian, thử lại và ngắt tạm kết nối của bộ tích hợp tương lai. Chưa triển khai: chuyển nhóm, quyền điều phối của trưởng nhóm, định tuyến theo bảng, SLA, tự đóng phiếu, dọn biên nhận và AI thật.
 
 ## Tương thích và lịch sử
 
