@@ -25,6 +25,11 @@
     "docs/architecture/security-design-rules.md": {
       "kind": "current"
     },
+    "docs/architecture/r2-storage-plan.md": {
+      "kind": "proposal",
+      "notice": "kế hoạch đề xuất",
+      "replacement": "docs/adr/ADR-017-cloudflare-r2-object-storage.md"
+    },
     "docs/architecture/pending-business-decisions.md": {
       "kind": "proposal",
       "notice": "đề xuất chờ quyết định",
