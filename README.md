@@ -160,7 +160,7 @@ Backend mặc định dùng NoOp, chưa kết nối model hoặc AI service. Con
 
 Chạy validator bằng Python venv theo [hướng dẫn hợp đồng AI](docs/runbooks/environment-runbook.md#python-venv-và-hợp-đồng-ai).
 
-Xem [ADR-012](docs/adr/ADR-012-ai-contract-and-future-transport.md) cho thiết kế xác thực, giới hạn thời gian, thử lại và ngắt tạm kết nối của bộ tích hợp tương lai. Chưa triển khai: API quản trị nhóm hỗ trợ (dữ liệu và phạm vi đọc đã có, chưa có endpoint quản lý nhóm), SLA, tự đóng phiếu, dọn biên nhận và AI thật.
+Xem [ADR-012](docs/adr/ADR-012-ai-contract-and-future-transport.md) cho thiết kế xác thực, giới hạn thời gian, thử lại và ngắt tạm kết nối của bộ tích hợp tương lai. Chưa triển khai: API quản trị nhóm hỗ trợ (dữ liệu và phạm vi đọc đã có, chưa có endpoint quản lý nhóm), SLA, tự đóng phiếu, dọn biên nhận và AI thật (kế hoạch tích hợp phân loại và chỉ mục Knowledge: [ai-integration-plan.md](docs/architecture/ai-integration-plan.md)).
 
 ## Tương thích và lịch sử
 
