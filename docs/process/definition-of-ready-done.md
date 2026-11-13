@@ -38,4 +38,4 @@ Workflow vẫn chạy đầy đủ các bước đã cấu hình khi PR kích ho
 
 Reviewer kiểm phạm vi, tương thích, quyền/dữ liệu, kiểm thử thực chạy và giới hạn. Không tự phê duyệt PR của mình. Không hạ cảnh báo, bỏ assertion hoặc sửa baseline để làm CI xanh. Trạng thái Done/APPROVED trong một bản ghi cũ không thay phê duyệt và bằng chứng hiện tại.
 
-Quy định trong tài liệu không chứng minh GitHub đã bật branch protection. Chỉ thay quy tắc bảo vệ repo, hợp nhất PR hoặc triển khai khi có nhiệm vụ riêng.
+Quy định trong tài liệu không tự chứng minh cấu hình GitHub: kiểm tra trạng thái bảo vệ nhánh thực tế bằng `gh api repos/supportflow-ai/ai-it-service-desk/branches/<nhánh>/protection` trước khi viện dẫn. Chỉ thay quy tắc bảo vệ repo, hợp nhất PR hoặc triển khai khi có nhiệm vụ riêng.

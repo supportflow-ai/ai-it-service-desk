@@ -4,7 +4,7 @@ Trạng thái: mô tả hiện hành. Đối chiếu mã `dev` tại `07ce07a9dd
 
 ## Chiều phụ thuộc
 
-Mã nguồn tổ chức theo module trước, Clean bên trong module theo [ADR-015](../adr/ADR-015-module-first-clean-architecture.md) (đã hợp nhất vào `dev` qua PR #50–#53; ADR còn ở trạng thái Đề xuất, chờ nhóm duyệt). Đối chiếu [bảng mốc nguồn](source-baseline.md) trước khi đọc liên kết mã tương đối.
+Mã nguồn tổ chức theo module trước, Clean bên trong module theo [ADR-015](../adr/ADR-015-module-first-clean-architecture.md) (đã hợp nhất vào `dev` qua PR #50–#53; ADR đã được chấp nhận ngày 2026-11-13). Đối chiếu [bảng mốc nguồn](source-baseline.md) trước khi đọc liên kết mã tương đối.
 
 ```mermaid
 flowchart TD

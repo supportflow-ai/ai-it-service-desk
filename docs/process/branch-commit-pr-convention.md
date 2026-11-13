@@ -41,4 +41,4 @@ Tiêu đề cùng dạng với commit: `<loại>(<phạm vi>): <mô tả tiếng
 
 Không chỉ đánh dấu ô “đạt”. Kiểm tra cho tài liệu có thể là liên kết, cấu hình hoặc validator; không bắt buộc dựng database để có nhật ký test không liên quan. CI của PR vẫn phải đạt các kiểm tra bắt buộc theo cấu hình hiện tại.
 
-Quy tắc duyệt (ít nhất một người khác, không tự phê duyệt) là thỏa thuận nhóm: GitHub hiện chưa bật bảo vệ nhánh hay CODEOWNERS cho kho này. Không tuyên bố bảo vệ nhánh, phê duyệt hay trạng thái công việc đã thay đổi khi chưa có bằng chứng.
+Quy tắc duyệt: ít nhất một người khác phê duyệt, không tự phê duyệt PR của mình. Từ 2026-11-13 nhánh `main` và `dev` của kho này được GitHub bảo vệ (phải qua PR, cần 1 phê duyệt, cấm force-push và xóa nhánh); quản trị viên vẫn vượt qua được, chưa có CODEOWNERS và chưa đặt kiểm tra trạng thái bắt buộc. Không tuyên bố bảo vệ nhánh, phê duyệt hay trạng thái công việc đã thay đổi khi chưa có bằng chứng.

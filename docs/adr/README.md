@@ -17,7 +17,7 @@ Trạng thái: chỉ mục hiện hành, cập nhật 2026-11-07. ADR giữ lý 
 | [012 — Hợp đồng AI](ADR-012-ai-contract-and-future-transport.md) | Hợp đồng được áp dụng; HTTP adapter thật và chính sách retry/circuit mới là thiết kế tương lai |
 | [013 — GitHub Actions](ADR-013-github-actions.md) | Hiện hành, thay Jenkins; test/build image/smoke, chưa phát hành image/deploy |
 | [014 — Luồng xử lý/giao diện công khai](ADR-014-feature-use-cases-and-published-contracts.md) | Sáu luồng tại mốc quyết định gốc; phần bổ sung sau PR #28 dẫn tới 12 luồng hiện hành, quyền và giới hạn còn lại |
-| [015 — Module trước, Clean bên trong](ADR-015-module-first-clean-architecture.md) | Đề xuất; mã đã hợp nhất vào `dev` (PR #50–#53) và CI đạt, chờ nhóm duyệt mới chuyển sang Chấp nhận |
+| [015 — Module trước, Clean bên trong](ADR-015-module-first-clean-architecture.md) | Đã chấp nhận 2026-11-13; mã đã hợp nhất vào `dev` (PR #50–#53) và CI đạt; cấu trúc thư mục tinh gọn thêm (`Hosts`, `Platform`) ghi trong ADR |
 | [016 — Nhóm hỗ trợ và phạm vi đọc của Agent](ADR-016-support-team-routing-and-agent-scope.md) | Hướng thiết kế đã duyệt 2026-11-08 (`SupportTeam` tách `Department`, Lead là năng lực, Agent đọc theo nhóm); mới có nền dữ liệu, chưa có quyền hay định tuyến |
 | [017 — Cloudflare R2 thay MinIO](ADR-017-cloudflare-r2-object-storage.md) | Đề xuất; hướng được chọn ngày 2026-11-13, chưa triển khai. Khi hoàn tất sẽ thay thế ADR-006; xem [kế hoạch](../architecture/r2-storage-plan.md) |
 

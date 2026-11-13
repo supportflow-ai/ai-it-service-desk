@@ -77,6 +77,12 @@ Mọi lệnh ghi phiếu (cập nhật, nhận xử lý, phân công, hủy phâ
 
 `GetForUpdateAsync` vẫn đọc phiếu bằng `SingleOrDefaultAsync` (không khóa dòng); xung đột được phát hiện bằng revision. Xem [quy tắc bảo mật](security-design-rules.md) và [hướng dẫn kiểm chứng](../runbooks/backend-hardening-verification.md).
 
+## Điểm còn lệch giữa chính sách và mã
+
+| Chính sách đã chốt | Mã hiện tại | Việc cần làm |
+| --- | --- | --- |
+| Không phân công (`assign`) khi phiếu ở trạng thái Resolved (DEC-05, xác nhận 2026-11-13) | `Ticket.Assign` chỉ chặn Closed và Cancelled; Resolved vẫn được gán | Sửa `Ticket.Assign`, trả 400 cho phiếu Resolved, thêm kiểm thử từ chối ở Domain, Application và HTTP, cập nhật OpenAPI nếu mô tả đổi, báo web |
+
 ## Dữ liệu phiếu và mã trạng thái
 
 | Trường | Ràng buộc hiện tại |

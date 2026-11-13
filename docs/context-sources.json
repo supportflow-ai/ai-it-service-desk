@@ -25,6 +25,11 @@
     "docs/architecture/security-design-rules.md": {
       "kind": "current"
     },
+    "docs/architecture/ai-integration-plan.md": {
+      "kind": "proposal",
+      "notice": "kế hoạch đề xuất",
+      "replacement": "docs/adr/ADR-012-ai-contract-and-future-transport.md"
+    },
     "docs/architecture/r2-storage-plan.md": {
       "kind": "proposal",
       "notice": "kế hoạch đề xuất",

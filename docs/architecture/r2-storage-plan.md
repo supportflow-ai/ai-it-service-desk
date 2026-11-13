@@ -104,7 +104,7 @@ Cỡ việc: S ≤ 1 ngày, M 2–3 ngày, L > 3 ngày (ước lượng thô).
 | R2 không ép dung lượng lúc PUT | Backend là chốt chặn ở bước xác nhận, xóa ngay khi sai, vòng đời dọn phần còn lại; đo thiệt hại tối đa ở giai đoạn 0, quyết định lại với Worker nếu cần |
 | Chữ ký `Content-Type` làm tải lên thất bại khi web gửi khác giá trị | Backend trả `RequiredHeaders`; web chỉ dùng giá trị đó |
 | AWSSDK.S3 không tương thích mặc định với R2 | Giai đoạn 0 chọn phiên bản và cờ; ghim phiên bản; `R2Live` bắt hồi quy khi nâng |
-| Bộ khóa dùng chung bị lộ | Token giới hạn bucket `dev`, không có khóa production ở máy lập trình viên, bật quét bí mật của GitHub, xoay khóa ở giai đoạn 5 |
+| Bộ khóa dùng chung bị lộ | Token giới hạn bucket `dev`, không có khóa production ở máy lập trình viên, đã bật quét bí mật và push protection của GitHub, xoay khóa ở giai đoạn 5 |
 | Kiểm thử R2 thật làm CI phụ thuộc mạng và khóa | Nhãn riêng, chỉ chạy khi có khóa, không chặn bước mặc định |
 | URL hết hạn không có tiêu đề CORS nên web không đọc được lỗi | Hạn đủ dài so với thao tác, web coi lỗi mạng khi tải lên là liên kết có thể đã hết hạn và cho người dùng thử lại |
 | Bản ghi tệp cũ trỏ khóa không tồn tại | Dọn trên database dev (mục 5); môi trường nào có dữ liệu thật thì không áp dụng kế hoạch này khi chưa có phương án riêng |
