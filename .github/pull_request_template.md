@@ -1,12 +1,11 @@
 ## 1. Thông tin theo dõi
 
-- Công việc Jira: `TC-XXXX`
-- Mã theo dõi: `TC-XXXX` / `PR-XXXX`
+- Mã công việc hoặc liên kết (nếu có, không bắt buộc):
 - Loại thay đổi: [ ] Tính năng  [ ] Sửa lỗi  [ ] Bảo trì  [ ] Tái cấu trúc
 - Thành phần chịu ảnh hưởng:
-  - [ ] API / Worker / công cụ Database
+  - [ ] API / Worker / công cụ Migrator
   - [ ] Domain / Application
-  - [ ] Infrastructure / PostgreSQL / MinIO
+  - [ ] Platform / PostgreSQL / MinIO
   - [ ] Kiểm thử / GitHub Actions / Dockerfile backend
   - [ ] Tài liệu
 
@@ -35,8 +34,9 @@ dotnet test src/backend/ServiceDesk.sln -c Release --no-build --filter "Category
 ### 3.2 Kiểm tra bổ sung theo phạm vi
 
 - Hợp đồng HTTP / hợp đồng AI:
+- Ảnh hưởng tới web, ai-service hoặc infra (xem cẩm nang chung) và việc đồng bộ đã làm hoặc chưa làm:
 - Migration và bảo toàn dữ liệu:
-- Build image API / Worker / Database:
+- Build image API / Worker / Migrator:
 - Kiểm tra toàn hệ thống, nếu cần: dẫn kết quả từ kho
   [supportflow-ai-infra](https://github.com/supportflow-ai/supportflow-ai-infra),
   ghi rõ SHA backend được ghim. Các lệnh Compose và kiểm tra qua cổng chung nằm ở kho đó.
@@ -62,7 +62,7 @@ dotnet test src/backend/ServiceDesk.sln -c Release --no-build --filter "Category
 
 ### Kiểm tra hoàn thành
 
-- [ ] Công việc Jira, mã theo dõi và phạm vi được ghi rõ.
+- [ ] Phạm vi được ghi rõ (kèm mã công việc nếu có).
 - [ ] Các kiểm thử liên quan đạt; đã cung cấp bằng chứng thực tế.
 - [ ] GitHub Actions của backend thành công trên đúng SHA.
 - [ ] Tài liệu liên quan đã cập nhật bằng tiếng Việt.

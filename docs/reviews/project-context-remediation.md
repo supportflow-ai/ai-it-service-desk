@@ -15,7 +15,7 @@ Ngày: 2026-10-19. Nhánh `codex/backend-clean-architecture`, SHA nền `8244cc1
 | CTX-05 | Ghi từng lựa chọn chưa chốt, nguồn khác nhau và điều kiện triển khai; không tự lựa chọn chính sách | [DEC-01–08](../architecture/pending-business-decisions.md) |
 | CTX-06 | Đánh dấu cả 15 Markdown local và manifest là hồ sơ scaffold; giữ nội dung gốc, không copy CLAUDE.md ra root | Bộ local bị ignore; quy tắc dùng nguồn ở [bản đồ tài liệu](../README.md) |
 | CTX-07 | README dẫn về runbook môi trường; validator AI dùng venv; giữ chốt chặn database và EF local | [README](../../README.md), [môi trường](../runbooks/environment-runbook.md), [kiểm chứng](../runbooks/backend-hardening-verification.md) |
-| CTX-08 | Thống nhất tiếng Việt, ngoại lệ nhánh được chỉ định, mã Jira thật và kiểm tra theo phạm vi; mô tả đúng trigger CI | [Git/Jira](../process/pr-branch-jira-convention.md), [DoR/DoD](../process/definition-of-ready-done.md), [AGENTS](../../AGENTS.md) |
+| CTX-08 | Thống nhất tiếng Việt, ngoại lệ nhánh được chỉ định, mã Jira thật và kiểm tra theo phạm vi; mô tả đúng trigger CI | [Git/Jira](https://github.com/supportflow-ai/ai-it-service-desk/blob/07ce07a9dd50bcd143690c7ba1a19cc0048b9508/docs/process/pr-branch-jira-convention.md), [DoR/DoD](../process/definition-of-ready-done.md), [AGENTS](../../AGENTS.md) |
 | CTX-09 | Bổ sung quan hệ ADR-001/002/008 với ADR-011/014 và nguồn infra; giữ Jenkins ở phần lịch sử | [Danh mục ADR](../adr/README.md) |
 
 Thêm [danh mục nguồn](../context-sources.json), [validator](../../scripts/validate_project_docs.py) và sáu tình huống hồi quy. GitHub Actions chạy hai lệnh này trước bước .NET; các bước .NET/PostgreSQL/AI/image, trigger và quyền workflow giữ nguyên.

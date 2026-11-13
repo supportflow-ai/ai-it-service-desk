@@ -1,6 +1,6 @@
 # Mô-đun backend và luồng xử lý nghiệp vụ
 
-Trạng thái: mô tả hiện hành. Đối chiếu mã `dev` tại `8036e2c185dfef7c4ed9941d736388c781e85f52`, cập nhật 2026-11-08. Quyết định nền tảng: [ADR-011](../adr/ADR-011-backend-module-boundaries.md), [ADR-014](../adr/ADR-014-feature-use-cases-and-published-contracts.md), [ADR-015](../adr/ADR-015-module-first-clean-architecture.md). Quyền và phản hồi HTTP chi tiết ở [hợp đồng hiện hành](current-backend-contract.md). Mốc đối chiếu không khẳng định bản làm việc của người đọc đã chứa commit này.
+Trạng thái: mô tả hiện hành. Đối chiếu mã `dev` tại `07ce07a9dd50bcd143690c7ba1a19cc0048b9508`, cập nhật 2026-11-13. Quyết định nền tảng: [ADR-011](../adr/ADR-011-backend-module-boundaries.md), [ADR-014](../adr/ADR-014-feature-use-cases-and-published-contracts.md), [ADR-015](../adr/ADR-015-module-first-clean-architecture.md). Quyền và phản hồi HTTP chi tiết ở [hợp đồng hiện hành](current-backend-contract.md). Mốc đối chiếu không khẳng định bản làm việc của người đọc đã chứa commit này.
 
 ## Chiều phụ thuộc
 
@@ -9,13 +9,13 @@ Mã nguồn tổ chức theo module trước, Clean bên trong module theo [ADR-
 ```mermaid
 flowchart TD
     Hosts["API và Worker"] --> Modules["ServiceDesk.Modules.* (Identity, Ticketing, Knowledge, AIAssistance)"]
-    Hosts --> Infrastructure["ServiceDesk.Infrastructure (DbContext, migration, MinIO, đồng hồ)"]
-    Database["Công cụ Database"] --> Infrastructure
-    Infrastructure --> Modules
+    Hosts --> Platform["ServiceDesk.Platform (DbContext, migration, MinIO, đồng hồ)"]
+    Migrator["Công cụ Migrator"] --> Platform
+    Platform --> Modules
     Modules --> SharedKernel["SharedKernel / SharedKernel.Web"]
 ```
 
-Trong mỗi module: `Presentation` → `Application` → `Domain` và `Infrastructure` → `Application` → `Domain`. API/Worker gọi `Add<Module>Module` để module tự đăng ký use case và adapter; đăng ký kiểm tra PostgreSQL sẵn sàng thuộc `ServiceDesk.Infrastructure`. Hàm xử lý HTTP nằm trong `Presentation` của module và chỉ gọi giao diện nghiệp vụ. Application không sử dụng EF Core hoặc ngữ cảnh HTTP.
+Trong mỗi module: `Presentation` → `Application` → `Domain` và `Infrastructure` → `Application` → `Domain`. API/Worker gọi `Add<Module>Module` để module tự đăng ký use case và adapter; đăng ký kiểm tra PostgreSQL sẵn sàng thuộc `ServiceDesk.Platform`. Hàm xử lý HTTP nằm trong `Presentation` của module và chỉ gọi giao diện nghiệp vụ. Application không sử dụng EF Core hoặc ngữ cảnh HTTP.
 
 ## Trách nhiệm từng mô-đun
 

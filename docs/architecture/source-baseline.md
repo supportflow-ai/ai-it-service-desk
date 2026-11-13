@@ -1,13 +1,13 @@
 # Mốc mã nguồn và phạm vi tài liệu
 
-Trạng thái: chỉ mục mốc nguồn hiện hành; cập nhật ngày 2026-11-08 (Asia/Bangkok).
+Trạng thái: chỉ mục mốc nguồn hiện hành; cập nhật ngày 2026-11-13 (Asia/Bangkok).
 
 ## Mốc áp dụng
 
 Hai mốc được ghi riêng:
 
-- **Mốc mã:** `dev@a182c9fde556423d04764fe2a0b7ac16af773923` (2026-11-08). Mã đổi qua PR #50–#55 (tái tổ chức module, Identity: phiên, mã đặt lại mật khẩu, giới hạn tần suất; Knowledge; các sửa lỗi triển khai cuốn chiếu) và PR #59–#60 (nền dữ liệu nhóm hỗ trợ: bảng, cột `tickets.support_team_id`, phiếu mới vào `MANUAL_TRIAGE`, backfill phiếu cũ, cổng đọc thành viên nhóm; chưa đổi phân quyền và OpenAPI). PR #56–#58 chỉ đổi tài liệu. Mốc mã cuối cùng đổi hợp đồng hay hành vi người dùng thấy được là `8036e2c` (PR #55).
-- **Tài liệu:** cập nhật tới cùng mốc `a182c9f`.
+- **Mốc mã:** `dev@07ce07a9dd50bcd143690c7ba1a19cc0048b9508` (2026-11-13). Từ mốc `a182c9f` (2026-11-08), mã đổi qua PR #59–#60 (nền dữ liệu nhóm hỗ trợ), #64 (B1-PR3: phạm vi đọc và lệnh ghi của Agent theo nhóm hỗ trợ hoặc phân công trực tiếp, [ADR-016](../adr/ADR-016-support-team-routing-and-agent-scope.md)) và #65 (B3: hạn mức tệp đính kèm theo phiếu, xử lý lock timeout khi xác nhận). PR #61, #63, #66 đổi tài liệu và kiểm thử. Các commit #68, #70 và `07ce07a` chỉ đổi cấu trúc thư mục và tên project, không đổi API hay dữ liệu. Mốc mã cuối cùng đổi hợp đồng hay hành vi người dùng thấy được là `dcd104e` (PR #65).
+- **Tài liệu:** cập nhật tới mốc `07ce07a` (2026-11-13).
 
 Các mốc này mô tả mã, không phải bằng chứng nghiệm thu; kết quả CI gắn với SHA của từng PR.
 

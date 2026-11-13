@@ -10,6 +10,9 @@
     "docs/README.md": {
       "kind": "current"
     },
+    "docs/team-handbook.md": {
+      "kind": "current"
+    },
     "docs/architecture/README.md": {
       "kind": "current"
     },
@@ -102,7 +105,7 @@
     "artifacts/devops/pr-branch-jira-convention.md": {
       "kind": "historical",
       "notice": "Tài liệu lịch sử",
-      "replacement": "docs/process/pr-branch-jira-convention.md"
+      "replacement": "docs/process/branch-commit-pr-convention.md"
     },
     "artifacts/devops/smoke-test-report.md": {
       "kind": "historical",

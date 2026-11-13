@@ -1,12 +1,12 @@
 # Điều kiện bắt đầu, hoàn thành và đánh giá công việc
 
-Trạng thái: hướng dẫn hiện hành cho backend, cập nhật 2026-10-19. Quy ước nhánh/Jira/ngôn ngữ theo [tài liệu Git](pr-branch-jira-convention.md); phạm vi nguồn theo [bản đồ tài liệu](../README.md).
+Trạng thái: hướng dẫn hiện hành cho backend, cập nhật 2026-10-19. Quy ước nhánh, commit, PR và ngôn ngữ theo [tài liệu Git](branch-commit-pr-convention.md) và [cẩm nang chung](../team-handbook.md); phạm vi nguồn theo [bản đồ tài liệu](../README.md).
 
 ## Điều kiện bắt đầu (DoR)
 
 Công việc cần có mục tiêu, người phụ trách, phạm vi và tiêu chí kiểm chứng rõ. Xác định hợp đồng/phiên bản áp dụng, phụ thuộc, tác động bảo mật/dữ liệu và phương án kiểm thử. Lựa chọn nghiệp vụ còn mở phải có người quyết định; không tự chọn trong lúc sửa lỗi kỹ thuật.
 
-Nhiệm vụ review/tài liệu có thể bắt đầu khi đã có nguồn và câu hỏi đủ rõ; không đợi toàn bộ chức năng tương lai được triển khai. Trợ lý không tự chuyển trạng thái Jira hoặc giao việc cho người khác.
+Nhiệm vụ review/tài liệu có thể bắt đầu khi đã có nguồn và câu hỏi đủ rõ; không đợi toàn bộ chức năng tương lai được triển khai. Trợ lý không tự cập nhật hệ thống theo dõi công việc hoặc giao việc cho người khác.
 
 ## Điều kiện hoàn thành (DoD)
 
@@ -15,7 +15,7 @@ Nhiệm vụ review/tài liệu có thể bắt đầu khi đã có nguồn và 
 - Không có bí mật trong mã/tài liệu/nhật ký; lỗi nghiêm trọng ngoài phạm vi được báo rõ.
 - Tài liệu chịu ảnh hưởng được cập nhật bằng tiếng Việt theo [quy chuẩn](documentation-standard.md), có mốc nguồn phù hợp; mốc chuẩn không bị sửa để che lỗi hồi quy. Nếu không cần sửa tài liệu, ghi lý do cụ thể trong PR/bàn giao.
 - Khi bàn giao PR để merge: CI bắt buộc đạt trên head mới, có ít nhất một người khác đánh giá/chấp thuận, các yêu cầu sửa đã được xử lý. PR hạ tầng/Docker/CI/migration cần thêm xác nhận QA hoặc DevOps phù hợp.
-- Hồ sơ Jira/PR có truy vết theo quy ước; cập nhật hệ thống bên ngoài chỉ khi được giao. Bàn giao chỉnh sửa local không đồng nghĩa PR đã được nghiệm thu hoặc đã merge.
+- PR có truy vết theo quy ước (mô tả, bằng chứng kiểm chứng và mã công việc nếu có); cập nhật hệ thống bên ngoài chỉ khi được giao. Bàn giao chỉnh sửa local không đồng nghĩa PR đã được nghiệm thu hoặc đã merge.
 
 ## Kiểm tra theo loại thay đổi
 
