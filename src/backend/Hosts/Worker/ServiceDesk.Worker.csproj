@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <RootNamespace>ServiceDesk.Worker</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Platform\ServiceDesk.Platform.csproj" />
+    <ProjectReference Include="..\..\Modules\AIAssistance\ServiceDesk.Modules.AIAssistance.csproj" />
+    <ProjectReference Include="..\..\Modules\Ticketing\ServiceDesk.Modules.Ticketing.csproj" />
+  </ItemGroup>
+
+</Project>

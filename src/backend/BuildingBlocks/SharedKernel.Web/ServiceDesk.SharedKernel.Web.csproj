@@ -10,7 +10,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ServiceDesk.SharedKernel\ServiceDesk.SharedKernel.csproj" />
+    <ProjectReference Include="..\SharedKernel\ServiceDesk.SharedKernel.csproj" />
   </ItemGroup>
 
 </Project>

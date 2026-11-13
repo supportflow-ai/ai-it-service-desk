@@ -7,9 +7,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\backend\ServiceDesk.Worker\ServiceDesk.Worker.csproj" />
-    <ProjectReference Include="..\..\src\backend\ServiceDesk.Api\ServiceDesk.Api.csproj" />
-    <ProjectReference Include="..\..\src\backend\ServiceDesk.Platform\ServiceDesk.Platform.csproj" />
+    <ProjectReference Include="..\..\src\backend\Hosts\Worker\ServiceDesk.Worker.csproj" />
+    <ProjectReference Include="..\..\src\backend\Hosts\Api\ServiceDesk.Api.csproj" />
+    <ProjectReference Include="..\..\src\backend\Platform\ServiceDesk.Platform.csproj" />
   </ItemGroup>
 
   <ItemGroup>

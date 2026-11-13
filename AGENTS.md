@@ -13,7 +13,7 @@ Kho này sở hữu backend, migration, công cụ Database và kiểm thử. Gi
 
 ## 2. Lệnh cho trợ lý
 
-Chạy từ gốc repo, không tương tác. SDK theo [global.json](global.json); Python theo workflow; EF CLI khớp `Microsoft.EntityFrameworkCore.Design` trong [project API](src/backend/ServiceDesk.Api/ServiceDesk.Api.csproj). Không chép lại các số phiên bản ở đây.
+Chạy từ gốc repo, không tương tác. SDK theo [global.json](global.json); Python theo workflow; EF CLI khớp `Microsoft.EntityFrameworkCore.Design` trong [project API](src/backend/Hosts/Api/ServiceDesk.Api.csproj). Không chép lại các số phiên bản ở đây.
 
 Build trước khi dùng `--no-build`, cùng mã và cấu hình `Release`:
 
@@ -46,9 +46,9 @@ Linux/macOS dùng `./.venv/bin/python` thay interpreter trên; lệnh tạo venv
 Chưa có `.cache/dotnet-tools/dotnet-ef` thì dừng lệnh EF và cài **cục bộ** theo tài liệu môi trường, không tự cài/cập nhật tool global. Migration ở Infrastructure, startup project là API, context là `ApplicationDbContext`:
 
 ```sh
-./.cache/dotnet-tools/dotnet-ef migrations add TEN_MIGRATION --project src/backend/ServiceDesk.Platform --startup-project src/backend/ServiceDesk.Api --context ApplicationDbContext --output-dir Persistence/Migrations --configuration Release
-./.cache/dotnet-tools/dotnet-ef migrations remove --project src/backend/ServiceDesk.Platform --startup-project src/backend/ServiceDesk.Api --context ApplicationDbContext --configuration Release
-./.cache/dotnet-tools/dotnet-ef migrations has-pending-model-changes --project src/backend/ServiceDesk.Platform --startup-project src/backend/ServiceDesk.Api --context ApplicationDbContext --configuration Release --no-build
+./.cache/dotnet-tools/dotnet-ef migrations add TEN_MIGRATION --project src/backend/Platform --startup-project src/backend/Hosts/Api --context ApplicationDbContext --output-dir Persistence/Migrations --configuration Release
+./.cache/dotnet-tools/dotnet-ef migrations remove --project src/backend/Platform --startup-project src/backend/Hosts/Api --context ApplicationDbContext --configuration Release
+./.cache/dotnet-tools/dotnet-ef migrations has-pending-model-changes --project src/backend/Platform --startup-project src/backend/Hosts/Api --context ApplicationDbContext --configuration Release --no-build
 ```
 
 Các lệnh là lựa chọn theo nhiệm vụ, không chạy nối tiếp. `remove` có thể kết nối database nên chịu cùng chốt chặn ở §5; chỉ gỡ migration cuối chưa merge/phát hành/dùng chung và đã xác minh không còn được áp dụng. Đã thử áp dụng ở local: theo quy trình gỡ trong tài liệu môi trường, không xóa tay hoặc dùng `--force`.
@@ -66,9 +66,9 @@ Modular Monolith, tổ chức **module trước, Clean Architecture bên trong m
 | Adapter PostgreSQL/HTTP, ánh xạ EF, options | `.../Infrastructure/` (ánh xạ EF ở `Infrastructure/Configurations`) |
 | Endpoint và request body | `.../Presentation/` |
 | Đăng ký DI của module | `<Module>Module.cs`: `Add<Module>Application`, `Add<Module>Infrastructure`, `Add<Module>Module` |
-| Kiểu dùng chung nhiều module (vai trò, actor, đồng hồ, cổng lưu trữ, ngoại lệ nghiệp vụ) | `src/backend/BuildingBlocks/ServiceDesk.SharedKernel/`; thành phần HTTP dùng chung ở `ServiceDesk.SharedKernel.Web/` |
-| `ApplicationDbContext`, migration, bảo trì DB, MinIO, đồng hồ hệ thống | `src/backend/ServiceDesk.Platform/` (không đặt nghiệp vụ ở đây) |
-| Ghép module, middleware | `ServiceDesk.Api/Program.cs`, `ServiceDesk.Worker/WorkerServices.cs`; Identity đăng ký JWT qua `AddIdentityAuthentication` |
+| Kiểu dùng chung nhiều module (vai trò, actor, đồng hồ, cổng lưu trữ, ngoại lệ nghiệp vụ) | `src/backend/BuildingBlocks/SharedKernel/`; thành phần HTTP dùng chung ở `src/backend/BuildingBlocks/SharedKernel.Web/` |
+| `ApplicationDbContext`, migration, bảo trì DB, MinIO, đồng hồ hệ thống | `src/backend/Platform/` (không đặt nghiệp vụ ở đây) |
+| Ghép module, middleware | `src/backend/Hosts/Api/Program.cs`, `src/backend/Hosts/Worker/WorkerServices.cs`; Identity đăng ký JWT qua `AddIdentityAuthentication` |
 
 - Trong module, phụ thuộc chỉ đi vào trong: Presentation → Application → Domain; Infrastructure → Application → Domain. Domain không dùng EF Core, Npgsql, ASP.NET Core. Application không dùng Infrastructure, EF Core, Npgsql hoặc HTTP context. Các tầng cùng nằm trong một project nên vi phạm chỉ bị chặn khi chạy `ServiceDesk.ArchitectureTests`; chạy project này sau mọi thay đổi chạm `using`/tham chiếu.
 - Application xác thực actor và phân quyền nghiệp vụ, không chỉ dựa vào middleware HTTP. Mẫu: [CreateTicketUseCase](src/backend/Modules/Ticketing/Application/CreateTicket/CreateTicketUseCase.cs). Tách ghi/truy vấn; không tự thêm mediator hoặc Generic Repository.

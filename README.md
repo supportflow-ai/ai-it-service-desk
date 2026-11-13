@@ -88,23 +88,24 @@ Có thể phát triển backend trực tiếp trên máy với PostgreSQL đư�
 
 ```text
 src/backend/
+  Hosts/                           # Các project chạy được, mỗi project một Dockerfile
+    Api/                           # Host HTTP: ghép module, middleware, health
+    Worker/                        # Chương trình xử lý nền
+    Migrator/                      # Công cụ migration và khởi tạo có chủ đích
+  Platform/                        # Nền tảng dùng chung: ApplicationDbContext, migration, bảo trì DB, MinIO, đồng hồ
   BuildingBlocks/
-    ServiceDesk.SharedKernel/      # Vai trò, actor hiện tại, đồng hồ, cổng lưu trữ, ngoại lệ nghiệp vụ dùng chung
-    ServiceDesk.SharedKernel.Web/  # Thành phần HTTP dùng chung cho endpoint (bộ lọc lỗi)
+    SharedKernel/                  # Vai trò, actor hiện tại, đồng hồ, cổng lưu trữ, ngoại lệ nghiệp vụ dùng chung
+    SharedKernel.Web/              # Thành phần HTTP dùng chung cho endpoint (bộ lọc lỗi)
   Modules/
     <Module>/                      # Identity, Ticketing, Knowledge, AIAssistance
       ServiceDesk.Modules.<Module>.csproj
       <Module>Module.cs
       Domain/  Application/  Infrastructure/  Presentation/
-  ServiceDesk.Platform/            # Nền tảng dùng chung: ApplicationDbContext, migration, bảo trì DB, MinIO, đồng hồ
-  ServiceDesk.Api/                 # Host HTTP: ghép module, middleware, health
-  ServiceDesk.Worker/              # Chương trình xử lý nền
-  ServiceDesk.Migrator/            # Công cụ migration và khởi tạo có chủ đích
 tests/                             # Domain, Application, Architecture, Integration
 contracts/                         # Baseline HTTP và AI classification v1
 ```
 
-Mỗi thư mục trong `Modules/` chứa một project. Tên assembly và namespace gốc giữ dạng `ServiceDesk.Modules.<Module>`. Host API đọc người dùng từ HTTP qua `ServiceDesk.Api/Authentication/`. Module Identity sở hữu cấu hình JWT, tài khoản và phiên.
+Mỗi thư mục trong `Modules/` chứa một project. Tên assembly và namespace gốc giữ dạng `ServiceDesk.Modules.<Module>`. Host API đọc người dùng từ HTTP qua `Hosts/Api/Authentication/`. Module Identity sở hữu cấu hình JWT, tài khoản và phiên.
 
 Module là ranh giới ngoài cùng. Bên trong module, Presentation và Infrastructure phụ thuộc Application, còn Application phụ thuộc Domain. Domain và Application độc lập với EF Core, Npgsql và ASP.NET Core. Mỗi module đăng ký dịch vụ qua lớp `<Module>Module` và đặt endpoint trong `Presentation` nếu có API HTTP. API và Worker ghép module qua các điểm đăng ký. AIAssistance dùng ba kiểu phân loại đã công bố của Ticketing. Xem [ADR-015](docs/adr/ADR-015-module-first-clean-architecture.md), [ADR-011](docs/adr/ADR-011-backend-module-boundaries.md) và [ADR-014](docs/adr/ADR-014-feature-use-cases-and-published-contracts.md).
 
@@ -146,9 +147,9 @@ Công cụ `ServiceDesk.Migrator` hỗ trợ `migrate`, `seed-roles`, `seed-demo
 Dockerfile API, Worker và Database nằm cạnh từng project, build từ gốc repo:
 
 ```sh
-docker build -f src/backend/ServiceDesk.Api/Dockerfile -t servicedesk-api:local .
-docker build -f src/backend/ServiceDesk.Worker/Dockerfile -t servicedesk-worker:local .
-docker build -f src/backend/ServiceDesk.Migrator/Dockerfile -t servicedesk-database:local .
+docker build -f src/backend/Hosts/Api/Dockerfile -t servicedesk-api:local .
+docker build -f src/backend/Hosts/Worker/Dockerfile -t servicedesk-worker:local .
+docker build -f src/backend/Hosts/Migrator/Dockerfile -t servicedesk-database:local .
 ```
 
 Gateway và cách ghép hệ thống nằm trong repo infra. `/health/live` kiểm tra tiến trình, `/health/ready` kiểm tra PostgreSQL; `/health` giữ response tương thích. AI không hoạt động không làm readiness thất bại. Quy trình nâng cấp, bảo toàn volume/data và rollback nằm trong [runbook](docs/runbooks/backend-refactor-rollout.md).

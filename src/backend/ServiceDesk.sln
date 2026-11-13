@@ -10,11 +10,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Hosts", "Hosts", "{2F182C68
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{3B583A31-A97A-5D31-820A-8B42D7CA280D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServiceDesk.SharedKernel", "BuildingBlocks\ServiceDesk.SharedKernel\ServiceDesk.SharedKernel.csproj", "{427C2E5F-4E59-5072-9718-260A6140E164}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServiceDesk.SharedKernel", "BuildingBlocks\SharedKernel\ServiceDesk.SharedKernel.csproj", "{427C2E5F-4E59-5072-9718-260A6140E164}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServiceDesk.SharedKernel.Web", "BuildingBlocks\ServiceDesk.SharedKernel.Web\ServiceDesk.SharedKernel.Web.csproj", "{83CF5C06-09D1-5448-ACFD-83BDC5C69352}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServiceDesk.SharedKernel.Web", "BuildingBlocks\SharedKernel.Web\ServiceDesk.SharedKernel.Web.csproj", "{83CF5C06-09D1-5448-ACFD-83BDC5C69352}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServiceDesk.Platform", "ServiceDesk.Platform\ServiceDesk.Platform.csproj", "{3EA90DE2-87AC-46BA-A9B2-DD04A52CDD0A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServiceDesk.Platform", "Platform\ServiceDesk.Platform.csproj", "{3EA90DE2-87AC-46BA-A9B2-DD04A52CDD0A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Identity", "Modules\Identity\ServiceDesk.Modules.Identity.csproj", "{F3F6CB3A-4D00-5F74-8795-227B0FAC4B3F}"
 EndProject
@@ -24,11 +24,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Knowledge", "Modules\Knowle
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AIAssistance", "Modules\AIAssistance\ServiceDesk.Modules.AIAssistance.csproj", "{57A0B913-2E0D-5991-8884-B48EC39A8560}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServiceDesk.Api", "ServiceDesk.Api\ServiceDesk.Api.csproj", "{D3F4BFCC-67FA-4BC0-84C5-94B1E9C06C76}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServiceDesk.Api", "Hosts\Api\ServiceDesk.Api.csproj", "{D3F4BFCC-67FA-4BC0-84C5-94B1E9C06C76}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServiceDesk.Worker", "ServiceDesk.Worker\ServiceDesk.Worker.csproj", "{6104CC7E-BAC8-4197-8056-4EE13F1CB1B1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServiceDesk.Worker", "Hosts\Worker\ServiceDesk.Worker.csproj", "{6104CC7E-BAC8-4197-8056-4EE13F1CB1B1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServiceDesk.Migrator", "ServiceDesk.Migrator\ServiceDesk.Migrator.csproj", "{43255191-35AD-4E31-A171-40D0441736AC}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServiceDesk.Migrator", "Hosts\Migrator\ServiceDesk.Migrator.csproj", "{43255191-35AD-4E31-A171-40D0441736AC}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServiceDesk.Domain.Tests", "..\..\tests\ServiceDesk.Domain.Tests\ServiceDesk.Domain.Tests.csproj", "{6235007C-5328-46B9-BBF0-DED96C786AC4}"
 EndProject

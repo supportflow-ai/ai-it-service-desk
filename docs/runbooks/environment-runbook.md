@@ -8,7 +8,7 @@ Phiên bản công cụ lấy trực tiếp từ nguồn được ghim, không d
 
 - .NET SDK: [global.json](../../global.json).
 - Python: `python-version` trong [workflow](../../.github/workflows/ci.yml).
-- EF CLI: `Microsoft.EntityFrameworkCore.Design` trong [project API](../../src/backend/ServiceDesk.Api/ServiceDesk.Api.csproj).
+- EF CLI: `Microsoft.EntityFrameworkCore.Design` trong [project API](../../src/backend/Hosts/Api/ServiceDesk.Api.csproj).
 
 Cần build `Release` thành công từ gốc repo trước các lệnh dùng `--no-build`. Lệnh build/test đầy đủ ở [AGENTS.md](../../AGENTS.md).
 
@@ -82,8 +82,8 @@ from urllib.parse import urlsplit
 try:
     tool = Path(".cache/dotnet-tools/dotnet-ef" + (".exe" if os.name == "nt" else ""))
     result = subprocess.run([str(tool), "dbcontext", "info",
-        "--project", "src/backend/ServiceDesk.Infrastructure",
-        "--startup-project", "src/backend/ServiceDesk.Api",
+        "--project", "src/backend/Platform",
+        "--startup-project", "src/backend/Hosts/Api",
         "--context", "ApplicationDbContext", "--configuration", "Release",
         "--no-build", "--json"], stdin=subprocess.DEVNULL,
         capture_output=True, text=True, timeout=30)
@@ -137,15 +137,15 @@ Không rõ một điều kiện thì dừng thao tác database và hỏi ngườ
 Sau khi xác nhận đích và build thành công:
 
 ```sh
-dotnet run --project src/backend/ServiceDesk.Database -c Release --no-build -- migrate
-dotnet run --project src/backend/ServiceDesk.Database -c Release --no-build -- seed-roles
+dotnet run --project src/backend/Hosts/Migrator -c Release --no-build -- migrate
+dotnet run --project src/backend/Hosts/Migrator -c Release --no-build -- seed-roles
 ```
 
 API/Worker không tự migration hoặc seed. Khởi chạy từng tiến trình trong terminal riêng đã nạp cấu hình:
 
 ```sh
-dotnet run --project src/backend/ServiceDesk.Api -c Release --no-build --no-launch-profile
-dotnet run --project src/backend/ServiceDesk.Worker -c Release --no-build
+dotnet run --project src/backend/Hosts/Api -c Release --no-build --no-launch-profile
+dotnet run --project src/backend/Hosts/Worker -c Release --no-build
 ```
 
 Hai lệnh trên chạy liên tục: người dùng dừng bằng Ctrl+C. Nếu nhiệm vụ yêu cầu trợ lý khởi chạy, chạy nền bằng công cụ của môi trường, lưu PID hoặc ID phiên công cụ, kiểm tra đầu ra với thời gian chờ hữu hạn và dừng tiến trình do mình tạo khi hoàn tất.
@@ -179,7 +179,7 @@ Cài EF CLI trong `.cache/dotnet-tools`, phiên bản lấy từ project API; kh
 PowerShell:
 
 ```powershell
-$apiProject = [xml](Get-Content -LiteralPath 'src/backend/ServiceDesk.Api/ServiceDesk.Api.csproj' -Raw)
+$apiProject = [xml](Get-Content -LiteralPath 'src/backend/Hosts/Api/ServiceDesk.Api.csproj' -Raw)
 $efVersion = [string]($apiProject.Project.ItemGroup.PackageReference | Where-Object Include -eq 'Microsoft.EntityFrameworkCore.Design').Version
 dotnet tool install dotnet-ef --tool-path .cache/dotnet-tools --version $efVersion
 ```
@@ -187,7 +187,7 @@ dotnet tool install dotnet-ef --tool-path .cache/dotnet-tools --version $efVersi
 Bash, dùng interpreter venv vừa tạo để đọc XML:
 
 ```bash
-ef_version=$(./.venv/bin/python -c 'import xml.etree.ElementTree as E; p=E.parse("src/backend/ServiceDesk.Api/ServiceDesk.Api.csproj"); print(next(n.attrib["Version"] for n in p.iter("PackageReference") if n.attrib.get("Include")=="Microsoft.EntityFrameworkCore.Design"))')
+ef_version=$(./.venv/bin/python -c 'import xml.etree.ElementTree as E; p=E.parse("src/backend/Hosts/Api/ServiceDesk.Api.csproj"); print(next(n.attrib["Version"] for n in p.iter("PackageReference") if n.attrib.get("Include")=="Microsoft.EntityFrameworkCore.Design"))')
 dotnet tool install dotnet-ef --tool-path .cache/dotnet-tools --version "$ef_version"
 ```
 
@@ -212,7 +212,7 @@ Kiểm tra `Up`/`Down` không có `DROP` hoặc mất dữ liệu ngoài ý mu�
 Nếu được phép hạ local: dừng ứng dụng liên quan, sao lưu và xác minh phục hồi nếu có dữ liệu cần giữ, xem kỹ `Down`, xác định chính xác migration trước đó rồi chạy:
 
 ```sh
-./.cache/dotnet-tools/dotnet-ef database update MIGRATION_TRUOC --project src/backend/ServiceDesk.Infrastructure --startup-project src/backend/ServiceDesk.Api --context ApplicationDbContext --configuration Release
+./.cache/dotnet-tools/dotnet-ef database update MIGRATION_TRUOC --project src/backend/Platform --startup-project src/backend/Hosts/Api --context ApplicationDbContext --configuration Release
 ```
 
 `MIGRATION_TRUOC` là ID thực tế của migration liền trước, không tự dùng `0`. Chỉ sau khi xác minh hạ thành công và migration không còn trong lịch sử local mới chạy `migrations remove`. Nếu hạ bị lỗi, dừng; không cưỡng ép gỡ. Sau đó build và kiểm tra model lại.
@@ -236,7 +236,7 @@ Khi lọc riêng kiểm thử, thay placeholder bằng tên thực tế và ki�
 
 Trợ lý chỉ chạy `seed-demo`, `bootstrap-admin`, `check-production` khi được giao rõ lệnh và đích; không suy ra quyền chạy từ tên lệnh hoặc từ việc đang viết tài liệu. Thông tin bootstrap chỉ cấp cho tiến trình một lần, không truyền sang API/Worker. Điều kiện `SeedDemo__*` và `BootstrapAdmin__*` nằm trong quy trình triển khai.
 
-Hành vi hiện có của `check-production`, đối chiếu [DatabaseMaintenance](../../src/backend/ServiceDesk.Platform/Persistence/DatabaseMaintenance.cs) và [Database Program](../../src/backend/ServiceDesk.Migrator/Program.cs):
+Hành vi hiện có của `check-production`, đối chiếu [DatabaseMaintenance](../../src/backend/Platform/Persistence/DatabaseMaintenance.cs) và [Database Program](../../src/backend/Hosts/Migrator/Program.cs):
 
 - Chỉ tìm ba email trong `DemoEmails`: `admin@test.com`, `agent@test.com`, `requester@test.com`.
 - Với tài khoản tồn tại, gọi `UserManager.CheckPasswordAsync` bằng mật khẩu mẫu đã có trong mã; nếu còn khớp, dừng với `demo_default_password_present` và exit code 1.

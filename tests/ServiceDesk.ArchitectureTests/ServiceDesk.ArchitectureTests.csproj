@@ -7,12 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\backend\ServiceDesk.Api\ServiceDesk.Api.csproj" />
-    <ProjectReference Include="..\..\src\backend\ServiceDesk.Migrator\ServiceDesk.Migrator.csproj" />
-    <ProjectReference Include="..\..\src\backend\ServiceDesk.Platform\ServiceDesk.Platform.csproj" />
-    <ProjectReference Include="..\..\src\backend\ServiceDesk.Worker\ServiceDesk.Worker.csproj" />
-    <ProjectReference Include="..\..\src\backend\BuildingBlocks\ServiceDesk.SharedKernel\ServiceDesk.SharedKernel.csproj" />
-    <ProjectReference Include="..\..\src\backend\BuildingBlocks\ServiceDesk.SharedKernel.Web\ServiceDesk.SharedKernel.Web.csproj" />
+    <ProjectReference Include="..\..\src\backend\Hosts\Api\ServiceDesk.Api.csproj" />
+    <ProjectReference Include="..\..\src\backend\Hosts\Migrator\ServiceDesk.Migrator.csproj" />
+    <ProjectReference Include="..\..\src\backend\Platform\ServiceDesk.Platform.csproj" />
+    <ProjectReference Include="..\..\src\backend\Hosts\Worker\ServiceDesk.Worker.csproj" />
+    <ProjectReference Include="..\..\src\backend\BuildingBlocks\SharedKernel\ServiceDesk.SharedKernel.csproj" />
+    <ProjectReference Include="..\..\src\backend\BuildingBlocks\SharedKernel.Web\ServiceDesk.SharedKernel.Web.csproj" />
     <ProjectReference Include="..\..\src\backend\Modules\AIAssistance\ServiceDesk.Modules.AIAssistance.csproj" />
     <ProjectReference Include="..\..\src\backend\Modules\Identity\ServiceDesk.Modules.Identity.csproj" />
     <ProjectReference Include="..\..\src\backend\Modules\Knowledge\ServiceDesk.Modules.Knowledge.csproj" />

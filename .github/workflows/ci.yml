@@ -51,11 +51,11 @@ jobs:
           name: ai-contract-v1-${{ github.sha }}
           path: contracts/ai/v1/
       - name: Build API image
-        run: docker build -f src/backend/ServiceDesk.Api/Dockerfile -t servicedesk-api:ci .
+        run: docker build -f src/backend/Hosts/Api/Dockerfile -t servicedesk-api:ci .
       - name: Build Worker image
-        run: docker build -f src/backend/ServiceDesk.Worker/Dockerfile -t servicedesk-worker:ci .
+        run: docker build -f src/backend/Hosts/Worker/Dockerfile -t servicedesk-worker:ci .
       - name: Build database tool image
-        run: docker build -f src/backend/ServiceDesk.Migrator/Dockerfile -t servicedesk-database:ci .
+        run: docker build -f src/backend/Hosts/Migrator/Dockerfile -t servicedesk-database:ci .
 
   publish:
     name: Phát hành image bất biến
@@ -69,11 +69,11 @@ jobs:
       matrix:
         include:
           - image: servicedesk-api
-            dockerfile: src/backend/ServiceDesk.Api/Dockerfile
+            dockerfile: src/backend/Hosts/Api/Dockerfile
           - image: servicedesk-worker
-            dockerfile: src/backend/ServiceDesk.Worker/Dockerfile
+            dockerfile: src/backend/Hosts/Worker/Dockerfile
           - image: servicedesk-database
-            dockerfile: src/backend/ServiceDesk.Migrator/Dockerfile
+            dockerfile: src/backend/Hosts/Migrator/Dockerfile
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
