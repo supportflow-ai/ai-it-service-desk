@@ -51,7 +51,7 @@ Ghi SHA, thay đổi chưa commit, lệnh và số test/kết quả thực tế.
 Đợt refactor 2026-11 (PR #50–#54) thêm ba migration: `20261107090000_AddOtpFailedAttempts` (cột `otp_codes.failed_attempts`, mặc định 0), `20261107160000_AddRefreshTokenFamily` (cột `refresh_tokens.family_id`, backfill `family_id = id`, `NOT NULL`, index) và `20261108010000_DefaultRefreshTokenFamilyForLegacyWriters` (trigger điền `family_id = id` khi câu INSERT không gửi cột này). Thứ tự triển khai:
 
 1. Review trên SHA ứng viên, rồi chạy trên DB staging riêng được khôi phục từ bản sao và đã xác nhận restore được.
-2. Ghi lại `__EFMigrationsHistory` trước; `ServiceDesk.Database migrate` áp **mọi** migration đang chờ, không chỉ ba migration này. Đo thời gian chờ khóa và thời gian backfill `family_id` trên dữ liệu thật.
+2. Ghi lại `__EFMigrationsHistory` trước; `ServiceDesk.Migrator migrate` (trước đây `ServiceDesk.Database`) áp **mọi** migration đang chờ, không chỉ ba migration này. Đo thời gian chờ khóa và thời gian backfill `family_id` trên dữ liệu thật.
 3. Nhờ trigger, bản API cũ vẫn ghi được refresh token sau migration nên có thể triển khai cuốn chiếu; vẫn nên chạy migration trước rồi mới khởi động API mới (API mới đọc hai cột mới).
 4. Ghi lại `__EFMigrationsHistory` sau; smoke đăng nhập, làm mới phiên, đăng xuất, quên mật khẩu.
 

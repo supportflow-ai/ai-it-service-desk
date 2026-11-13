@@ -52,7 +52,7 @@ Linux/macOS có thể cần `python3`. Dừng bằng Ctrl+C. Nếu nhiệm vụ 
 
 Đọc `.env` không tự mở tunnel hoặc chạy migration/seed. Database dùng chung có quy trình riêng tại [runbook VPS](shared-development-database.md). Mở tunnel bằng `python scripts/start_database_tunnel.py` ở terminal riêng trước API. Với tài khoản chỉ mở tunnel, không thử mở shell trên VPS. Loopback của tunnel vẫn là database từ xa, không phải database local dùng một lần.
 
-Thành phần `database` chuyển tham số sang công cụ Database, ví dụ `python scripts/run_backend.py --no-build database migrate`; chỉ chạy khi nhiệm vụ và đích được xác minh theo phần dưới. Lệnh `seed-demo`/`bootstrap-admin` cần cấu hình riêng theo quy trình triển khai, không truyền credential provisioning sang API/Worker.
+Thành phần `database` (bí danh của `migrator`) chuyển tham số sang công cụ Migrator, ví dụ `python scripts/run_backend.py --no-build database migrate`; chỉ chạy khi nhiệm vụ và đích được xác minh theo phần dưới. Lệnh `seed-demo`/`bootstrap-admin` cần cấu hình riêng theo quy trình triển khai, không truyền credential provisioning sang API/Worker.
 
 ### Không dùng Python
 

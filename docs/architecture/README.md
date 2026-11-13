@@ -28,7 +28,7 @@ Tạo ticket hiện tại vẫn là Submitted; JSON status là số. Không đ�
 | [Assignment/comment](05-assignment-and-comment-policy.md) | Đề xuất; chưa có tính năng tương ứng | DEC-02–05 |
 | [Attachment](06-attachment-security.md) | Đề xuất; chưa duyệt phương thức tải và giới hạn | DEC-06–07 |
 
-Các đề xuất này là đầu vào thảo luận. Không suy ra quyền triển khai từ nhãn READY FOR REVIEW, số Jira hoặc sự tồn tại của tệp.
+Các đề xuất này là đầu vào thảo luận. Không suy ra quyền triển khai từ nhãn READY FOR REVIEW, mã công việc hoặc sự tồn tại của tệp.
 
 ## Hồ sơ hợp đồng lịch sử
 
