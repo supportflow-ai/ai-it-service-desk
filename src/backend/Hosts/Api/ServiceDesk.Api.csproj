@@ -6,12 +6,12 @@
 
   <!-- Host HTTP: chỉ ghép module (composition root), cấu hình xác thực, middleware và health check. -->
   <ItemGroup>
-    <ProjectReference Include="..\ServiceDesk.Platform\ServiceDesk.Platform.csproj" />
-    <ProjectReference Include="..\BuildingBlocks\ServiceDesk.SharedKernel.Web\ServiceDesk.SharedKernel.Web.csproj" />
-    <ProjectReference Include="..\Modules\AIAssistance\ServiceDesk.Modules.AIAssistance.csproj" />
-    <ProjectReference Include="..\Modules\Identity\ServiceDesk.Modules.Identity.csproj" />
-    <ProjectReference Include="..\Modules\Knowledge\ServiceDesk.Modules.Knowledge.csproj" />
-    <ProjectReference Include="..\Modules\Ticketing\ServiceDesk.Modules.Ticketing.csproj" />
+    <ProjectReference Include="..\..\Platform\ServiceDesk.Platform.csproj" />
+    <ProjectReference Include="..\..\BuildingBlocks\SharedKernel.Web\ServiceDesk.SharedKernel.Web.csproj" />
+    <ProjectReference Include="..\..\Modules\AIAssistance\ServiceDesk.Modules.AIAssistance.csproj" />
+    <ProjectReference Include="..\..\Modules\Identity\ServiceDesk.Modules.Identity.csproj" />
+    <ProjectReference Include="..\..\Modules\Knowledge\ServiceDesk.Modules.Knowledge.csproj" />
+    <ProjectReference Include="..\..\Modules\Ticketing\ServiceDesk.Modules.Ticketing.csproj" />
   </ItemGroup>
 
   <ItemGroup>

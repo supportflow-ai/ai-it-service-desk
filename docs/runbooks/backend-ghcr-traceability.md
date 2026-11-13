@@ -8,9 +8,9 @@ Quy trình CI/CD của Backend (`.github/workflows/ci.yml`) sử dụng chiến 
 
 | Image Name Canonical | Dockerfile | Mục đích / Thành phần |
 | :--- | :--- | :--- |
-| `ghcr.io/supportflow-ai/servicedesk-api` | `src/backend/ServiceDesk.Api/Dockerfile` | ASP.NET Core Web API runtime (`USER $APP_UID`) |
-| `ghcr.io/supportflow-ai/servicedesk-worker` | `src/backend/ServiceDesk.Worker/Dockerfile` | Background Worker xử lý hàng đợi vé (`USER $APP_UID`) |
-| `ghcr.io/supportflow-ai/servicedesk-database` | `src/backend/ServiceDesk.Database/Dockerfile` | Công cụ CLI migration và seeding dữ liệu (`USER $APP_UID`) |
+| `ghcr.io/supportflow-ai/servicedesk-api` | `src/backend/Hosts/Api/Dockerfile` | ASP.NET Core Web API runtime (`USER $APP_UID`) |
+| `ghcr.io/supportflow-ai/servicedesk-worker` | `src/backend/Hosts/Worker/Dockerfile` | Background Worker xử lý hàng đợi vé (`USER $APP_UID`) |
+| `ghcr.io/supportflow-ai/servicedesk-database` | `src/backend/Hosts/Migrator/Dockerfile` | Công cụ CLI migration và seeding dữ liệu (`USER $APP_UID`) |
 
 ## 2. Chính sách Phát hành An toàn (Publish Security Policy)
 

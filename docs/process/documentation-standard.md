@@ -55,7 +55,7 @@ Tài liệu hiện hành nên có: mục đích, phạm vi/đối tượng đọ
 
 Trước khi chốt tập tệp công bố, kiểm tra các công cụ/tệp được tài liệu dẫn tới có thực sự thuộc thay đổi Git dự kiến. Công cụ kiểm tra tài liệu hiện chấp nhận cả tệp mới chưa được Git quản lý; vì vậy kết quả đạt tại máy không bảo đảm checkout sau khi tích hợp có đủ công cụ. Đối chiếu cả `.gitignore` của nhánh đích; ví dụ hai công cụ khởi chạy/kết nối đang được nêu tại [bảng mốc nguồn](../architecture/source-baseline.md#công-cụ-local-và-quy-tắc-git).
 
-Không có mã Jira hoặc nhãn APPROVED nào tự chứng minh chức năng đã được kiểm chứng. Cách làm việc và quyền thực hiện theo nhiệm vụ được giao; quy chuẩn này không tự phát sinh tác vụ trên Jira hoặc tạo PR.
+Không có nhãn APPROVED hay mã công việc nào tự chứng minh chức năng đã được kiểm chứng. Cách làm việc và quyền thực hiện theo nhiệm vụ được giao; quy chuẩn này không tự phát sinh tác vụ trên hệ thống theo dõi công việc hoặc tạo PR.
 
 ## Khi API hoặc DTO thay đổi
 
@@ -66,6 +66,23 @@ Bản chuẩn `contracts/backend/openapi-baseline.json` phải được rà soá
 Kiểm thử `PublishedApiMatchesBaseline` so sánh toàn bộ OpenAPI, đồng thời giữ kiểm tra chi tiết các đường dẫn/lược đồ đã công bố. Đường dẫn hoặc schema mới chưa có trong bản chuẩn, mô tả và cấu hình bảo mật thay đổi đều phải được phát hiện. Ảnh chụp OpenAPI không xác nhận thứ tự kiểm tra quyền, che giấu tài nguyên hoặc xử lý ghi đồng thời; các phần đó cần kiểm thử hành vi.
 
 Đợt đồng bộ ngày 2026-10-20 được chuẩn bị trên dev sau PR #29: bản chuẩn có 16 đường dẫn, gồm sáu thao tác vòng đời mới và `UpdateTicketRequest`. Xem mốc nguồn và bằng chứng trong [báo cáo rà soát](../reviews/documentation-audit-20261020.md).
+
+## Ngoại lệ lưu trữ
+
+Quy tắc chung: khi di chuyển hoặc đổi tên tệp, tài liệu `evidence`, `proposal` và `historical` giữ nguyên nội dung, đường dẫn và số dòng gốc; chỉ thay liên kết tương đối bị gãy bằng URL GitHub ghim SHA trước thay đổi.
+
+Ngoại lệ lưu trữ duy nhất: tám tệp `historical` trong `docs/architecture/` đã được đưa ra khỏi cây tệp tại PR lưu trữ. Bản gốc giữ nguyên ở commit `db756d27f07819cefca208548d8ecc8155fa0d48` và chỉ dẫn tới bằng URL ghim đó. Tám tệp (đuôi `.md`):
+
+1. `01-rbac-and-api-permission-matrix`
+2. `02-ticket-domain-and-field-contract`
+3. `03-ticket-lifecycle-and-visibility-baseline`
+4. `04-ticket-state-transition-and-reopen-matrix`
+5. `05-comment-and-internal-note-privacy-contract`
+6. `06-ticket-assignment-policy`
+7. `07-attachment-security-limits-and-policy`
+8. `08-sprint-acceptance-and-governance-record`
+
+Ngoại lệ này không áp dụng cho `evidence`, `proposal` hay tệp khác.
 
 ## Kiểm tra trước khi bàn giao
 

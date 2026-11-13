@@ -127,7 +127,7 @@ Hai bộ ma trận mô tả Agent theo team/assignment, còn [GetTicketDetail](h
 
 ### CTX-08 — P2: quy ước nhánh, ngôn ngữ và điều kiện kiểm thử chưa thống nhất
 
-**Bằng chứng:** [quy ước Git/Jira](../process/pr-branch-jira-convention.md), dòng 11–31, bắt buộc các loại nhánh liệt kê nhưng chưa nêu `codex/` và ngoại lệ đã được chỉ định. Workflow chỉ có push vào main/dev/staging/codex; PR vẫn được chạy cho mọi nhánh. Vì vậy nhánh feature theo ví dụ chưa có PR sẽ không chạy kiểm tra khi push.
+**Bằng chứng:** [quy ước Git/Jira](https://github.com/supportflow-ai/ai-it-service-desk/blob/07ce07a9dd50bcd143690c7ba1a19cc0048b9508/docs/process/pr-branch-jira-convention.md), dòng 11–31, bắt buộc các loại nhánh liệt kê nhưng chưa nêu `codex/` và ngoại lệ đã được chỉ định. Workflow chỉ có push vào main/dev/staging/codex; PR vẫn được chạy cho mọi nhánh. Vì vậy nhánh feature theo ví dụ chưa có PR sẽ không chạy kiểm tra khi push.
 
 [DoR/DoD](../process/definition-of-ready-done.md), dòng 25–32, áp toàn bộ kiểm thử cho mọi task/PR; [AGENTS](../../AGENTS.md), dòng 109, cho phép thay đổi chỉ tài liệu không chạy toàn bộ suite. Ví dụ commit/PR tiếng Anh trong tài liệu quy trình chưa theo quy tắc tiếng Việt; liên kết Jira mẫu tại dòng 66 vẫn là `jira.company.internal`.
 

@@ -11,7 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\BuildingBlocks\ServiceDesk.SharedKernel\ServiceDesk.SharedKernel.csproj" />
+    <ProjectReference Include="..\..\BuildingBlocks\SharedKernel\ServiceDesk.SharedKernel.csproj" />
     <ProjectReference Include="..\Ticketing\ServiceDesk.Modules.Ticketing.csproj" />
   </ItemGroup>
 

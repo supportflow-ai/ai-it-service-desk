@@ -2,6 +2,6 @@
   <PropertyGroup><OutputType>Exe</OutputType></PropertyGroup>
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
-    <ProjectReference Include="..\ServiceDesk.Platform\ServiceDesk.Platform.csproj" />
+    <ProjectReference Include="..\..\Platform\ServiceDesk.Platform.csproj" />
   </ItemGroup>
 </Project>
