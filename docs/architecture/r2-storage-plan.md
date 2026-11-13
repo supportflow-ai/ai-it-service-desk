@@ -88,7 +88,7 @@ Cỡ việc: S ≤ 1 ngày, M 2–3 ngày, L > 3 ngày (ước lượng thô).
 
 | Giai đoạn | Nội dung | Kho | Cỡ | Điều kiện xong |
 | --- | --- | --- | --- | --- |
-| 0. Chuẩn bị và kiểm chứng | Tạo bucket `dev`, token giới hạn bucket, CORS, quy tắc vòng đời; chạy tám kiểm chứng của ADR-017; chốt phiên bản AWSSDK.S3 và cờ R2; chốt hạn URL | infra, backend | M | Kết quả ghi vào kế hoạch này; chủ dự án duyệt ADR-017 |
+| 0. Chuẩn bị và kiểm chứng | Tạo bucket `dev`, token giới hạn bucket, CORS, quy tắc vòng đời; chạy chín kiểm chứng của ADR-017; chốt phiên bản AWSSDK.S3 và cờ R2; chốt hạn URL | infra, backend | M | Kết quả ghi vào kế hoạch này; chủ dự án duyệt ADR-017 |
 | 1. Adapter và cổng | `R2Options`, `R2ObjectStorageService`, cổng thu gọn, nhánh chưa cấu hình, kiểm thử đơn vị và adapter | backend | L | Build, kiểm thử không cần mạng đạt; `R2Live` đạt trên bucket `dev` |
 | 2. Luồng tệp | Use case, `RequiredHeaders`, xóa object tạm, baseline OpenAPI, cập nhật `.env.example`, `run_backend.py` | backend | M | Kiểm thử hợp đồng đạt; báo web |
 | 3. Web và hạ tầng | Web chuyển sang PUT; infra bỏ MinIO; CI cấp khóa cho `R2Live` và smoke | web, infra | L | Smoke đạt với bucket `ci` |

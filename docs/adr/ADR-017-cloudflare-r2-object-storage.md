@@ -79,13 +79,14 @@ Chạy trên bucket `dev` thật, ghi kết quả vào [kế hoạch](../archite
 6. Presigned URL ký với host nào được R2 chấp nhận (host S3 của tài khoản; tên miền tùy chỉnh chưa xác nhận).
 7. Hành vi khi tải lên URL hết hạn từ trình duyệt thật, và quy tắc vòng đời đã áp dụng trên `uploads/pending/`.
 8. Presigned GET có chấp nhận tham số `response-content-disposition` để tải về với tên tệp gốc không (khóa cuối `tickets/{id}/attachments/{guid}` không có tên và đuôi tệp).
+9. Điểm cuối S3 cục bộ thử nghiệm của `wrangler dev`: AWSSDK.S3 có ký và dùng được presigned PUT, `HEAD`, `CopyObject`, `DeleteObject` với điểm cuối đó không (nếu có, đây là phương án thử luồng tệp ngoại tuyến thay cho MinIO, chỉ để phát triển, không thay bằng chứng trên R2 thật).
 
 Nếu kết quả mục 1 cho thấy R2 chấp nhận tệp lớn hơn nhiều so với khai báo, ghi nhận mức thiệt hại tối đa (một PUT đơn tối đa gần 5 GiB theo tài liệu giới hạn) và quyết định lại giữa "chấp nhận kèm xóa khi xác nhận" và "Worker".
 
 ## Hệ quả
 
 - Bỏ một dịch vụ phải vận hành (container MinIO, `minio-init`, cổng lưu trữ riêng, `PublicEndpoint`) và bỏ phụ thuộc thư viện `Minio`.
-- Thêm phụ thuộc vào Cloudflare R2 và vào một bộ khóa phải được bảo vệ; không có bản chạy cục bộ của R2 qua S3 API, nên mọi người cần mạng và khóa để thử luồng tệp (kiểm thử tự động dùng bản giả).
+- Thêm phụ thuộc vào Cloudflare R2 và vào một bộ khóa phải được bảo vệ; R2 có điểm cuối S3 cục bộ do `wrangler dev` cung cấp (tài liệu R2 ghi là thử nghiệm, cần Wrangler 4.115.0 trở lên và một dự án Worker làm máy chủ phát triển, bucket cục bộ ban đầu rỗng, CORS luôn cho phép nên không tái hiện CORS thật). Tài liệu không có ví dụ .NET hay presigned PUT với điểm cuối này, nên chưa xác nhận dùng được cho luồng tệp; mặc định mọi người cần mạng và khóa bucket `dev` để thử luồng tệp (kiểm thử tự động dùng bản giả).
 - Tải xuống không tính phí băng thông, nhưng mỗi thao tác ghi, sao chép, đọc được tính theo [bảng giá R2](https://developers.cloudflare.com/r2/pricing/).
 - Dung lượng tối đa chỉ được bảo đảm ở bước xác nhận, không ở bước tải lên.
 - Đóng được phần "đối soát object mồ côi" của DEC-07 cho vùng tạm; phần quét mã độc, lưu giữ và xóa tệp đã xác nhận vẫn **còn mở**.
