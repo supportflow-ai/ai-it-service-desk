@@ -1,6 +1,6 @@
 # Hợp đồng backend đang triển khai
 
-Trạng thái: mô tả hiện hành, đối chiếu mã `dev` tại `8036e2c185dfef7c4ed9941d736388c781e85f52`, cập nhật 2026-11-08, sau PR #50–#55. Bản chuẩn HTTP là [OpenAPI baseline](../../contracts/backend/openapi-baseline.json) (40 đường dẫn, 41 thao tác); tài liệu này mô tả thêm quyền, trạng thái và lỗi mà OpenAPI không nêu. Mốc nguồn có thể mới hơn nhánh local của người đọc; đối chiếu commit trước khi chạy. Cập nhật tài liệu không thay API, quyền hoặc dữ liệu và không xác nhận phiên bản VPS hay một bản phát hành. Quyết định kiến trúc: [ADR-014](../adr/ADR-014-feature-use-cases-and-published-contracts.md). Chính sách cần chốt: [bảng quyết định](pending-business-decisions.md). Hồ sơ các đợt củng cố đầu tháng 11 là lịch sử: [giai đoạn 1](../runbooks/supportflow-hardening-phase-1.md), [giai đoạn 2–6](../runbooks/supportflow-hardening-phase-2-6.md).
+Trạng thái: mô tả hiện hành, đối chiếu mã `dev` tại `8036e2c185dfef7c4ed9941d736388c781e85f52`, cập nhật 2026-11-08, sau PR #50–#55. Bổ sung 2026-11-16 (đối chiếu `dev@ef4390d`): phân công, hủy phân công, Impact/Urgency/Priority, nhóm hỗ trợ và các trạng thái chưa có lệnh chuyển. Bản chuẩn HTTP là [OpenAPI baseline](../../contracts/backend/openapi-baseline.json) (40 đường dẫn, 41 thao tác); tài liệu này mô tả thêm quyền, trạng thái và lỗi mà OpenAPI không nêu. Mốc nguồn có thể mới hơn nhánh local của người đọc; đối chiếu commit trước khi chạy. Cập nhật tài liệu không thay API, quyền hoặc dữ liệu và không xác nhận phiên bản VPS hay một bản phát hành. Quyết định kiến trúc: [ADR-014](../adr/ADR-014-feature-use-cases-and-published-contracts.md). Chính sách cần chốt: [bảng quyết định](pending-business-decisions.md). Hồ sơ các đợt củng cố đầu tháng 11 là lịch sử: [giai đoạn 1](../runbooks/supportflow-hardening-phase-1.md), [giai đoạn 2–6](../runbooks/supportflow-hardening-phase-2-6.md).
 
 ## HTTP và danh tính
 
@@ -56,6 +56,8 @@ Các thao tác đều dùng POST. Chỉ `update` nhận nội dung JSON; các th
 | --- | --- | --- | --- |
 | Cập nhật | Submitted | Submitted | Quy tắc tiêu đề, mô tả và danh mục như khi tạo |
 | Nhận xử lý | Submitted hoặc Assigned | InProgress | Agent hoặc Admin; lưu người phụ trách và ghi audit. Phiếu đã phân công cho người khác chỉ Admin nhận thay được. Chưa có nhóm |
+| Phân công | Mọi trạng thái trừ Closed và Cancelled | Assigned nếu đang Submitted; trạng thái khác giữ nguyên | Agent hoặc Admin. Mã hiện vẫn cho phân công khi Resolved, trái với phần đã chốt của DEC-05 trong [quyết định còn mở](pending-business-decisions.md) |
+| Hủy phân công | Assigned | Submitted | Chỉ khi đang Assigned; InProgress không hủy phân công được |
 | Giải quyết | InProgress | Resolved | Chưa có nội dung giải quyết, thời điểm giải quyết riêng hoặc lịch sử nghiệp vụ |
 | Mở lại | Resolved | InProgress | Chưa có cửa sổ thời gian, kiểm tra người phụ trách hoặc tác vụ tự đóng |
 | Đóng | Resolved | Closed | Chưa có tác vụ đóng tự động |
@@ -94,6 +96,8 @@ Mọi lệnh ghi phiếu (cập nhật, nhận xử lý, phân công, hủy phâ
 | `ticketNumber` | Sinh bằng sequence DB, `IT-YYYY-…`, độ rộng tối thiểu bốn chữ số; không reset theo năm |
 | `requesterDepartmentId` | Nullable; chưa có luồng snapshot hồ sơ/phòng ban hoàn chỉnh |
 | `status` | Số nguyên trong JSON; khi tạo là Submitted (1) |
+| `impact`, `urgency`, `priority` | Khi tạo là Medium, Medium, P3. Chưa có endpoint hay use case ghi các trường này (`Ticket.SetTriage` có trong Domain nhưng chưa được gọi), nên mọi phiếu hiện mang P3; bộ lọc và sắp xếp theo `priority` của hàng đợi chạy trên giá trị này |
+| `supportTeamId` | Phiếu mới vào `MANUAL_TRIAGE`. Chưa có `RoutingRule` hay API chuyển nhóm ([ADR-016](../adr/ADR-016-support-team-routing-and-agent-scope.md)) |
 | Phân trang | Mặc định page=1, pageSize=10; page ≥ 1, pageSize từ 1 đến 100; kiểm tra tràn offset ở Application |
 
 | Giá trị đã định nghĩa | Tên |
@@ -109,7 +113,7 @@ Mọi lệnh ghi phiếu (cập nhật, nhận xử lý, phân công, hủy phâ
 | 8 | Assigned |
 | 9 | PendingExternal |
 
-Nguồn: [TicketStatus](../../src/backend/Modules/Ticketing/Domain/TicketStatus.cs), [Ticket](../../src/backend/Modules/Ticketing/Domain/Ticket.cs), [TicketDto](../../src/backend/Modules/Ticketing/Application/Contracts/TicketDto.cs), [mapping](../../src/backend/Modules/Ticketing/Infrastructure/Configurations/TicketConfiguration.cs). Có enum không có nghĩa đã triển khai lệnh chuyển trạng thái. Không đổi nghĩa 0–6, loại Cancelled hoặc đổi JSON sang chuỗi để khớp bảng 0–8 trong tài liệu lịch sử.
+Nguồn: [TicketStatus](../../src/backend/Modules/Ticketing/Domain/TicketStatus.cs), [Ticket](../../src/backend/Modules/Ticketing/Domain/Ticket.cs), [TicketDto](../../src/backend/Modules/Ticketing/Application/Contracts/TicketDto.cs), [mapping](../../src/backend/Modules/Ticketing/Infrastructure/Configurations/TicketConfiguration.cs). Có enum không có nghĩa đã triển khai lệnh chuyển trạng thái: chưa lệnh nào tạo hoặc chuyển tới Draft (0), PendingUser (3), Triaged (7) và PendingExternal (9); việc dùng các giá trị này chờ DEC-03, DEC-04 và DEC-09. Không đổi nghĩa 0–6, loại Cancelled hoặc đổi JSON sang chuỗi để khớp bảng 0–8 trong tài liệu lịch sử.
 
 ## Lỗi và idempotency
 

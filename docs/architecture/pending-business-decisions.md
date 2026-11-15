@@ -1,6 +1,6 @@
 # Các quyết định nghiệp vụ còn mở
 
-Trạng thái: đề xuất chờ quyết định; không cấp phép triển khai. Cập nhật: 2026-11-08, đối chiếu mã `dev` tại `f09e097ed4697b196a7b6f8d5d68f46502d8e1ed`. [Hợp đồng hiện hành](current-backend-contract.md) và [ranh giới kiến trúc](backend-modules-and-use-cases.md) mô tả phần đã có.
+Trạng thái: đề xuất chờ quyết định; không cấp phép triển khai. Cập nhật: 2026-11-08, đối chiếu mã `dev` tại `f09e097ed4697b196a7b6f8d5d68f46502d8e1ed`; bổ sung DEC-09 ngày 2026-11-16, đối chiếu mã `dev` tại `ef4390d`. [Hợp đồng hiện hành](current-backend-contract.md) và [ranh giới kiến trúc](backend-modules-and-use-cases.md) mô tả phần đã có.
 
 Các lệnh vòng đời phiếu (cập nhật, nhận, phân công, giải quyết, mở lại, đóng, hủy) đã có, kèm người phụ trách, audit và `expectedRevision`. Ghi nhận quyết định nghiệp vụ tách biệt với tình trạng triển khai ở từng mốc mã.
 
@@ -16,6 +16,7 @@ Người quyết định là chủ dự án; Backend/Frontend/QA hoặc phụ tr
 | DEC-06 | Cơ chế tải tệp | [Attachment cũ](https://github.com/supportflow-ai/ai-it-service-desk/blob/db756d27f07819cefca208548d8ecc8155fa0d48/docs/architecture/07-attachment-security-limits-and-policy.md): URL ký sẵn 900 giây; [đề xuất](06-attachment-security.md): API kiểm quyền và truyền nội dung | Chốt khả năng thu hồi/chia sẻ URL, quyền nội bộ, tải từng phần, giới hạn lưu lượng và ngân sách tải |
 | DEC-07 | Dung lượng, định dạng, retention/xóa tệp | **Đã chốt** tối đa 10 MiB/tệp, 10 tệp/phiếu và 50 MiB/phiếu. Định dạng `.pdf .png .jpg .jpeg .docx .txt .zip` được kiểm theo đuôi tệp. Ứng viên B3 kiểm 10 tệp và 50 MiB theo phiếu trong giao dịch xác nhận. | **Còn mở** hạn mức dành cho grant đang chờ, quét mã độc, lưu giữ và xóa. Cần kiểm thử hai giao dịch xác nhận đồng thời trên PostgreSQL trước nghiệm thu. |
 | DEC-08 | Biên bản nghiệm thu | [Governance cũ](https://github.com/supportflow-ai/ai-it-service-desk/blob/db756d27f07819cefca208548d8ecc8155fa0d48/docs/architecture/08-sprint-acceptance-and-governance-record.md) ghi accepted; [TC-285](../sprint-1/TC-285/review.md) ghi blocked tại SHA/ngày khác | QA và chủ dự án xác nhận theo đúng SHA và môi trường; không lấy nhãn cũ thay bằng chứng hiện tại |
+| DEC-09 | `Triaged` có là trạng thái vòng đời không | [Lifecycle đề xuất](04-ticket-lifecycle-policy.md) có `Submitted → Triaged → Assigned` và `Assigned → Triaged` khi hủy phân công. Mã `dev` có giá trị enum `Triaged = 7` nhưng không có chuyển trạng thái nào tới nó; `Unassign` đưa phiếu về `Submitted`; `Ticket.SetTriage` (ghi Impact/Urgency) chưa được use case nào gọi. Phương án A: "đã phân loại" là dữ liệu của phiếu, giữ giá trị 7 để không đổi nghĩa enum đã lưu. Phương án B: hiện thực theo lifecycle đề xuất | Chốt trước khi viết endpoint triage thủ công và luồng duyệt gợi ý AI. Phương án B cần sửa `Assign`/`Unassign` cùng kiểm thử vòng đời use case và HTTP |
 
 Kế hoạch tích hợp AI (phân loại phiếu thật, chỉ mục Knowledge) và các câu hỏi chính sách đi kèm (hiển thị cho người yêu cầu, định tuyến tự động, lưu giữ dữ liệu AI) ở [kế hoạch tích hợp AI](ai-integration-plan.md).
 

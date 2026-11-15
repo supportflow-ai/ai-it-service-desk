@@ -22,7 +22,7 @@ Trạng thái: kế hoạch đề xuất chờ chủ dự án duyệt, chưa tri
 
 1. Phiếu mới (và phiếu được sửa khi còn `Submitted`) tạo một **tác vụ phân loại nền** trong cùng giao dịch ghi phiếu. Tạo phiếu **không chờ AI** và không thất bại vì AI.
 2. Worker lấy tác vụ, tính `inputHash`, gọi `POST /v1/ticket-classifications` tới ai-service (`ticketId`, `ticketRevision`, `inputHash`, tiêu đề, mô tả), kiểm tra phản hồi lặp đúng định danh và hash (mapper hiện có từ chối enum, điểm và trường lạ).
-3. Lưu `AIAnalysis` và `AISuggestion` (Category, Impact, Urgency kèm điểm hoặc `null`, dải độ tin cậy). Gợi ý gắn với `ticketRevision`; revision phiếu đổi thì gợi ý hết hiệu lực (`Expired`).
+3. Lưu `AIAnalysis` và `AISuggestion` (Category, Impact, Urgency kèm điểm hoặc `null`, dải độ tin cậy). Gợi ý lưu kèm `ticketRevision` để truy vết, nhưng **chỉ hết hiệu lực (`Expired`) khi `inputHash` không còn khớp tiêu đề và mô tả hiện tại**. Không xét theo revision: revision là `xmin`, đổi theo mọi lần ghi phiếu (nhận xử lý, phân công, hủy phân công), nên xét theo revision sẽ làm mọi gợi ý hết hiệu lực ngay khi Agent nhận phiếu.
 4. Phiếu vẫn vào hàng đợi phân loại thủ công theo [ADR-016](../adr/ADR-016-support-team-routing-and-agent-scope.md) (`MANUAL_TRIAGE`). **AI không chọn nhóm hay Agent**; định tuyến tự động nếu có là chính sách của backend, ghi audit. Quy tắc SEC trong `TriagePolicy` vẫn bắt buộc phân loại thủ công.
 5. AI không khả dụng (tắt, hết thời gian, ngắt mạch, 4xx/5xx): ghi trạng thái tác vụ, không ảnh hưởng phiếu; thử lại có giới hạn.
 
@@ -32,6 +32,19 @@ Trạng thái: kế hoạch đề xuất chờ chủ dự án duyệt, chưa tri
 
 - `GET /api/tickets/{id}/triage`: nhân viên trong phạm vi đọc thấy gợi ý, dải tin cậy và trạng thái; người yêu cầu chỉ thấy dải tin cậy khi Thấp hoặc thiếu (theo quy tắc hiện có ở web), không thấy điểm.
 - `POST /api/tickets/{id}/triage/decision`: chấp nhận, ghi đè (bắt buộc lý do) hoặc từ chối, kèm `expectedRevision`. Revision cũ hoặc gợi ý đã hết hiệu lực trả 409. Ghi audit người duyệt và thời điểm.
+- `POST /api/tickets/{id}/triage`: Agent hoặc Admin tự đặt Category, Impact, Urgency, không cần gợi ý AI. Đây cũng là đường ghi duy nhất mà luồng duyệt gợi ý dùng lại.
+
+### 3.2.1 Ràng buộc từ mã hiện tại (đối chiếu `dev@ef4390d`, 2026-11-16)
+
+Các điểm dưới đây do kiểm thử kiến trúc hoặc mã hiện có buộc phải theo; vi phạm sẽ làm đỏ CI hoặc mất dữ liệu.
+
+- **Ghi Category sau `Submitted`.** `Ticket.Update` chỉ chạy khi `Submitted`, còn `Ticket.SetTriage` chỉ nhận Impact, Urgency và chưa có guard trạng thái. Cần mở rộng `SetTriage` để nhận Category tùy chọn, chặn Resolved, Closed, Cancelled, và không đổi `Status`.
+- **Giữ nhãn của người gửi.** Thêm `RequesterCategoryId`: gán khi tạo; `Update` chỉ ghi khi người sửa là chủ phiếu (tham số bắt buộc, vì Admin cũng gọi được `Update`); `SetTriage` không chạm vào. Migration backfill `requester_category_id = category_id` là chính xác, vì trước thay đổi này chưa có đường ghi triage nào. Cặp (nhãn người gửi, nhãn cuối) là nguồn dữ liệu cho gold set của ai-service.
+- **Ranh giới module.** AIAssistance chỉ được dùng kiểu Ticketing nằm trong `ModuleRules.Published` (hiện là `TicketCategory`, `Impact`, `Urgency`). Ticketing công bố một contract (lấy ảnh chụp để phân tích, áp dụng kết quả triage) và thêm tên kiểu vào `Published`. Ticketing không tham chiếu ngược AIAssistance được, vì sẽ thành phụ thuộc vòng.
+- **Lưu nguyên tử mà không mở transaction ở Application.** `CleanArchitectureTests` cấm Application dùng EF Core. Theo mẫu `UpdateTicketWithAuditAsync`: contract của Ticketing kiểm quyền, kiểm `expectedRevision`, sửa phiếu và thêm audit vào `DbContext` dùng chung nhưng **không lưu**; luồng duyệt thêm `AIReview` rồi lưu **một lần** qua adapter Infrastructure, adapter này chuyển `DbUpdateConcurrencyException` thành 409. Không ghi audit triage qua `ITicketTimelineStore`, vì `AddToOpenTicketAsync` tự mở transaction riêng. Cần kiểm thử tích hợp: phiếu và bản ghi duyệt cùng được lưu, hoặc cùng không.
+- **Worker không có người dùng.** Worker đăng ký `AnonymousCurrentUser`, nên tác vụ phân loại nền ở mục 3.1 cần đường đọc riêng cho hệ thống, không đi qua contract kiểm `ICurrentUser`.
+- **Kiểu revision.** `uint` ở Ticketing, `long` từ 0 trở lên ở AIAssistance, `int` với `ge=0` ở ai-service; giữ nguyên hợp đồng v1.
+- **Phụ thuộc quyết định.** Có dùng trạng thái `Triaged` hay không thuộc DEC-09 ([quyết định còn mở](pending-business-decisions.md)); kế hoạch này không đổi `Status` khi triage.
 
 ### 3.3 Cấu hình và vận hành
 
