@@ -22,7 +22,7 @@ Kho này sở hữu API, nghiệp vụ, phân quyền, truy cập dữ liệu, t
 | `src/backend/Hosts/Api` | Host HTTP: ghép module, middleware, health, JWT |
 | `src/backend/Hosts/Worker` | Host tiến trình nền, không phụ thuộc HTTP |
 | `src/backend/Hosts/Migrator` | CLI vận hành: `migrate`, `seed-roles`, `seed-demo`, `bootstrap-admin`, `check-production` |
-| `src/backend/Platform` | `ApplicationDbContext`, migration, bảo trì DB, MinIO, đồng hồ hệ thống; không chứa nghiệp vụ |
+| `src/backend/Platform` | `ApplicationDbContext`, migration, bảo trì DB, lưu trữ tệp (MinIO, đang chuyển sang R2 theo ADR-017), đồng hồ hệ thống; không chứa nghiệp vụ |
 | `src/backend/BuildingBlocks/SharedKernel`, `SharedKernel.Web` | Kiểu dùng chung nhiều module; thành phần HTTP dùng chung |
 | `src/backend/Modules/<Module>` | Identity, Ticketing, Knowledge, AIAssistance; mỗi module một project `ServiceDesk.Modules.<Module>` |
 | `tests/` | `Domain.Tests`, `Application.Tests`, `ArchitectureTests`, `IntegrationTests` (PostgreSQL thật) |
@@ -118,6 +118,7 @@ Modular Monolith, tổ chức **module trước, Clean Architecture bên trong m
 
 Các quy tắc dưới đây **không có máy kiểm**, người viết và người duyệt tự giữ:
 
+- **Lưu trữ tệp theo [ADR-017](docs/adr/ADR-017-cloudflare-r2-object-storage.md) (Cloudflare R2, chấp nhận 2026-11-16).** MinIO (`MinioObjectStorageService`, `MinioOptions`, thư viện `Minio`, `MinioAttachmentUploadTests`, presigned POST) đang bị loại bỏ ở mọi môi trường. Không thêm mã, cấu hình, kiểm thử hay tài liệu mới dựa trên MinIO; việc chạm lưu trữ tệp làm theo [kế hoạch R2](docs/architecture/r2-storage-plan.md), dùng presigned PUT qua `IObjectStorageService`.
 - Trong module, phụ thuộc chỉ đi vào trong: Presentation → Application → Domain; Infrastructure → Application → Domain. Các tầng cùng nằm trong một project nên vi phạm chỉ bị chặn khi chạy kiểm thử kiến trúc.
 - Application xác thực actor và phân quyền nghiệp vụ. Mẫu: [CreateTicketUseCase](src/backend/Modules/Ticketing/Application/CreateTicket/CreateTicketUseCase.cs). Tách ghi và truy vấn; không tự thêm mediator hoặc Generic Repository.
 - Dùng gateway chuyên biệt, không đưa `DbSet`/`IQueryable`/transaction EF qua cổng Application. Adapter persistence nhận `DbContext` dùng chung (bí danh của `ApplicationDbContext` theo scope) và dùng `Set<T>()`; không tham chiếu `ApplicationDbContext` từ module. API không truy cập persistence để xử lý nghiệp vụ.

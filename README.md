@@ -49,6 +49,8 @@ API chạy tại `http://localhost:5000`; mở `http://localhost:5000/swagger` �
 
 Database mới cần được người phụ trách chạy `migrate` và `seed-roles` bằng công cụ Migrator sau khi xác minh đích. API/Worker không tự thực hiện các bước này. Database dùng chung đã khởi tạo thì thành viên chỉ cần kết nối, không chạy migration lại theo nhánh cá nhân.
 
+> **MinIO đang bị loại bỏ** theo [ADR-017](docs/adr/ADR-017-cloudflare-r2-object-storage.md) (chấp nhận 2026-11-16): lưu trữ tệp chuyển hoàn toàn sang Cloudflare R2 ở mọi môi trường, kể cả kiểm thử và CI. Mô tả MinIO dưới đây chỉ đúng với mã hiện tại; không thêm mã, cấu hình hay tài liệu mới dựa trên MinIO. Việc cần làm: [kế hoạch R2](docs/architecture/r2-storage-plan.md).
+
 Đăng ký, đăng nhập và thao tác ticket không cần MinIO; chỉ luồng tệp đính kèm cần MinIO. Chỉ điền cấu hình MinIO khi có dịch vụ thật; tên `minio:9000` chỉ dùng được trong mạng Docker có dịch vụ tên đó. Quên mật khẩu gửi mã qua SMTP khi có `Email__Smtp__*`; chưa cấu hình thì chỉ ghi cảnh báo, không gửi (xem [.env.example](.env.example)). AI mặc định NoOp, không cần khóa hay dịch vụ AI. Hàng đợi gửi mã nằm trong tiến trình API; nếu cần chạy host Worker, dùng `python scripts/run_backend.py --no-build worker` ở terminal riêng.
 
 ## JWT là gì và lấy ở đâu?

@@ -5,7 +5,7 @@
 - Thành phần chịu ảnh hưởng:
   - [ ] API / Worker / công cụ Migrator
   - [ ] Domain / Application
-  - [ ] Platform / PostgreSQL / MinIO
+  - [ ] Platform / PostgreSQL / lưu trữ tệp (R2 theo ADR-017)
   - [ ] Kiểm thử / GitHub Actions / Dockerfile backend
   - [ ] Tài liệu
 
