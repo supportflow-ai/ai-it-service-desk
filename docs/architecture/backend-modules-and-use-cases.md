@@ -9,7 +9,7 @@ Mã nguồn tổ chức theo module trước, Clean bên trong module theo [ADR-
 ```mermaid
 flowchart TD
     Hosts["API và Worker"] --> Modules["ServiceDesk.Modules.* (Identity, Ticketing, Knowledge, AIAssistance)"]
-    Hosts --> Platform["ServiceDesk.Platform (DbContext, migration, MinIO, đồng hồ)"]
+    Hosts --> Platform["ServiceDesk.Platform (DbContext, migration, lưu trữ tệp: MinIO, đang chuyển sang R2 theo ADR-017, đồng hồ)"]
     Migrator["Công cụ Migrator"] --> Platform
     Platform --> Modules
     Modules --> SharedKernel["SharedKernel / SharedKernel.Web"]

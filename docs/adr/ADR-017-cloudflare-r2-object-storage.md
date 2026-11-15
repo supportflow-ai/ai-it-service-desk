@@ -2,7 +2,11 @@
 
 ## Trạng thái và nguồn quyết định
 
-**Đề xuất, chờ chủ dự án duyệt phạm vi triển khai.** Hướng được chọn theo chỉ dẫn trực tiếp của chủ dự án ngày 2026-11-13: dùng hoàn toàn cơ chế tải lên, lưu trữ và xác nhận tệp của Cloudflare R2; dữ liệu cũ trên MinIO không chuyển; thông tin tài khoản và endpoint R2 không đưa vào Git; trong lúc phát triển cả nhóm dùng chung một bộ khóa qua `.env`. Chưa có mã nào được đổi. Khi triển khai xong, ADR này thay thế [ADR-006](ADR-006-minio-object-storage.md).
+**Đã chấp nhận ngày 2026-11-16** theo chỉ dẫn của chủ dự án, với toàn bộ phạm vi: chuyển hoàn toàn sang Cloudflare R2 và **không dùng MinIO ở bất kỳ môi trường nào** (máy lập trình viên, kiểm thử, CI, staging, production). ADR này thay thế [ADR-006](ADR-006-minio-object-storage.md) từ ngày chấp nhận.
+
+Hướng được chọn theo chỉ dẫn trực tiếp của chủ dự án ngày 2026-11-13: dùng hoàn toàn cơ chế tải lên, lưu trữ và xác nhận tệp của Cloudflare R2; dữ liệu cũ trên MinIO không chuyển; thông tin tài khoản và endpoint R2 không đưa vào Git; trong lúc phát triển cả nhóm dùng chung một bộ khóa qua `.env`.
+
+**Tình trạng mã tại ngày chấp nhận:** chưa đổi; backend và infra vẫn chạy MinIO. Từ nay không thêm mã, cấu hình, kiểm thử hay tài liệu mới dựa trên MinIO; mọi việc chạm lưu trữ tệp theo kế hoạch bên dưới. Giai đoạn 0 (mục "Điều kiện trước khi viết mã") vẫn là điều kiện trước khi viết mã R2. Tài liệu hướng dẫn chạy giữ mô tả MinIO, kèm cảnh báo, cho tới khi PR mã R2 tương ứng được hợp nhất, rồi đổi trong cùng PR đó.
 
 Kế hoạch triển khai theo từng kho: [kế hoạch backend](../architecture/r2-storage-plan.md). Phần hạ tầng, chi phí, truy cập công khai và quy trình khóa nằm ở kho `supportflow-ai-infra` (`docs/infra/r2-storage-plan.md`); phần giao diện ở kho `ai-it-service-desk-web` (`docs/architecture/r2-upload-plan.md`).
 

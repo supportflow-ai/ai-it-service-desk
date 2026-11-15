@@ -1,6 +1,6 @@
 # Kế hoạch chuyển lưu trữ tệp sang R2 (backend)
 
-Trạng thái: kế hoạch đề xuất chờ chủ dự án duyệt, chưa triển khai. Quyết định và thiết kế nằm ở [ADR-017](../adr/ADR-017-cloudflare-r2-object-storage.md). Cập nhật 2026-11-13, đối chiếu mã `dev` tại `07ce07a9dd50bcd143690c7ba1a19cc0048b9508`. Kế hoạch của các kho khác: web (`docs/architecture/r2-upload-plan.md`), infra (`docs/infra/r2-storage-plan.md`), ai-service (`docs/r2-impact.md`).
+Trạng thái: kế hoạch đề xuất, đã duyệt cùng ADR-017 (chấp nhận 2026-11-16, toàn phạm vi: không dùng MinIO ở mọi môi trường, kể cả kiểm thử và CI); chưa triển khai, bắt đầu bằng giai đoạn 0. Quyết định và thiết kế nằm ở [ADR-017](../adr/ADR-017-cloudflare-r2-object-storage.md). Cập nhật 2026-11-13, đối chiếu mã `dev` tại `07ce07a9dd50bcd143690c7ba1a19cc0048b9508`. Kế hoạch của các kho khác: web (`docs/architecture/r2-upload-plan.md`), infra (`docs/infra/r2-storage-plan.md`), ai-service (`docs/r2-impact.md`).
 
 ## 1. Phạm vi
 
