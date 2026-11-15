@@ -2,7 +2,7 @@
 
 ## Trạng thái
 
-Chú thích 2026-11-07: [ADR-015](ADR-015-module-first-clean-architecture.md) (đang Đề xuất trên nhánh `refactor/backend-module-first`) đổi tổ chức project sang module trước, Clean bên trong module. Khi ADR-015 được chấp nhận, câu "không đưa một dự án riêng cho mỗi mô-đun" và phần mô tả project dưới đây chỉ còn giá trị lịch sử; luật phụ thuộc, giao dịch, danh tính và truy cập xuyên mô-đun giữ nguyên.
+Chú thích 2026-11-07: [ADR-015](ADR-015-module-first-clean-architecture.md) (đã chấp nhận ngày 2026-11-13) đổi tổ chức project sang module trước, Clean bên trong module. Vì ADR-015 đã được chấp nhận, câu "không đưa một dự án riêng cho mỗi mô-đun" và phần mô tả project dưới đây chỉ còn giá trị lịch sử; luật phụ thuộc, giao dịch, danh tính và truy cập xuyên mô-đun giữ nguyên.
 
 Đã chấp nhận cho đợt tái cấu trúc backend. Bản diễn giải tiếng Việt cập nhật 2026-10-20; các phần bổ sung sau quyết định gốc được ghi riêng.
 

@@ -14,7 +14,8 @@ public class AIAnalysis
 
     /// <summary>
     /// Số revision của ticket tại thời điểm phân tích.
-    /// Dùng để phát hiện dữ liệu cũ: nếu revision hiện tại khác revision này, gợi ý bị coi là stale.
+    /// Chỉ là metadata truy vết: revision (xmin) đổi theo mọi lần ghi phiếu, kể cả nhận xử lý hay phân công,
+    /// nên không dùng để xét gợi ý hết hạn. Gợi ý hết hạn khi InputHash không còn khớp nội dung phiếu.
     /// </summary>
     public long TicketRevision { get; private set; }
 

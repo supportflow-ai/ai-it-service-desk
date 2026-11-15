@@ -93,7 +93,7 @@ Sau refactor không chủ đích đổi schema, dùng `has-pending-model-changes
 
 ## 3. Kiến trúc và ranh giới module
 
-Modular Monolith, tổ chức **module trước, Clean Architecture bên trong module** ([ADR-015](docs/adr/ADR-015-module-first-clean-architecture.md); ADR đã hợp nhất vào `dev`, chờ nhóm duyệt). Tài liệu bằng chứng và đề xuất cũ (`docs/reviews`, `docs/sprint-1`, `artifacts`, `docs/architecture/0[1-6]-*.md`) còn ghi đường dẫn `ServiceDesk.Domain/Application/...` của mốc cũ: chỉ dùng để truy vết, không dùng làm chỗ đặt mã mới.
+Modular Monolith, tổ chức **module trước, Clean Architecture bên trong module** ([ADR-015](docs/adr/ADR-015-module-first-clean-architecture.md); ADR đã được chấp nhận ngày 2026-11-13). Tài liệu bằng chứng và đề xuất cũ (`docs/reviews`, `docs/sprint-1`, `artifacts`, `docs/architecture/0[1-6]-*.md`) còn ghi đường dẫn `ServiceDesk.Domain/Application/...` của mốc cũ: chỉ dùng để truy vết, không dùng làm chỗ đặt mã mới.
 
 | Cần viết | Đặt ở |
 | --- | --- |
