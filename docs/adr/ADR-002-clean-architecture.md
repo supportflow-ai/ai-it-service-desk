@@ -2,7 +2,7 @@
 
 ## Trạng thái
 
-Chú thích 2026-11-07: [ADR-015](ADR-015-module-first-clean-architecture.md) (đang Đề xuất trên nhánh `refactor/backend-module-first`) đổi tổ chức project sang module trước, Clean bên trong module. Khi ADR-015 được chấp nhận, phần mô tả project/thư mục dưới đây chỉ còn giá trị lịch sử; luật phụ thuộc giữa các tầng giữ nguyên.
+Chú thích 2026-11-07: [ADR-015](ADR-015-module-first-clean-architecture.md) (đang Đề xuất trên nhánh `refactor/backend-module-first`) đổi tổ chức project sang module trước, Clean bên trong module. Khi ADR-015 được chấp nhận, phần mô tả project/thư mục dưới đây chỉ còn giá trị lịch sử; luật phụ thuộc giữa các tầng giữ nguyên. Cập nhật 2026-11-16: ADR-015 đã được chấp nhận ngày 2026-11-13, nên phần mô tả project/thư mục dưới đây chỉ còn giá trị lịch sử.
 
 Đã chấp nhận. Bản diễn giải tiếng Việt cập nhật 2026-10-20; giữ quyết định phân tầng ban đầu.
 

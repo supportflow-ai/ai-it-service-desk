@@ -80,7 +80,7 @@ Application kiểm tra định danh người gọi độc lập với HTTP. Work
 
 Tạo phiếu với khóa chống tạo trùng giữ giao dịch, khóa PostgreSQL, biên nhận và phiếu trong cùng bộ tích hợp `ITicketWriter`. Hiệu lực biên nhận 10 phút theo giờ cơ sở dữ liệu; thời gian chờ khóa 5 giây. Thuật toán dấu vân tay, phạm vi chủ sở hữu và phản hồi phát lại được giữ nguyên.
 
-Các lệnh vòng đời gọi quy tắc trên `Ticket`, sau đó `SaveChangesAsync`. Chưa có bản ghi lịch sử nghiệp vụ hoặc cơ chế chống lặp tương tự tạo phiếu cho các lệnh này. `xmin` phát hiện xung đột ở cơ sở dữ liệu; việc chuyển lỗi đó thành phản hồi nghiệp vụ còn cần hoàn thiện.
+Các lệnh vòng đời đi qua `TicketCommandGuard`: kiểm `expectedRevision` với `xmin`, đổi lỗi quy tắc của `Ticket` thành 400, rồi lưu. Nhận xử lý, phân công, hủy phân công, giải quyết, mở lại, đóng và hủy lưu phiếu kèm một bình luận hệ thống ghi lại thao tác trong cùng một `SaveChanges` (`SaveWithSystemAuditAsync`); cập nhật nội dung chỉ lưu phiếu. Xung đột `xmin` lúc lưu trả 409 (`ConcurrencyConflictException`). Chưa có cơ chế chống lặp tương tự tạo phiếu cho các lệnh này.
 
 ## Ranh giới AI
 
