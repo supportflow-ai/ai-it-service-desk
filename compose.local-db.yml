@@ -1,0 +1,39 @@
+# Chỉ dùng để phát triển local; không dùng credential demo trên VPS/production.
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: servicedesk_dev
+      POSTGRES_USER: servicedesk_local
+      POSTGRES_PASSWORD: ${LOCAL_DB_PASSWORD:?Set LOCAL_DB_PASSWORD in the local env file}
+    ports:
+      - "127.0.0.1:${LOCAL_DB_PORT:-15434}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U servicedesk_local -d servicedesk_dev"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  init:
+    build:
+      context: .
+      dockerfile: src/backend/Hosts/Migrator/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DOTNET_ENVIRONMENT: Development
+      Database__ConnectionString: "Host=postgres;Port=5432;Database=servicedesk_dev;Username=servicedesk_local;Password=${LOCAL_DB_PASSWORD:?Set LOCAL_DB_PASSWORD in the local env file}"
+      SeedDemo__Enabled: "true"
+      SeedDemo__Password: ${LOCAL_DEMO_PASSWORD:?Set LOCAL_DEMO_PASSWORD in the local env file}
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - >-
+        dotnet ServiceDesk.Migrator.dll migrate &&
+        dotnet ServiceDesk.Migrator.dll seed-roles &&
+        dotnet ServiceDesk.Migrator.dll seed-demo
+
+volumes:
+  postgres-data:
