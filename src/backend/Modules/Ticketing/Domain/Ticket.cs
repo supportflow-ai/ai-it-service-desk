@@ -146,7 +146,7 @@ public class Ticket
     public void Assign(Guid agentId, DateTime now)
     {
         if (agentId == Guid.Empty) throw new ArgumentException("Agent ID is required.");
-        if (Status == TicketStatus.Closed || Status == TicketStatus.Cancelled)
+        if (Status == TicketStatus.Closed || Status == TicketStatus.Cancelled || Status == TicketStatus.Resolved)
             throw new InvalidOperationException($"Cannot assign ticket in status {Status}");
         AssignedToId = agentId;
         AssignedAt = now;

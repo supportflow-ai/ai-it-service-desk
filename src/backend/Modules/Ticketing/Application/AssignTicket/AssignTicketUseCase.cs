@@ -21,6 +21,7 @@ public interface IAssignTicket
 internal sealed class AssignTicketUseCase(
     ITicketWriter writer,
     IAgentDirectory agentDirectory,
+    ISupportTeamMembershipReader membershipReader,
     ICurrentUser currentUser,
     IClock clock) : IAssignTicket
 {
@@ -42,9 +43,28 @@ internal sealed class AssignTicketUseCase(
             throw new KeyNotFoundException("Ticket not found.");
         }
 
+        var isAdmin = TicketPermissions.IsAdmin(currentUser);
+        var isTeamLead = ticket.SupportTeamId.HasValue &&
+            await membershipReader.IsLeadAsync(ticket.SupportTeamId.Value, actorId, cancellationToken);
+
+        if (!isAdmin && !isTeamLead)
+        {
+            throw new UnauthorizedAccessException("Chỉ Trưởng nhóm phụ trách phiếu hoặc Quản trị viên mới có quyền phân công.");
+        }
+
         if (!await agentDirectory.IsAgentAsync(command.AgentId, cancellationToken))
         {
             throw new ArgumentException("Kỹ thuật viên không tồn tại hoặc không có vai trò Agent.");
+        }
+
+        if (!isAdmin)
+        {
+            var isTargetMember = ticket.SupportTeamId.HasValue &&
+                await membershipReader.IsMemberAsync(ticket.SupportTeamId.Value, command.AgentId, cancellationToken);
+            if (!isTargetMember)
+            {
+                throw new ArgumentException("Kỹ thuật viên được phân công phải thuộc nhóm hỗ trợ đang phụ trách phiếu.");
+            }
         }
 
         TicketCommandGuard.RequireCurrentRevision(writer, ticket, command.ExpectedRevision);
