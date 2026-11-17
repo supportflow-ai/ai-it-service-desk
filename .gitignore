@@ -60,6 +60,7 @@ docker-compose.override.local.yml
 # ==========================================
 .env
 .env.local
+.env.local-db
 .env.*.local
 !.env.example
 
