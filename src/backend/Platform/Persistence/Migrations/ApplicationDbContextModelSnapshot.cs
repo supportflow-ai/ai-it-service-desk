@@ -629,9 +629,29 @@ namespace ServiceDesk.Platform.Persistence.Migrations
                         .HasColumnType("text")
                         .HasColumnName("description");
 
+                    b.Property<DateTime?>("FirstRespondedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("first_responded_at");
+
+                    b.Property<bool>("FirstResponseBreached")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("first_response_breached");
+
+                    b.Property<int?>("FirstResponseTargetMinutes")
+                        .HasColumnType("integer")
+                        .HasColumnName("first_response_target_minutes");
+
                     b.Property<int?>("Impact")
                         .HasColumnType("integer")
                         .HasColumnName("impact");
+
+                    b.Property<bool>("IsSlaApplicable")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_sla_applicable");
 
                     b.Property<int?>("Priority")
                         .HasColumnType("integer")
@@ -644,6 +664,30 @@ namespace ServiceDesk.Platform.Persistence.Migrations
                     b.Property<Guid>("RequesterId")
                         .HasColumnType("uuid")
                         .HasColumnName("requester_id");
+
+                    b.Property<TimeSpan>("ResolutionAccumulatedDuration")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("interval")
+                        .HasDefaultValue(new TimeSpan(0, 0, 0, 0, 0))
+                        .HasColumnName("resolution_accumulated_duration");
+
+                    b.Property<bool>("ResolutionBreached")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("resolution_breached");
+
+                    b.Property<DateTime?>("ResolutionSegmentStartedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("resolution_segment_started_at");
+
+                    b.Property<int?>("ResolutionTargetMinutes")
+                        .HasColumnType("integer")
+                        .HasColumnName("resolution_target_minutes");
+
+                    b.Property<DateTime?>("ResolvedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("resolved_at");
 
                     b.Property<int>("Status")
                         .HasColumnType("integer")
@@ -685,6 +729,8 @@ namespace ServiceDesk.Platform.Persistence.Migrations
 
                     b.HasIndex("AssignedToId");
 
+                    b.HasIndex("IsSlaApplicable");
+
                     b.HasIndex("Priority");
 
                     b.HasIndex("RequesterId");
@@ -695,6 +741,9 @@ namespace ServiceDesk.Platform.Persistence.Migrations
 
                     b.HasIndex("TicketNumber")
                         .IsUnique();
+
+                    b.HasIndex("IsSlaApplicable", "Status")
+                        .HasDatabaseName("IX_tickets_is_sla_applicable_status");
 
                     b.HasIndex("RequesterId", "CreatedAt", "Id")
                         .HasDatabaseName("IX_tickets_requester_id_created_at_id");

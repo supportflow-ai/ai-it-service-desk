@@ -14,8 +14,9 @@ Trạng thái: mô tả hiện hành, đối chiếu mã `dev` tại `8036e2c185
 | Người dùng | Danh sách theo vai trò; gán vai trò | `GET /api/users`, `PUT /api/users/{id}/roles` | Agent hoặc Admin; Admin | |
 | Phòng ban | Danh sách | `GET /api/departments` | Đã đăng nhập | Phòng ban của người gửi, không phải nhóm hỗ trợ |
 | Phiếu | Tạo; danh sách cá nhân; hàng đợi; chi tiết; cập nhật | `POST /api/tickets`, `GET /api/tickets/me`, `GET /api/tickets/queue`, `GET /api/tickets/{id}`, `POST /api/tickets/{id}/update` | Requester (gồm Agent/Admin); hàng đợi chỉ Agent/Admin | Tạo: Submitted, 201 với `Location`, hỗ trợ `Idempotency-Key`; danh sách phân trang; cập nhật chỉ ở Submitted, chủ sở hữu hoặc Admin |
-| Phiếu | Nhận, phân công, hủy phân công | `POST /api/tickets/{id}/claim`, `/assign`, `/unassign` | Agent hoặc Admin | Lưu người phụ trách và ghi audit; phiếu đã phân công cho người khác chỉ Admin nhận thay được |
-| Phiếu | Giải quyết, mở lại, đóng, hủy | `POST /api/tickets/{id}/resolve`, `/reopen`, `/close`, `/cancel` | Đã đăng nhập; Application kiểm vai trò và chủ sở hữu | Bảng chuyển trạng thái bên dưới |
+| Phiếu | Nhận, phân công, hủy phân công | `POST /api/tickets/{id}/claim`, `/assign`, `/unassign` | Agent hoặc Admin | Lưu người phụ trách và ghi audit; phân công/hủy phân công yêu cầu Lead của nhóm đang phụ trách phiếu hoặc Admin; phiếu đã phân công cho người khác chỉ Admin nhận thay được |
+| Phiếu | Giải quyết, mở lại, đóng, hủy, tạm dừng, tiếp tục | `POST /api/tickets/{id}/resolve`, `/reopen`, `/close`, `/cancel`, `/pending`, `/resume` | Đã đăng nhập; Application kiểm vai trò và chủ sở hữu | Bảng chuyển trạng thái bên dưới; pending/resume yêu cầu Assigned Agent, Team Lead active hoặc Admin |
+| Phiếu | Báo cáo phân tích khối lượng và SLA | `GET /api/tickets/analytics` | Agent hoặc Admin (`RequireAgent`) | Tham số `from`, `to` UTC tối đa 90 ngày; Requester 403 |
 | Trao đổi | Bình luận; ghi chú nội bộ; timeline | `POST /api/tickets/{id}/comments`, `POST /api/tickets/{id}/internal-notes`, `GET /api/tickets/{id}/timeline` | Requester; Agent; Requester | Requester chỉ thấy phiếu của mình; ghi chú nội bộ không lộ cho Requester |
 | Tệp | Xin quyền tải lên; xác nhận; danh sách; xin URL tải xuống | `POST /api/tickets/{id}/attachments/upload-url`, `/attachments/confirm`, `GET /api/tickets/{id}/attachments`, `/attachments/download-url` | Requester (theo phạm vi phiếu) | Luồng ở cuối tài liệu |
 | Tri thức | Tạo bản nháp, sửa, xuất bản, lưu trữ | `POST /api/knowledge/articles`, `PUT .../{id}/draft`, `POST .../{id}/publish`, `POST .../{id}/archive` | Agent hoặc Admin | Sửa, xuất bản và lưu trữ bắt buộc `expectedRevision` |
@@ -56,14 +57,16 @@ Các thao tác đều dùng POST. Chỉ `update` nhận nội dung JSON; các th
 | --- | --- | --- | --- |
 | Cập nhật | Submitted | Submitted | Quy tắc tiêu đề, mô tả và danh mục như khi tạo |
 | Nhận xử lý | Submitted hoặc Assigned | InProgress | Agent hoặc Admin; lưu người phụ trách và ghi audit. Phiếu đã phân công cho người khác chỉ Admin nhận thay được. Chưa có nhóm |
-| Phân công | Mọi trạng thái trừ Closed và Cancelled | Assigned nếu đang Submitted; trạng thái khác giữ nguyên | Agent hoặc Admin. Mã hiện vẫn cho phân công khi Resolved, trái với phần đã chốt của DEC-05 trong [quyết định còn mở](pending-business-decisions.md) |
-| Hủy phân công | Assigned | Submitted | Chỉ khi đang Assigned; InProgress không hủy phân công được |
+| Phân công | Mọi trạng thái trừ Closed, Cancelled và Resolved (DEC-05) | Assigned nếu đang Submitted; trạng thái khác giữ nguyên | Lead thuộc nhóm active đang phụ trách phiếu (gán cho Agent cùng nhóm) hoặc Admin (gán cho Agent bất kỳ); ngoài phạm vi trả 404, Agent thường/Lead ngoài nhóm trả 403, Resolved trả 400 |
+| Hủy phân công | Assigned | Submitted | Chỉ khi đang Assigned; Lead của nhóm phụ trách phiếu hoặc Admin (Agent thường trả 403); InProgress không hủy phân công được |
 | Giải quyết | InProgress | Resolved | Chưa có nội dung giải quyết, thời điểm giải quyết riêng hoặc lịch sử nghiệp vụ |
 | Mở lại | Resolved | InProgress | Chưa có cửa sổ thời gian, kiểm tra người phụ trách hoặc tác vụ tự đóng |
 | Đóng | Resolved | Closed | Chưa có tác vụ đóng tự động |
 | Hủy | Submitted | Cancelled | Chưa nhận lý do hủy hoặc lưu lịch sử nghiệp vụ |
+| Tạm dừng | InProgress | PendingUser hoặc PendingExternal | Assigned Agent, Team Lead active của nhóm sở hữu, hoặc Admin; body JSON `{ status, expectedRevision }` |
+| Tiếp tục | PendingUser hoặc PendingExternal | InProgress | Assigned Agent, Team Lead active của nhóm sở hữu, hoặc Admin; query param `expectedRevision` |
 
-Mọi lệnh ghi phiếu (cập nhật, nhận xử lý, phân công, hủy phân công, giải quyết, mở lại, đóng, hủy) bắt buộc `expectedRevision`: thiếu hoặc bằng 0 trả 400, khác revision hiện tại (`xmin`) trả 409. Trạng thái khác bị Domain từ chối; `TicketCommandGuard` chuyển lỗi trạng thái thành `ArgumentException`, bộ lọc HTTP trả 400 với `{ error }`. Phiếu thiếu hoặc ngoài quyền chủ sở hữu của các lệnh `update/reopen/close/cancel` trả 404. Các lệnh mới chưa có cơ chế khóa chống tạo trùng hoặc phát lại phản hồi như thao tác tạo phiếu. Yêu cầu đã thực hiện thành công rồi gửi lại có thể nhận lỗi trạng thái.
+Mọi lệnh ghi phiếu (cập nhật, nhận xử lý, phân công, hủy phân công, giải quyết, mở lại, đóng, hủy, tạm dừng, tiếp tục) bắt buộc `expectedRevision`: thiếu hoặc bằng 0 trả 400, khác revision hiện tại (`xmin`) trả 409. Trạng thái khác bị Domain từ chối; `TicketCommandGuard` chuyển lỗi trạng thái thành `ArgumentException`, bộ lọc HTTP trả 400 với `{ error }`. Phiếu thiếu hoặc ngoài quyền chủ sở hữu của các lệnh `update/reopen/close/cancel` trả 404. Các lệnh mới chưa có cơ chế khóa chống tạo trùng hoặc phát lại phản hồi như thao tác tạo phiếu. Yêu cầu đã thực hiện thành công rồi gửi lại có thể nhận lỗi trạng thái.
 
 ## Các điểm đã xử lý sau refactor
 
@@ -81,9 +84,7 @@ Mọi lệnh ghi phiếu (cập nhật, nhận xử lý, phân công, hủy phâ
 
 ## Điểm còn lệch giữa chính sách và mã
 
-| Chính sách đã chốt | Mã hiện tại | Việc cần làm |
-| --- | --- | --- |
-| Không phân công (`assign`) khi phiếu ở trạng thái Resolved (DEC-05, xác nhận 2026-11-13) | `Ticket.Assign` chỉ chặn Closed và Cancelled; Resolved vẫn được gán | Sửa `Ticket.Assign`, trả 400 cho phiếu Resolved, thêm kiểm thử từ chối ở Domain, Application và HTTP, cập nhật OpenAPI nếu mô tả đổi, báo web |
+Cập nhật ngày 2026-11-16: Khoảng lệch DEC-05 (cấm phân công phiếu Resolved) đã được xử lý hoàn toàn trong mã Domain, Application và kiểm thử HTTP/Integration. Chính sách quyền Lead/Admin (DEC-09 và ADR-016) đã được thực hiện. Hiện không còn khoảng lệch giữa chính sách đã chốt và mã đối với các mục này.
 
 ## Dữ liệu phiếu và mã trạng thái
 
@@ -98,6 +99,9 @@ Mọi lệnh ghi phiếu (cập nhật, nhận xử lý, phân công, hủy phâ
 | `status` | Số nguyên trong JSON; khi tạo là Submitted (1) |
 | `impact`, `urgency`, `priority` | Khi tạo là Medium, Medium, P3. Chưa có endpoint hay use case ghi các trường này (`Ticket.SetTriage` có trong Domain nhưng chưa được gọi), nên mọi phiếu hiện mang P3; bộ lọc và sắp xếp theo `priority` của hàng đợi chạy trên giá trị này |
 | `supportTeamId` | Phiếu mới vào `MANUAL_TRIAGE`. Chưa có `RoutingRule` hay API chuyển nhóm ([ADR-016](../adr/ADR-016-support-team-routing-and-agent-scope.md)) |
+| `sla` | `SlaSummaryDto` chứa kết quả đánh giá SLA tức thời của vé (`isApplicable`, `firstResponseDeadline`, `isFirstResponseBreached`, `firstResponseState`, `resolutionDeadline`, `isResolutionBreached`, `resolutionState`, `resolutionRemainingMinutes`). Vé legacy có `isApplicable: false`, các cờ false/null, state `"NotApplicable"`. Việc đọc vé và trả summary là thuần túy, không mutate thực thể và không làm thay đổi `xmin`. |
+| Bộ lọc SLA hàng đợi | Endpoint `GET /api/tickets/queue` hỗ trợ query parameter `slaStatus` với các giá trị: `All`, `OnTrack`, `AtRisk`, `Breached` (không phân biệt hoa thường). Giá trị không hợp lệ trả về 400 Bad Request. Lọc SLA diễn ra trực tiếp tại SQL predicate trong PostgreSQL trước khi tính `TotalCount` và thực hiện phân trang (`Skip`/`Take`). |
+| Analytics API | Endpoint `GET /api/tickets/analytics` nhận `from` và `to` (ISO-8601 có múi giờ tường minh Z hoặc offset, `from < to`, khoảng cách tối đa đúng 90 ngày). Quyền: `RequireAgent` (Agent/Admin; Requester nhận 403; chưa đăng nhập nhận 401). Phân tích trên cohort nửa mở `CreatedAt >= from AND CreatedAt < to`. Dữ liệu tổng hợp gồm `volume`, `statusDistribution`, `priorityDistribution`, `firstResponseCompliance`, `resolutionCompliance`, `averageResolutionMinutes`, `resolutionEligibleCount`. Tỷ lệ compliance tính bằng % (`Achieved / (Achieved + Breached) * 100`, mẫu số 0 trả null). `averageResolutionMinutes` tính bằng phút làm tròn 2 chữ số thập phân trên các vé áp dụng SLA hiện ở Resolved hoặc Closed (mẫu số 0 trả null); không gọi elapsed là giờ lao động thực tế hoặc KPI cá nhân. Chạy bằng 1 câu lệnh SQL aggregation duy nhất trên snapshot database, không tải ticket về RAM. |
 | Phân trang | Mặc định page=1, pageSize=10; page ≥ 1, pageSize từ 1 đến 100; kiểm tra tràn offset ở Application |
 
 | Giá trị đã định nghĩa | Tên |
@@ -113,7 +117,65 @@ Mọi lệnh ghi phiếu (cập nhật, nhận xử lý, phân công, hủy phâ
 | 8 | Assigned |
 | 9 | PendingExternal |
 
-Nguồn: [TicketStatus](../../src/backend/Modules/Ticketing/Domain/TicketStatus.cs), [Ticket](../../src/backend/Modules/Ticketing/Domain/Ticket.cs), [TicketDto](../../src/backend/Modules/Ticketing/Application/Contracts/TicketDto.cs), [mapping](../../src/backend/Modules/Ticketing/Infrastructure/Configurations/TicketConfiguration.cs). Có enum không có nghĩa đã triển khai lệnh chuyển trạng thái: chưa lệnh nào tạo hoặc chuyển tới Draft (0), PendingUser (3), Triaged (7) và PendingExternal (9); việc dùng các giá trị này chờ DEC-03, DEC-04 và DEC-09. Không đổi nghĩa 0–6, loại Cancelled hoặc đổi JSON sang chuỗi để khớp bảng 0–8 trong tài liệu lịch sử.
+Nguồn: [TicketStatus](../../src/backend/Modules/Ticketing/Domain/TicketStatus.cs), [Ticket](../../src/backend/Modules/Ticketing/Domain/Ticket.cs), [TicketDto](../../src/backend/Modules/Ticketing/Application/Contracts/TicketDto.cs), [mapping](../../src/backend/Modules/Ticketing/Infrastructure/Configurations/TicketConfiguration.cs). Có enum không có nghĩa đã triển khai lệnh chuyển trạng thái: chưa lệnh nào tạo hoặc chuyển tới Draft (0) và Triaged (7); theo DEC-09 (chốt 2026-11-16), phân loại chỉ là dữ liệu và không thêm chuyển trạng thái tới Triaged (7), giữ enum để tương thích dữ liệu đã lưu; Draft (0) chờ DEC-01. PendingUser (3) và PendingExternal (9) đã có quyết định nghiệp vụ theo DEC-03, DEC-04 và chính sách SLA Sprint 4 (chốt 2026-11-16 và 2026-11-17). Không đổi nghĩa 0–6, loại Cancelled hoặc đổi JSON sang chuỗi để khớp bảng 0–8 trong tài liệu lịch sử.
+
+## Chính sách Cam kết Mức Dịch vụ (SLA) và Báo cáo Phân tích (Analytics)
+
+Nguồn thẩm quyền: Được chủ dự án phê duyệt ngày 2026-11-16 và 2026-11-17 cho Sprint 4 MVP/demo (ghi nhận tại Mục §3 của cẩm nang kế hoạch bàn giao). Tách biệt hoàn toàn khỏi các đề xuất chưa duyệt.
+
+### 1. Thời lượng Cam kết và Lịch làm việc
+- **Lịch tính giờ:** Calendar 24/7 UTC liên tục qua `IClock`, không trừ ban đêm, cuối tuần hoặc ngày lễ trong MVP/demo.
+- **Mốc bắt đầu:** Tính từ `Ticket.CreatedAt` (do backend xác lập bằng `IClock`), không nhận từ client. Thời gian chờ triage hoặc phân công vẫn tính vào cả hai đồng hồ. Idempotent replay giữ nguyên CreatedAt gốc.
+- **Target Snapshot theo Priority lúc tạo:**
+  + P1: First Response 60 phút; Resolution 240 phút.
+  + P2: First Response 120 phút; Resolution 480 phút.
+  + P3: First Response 240 phút; Resolution 1.440 phút.
+  + P4: First Response 480 phút; Resolution 4.320 phút.
+
+### 2. Đồng hồ Phản hồi Đầu tiên (First Response Clock)
+- **Sự kiện kích hoạt:** Sự kiện sớm nhất giữa bình luận công khai hợp lệ của nhân viên hỗ trợ (`IsInternal = false`, người gửi có role Agent hoặc Admin và có quyền trên phiếu) HOẶC phiếu được `Resolve` thành công.
+- **Loại trừ:** Bình luận của Requester sở hữu phiếu (kể cả có role Agent/Admin), ghi chú nội bộ, audit hệ thống, thao tác nhận/phân công/hủy phân công, hoặc phản hồi tự động.
+- **Tính chất:** Không tạm dừng trong `PendingUser` hoặc `PendingExternal`. Đã xác lập `FirstRespondedAt` thì giữ nguyên vĩnh viễn, không chạy lại khi Reopen hoặc đổi Priority.
+
+### 3. Đồng hồ Giải quyết (Resolution Clock) và Vòng đời Trạng thái
+- **Tạm dừng (Pause / Resume):** Tạm dừng khi chuyển sang `PendingUser` hoặc `PendingExternal`; tiếp tục tính phần thời gian còn lại khi trở lại `InProgress`.
+- **Quyền chuyển Pending/Resume thủ công:** Áp dụng cho 4 chuyển đổi giữa `InProgress` và `PendingUser`/`PendingExternal`: Assigned Agent, Team Lead active của nhóm đang sở hữu phiếu, hoặc Admin. Thành viên nhóm chỉ có quyền đọc bị từ chối 403; ngoài scope trả 404; bắt buộc `expectedRevision`.
+- **Auto-Resume (DEC-03):** Khi Requester sở hữu phiếu gửi bình luận công khai trong `PendingUser`, phiếu tự động chuyển sang `InProgress` và tiếp tục Resolution Clock; bình luận này không tính là First Response.
+- **Resolve trực tiếp từ PendingExternal (DEC-04):** Cho phép Resolve từ `InProgress` và `PendingExternal`. Khi Resolve từ `PendingExternal`, lấy timestamp UTC chốt pause một lần duy nhất, chuyển sang `Resolved`, dừng đồng hồ Resolution và ghi nhận First Response nếu trước đó chưa có.
+- **Reopen Carry-over:** Reopen từ `Resolved` sang `InProgress` tiếp tục tích lũy trên tổng thời gian đã làm việc trước đó; thời gian nằm ở `Resolved` chờ nghiệm thu hoàn toàn không tính vào duration; vi phạm cũ giữ nguyên.
+- **Thay đổi Priority:** Cập nhật target cho các đồng hồ chưa hoàn thành. Luôn đánh giá vi phạm theo target cũ tại cùng timestamp trước khi áp dụng target mới; leo thang có thể gây vi phạm ngay; hạ Priority nới target nhưng không xóa dấu vi phạm cũ. First Response đã phản hồi thì giữ nguyên target snapshot cũ.
+
+### 4. Ranh giới Đánh giá và Quy tắc Sticky Breach
+- So sánh thời gian tiêu hao $E$ và target $T$ theo độ chính xác thời gian:
+  + $E < 0.75 \times T$: `OnTrack`.
+  + $0.75 \times T \le E \le T$: `AtRisk` khi đồng hồ chưa hoàn thành (tại đúng $E = T$ đồng hồ chưa hoàn thành thuộc `AtRisk`).
+  + Hoàn thành tại $E \le T$ và chưa từng breach: `Achieved`.
+  + $E > T$ hoặc đã từng breach trước đó: `Breached`.
+- **Sticky Breach:** Cờ vi phạm có ưu tiên tuyệt đối cao hơn `OnTrack`/`AtRisk`/`Achieved`. Đã vi phạm thì vĩnh viễn không trở lại trạng thái đạt dù có hạ Priority, tạm dừng, Resolve hay Reopen.
+
+### 5. Xử lý Dữ liệu Lịch sử (Legacy Tickets)
+- Toàn bộ ticket tạo trước thời điểm kích hoạt SLA mang cờ `IsSlaApplicable = false`, hiển thị `NotApplicable`.
+- Không hồi tố, không backfill. Worker và bộ lọc hàng đợi bỏ qua các ticket này. Ticket lịch sử vẫn tính trong tổng Volume và Distribution của Analytics nhưng bị loại hoàn toàn khỏi mẫu số của Compliance Rate và Average Resolution.
+
+### 6. Báo cáo Phân tích (Analytics API)
+- **Đường dẫn:** `GET /api/tickets/analytics?from={ISO8601}&to={ISO8601}`.
+- **Tham số:** `from` và `to` bắt buộc có múi giờ tường minh (Z hoặc offset được URL-encode), khoảng cách `to - from` tối đa đúng 90 ngày UTC ($7.776.000$ giây). Lọc trên cohort nửa mở `CreatedAt >= fromUtc AND CreatedAt < toUtc`.
+- **Phân quyền Phạm vi Dữ liệu (Scope):**
+  + Admin: Thống kê trên toàn bộ phiếu thuộc cohort trong hệ thống.
+  + Agent / Lead: Thống kê trên hợp của các nhóm active mà actor là thành viên + các phiếu được phân công trực tiếp (`AssignedToId == actorId`). Overlap chỉ đếm một lần; phiếu do Agent tạo với tư cách Requester không tự được cộng vào scope.
+  + Requester: Từ chối 403 Forbidden. Chưa đăng nhập: 401 Unauthorized.
+- **Chỉ số & Công thức:**
+  + Phân bổ Status và Priority phản ánh snapshot tại thời điểm truy vấn. Tổng của mỗi distribution luôn bằng đúng `Volume` (có bucket `"Other"` và `"Unassigned"` cho dữ liệu dị biệt).
+  + Tỷ lệ tuân thủ First Response và Resolution: $\text{Rate} = \frac{\text{Achieved}}{\text{Achieved} + \text{Breached}}$. Mẫu số bằng 0 trả `null`.
+  + Thời gian giải quyết trung bình (MTTR): $\text{Average} = \frac{\sum \text{Duration các vé đủ điều kiện}}{\text{Số lượng vé đủ điều kiện}}$ tính trên các vé áp dụng SLA hiện ở `Resolved` hoặc `Closed`. Loại bỏ vé Reopen đang xử lý dở dang. Không có vé đủ điều kiện trả `null`.
+
+### 7. Hướng dẫn Vận hành Maintenance Cutover
+1. **Dừng Writer cũ:** Chuyển hệ thống sang cửa sổ bảo trì. Chặn lưu lượng ghi mới tại API Gateway/Reverse Proxy và đảm bảo toàn bộ các instance writer cũ (API cũ) đã dừng hoàn toàn hoặc bị cô lập khỏi đường ghi, không tự khởi động lại.
+2. **Kiểm tra Giao dịch Ghi cũ:** Xác minh không còn transaction ghi nào đang hoạt động trên cơ sở dữ liệu.
+3. **Chạy Migration:** Chạy migration `20261116180130_AddTicketSlaSupport` bằng công cụ `ServiceDesk.Migrator` với metadata đích đã được xác minh (`SD_DB_HOST`, `SD_DB_PORT`, `SD_DB_NAME`) và được ủy quyền.
+4. **Khởi động Phiên bản Mới:** Khởi động các instance API và Worker phiên bản mới trong môi trường bảo trì.
+5. **Smoke Test & Mở Lưu lượng:** Kiểm tra tạo phiếu mới có SLA nguyên tử, kiểm tra hàng đợi và Analytics, kiểm tra vé legacy không bị ảnh hưởng. Sau khi đạt, mở lại lưu lượng cho người dùng.
+6. **Điều kiện Rollback:** Nếu migration hoặc smoke test thất bại, dừng API/Worker mới, khôi phục database về bản sao lưu trước bảo trì; tuyệt đối không bật lại writer cũ trên schema mới khi chưa có kiểm chứng tương thích hai chiều.
 
 ## Lỗi và idempotency
 
@@ -129,6 +191,6 @@ Nguồn: [TicketStatus](../../src/backend/Modules/Ticketing/Domain/TicketStatus.
 
 Kiểm thử `PublishedApiMatchesBaseline` so sánh toàn bộ tài liệu OpenAPI với bản chuẩn, phát hiện cả mục mới chưa công bố và thay đổi mô tả/bảo mật. Cập nhật bản chuẩn có chủ đích theo [quy chuẩn tài liệu](../process/documentation-standard.md).
 
-Chưa có luồng Draft/Submit riêng, API quản trị nhóm hỗ trợ (dữ liệu và phạm vi đọc theo nhóm đã có), SLA, AI thật hoặc thu hồi tức thời quyền trong access token đã phát. Luồng tệp đính kèm: xin quyền tải lên nhận form multipart POST đã ký (giới hạn 10 MiB, gắn actor/ticket/tên/dung lượng/MIME/key/hết hạn) → xác nhận đối chiếu metadata object, sao chép sang key cuối bất biến rồi mới ghi metadata vào DB → tải xuống bằng URL ký ngắn hạn. Grant PUT cũ còn hạn vẫn được xác nhận theo cùng cách (xem [runbook](../runbooks/supportflow-hardening-phase-2-6.md)). Còn mở: đối soát object mồ côi khi lưu trữ thành công nhưng kết quả giao dịch DB không xác định. FullName chưa có dữ liệu hồ sơ riêng được lưu. Các phần còn thiếu thuộc đợt phát triển được quyết định riêng.
+Chưa có luồng Draft/Submit riêng, API quản trị nhóm hỗ trợ (dữ liệu và phạm vi đọc theo nhóm đã có), AI thật hoặc thu hồi tức thời quyền trong access token đã phát. Chính sách SLA và Analytics Sprint 4 đã được duyệt đầy đủ ngày 2026-11-16 và 2026-11-17, đang được triển khai theo từng lát mỏng. Luồng tệp đính kèm: xin quyền tải lên nhận form multipart POST đã ký (giới hạn 10 MiB, gắn actor/ticket/tên/dung lượng/MIME/key/hết hạn) → xác nhận đối chiếu metadata object, sao chép sang key cuối bất biến rồi mới ghi metadata vào DB → tải xuống bằng URL ký ngắn hạn. Grant PUT cũ còn hạn vẫn được xác nhận theo cùng cách (xem [runbook](../runbooks/supportflow-hardening-phase-2-6.md)). Còn mở: đối soát object mồ côi khi lưu trữ thành công nhưng kết quả giao dịch DB không xác định. FullName chưa có dữ liệu hồ sơ riêng được lưu. Các phần còn thiếu thuộc đợt phát triển được quyết định riêng.
 
 Ứng viên B3 áp dụng [DEC-07](pending-business-decisions.md) cho tệp đã xác nhận. Mỗi phiếu có tối đa 10 tệp với tổng dung lượng tối đa 50 MiB. Khi xác nhận tệp mới, backend kiểm tra hạn mức và lưu metadata trong cùng giao dịch khóa theo phiếu. Nếu vượt hạn mức, API trả 400. Nếu hết thời gian chờ khóa, API trả 503 với `Retry-After` và giữ grant để gửi lại. Gửi lại yêu cầu xác nhận thành công trả về tệp đã ghi mà không tính thêm dung lượng. Grant đang chờ xác nhận chưa chiếm hạn mức tệp đã xác nhận.

@@ -28,7 +28,11 @@ internal sealed class CreateTicketUseCase(ITicketWriter writer, ICurrentUser cur
         var requester = TicketActor.RequireId(currentUser);
         ArgumentNullException.ThrowIfNull(command);
 
-        var ticket = Ticket.Create(requester, command.Title, command.Description, command.CategoryId, clock.UtcNow.UtcDateTime);
+        var now = clock.UtcNow.UtcDateTime;
+        var ticket = Ticket.Create(requester, command.Title, command.Description, command.CategoryId, now);
+        var targets = PrioritySlaTargets.GetFor(ticket.Priority ?? Priority.P3);
+        ticket.InitializeSla(targets, now);
+
         var fingerprint = idempotencyKey is null ? null : CreateTicketFingerprint.Create(requester, idempotencyKey, command);
 
         return writer.CreateAsync(ticket, fingerprint, cancellationToken);

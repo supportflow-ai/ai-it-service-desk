@@ -5,17 +5,58 @@ using Microsoft.AspNetCore.Routing;
 using ServiceDesk.Modules.Ticketing.Application.CancelTicket;
 using ServiceDesk.Modules.Ticketing.Application.CloseTicket;
 using ServiceDesk.Modules.Ticketing.Application.Contracts;
+using ServiceDesk.Modules.Ticketing.Application.PendingTicket;
 using ServiceDesk.Modules.Ticketing.Application.ReopenTicket;
 using ServiceDesk.Modules.Ticketing.Application.ResolveTicket;
+using ServiceDesk.Modules.Ticketing.Application.ResumeTicket;
+using ServiceDesk.Modules.Ticketing.Domain;
 using ServiceDesk.SharedKernel.Authorization;
 
 namespace ServiceDesk.Modules.Ticketing.Presentation;
 
+/// <summary>Request body chuyển trạng thái phiếu sang tạm dừng.</summary>
+public record PendingTicketRequest(TicketStatus Status, uint? ExpectedRevision = null);
+
 public static partial class TicketEndpoints
 {
-    /// <summary>Endpoint chuyển trạng thái giải quyết, mở lại, đóng, hủy.</summary>
+    /// <summary>Endpoint chuyển trạng thái giải quyết, mở lại, đóng, hủy, tạm dừng và tiếp tục.</summary>
     private static void MapTicketLifecycle(RouteGroupBuilder group)
     {
+        // POST /api/tickets/{id}/pending: Tạm dừng xử lý vé (InProgress -> PendingUser hoặc PendingExternal)
+        group.MapPost("/{id:guid}/pending", async (
+            Guid id,
+            [FromBody] PendingTicketRequest request,
+            [FromServices] IPendingTicket pendingTicket,
+            CancellationToken ct) =>
+        {
+            var ticket = await pendingTicket.ExecuteAsync(new(id, request.Status, request.ExpectedRevision), ct);
+            return Results.Ok(ticket);
+        })
+        .WithName("PendingTicket")
+        .RequireAuthorization(PolicyNames.RequireAgent)
+        .Produces<TicketDto>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status404NotFound)
+        .Produces(StatusCodes.Status409Conflict);
+
+        // POST /api/tickets/{id}/resume: Tiếp tục xử lý vé (PendingUser hoặc PendingExternal -> InProgress)
+        group.MapPost("/{id:guid}/resume", async (
+            Guid id,
+            [FromQuery] uint? expectedRevision,
+            [FromServices] IResumeTicket resumeTicket,
+            CancellationToken ct) =>
+        {
+            var ticket = await resumeTicket.ExecuteAsync(new(id, expectedRevision), ct);
+            return Results.Ok(ticket);
+        })
+        .WithName("ResumeTicket")
+        .RequireAuthorization(PolicyNames.RequireAgent)
+        .Produces<TicketDto>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status404NotFound)
+        .Produces(StatusCodes.Status409Conflict);
         // POST /api/tickets/{id}/resolve: Kỹ thuật viên / Admin đánh dấu giải quyết xong (InProgress -> Resolved)
         group.MapPost("/{id:guid}/resolve", async (
             Guid id,

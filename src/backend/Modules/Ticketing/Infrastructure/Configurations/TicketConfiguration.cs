@@ -86,6 +86,46 @@ internal sealed class TicketConfiguration : IEntityTypeConfiguration<Ticket>
             .HasDefaultValueSql("public.next_ticket_number()")
             .ValueGeneratedOnAdd().IsRequired();
 
+        // Cam kết chất lượng dịch vụ (SLA)
+        entity.Property(t => t.IsSlaApplicable)
+            .HasColumnName("is_sla_applicable")
+            .HasDefaultValue(false)
+            .IsRequired();
+
+        entity.Property(t => t.FirstResponseTargetMinutes)
+            .HasColumnName("first_response_target_minutes");
+
+        entity.Property(t => t.FirstRespondedAt)
+            .HasColumnName("first_responded_at");
+
+        entity.Property(t => t.FirstResponseBreached)
+            .HasColumnName("first_response_breached")
+            .HasDefaultValue(false)
+            .IsRequired();
+
+        entity.Property(t => t.ResolutionTargetMinutes)
+            .HasColumnName("resolution_target_minutes");
+
+        entity.Property(t => t.ResolutionAccumulatedDuration)
+            .HasColumnName("resolution_accumulated_duration")
+            .HasDefaultValue(TimeSpan.Zero)
+            .IsRequired();
+
+        entity.Property(t => t.ResolutionSegmentStartedAt)
+            .HasColumnName("resolution_segment_started_at");
+
+        entity.Property(t => t.ResolvedAt)
+            .HasColumnName("resolved_at");
+
+        entity.Property(t => t.ResolutionBreached)
+            .HasColumnName("resolution_breached")
+            .HasDefaultValue(false)
+            .IsRequired();
+
+        entity.HasIndex(t => t.IsSlaApplicable);
+        entity.HasIndex(t => new { t.IsSlaApplicable, t.Status })
+            .HasDatabaseName("IX_tickets_is_sla_applicable_status");
+
         entity.Property<uint>("xmin").HasColumnType("xid")
             .ValueGeneratedOnAddOrUpdate().IsConcurrencyToken();
     }

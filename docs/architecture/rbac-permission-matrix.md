@@ -28,7 +28,7 @@ Trạng thái: đối chiếu mã `dev@a182c9f` (2026-11-08) và [ADR-016](../ad
 
 Chi tiết, timeline, tệp, hàng đợi và lệnh của nhân viên dùng phạm vi nhóm hoặc phân công. Tư cách thành viên và quyền Lead được kiểm qua DB ở request kế tiếp sau khi thu hồi. Nếu Agent còn được phân công trực tiếp, quyền đọc phiếu vẫn có hiệu lực. Agent dùng quyền chủ sở hữu để đọc phần công khai của phiếu mình tạo. Ghi chú nội bộ đi cùng phiếu khi chuyển nhóm (ADR-016): Agent mất quyền xem nếu quyền trước đó chỉ đến từ nhóm cũ; nhóm mới đang hoạt động hoặc phân công trực tiếp xem theo quyền hiện tại.
 
-Giới hạn đã biết của B1-PR3: (1) Agent có quyền trên phiếu vẫn phân công được cho Agent ngoài nhóm, và người được phân công có quyền đọc trực tiếp, gồm ghi chú nội bộ, cho tới khi luồng điều phối của Lead được triển khai. (2) Thu hồi được bảo đảm từ request kế tiếp; một request đang chạy đồng thời với thay đổi nhóm có thể hoàn tất theo quyền đọc lúc bắt đầu (kiểm phạm vi và tải phiếu là hai truy vấn), chưa có kiểm thử riêng cho tình huống này.
+Giới hạn đã biết: (1) Thu hồi tư cách thành viên hoặc quyền Lead được bảo đảm từ request kế tiếp sau khi commit; một request đang chạy đồng thời với thay đổi nhóm có thể hoàn tất theo quyền đọc lúc bắt đầu (kiểm phạm vi và tải phiếu là hai truy vấn), chưa có kiểm thử riêng cho tình huống này. (2) Phân công ngoài nhóm: Agent thường bị chặn; Lead chỉ được phân công cho Agent cùng nhóm; chỉ Admin có ngoại lệ phân công Agent ngoài nhóm, và người được phân công trực tiếp có quyền đọc (gồm ghi chú nội bộ) theo ADR-016.
 
 ## Ma trận thao tác trên phiếu
 
@@ -40,12 +40,13 @@ Giới hạn đã biết của B1-PR3: (1) Agent có quyền trên phiếu vẫn
 | Cập nhật | Chủ sở hữu hoặc Admin | Chỉ Submitted | |
 | Hủy | Chủ sở hữu hoặc Admin | Chỉ Submitted | |
 | Nhận xử lý (claim) | Agent hoặc Admin; phiếu đã phân công cho người khác chỉ Admin nhận thay được | Submitted hoặc Assigned | B1-PR3 yêu cầu phiếu nằm trong phạm vi của nhân viên |
-| Phân công / hủy phân công | Mọi Agent hoặc Admin, cho bất kỳ Agent nào | Gán không được khi Closed hoặc Cancelled; hủy phân công chỉ khi Assigned | Đích: Lead trong nhóm mình hoặc Admin (**Đã duyệt – chưa triển khai**). Cấm phân công lại khi Resolved (DEC-05): **Đã duyệt – chưa triển khai**, mã hiện vẫn cho gán khi Resolved |
-| Giải quyết | Agent hoặc Admin | Chỉ InProgress | Nội dung giải quyết: **Mở** |
-| Mở lại | Chủ sở hữu hoặc Admin | Resolved sang InProgress | Thời hạn mở lại: **Mở** (không dùng 168 giờ cũ) |
+| Phân công / hủy phân công | Lead của nhóm đang phụ trách phiếu (gán cho Agent cùng nhóm) hoặc Admin (gán cho Agent bất kỳ) | Gán không được khi Closed, Cancelled hoặc Resolved; hủy phân công chỉ khi Assigned | **Đã triển khai** (DEC-05 và DEC-02 / ADR-016, cập nhật 2026-11-16). Agent thường bị từ chối (403); phiếu ngoài scope trả 404 |
+| Chuyển Pending / Resume thủ công | Assigned Agent (kể cả gán ngoài nhóm), Lead của nhóm active sở hữu phiếu (kiểm DB), hoặc Admin | InProgress $\leftrightarrow$ PendingUser/PendingExternal | **Đã duyệt** (chốt 2026-11-17). Agent chỉ đọc được nhờ membership nhóm bị 403; ngoài scope 404; Requester 403 |
+| Giải quyết | Agent hoặc Admin | InProgress hoặc PendingExternal | **Đã duyệt** (DEC-04 chốt 2026-11-16: cho phép Resolve trực tiếp từ PendingExternal bên cạnh InProgress; không Resolve từ PendingUser) |
+| Mở lại | Chủ sở hữu hoặc Admin | Resolved sang InProgress | Thời hạn mở lại: **Mở** (không dùng 168 giờ cũ). SLA Resolution tiếp tục ngân sách đã tiêu hao (Carry-over, chốt 2026-11-17) |
 | Đóng | Chủ sở hữu hoặc Admin; Agent không đóng chỉ vì được phân công | Resolved sang Closed | **Đã triển khai** và khớp DEC-05 |
 | Trạng thái cuối | Closed là terminal; Resolved không terminal | | Không tự động đóng trong MVP |
-| Bình luận công khai | Chủ sở hữu phiếu; Agent/Admin | Không viết vào phiếu Closed/Cancelled | Phản hồi khi PendingUser: **Mở** (DEC-03) |
+| Bình luận công khai | Chủ sở hữu phiếu; Agent/Admin | Không viết vào phiếu Closed/Cancelled | **Đã duyệt** (DEC-03 chốt 2026-11-16): Requester gửi bình luận công khai trong PendingUser tự resume sang InProgress |
 | Ghi chú nội bộ | Agent hoặc Admin | | Requester không bao giờ thấy |
 | Timeline | Requester chỉ thấy phần công khai; nhân viên có quyền hiện tại trên phiếu thấy cả ghi chú nội bộ | | Sau chuyển nhóm ghi chú đi cùng phiếu: Agent chỉ có quyền từ nhóm cũ mất quyền xem; nhóm mới đang hoạt động hoặc phân công trực tiếp xem được; Admin xem tất cả |
 | Tệp đính kèm | Người xem được phiếu: xin quyền tải lên, xác nhận, liệt kê, xin URL tải xuống; không viết vào phiếu Closed/Cancelled | | Giới hạn tệp: xem bên dưới |
@@ -61,7 +62,7 @@ Giới hạn đã biết của B1-PR3: (1) Agent có quyền trên phiếu vẫn
 | Phòng ban | Mọi người dùng đã đăng nhập |
 | Tri thức: tạo, sửa bản nháp, xuất bản, lưu trữ | Agent hoặc Admin; tác giả hoặc Admin được thay đổi bài; `expectedRevision` bắt buộc |
 | Tri thức: đọc | Admin đọc mọi bài; Agent đọc bài đã xuất bản và bài của mình; người khác chỉ bài đã xuất bản |
-| Phân tích, báo cáo | Chưa có module; **Mở** |
+| Phân tích, báo cáo (Analytics) | Admin xem toàn hệ thống; Agent xem theo hợp của các nhóm active mà mình là thành viên + ticket gán trực tiếp; Requester bị từ chối 403 (**Đã duyệt**, chốt 2026-11-17) |
 
 Access token đã phát giữ vai trò JWT toàn hệ thống tới khi hết hạn (`Jwt:ExpiryMinutes`). Tư cách thành viên và quyền Lead được xét qua cơ sở dữ liệu.
 

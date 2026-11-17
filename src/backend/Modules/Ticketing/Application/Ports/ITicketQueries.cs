@@ -16,4 +16,19 @@ public interface ITicketQueries
 
     /// <summary>Truy vấn hàng đợi vé cho nhân viên hỗ trợ (Agent Queue) có lọc và phân trang.</summary>
     Task<PagedTicketResult> GetAgentQueueAsync(Guid currentUserId, TicketReadScope readScope, int? status, string? categoryId, string? scope, string? priority, bool sortByPriority, int page, int pageSize, CancellationToken cancellationToken);
+
+    /// <summary>Truy vấn hàng đợi vé cho nhân viên hỗ trợ (Agent Queue) có lọc SLA, evaluatedAt và phân trang.</summary>
+    Task<PagedTicketResult> GetAgentQueueAsync(
+        Guid currentUserId,
+        TicketReadScope readScope,
+        int? status,
+        string? categoryId,
+        string? scope,
+        string? priority,
+        bool sortByPriority,
+        int page,
+        int pageSize,
+        string? slaStatus,
+        DateTime? evaluatedAt,
+        CancellationToken cancellationToken = default);
 }
