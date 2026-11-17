@@ -7,16 +7,20 @@ using ServiceDesk.Modules.Ticketing.Application.ClaimTicket;
 using ServiceDesk.Modules.Ticketing.Application.CloseTicket;
 using ServiceDesk.Modules.Ticketing.Application.ConfirmAttachmentUpload;
 using ServiceDesk.Modules.Ticketing.Application.CreateTicket;
+using ServiceDesk.Modules.Ticketing.Application.EvaluateSla;
 using ServiceDesk.Modules.Ticketing.Application.GenerateAttachmentUploadUrl;
 using ServiceDesk.Modules.Ticketing.Application.GetAgentQueue;
 using ServiceDesk.Modules.Ticketing.Application.GetAttachmentDownloadUrl;
 using ServiceDesk.Modules.Ticketing.Application.GetMyTickets;
+using ServiceDesk.Modules.Ticketing.Application.GetTicketAnalytics;
 using ServiceDesk.Modules.Ticketing.Application.GetTicketAttachments;
 using ServiceDesk.Modules.Ticketing.Application.GetTicketDetail;
 using ServiceDesk.Modules.Ticketing.Application.GetTicketTimeline;
+using ServiceDesk.Modules.Ticketing.Application.PendingTicket;
 using ServiceDesk.Modules.Ticketing.Application.Ports;
 using ServiceDesk.Modules.Ticketing.Application.ReopenTicket;
 using ServiceDesk.Modules.Ticketing.Application.ResolveTicket;
+using ServiceDesk.Modules.Ticketing.Application.ResumeTicket;
 using ServiceDesk.Modules.Ticketing.Application.UnassignTicket;
 using ServiceDesk.Modules.Ticketing.Application.UpdateTicket;
 using ServiceDesk.Modules.Ticketing.Infrastructure;
@@ -45,8 +49,11 @@ public static class TicketingModule
         services.AddScoped<IClaimTicket, ClaimTicketUseCase>();
         services.AddScoped<IResolveTicket, ResolveTicketUseCase>();
         services.AddScoped<IReopenTicket, ReopenTicketUseCase>();
+        services.AddScoped<IPendingTicket, PendingTicketUseCase>();
+        services.AddScoped<IResumeTicket, ResumeTicketUseCase>();
         services.AddScoped<ICloseTicket, CloseTicketUseCase>();
         services.AddScoped<ICancelTicket, CancelTicketUseCase>();
+        services.AddScoped<IEvaluateSla, EvaluateSlaUseCase>();
         services.AddScoped<IGetAgentQueue, GetAgentQueueUseCase>();
         services.AddScoped<IAssignTicket, AssignTicketUseCase>();
         services.AddScoped<IUnassignTicket, UnassignTicketUseCase>();
@@ -57,6 +64,7 @@ public static class TicketingModule
         services.AddScoped<IGetAttachmentDownloadUrl, GetAttachmentDownloadUrlUseCase>();
         services.AddScoped<IConfirmAttachmentUpload, ConfirmAttachmentUploadUseCase>();
         services.AddScoped<IGetTicketAttachments, GetTicketAttachmentsUseCase>();
+        services.AddScoped<IGetTicketAnalytics, GetTicketAnalyticsUseCase>();
         return services;
     }
 
@@ -67,6 +75,8 @@ public static class TicketingModule
         services.AddScoped<ITicketQueries, PostgresTicketQueries>();
         services.AddScoped<ITicketTimelineStore, PostgresTicketTimelineStore>();
         services.AddScoped<ITicketAttachmentStore, PostgresTicketAttachmentStore>();
+        services.AddScoped<ISlaEvaluationGateway, PostgresSlaEvaluationAdapter>();
+        services.AddScoped<ITicketAnalyticsQuery, PostgresTicketAnalyticsQuery>();
         services.AddScoped<IAgentDirectory, AgentDirectory>();
         services.AddScoped<ISupportTeamMembershipReader, PostgresSupportTeamMembershipReader>();
         return services;

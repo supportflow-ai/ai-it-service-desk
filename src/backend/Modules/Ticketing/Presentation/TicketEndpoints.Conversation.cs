@@ -36,7 +36,8 @@ public static partial class TicketEndpoints
         .Produces<TimelineItemDto>(StatusCodes.Status201Created)
         .Produces(StatusCodes.Status400BadRequest)
         .Produces(StatusCodes.Status401Unauthorized)
-        .Produces(StatusCodes.Status404NotFound);
+        .Produces(StatusCodes.Status404NotFound)
+        .Produces(StatusCodes.Status409Conflict);
 
         // POST /api/tickets/{id}/internal-notes: Gửi ghi chú nội bộ (chỉ Agent/Admin)
         group.MapPost("/{id:guid}/internal-notes", async (

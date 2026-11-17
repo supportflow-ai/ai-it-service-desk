@@ -21,6 +21,7 @@ public static partial class TicketEndpoints
         MapTicketLifecycle(group);
         MapTicketConversation(group);
         MapTicketAttachments(group);
+        MapTicketAnalytics(group);
 
         return app;
     }

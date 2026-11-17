@@ -25,13 +25,15 @@ internal sealed class PostgresTicketQueries(DbContext context) : ITicketQueries
             .Where(ticket => ticket.RequesterId == requesterId);
 
         var totalCount = await query.CountAsync(cancellationToken);
-        var tickets = await query
+        var rawTickets = await query
             .OrderByDescending(ticket => ticket.CreatedAt)
             .ThenByDescending(ticket => ticket.Id)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(ticket => TicketProjection.ToDto(ticket, EF.Property<uint>(ticket, "xmin")))
+            .Select(ticket => new { Ticket = ticket, Xmin = EF.Property<uint>(ticket, "xmin") })
             .ToListAsync(cancellationToken);
+
+        var tickets = rawTickets.Select(item => TicketProjection.ToDto(item.Ticket, item.Xmin)).ToList();
 
         return new PagedTicketResult(tickets, page, pageSize, totalCount);
     }
@@ -40,12 +42,28 @@ internal sealed class PostgresTicketQueries(DbContext context) : ITicketQueries
     public async Task<TicketDto?> GetByIdAsync(Guid id, TicketReadScope scope, CancellationToken cancellationToken)
     {
         var query = _context.Set<Ticket>().AsNoTracking().Where(ticket => ticket.Id == id);
-        return await TicketScopeQuery.Apply(query, _context, scope)
-            .Select(ticket => TicketProjection.ToDto(ticket, EF.Property<uint>(ticket, "xmin")))
+        var result = await TicketScopeQuery.Apply(query, _context, scope)
+            .Select(ticket => new { Ticket = ticket, Xmin = EF.Property<uint>(ticket, "xmin") })
             .FirstOrDefaultAsync(cancellationToken);
+
+        return result is null ? null : TicketProjection.ToDto(result.Ticket, result.Xmin);
     }
 
-    /// <summary>Truy vấn hàng đợi vé cho nhân viên hỗ trợ (Agent Queue) có lọc và phân trang.</summary>
+    /// <summary>Truy vấn hàng đợi vé cho nhân viên hỗ trợ (Agent Queue) có lọc và phân trang (tương thích backward).</summary>
+    public Task<PagedTicketResult> GetAgentQueueAsync(
+        Guid currentUserId,
+        TicketReadScope readScope,
+        int? status,
+        string? categoryId,
+        string? scope,
+        string? priority,
+        bool sortByPriority,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+        => GetAgentQueueAsync(currentUserId, readScope, status, categoryId, scope, priority, sortByPriority, page, pageSize, null, null, cancellationToken);
+
+    /// <summary>Truy vấn hàng đợi vé cho nhân viên hỗ trợ (Agent Queue) có lọc SLA, evaluatedAt và phân trang.</summary>
     public async Task<PagedTicketResult> GetAgentQueueAsync(
         Guid currentUserId,
         TicketReadScope readScope,
@@ -56,6 +74,8 @@ internal sealed class PostgresTicketQueries(DbContext context) : ITicketQueries
         bool sortByPriority,
         int page,
         int pageSize,
+        string? slaStatus,
+        DateTime? evaluatedAt,
         CancellationToken cancellationToken = default)
     {
         var query = TicketScopeQuery.Apply(_context.Set<Ticket>().AsNoTracking(), _context, readScope);
@@ -86,15 +106,103 @@ internal sealed class PostgresTicketQueries(DbContext context) : ITicketQueries
             query = query.Where(ticket => ticket.AssignedToId == currentUserId && ticket.Status != Domain.TicketStatus.Closed && ticket.Status != Domain.TicketStatus.Cancelled);
         }
 
+        var evalTime = evaluatedAt ?? DateTime.UtcNow;
+
+        if (!string.IsNullOrWhiteSpace(slaStatus))
+        {
+            if (string.Equals(slaStatus, "Breached", StringComparison.OrdinalIgnoreCase))
+            {
+                query = query.Where(ticket => ticket.IsSlaApplicable && (
+                    ticket.FirstResponseBreached ||
+                    ticket.ResolutionBreached ||
+                    (ticket.FirstRespondedAt != null && ticket.FirstResponseTargetMinutes.HasValue && ticket.FirstRespondedAt.Value > ticket.CreatedAt.AddMinutes(ticket.FirstResponseTargetMinutes.Value)) ||
+                    (ticket.FirstRespondedAt == null && ticket.FirstResponseTargetMinutes.HasValue && ticket.Status != TicketStatus.Cancelled && ticket.Status != TicketStatus.Closed && evalTime > ticket.CreatedAt.AddMinutes(ticket.FirstResponseTargetMinutes.Value)) ||
+                    ((ticket.Status == TicketStatus.Resolved || ticket.Status == TicketStatus.Closed) && ticket.ResolutionTargetMinutes.HasValue && (ticket.CreatedAt + ticket.ResolutionAccumulatedDuration) > ticket.CreatedAt.AddMinutes(ticket.ResolutionTargetMinutes.Value)) ||
+                    ((ticket.Status == TicketStatus.PendingUser || ticket.Status == TicketStatus.PendingExternal) && ticket.ResolutionTargetMinutes.HasValue && (ticket.CreatedAt + ticket.ResolutionAccumulatedDuration) > ticket.CreatedAt.AddMinutes(ticket.ResolutionTargetMinutes.Value)) ||
+                    (ticket.ResolutionSegmentStartedAt != null && ticket.ResolutionTargetMinutes.HasValue && ticket.Status != TicketStatus.Cancelled && (evalTime + ticket.ResolutionAccumulatedDuration) > ticket.ResolutionSegmentStartedAt.Value.AddMinutes(ticket.ResolutionTargetMinutes.Value))
+                ));
+            }
+            else if (string.Equals(slaStatus, "AtRisk", StringComparison.OrdinalIgnoreCase))
+            {
+                // Chưa breach VÀ ít nhất 1 đồng hồ AtRisk (0.75 * Target <= E <= Target)
+                query = query.Where(ticket => ticket.IsSlaApplicable &&
+                    !ticket.FirstResponseBreached &&
+                    !ticket.ResolutionBreached &&
+                    !(ticket.FirstRespondedAt != null && ticket.FirstResponseTargetMinutes.HasValue && ticket.FirstRespondedAt.Value > ticket.CreatedAt.AddMinutes(ticket.FirstResponseTargetMinutes.Value)) &&
+                    !(ticket.FirstRespondedAt == null && ticket.FirstResponseTargetMinutes.HasValue && ticket.Status != TicketStatus.Cancelled && ticket.Status != TicketStatus.Closed && evalTime > ticket.CreatedAt.AddMinutes(ticket.FirstResponseTargetMinutes.Value)) &&
+                    !((ticket.Status == TicketStatus.Resolved || ticket.Status == TicketStatus.Closed) && ticket.ResolutionTargetMinutes.HasValue && (ticket.CreatedAt + ticket.ResolutionAccumulatedDuration) > ticket.CreatedAt.AddMinutes(ticket.ResolutionTargetMinutes.Value)) &&
+                    !((ticket.Status == TicketStatus.PendingUser || ticket.Status == TicketStatus.PendingExternal) && ticket.ResolutionTargetMinutes.HasValue && (ticket.CreatedAt + ticket.ResolutionAccumulatedDuration) > ticket.CreatedAt.AddMinutes(ticket.ResolutionTargetMinutes.Value)) &&
+                    !(ticket.ResolutionSegmentStartedAt != null && ticket.ResolutionTargetMinutes.HasValue && ticket.Status != TicketStatus.Cancelled && (evalTime + ticket.ResolutionAccumulatedDuration) > ticket.ResolutionSegmentStartedAt.Value.AddMinutes(ticket.ResolutionTargetMinutes.Value)) &&
+                    (
+                        // FR AtRisk
+                        (ticket.FirstRespondedAt == null && ticket.FirstResponseTargetMinutes.HasValue && ticket.Status != TicketStatus.Cancelled && ticket.Status != TicketStatus.Closed &&
+                         evalTime >= ticket.CreatedAt.AddMinutes(ticket.FirstResponseTargetMinutes.Value * 0.75) &&
+                         evalTime <= ticket.CreatedAt.AddMinutes(ticket.FirstResponseTargetMinutes.Value)) ||
+                        // Res AtRisk khi Paused
+                        ((ticket.Status == TicketStatus.PendingUser || ticket.Status == TicketStatus.PendingExternal) && ticket.ResolutionTargetMinutes.HasValue &&
+                         (ticket.CreatedAt + ticket.ResolutionAccumulatedDuration) >= ticket.CreatedAt.AddMinutes(ticket.ResolutionTargetMinutes.Value * 0.75) &&
+                         (ticket.CreatedAt + ticket.ResolutionAccumulatedDuration) <= ticket.CreatedAt.AddMinutes(ticket.ResolutionTargetMinutes.Value)) ||
+                        // Res AtRisk khi Running
+                        (ticket.ResolutionSegmentStartedAt != null && ticket.ResolutionTargetMinutes.HasValue && ticket.Status != TicketStatus.Cancelled &&
+                         (evalTime + ticket.ResolutionAccumulatedDuration) >= ticket.ResolutionSegmentStartedAt.Value.AddMinutes(ticket.ResolutionTargetMinutes.Value * 0.75) &&
+                         (evalTime + ticket.ResolutionAccumulatedDuration) <= ticket.ResolutionSegmentStartedAt.Value.AddMinutes(ticket.ResolutionTargetMinutes.Value))
+                    )
+                );
+            }
+            else if (string.Equals(slaStatus, "OnTrack", StringComparison.OrdinalIgnoreCase))
+            {
+                // Chưa breach VÀ không AtRisk VÀ có ít nhất 1 đồng hồ running/paused on-track (E < 0.75 * Target)
+                query = query.Where(ticket => ticket.IsSlaApplicable &&
+                    !ticket.FirstResponseBreached &&
+                    !ticket.ResolutionBreached &&
+                    !(ticket.FirstRespondedAt != null && ticket.FirstResponseTargetMinutes.HasValue && ticket.FirstRespondedAt.Value > ticket.CreatedAt.AddMinutes(ticket.FirstResponseTargetMinutes.Value)) &&
+                    !(ticket.FirstRespondedAt == null && ticket.FirstResponseTargetMinutes.HasValue && ticket.Status != TicketStatus.Cancelled && ticket.Status != TicketStatus.Closed && evalTime > ticket.CreatedAt.AddMinutes(ticket.FirstResponseTargetMinutes.Value)) &&
+                    !((ticket.Status == TicketStatus.Resolved || ticket.Status == TicketStatus.Closed) && ticket.ResolutionTargetMinutes.HasValue && (ticket.CreatedAt + ticket.ResolutionAccumulatedDuration) > ticket.CreatedAt.AddMinutes(ticket.ResolutionTargetMinutes.Value)) &&
+                    !((ticket.Status == TicketStatus.PendingUser || ticket.Status == TicketStatus.PendingExternal) && ticket.ResolutionTargetMinutes.HasValue && (ticket.CreatedAt + ticket.ResolutionAccumulatedDuration) > ticket.CreatedAt.AddMinutes(ticket.ResolutionTargetMinutes.Value)) &&
+                    !(ticket.ResolutionSegmentStartedAt != null && ticket.ResolutionTargetMinutes.HasValue && ticket.Status != TicketStatus.Cancelled && (evalTime + ticket.ResolutionAccumulatedDuration) > ticket.ResolutionSegmentStartedAt.Value.AddMinutes(ticket.ResolutionTargetMinutes.Value)) &&
+                    // Không AtRisk
+                    !(
+                        (ticket.FirstRespondedAt == null && ticket.FirstResponseTargetMinutes.HasValue && ticket.Status != TicketStatus.Cancelled && ticket.Status != TicketStatus.Closed &&
+                         evalTime >= ticket.CreatedAt.AddMinutes(ticket.FirstResponseTargetMinutes.Value * 0.75) &&
+                         evalTime <= ticket.CreatedAt.AddMinutes(ticket.FirstResponseTargetMinutes.Value)) ||
+                        ((ticket.Status == TicketStatus.PendingUser || ticket.Status == TicketStatus.PendingExternal) && ticket.ResolutionTargetMinutes.HasValue &&
+                         (ticket.CreatedAt + ticket.ResolutionAccumulatedDuration) >= ticket.CreatedAt.AddMinutes(ticket.ResolutionTargetMinutes.Value * 0.75) &&
+                         (ticket.CreatedAt + ticket.ResolutionAccumulatedDuration) <= ticket.CreatedAt.AddMinutes(ticket.ResolutionTargetMinutes.Value)) ||
+                        (ticket.ResolutionSegmentStartedAt != null && ticket.ResolutionTargetMinutes.HasValue && ticket.Status != TicketStatus.Cancelled &&
+                         (evalTime + ticket.ResolutionAccumulatedDuration) >= ticket.ResolutionSegmentStartedAt.Value.AddMinutes(ticket.ResolutionTargetMinutes.Value * 0.75) &&
+                         (evalTime + ticket.ResolutionAccumulatedDuration) <= ticket.ResolutionSegmentStartedAt.Value.AddMinutes(ticket.ResolutionTargetMinutes.Value))
+                    ) &&
+                    // Có ít nhất 1 đồng hồ Running hoặc Paused OnTrack
+                    (
+                        (ticket.FirstRespondedAt == null && ticket.FirstResponseTargetMinutes.HasValue && ticket.Status != TicketStatus.Cancelled && ticket.Status != TicketStatus.Closed &&
+                         evalTime < ticket.CreatedAt.AddMinutes(ticket.FirstResponseTargetMinutes.Value * 0.75)) ||
+                        ((ticket.Status == TicketStatus.PendingUser || ticket.Status == TicketStatus.PendingExternal) && ticket.ResolutionTargetMinutes.HasValue &&
+                         (ticket.CreatedAt + ticket.ResolutionAccumulatedDuration) < ticket.CreatedAt.AddMinutes(ticket.ResolutionTargetMinutes.Value * 0.75)) ||
+                        (ticket.ResolutionSegmentStartedAt != null && ticket.ResolutionTargetMinutes.HasValue && ticket.Status != TicketStatus.Cancelled &&
+                         (evalTime + ticket.ResolutionAccumulatedDuration) < ticket.ResolutionSegmentStartedAt.Value.AddMinutes(ticket.ResolutionTargetMinutes.Value * 0.75))
+                    )
+                );
+            }
+            else if (!string.Equals(slaStatus, "All", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new ArgumentException("slaStatus must be one of All, OnTrack, AtRisk, Breached");
+            }
+        }
+
         var totalCount = await query.CountAsync(cancellationToken);
         var ordered = sortByPriority
             ? query.OrderBy(ticket => ticket.Priority).ThenByDescending(ticket => ticket.CreatedAt).ThenByDescending(ticket => ticket.Id)
             : query.OrderByDescending(ticket => ticket.CreatedAt).ThenByDescending(ticket => ticket.Id);
-        var tickets = await ordered
+
+        var rawTickets = await ordered
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(ticket => TicketProjection.ToDto(ticket, EF.Property<uint>(ticket, "xmin")))
+            .Select(ticket => new { Ticket = ticket, Xmin = EF.Property<uint>(ticket, "xmin") })
             .ToListAsync(cancellationToken);
+
+        var tickets = rawTickets
+            .Select(item => TicketProjection.ToDto(item.Ticket, item.Xmin, evalTime))
+            .ToList();
 
         return new PagedTicketResult(tickets, page, pageSize, totalCount);
     }
