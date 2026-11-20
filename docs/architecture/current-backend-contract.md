@@ -1,6 +1,6 @@
 # Hợp đồng backend đang triển khai
 
-Trạng thái: mô tả hiện hành, đối chiếu mã `dev` tại `8036e2c185dfef7c4ed9941d736388c781e85f52`, cập nhật 2026-11-08, sau PR #50–#55. Bản chuẩn HTTP là [OpenAPI baseline](../../contracts/backend/openapi-baseline.json) (40 đường dẫn, 41 thao tác); tài liệu này mô tả thêm quyền, trạng thái và lỗi mà OpenAPI không nêu. Mốc nguồn có thể mới hơn nhánh local của người đọc; đối chiếu commit trước khi chạy. Cập nhật tài liệu không thay API, quyền hoặc dữ liệu và không xác nhận phiên bản VPS hay một bản phát hành. Quyết định kiến trúc: [ADR-014](../adr/ADR-014-feature-use-cases-and-published-contracts.md). Chính sách cần chốt: [bảng quyết định](pending-business-decisions.md). Hồ sơ các đợt củng cố đầu tháng 11 là lịch sử: [giai đoạn 1](../runbooks/supportflow-hardening-phase-1.md), [giai đoạn 2–6](../runbooks/supportflow-hardening-phase-2-6.md).
+Trạng thái: mô tả hiện hành, đối chiếu mã `dev` tại `8036e2c185dfef7c4ed9941d736388c781e85f52`, cập nhật 2026-11-08, sau PR #50–#55. Bản chuẩn HTTP là [OpenAPI baseline](../../contracts/backend/openapi-baseline.json) (42 đường dẫn, 43 thao tác); tài liệu này mô tả thêm quyền, trạng thái và lỗi mà OpenAPI không nêu. Mốc nguồn có thể mới hơn nhánh local của người đọc; đối chiếu commit trước khi chạy. Cập nhật tài liệu không thay API, quyền hoặc dữ liệu và không xác nhận phiên bản VPS hay một bản phát hành. Quyết định kiến trúc: [ADR-014](../adr/ADR-014-feature-use-cases-and-published-contracts.md). Chính sách cần chốt: [bảng quyết định](pending-business-decisions.md). Hồ sơ các đợt củng cố đầu tháng 11 là lịch sử: [giai đoạn 1](../runbooks/supportflow-hardening-phase-1.md), [giai đoạn 2–6](../runbooks/supportflow-hardening-phase-2-6.md).
 
 ## HTTP và danh tính
 
@@ -13,9 +13,9 @@ Trạng thái: mô tả hiện hành, đối chiếu mã `dev` tại `8036e2c185
 | Xác thực | Đổi mật khẩu, hồ sơ bản thân | `POST /api/auth/change-password`, `GET /api/auth/me` | Đã đăng nhập | Tài khoản hợp lệ nhưng không còn trong cơ sở dữ liệu trả 404 |
 | Người dùng | Danh sách theo vai trò; gán vai trò | `GET /api/users`, `PUT /api/users/{id}/roles` | Agent hoặc Admin; Admin | |
 | Phòng ban | Danh sách | `GET /api/departments` | Đã đăng nhập | Phòng ban của người gửi, không phải nhóm hỗ trợ |
-| Phiếu | Tạo; danh sách cá nhân; hàng đợi; chi tiết; cập nhật | `POST /api/tickets`, `GET /api/tickets/me`, `GET /api/tickets/queue`, `GET /api/tickets/{id}`, `POST /api/tickets/{id}/update` | Requester (gồm Agent/Admin); hàng đợi chỉ Agent/Admin | Tạo: Submitted, 201 với `Location`, hỗ trợ `Idempotency-Key`; danh sách phân trang; cập nhật chỉ ở Submitted, chủ sở hữu hoặc Admin |
-| Phiếu | Nhận, phân công, hủy phân công | `POST /api/tickets/{id}/claim`, `/assign`, `/unassign` | Agent hoặc Admin | Lưu người phụ trách và ghi audit; phiếu đã phân công cho người khác chỉ Admin nhận thay được |
-| Phiếu | Giải quyết, mở lại, đóng, hủy | `POST /api/tickets/{id}/resolve`, `/reopen`, `/close`, `/cancel` | Đã đăng nhập; Application kiểm vai trò và chủ sở hữu | Bảng chuyển trạng thái bên dưới |
+| Phiếu | Tạo; danh sách cá nhân; hàng đợi; chi tiết; cập nhật | `POST /api/tickets`, `GET /api/tickets/me`, `GET /api/tickets/queue`, `GET /api/tickets/{id}`, `POST /api/tickets/{id}/update` | Requester (gồm Agent/Admin); hàng đợi chỉ Agent/Admin | Tạo: Submitted, 201 với `Location`, hỗ trợ `Idempotency-Key`; danh sách phân trang; hàng đợi hỗ trợ lọc theo trạng thái, danh mục, phạm vi, mức ưu tiên và `slaStatus`; cập nhật chỉ ở Submitted, chủ sở hữu hoặc Admin |
+| Phiếu | Nhận, phân công, hủy phân công | `POST /api/tickets/{id}/claim`, `/assign`, `/unassign` | Agent hoặc Admin | Lưu người phụ trách và ghi audit; phân công/hủy phân công yêu cầu Lead của nhóm đang phụ trách phiếu hoặc Admin; phiếu đã phân công cho người khác chỉ Admin nhận thay được |
+| Phiếu | Giải quyết, mở lại, đóng, hủy, tạm dừng, tiếp tục | `POST /api/tickets/{id}/resolve`, `/reopen`, `/close`, `/cancel`, `/pending`, `/resume` | Đã đăng nhập; Application kiểm vai trò và chủ sở hữu (tạm dừng/tiếp tục yêu cầu Agent hoặc Admin) | Bảng chuyển trạng thái bên dưới |
 | Trao đổi | Bình luận; ghi chú nội bộ; timeline | `POST /api/tickets/{id}/comments`, `POST /api/tickets/{id}/internal-notes`, `GET /api/tickets/{id}/timeline` | Requester; Agent; Requester | Requester chỉ thấy phiếu của mình; ghi chú nội bộ không lộ cho Requester |
 | Tệp | Xin quyền tải lên; xác nhận; danh sách; xin URL tải xuống | `POST /api/tickets/{id}/attachments/upload-url`, `/attachments/confirm`, `GET /api/tickets/{id}/attachments`, `/attachments/download-url` | Requester (theo phạm vi phiếu) | Luồng ở cuối tài liệu |
 | Tri thức | Tạo bản nháp, sửa, xuất bản, lưu trữ | `POST /api/knowledge/articles`, `PUT .../{id}/draft`, `POST .../{id}/publish`, `POST .../{id}/archive` | Agent hoặc Admin | Sửa, xuất bản và lưu trữ bắt buộc `expectedRevision` |
@@ -56,12 +56,14 @@ Các thao tác đều dùng POST. Chỉ `update` nhận nội dung JSON; các th
 | --- | --- | --- | --- |
 | Cập nhật | Submitted | Submitted | Quy tắc tiêu đề, mô tả và danh mục như khi tạo |
 | Nhận xử lý | Submitted hoặc Assigned | InProgress | Agent hoặc Admin; lưu người phụ trách và ghi audit. Phiếu đã phân công cho người khác chỉ Admin nhận thay được. Chưa có nhóm |
+| Tạm dừng | InProgress | PendingUser hoặc PendingExternal | Agent hoặc Admin (`RequireAgent`); body `PendingTicketRequest` (Status, ExpectedRevision) |
+| Tiếp tục | PendingUser hoặc PendingExternal | InProgress | Agent hoặc Admin (`RequireAgent`); query `expectedRevision` |
 | Giải quyết | InProgress | Resolved | Chưa có nội dung giải quyết, thời điểm giải quyết riêng hoặc lịch sử nghiệp vụ |
 | Mở lại | Resolved | InProgress | Chưa có cửa sổ thời gian, kiểm tra người phụ trách hoặc tác vụ tự đóng |
 | Đóng | Resolved | Closed | Chưa có tác vụ đóng tự động |
 | Hủy | Submitted | Cancelled | Chưa nhận lý do hủy hoặc lưu lịch sử nghiệp vụ |
 
-Mọi lệnh ghi phiếu (cập nhật, nhận xử lý, phân công, hủy phân công, giải quyết, mở lại, đóng, hủy) bắt buộc `expectedRevision`: thiếu hoặc bằng 0 trả 400, khác revision hiện tại (`xmin`) trả 409. Trạng thái khác bị Domain từ chối; `TicketCommandGuard` chuyển lỗi trạng thái thành `ArgumentException`, bộ lọc HTTP trả 400 với `{ error }`. Phiếu thiếu hoặc ngoài quyền chủ sở hữu của các lệnh `update/reopen/close/cancel` trả 404. Các lệnh mới chưa có cơ chế khóa chống tạo trùng hoặc phát lại phản hồi như thao tác tạo phiếu. Yêu cầu đã thực hiện thành công rồi gửi lại có thể nhận lỗi trạng thái.
+Mọi lệnh ghi phiếu (cập nhật, nhận xử lý, phân công, hủy phân công, giải quyết, mở lại, đóng, hủy, tạm dừng, tiếp tục) bắt buộc `expectedRevision`: thiếu hoặc bằng 0 trả 400, khác revision hiện tại (`xmin`) trả 409. Trạng thái khác bị Domain từ chối; `TicketCommandGuard` chuyển lỗi trạng thái thành `ArgumentException`, bộ lọc HTTP trả 400 với `{ error }`. Phiếu thiếu hoặc ngoài quyền chủ sở hữu của các lệnh `update/reopen/close/cancel` trả 404. Các lệnh mới chưa có cơ chế khóa chống tạo trùng hoặc phát lại phản hồi như thao tác tạo phiếu. Yêu cầu đã thực hiện thành công rồi gửi lại có thể nhận lỗi trạng thái.
 
 ## Các điểm đã xử lý sau refactor
 
@@ -88,6 +90,7 @@ Mọi lệnh ghi phiếu (cập nhật, nhận xử lý, phân công, hủy phâ
 | `ticketNumber` | Sinh bằng sequence DB, `IT-YYYY-…`, độ rộng tối thiểu bốn chữ số; không reset theo năm |
 | `requesterDepartmentId` | Nullable; chưa có luồng snapshot hồ sơ/phòng ban hoàn chỉnh |
 | `status` | Số nguyên trong JSON; khi tạo là Submitted (1) |
+| `sla` | Nullable, DTO `SlaSummaryDto` gồm `isApplicable`, `evaluatedAt`, `overallStatus`, `firstResponse`, `resolution` |
 | Phân trang | Mặc định page=1, pageSize=10; page ≥ 1, pageSize từ 1 đến 100; kiểm tra tràn offset ở Application |
 
 | Giá trị đã định nghĩa | Tên |
@@ -119,6 +122,6 @@ Nguồn: [TicketStatus](../../src/backend/Modules/Ticketing/Domain/TicketStatus.
 
 Kiểm thử `PublishedApiMatchesBaseline` so sánh toàn bộ tài liệu OpenAPI với bản chuẩn, phát hiện cả mục mới chưa công bố và thay đổi mô tả/bảo mật. Cập nhật bản chuẩn có chủ đích theo [quy chuẩn tài liệu](../process/documentation-standard.md).
 
-Chưa có luồng Draft/Submit riêng, API quản trị nhóm hỗ trợ (dữ liệu và phạm vi đọc theo nhóm đã có), SLA, AI thật hoặc thu hồi tức thời quyền trong access token đã phát. Luồng tệp đính kèm: xin quyền tải lên nhận form multipart POST đã ký (giới hạn 10 MiB, gắn actor/ticket/tên/dung lượng/MIME/key/hết hạn) → xác nhận đối chiếu metadata object, sao chép sang key cuối bất biến rồi mới ghi metadata vào DB → tải xuống bằng URL ký ngắn hạn. Grant PUT cũ còn hạn vẫn được xác nhận theo cùng cách (xem [runbook](../runbooks/supportflow-hardening-phase-2-6.md)). Còn mở: đối soát object mồ côi khi lưu trữ thành công nhưng kết quả giao dịch DB không xác định. FullName chưa có dữ liệu hồ sơ riêng được lưu. Các phần còn thiếu thuộc đợt phát triển được quyết định riêng.
+Chưa có luồng Draft/Submit riêng, API quản trị nhóm hỗ trợ (dữ liệu và phạm vi đọc theo nhóm đã có), AI thật hoặc thu hồi tức thời quyền trong access token đã phát. Dữ liệu SLA tóm tắt bước đầu được gắn kèm trong `TicketDto` và hỗ trợ lọc qua tham số query `slaStatus` trên hàng đợi. Luồng tệp đính kèm: xin quyền tải lên nhận form multipart POST đã ký (giới hạn 10 MiB, gắn actor/ticket/tên/dung lượng/MIME/key/hết hạn) → xác nhận đối chiếu metadata object, sao chép sang key cuối bất biến rồi mới ghi metadata vào DB → tải xuống bằng URL ký ngắn hạn. Grant PUT cũ còn hạn vẫn được xác nhận theo cùng cách (xem [runbook](../runbooks/supportflow-hardening-phase-2-6.md)). Còn mở: đối soát object mồ côi khi lưu trữ thành công nhưng kết quả giao dịch DB không xác định. FullName chưa có dữ liệu hồ sơ riêng được lưu. Các phần còn thiếu thuộc đợt phát triển được quyết định riêng.
 
 Ứng viên B3 áp dụng [DEC-07](pending-business-decisions.md) cho tệp đã xác nhận. Mỗi phiếu có tối đa 10 tệp với tổng dung lượng tối đa 50 MiB. Khi xác nhận tệp mới, backend kiểm tra hạn mức và lưu metadata trong cùng giao dịch khóa theo phiếu. Nếu vượt hạn mức, API trả 400. Nếu hết thời gian chờ khóa, API trả 503 với `Retry-After` và giữ grant để gửi lại. Gửi lại yêu cầu xác nhận thành công trả về tệp đã ghi mà không tính thêm dung lượng. Grant đang chờ xác nhận chưa chiếm hạn mức tệp đã xác nhận.

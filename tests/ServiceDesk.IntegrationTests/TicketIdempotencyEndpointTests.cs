@@ -47,6 +47,8 @@ public class TicketIdempotencyEndpointTests
         builder.Services.AddSingleton(Mock.Of<ServiceDesk.Modules.Ticketing.Application.GetTicketDetail.IGetTicketDetail>());
         builder.Services.AddSingleton(Mock.Of<ServiceDesk.Modules.Ticketing.Application.UpdateTicket.IUpdateTicket>());
         builder.Services.AddSingleton(Mock.Of<ServiceDesk.Modules.Ticketing.Application.ClaimTicket.IClaimTicket>());
+        builder.Services.AddSingleton(Mock.Of<ServiceDesk.Modules.Ticketing.Application.PendingTicket.IPendingTicket>());
+        builder.Services.AddSingleton(Mock.Of<ServiceDesk.Modules.Ticketing.Application.ResumeTicket.IResumeTicket>());
         builder.Services.AddSingleton(Mock.Of<ServiceDesk.Modules.Ticketing.Application.ResolveTicket.IResolveTicket>());
         builder.Services.AddSingleton(Mock.Of<ServiceDesk.Modules.Ticketing.Application.ReopenTicket.IReopenTicket>());
         builder.Services.AddSingleton(Mock.Of<ServiceDesk.Modules.Ticketing.Application.CloseTicket.ICloseTicket>());

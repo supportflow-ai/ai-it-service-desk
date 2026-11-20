@@ -19,5 +19,6 @@ public record TicketDto(
     uint Revision = 0,
     string? Priority = null,
     string? Impact = null,
-    string? Urgency = null
+    string? Urgency = null,
+    SlaSummaryDto? Sla = null
 );

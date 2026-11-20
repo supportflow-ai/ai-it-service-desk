@@ -20,6 +20,7 @@ public interface IUnassignTicket
 
 internal sealed class UnassignTicketUseCase(
     ITicketWriter writer,
+    ISupportTeamMembershipReader membershipReader,
     ICurrentUser currentUser,
     IClock clock) : IUnassignTicket
 {
@@ -39,6 +40,15 @@ internal sealed class UnassignTicketUseCase(
         if (ticket == null)
         {
             throw new KeyNotFoundException("Ticket not found.");
+        }
+
+        var isAdmin = TicketPermissions.IsAdmin(currentUser);
+        var isTeamLead = ticket.SupportTeamId.HasValue &&
+            await membershipReader.IsLeadAsync(ticket.SupportTeamId.Value, actorId, cancellationToken);
+
+        if (!isAdmin && !isTeamLead)
+        {
+            throw new UnauthorizedAccessException("Chỉ Trưởng nhóm phụ trách phiếu hoặc Quản trị viên mới có quyền hủy phân công.");
         }
 
         TicketCommandGuard.RequireCurrentRevision(writer, ticket, command.ExpectedRevision);
