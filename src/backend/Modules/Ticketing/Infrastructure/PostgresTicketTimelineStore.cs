@@ -9,14 +9,46 @@ internal sealed class PostgresTicketTimelineStore(DbContext context) : ITicketTi
 {
     internal const string TerminalTicketMessage = "Không thể thêm bình luận vào vé đã kết thúc.";
 
-    public async Task<TimelineItemDto> AddToOpenTicketAsync(TicketComment comment, CancellationToken cancellationToken = default)
+    public Task<TimelineItemDto> AddToOpenTicketAsync(TicketComment comment, CancellationToken cancellationToken = default) =>
+        AddToOpenTicketAsync(comment, null, null, cancellationToken);
+
+    public async Task<TimelineItemDto> AddToOpenTicketAsync(
+        TicketComment comment,
+        Ticket? ticket,
+        TicketComment? systemAudit,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(comment);
         await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
-        await TicketRowLock.RequireOpenAsync(context, comment.TicketId, TerminalTicketMessage, cancellationToken);
-        var result = await AddAsync(comment, cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
-        return result;
+        await TicketRowLock.RequireOpenAsync(context, comment.TicketId, TerminalTicketMessage, cancellationToken, serializeWrites: ticket is not null);
+
+        if (ticket is not null)
+        {
+            if (systemAudit is not null)
+            {
+                if (systemAudit.TicketId != ticket.Id)
+                    throw new ArgumentException("Audit must belong to the same ticket.", nameof(systemAudit));
+                context.Set<TicketComment>().Add(systemAudit);
+            }
+
+            var entry = context.Entry(ticket);
+            if (entry.State == EntityState.Detached)
+            {
+                context.Set<Ticket>().Attach(ticket);
+                entry.State = EntityState.Modified;
+            }
+        }
+
+        try
+        {
+            var result = await AddAsync(comment, cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+            return result;
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw new ServiceDesk.SharedKernel.Application.ConcurrencyConflictException();
+        }
     }
 
     public async Task<TimelineItemDto> AddAsync(TicketComment comment, CancellationToken cancellationToken = default)

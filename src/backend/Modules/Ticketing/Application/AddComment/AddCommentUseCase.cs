@@ -1,5 +1,6 @@
 using ServiceDesk.SharedKernel.Application.Abstractions;
 using ServiceDesk.Modules.Ticketing.Application.Authorization;
+using ServiceDesk.Modules.Ticketing.Application.Common;
 using ServiceDesk.Modules.Ticketing.Application.Contracts;
 using ServiceDesk.Modules.Ticketing.Application.Ports;
 using ServiceDesk.SharedKernel.Authorization;
@@ -32,7 +33,8 @@ internal sealed class AddCommentUseCase(
 
         // Kiểm quyền xem trước trạng thái: ticket của người khác luôn trả 404, không lộ là đã đóng hay hủy.
         var isStaff = TicketPermissions.IsStaff(currentUser);
-        if (!isStaff && !ticket.IsOwnedBy(actorId))
+        var isOwner = ticket.IsOwnedBy(actorId);
+        if (!isStaff && !isOwner)
             throw new KeyNotFoundException("Ticket not found.");
 
         if (ticket.Status is TicketStatus.Closed or TicketStatus.Cancelled)
@@ -42,15 +44,42 @@ internal sealed class AddCommentUseCase(
         var authorRole = currentUser.IsInRole(RoleNames.Admin) ? RoleNames.Admin
             : currentUser.IsInRole(RoleNames.Agent) ? RoleNames.Agent : RoleNames.Requester;
 
+        var now = clock.UtcNow.UtcDateTime;
         var comment = TicketComment.CreatePublic(
             command.TicketId,
             actorId,
             authorName,
             authorRole,
             command.Content,
-            clock.UtcNow.UtcDateTime);
+            now);
+
+        var ticketModified = false;
+        TicketComment? resumeAudit = null;
+
+        // DEC-03: Người dùng sở hữu phản hồi trong PendingUser tự động resume InProgress
+        if (isOwner && ticket.Status == TicketStatus.PendingUser)
+        {
+            ticket.ResumeFromPending(now);
+            resumeAudit = TicketComment.CreatePublic(
+                ticket.Id,
+                actorId,
+                SystemAuthor.Name,
+                SystemAuthor.Role,
+                "Tự động tiếp tục xử lý phiếu sau phản hồi của người dùng.",
+                now);
+            ticketModified = true;
+        }
+
+        // First Response: Phản hồi công khai đầu tiên từ Staff (không phải chủ sở hữu)
+        if (isStaff && !isOwner && ticket.IsSlaApplicable && !ticket.FirstRespondedAt.HasValue)
+        {
+            ticket.RecordFirstResponse(now);
+            ticketModified = true;
+        }
 
         // Kiểm lại trạng thái trong giao dịch ghi: ticket có thể vừa bị đóng sau lần kiểm ở trên.
-        return await timelineStore.AddToOpenTicketAsync(comment, cancellationToken);
+        return ticketModified
+            ? await timelineStore.AddToOpenTicketAsync(comment, ticket, resumeAudit, cancellationToken)
+            : await timelineStore.AddToOpenTicketAsync(comment, cancellationToken);
     }
 }

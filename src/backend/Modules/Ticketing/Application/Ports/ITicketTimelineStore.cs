@@ -18,5 +18,14 @@ public interface ITicketTimelineStore
     /// <exception cref="KeyNotFoundException">Ticket không tồn tại.</exception>
     /// <exception cref="ArgumentException">Ticket đã đóng hoặc hủy.</exception>
     Task<TimelineItemDto> AddToOpenTicketAsync(TicketComment comment, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Lưu bình luận công khai kèm cập nhật ticket và audit hệ thống nguyên tử trong cùng giao dịch có khóa dòng ticket.
+    /// </summary>
+    Task<TimelineItemDto> AddToOpenTicketAsync(
+        TicketComment comment,
+        Ticket? ticket,
+        TicketComment? systemAudit,
+        CancellationToken cancellationToken = default);
     Task<IReadOnlyList<TimelineItemDto>> GetForTicketAsync(Guid ticketId, bool includeInternal, CancellationToken cancellationToken = default);
 }
