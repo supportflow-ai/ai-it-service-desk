@@ -45,6 +45,12 @@ public sealed class TicketAuditUseCaseTests
         clock.SetupGet(value => value.UtcNow).Returns(now);
         var directory = new Mock<IAgentDirectory>();
         directory.Setup(value => value.IsAgentAsync(actor, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        var memberships = new Mock<ISupportTeamMembershipReader>();
+        if (ticket.SupportTeamId.HasValue)
+        {
+            memberships.Setup(m => m.IsLeadAsync(ticket.SupportTeamId.Value, actor, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+            memberships.Setup(m => m.IsMemberAsync(ticket.SupportTeamId.Value, actor, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        }
         var writer = new Mock<ITicketWriter>(MockBehavior.Strict);
         writer.Setup(value => value.GetForUpdateAsync(ticket.Id, It.IsAny<TicketReadScope>(), It.IsAny<CancellationToken>())).ReturnsAsync(ticket);
         writer.Setup(value => value.GetRevision(ticket)).Returns(42);
@@ -57,8 +63,8 @@ public sealed class TicketAuditUseCaseTests
 
         Task<TicketDto> Execute() => operation switch
         {
-            "assign" => new AssignTicketUseCase(writer.Object, directory.Object, user.Object, clock.Object).ExecuteAsync(new(ticket.Id, actor, 42)),
-            "unassign" => new UnassignTicketUseCase(writer.Object, user.Object, clock.Object).ExecuteAsync(new(ticket.Id, 42)),
+            "assign" => new AssignTicketUseCase(writer.Object, directory.Object, memberships.Object, user.Object, clock.Object).ExecuteAsync(new(ticket.Id, actor, 42)),
+            "unassign" => new UnassignTicketUseCase(writer.Object, memberships.Object, user.Object, clock.Object).ExecuteAsync(new(ticket.Id, 42)),
             "claim" => new ClaimTicketUseCase(writer.Object, user.Object, clock.Object).ExecuteAsync(new(ticket.Id, 42)),
             "resolve" => new ResolveTicketUseCase(writer.Object, user.Object, clock.Object).ExecuteAsync(new(ticket.Id, 42)),
             "reopen" => new ReopenTicketUseCase(writer.Object, user.Object, clock.Object).ExecuteAsync(new(ticket.Id, 42)),

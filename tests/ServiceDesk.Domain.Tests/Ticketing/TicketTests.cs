@@ -143,6 +143,34 @@ public class TicketTests
     }
 
     [Fact]
+    public void Assign_ResolvedTicket_IsRejectedWithoutMutation()
+    {
+        var ticket = CreateValidTicket();
+        var now = DateTime.UtcNow;
+        var originalAgentId = Guid.NewGuid();
+
+        ticket.Claim(originalAgentId, now);
+        ticket.Resolve(now.AddMinutes(1));
+
+        var statusBefore = ticket.Status;
+        var assigneeBefore = ticket.AssignedToId;
+        var assignedAtBefore = ticket.AssignedAt;
+        var updatedAtBefore = ticket.UpdatedAt;
+
+        var newAgentId = Guid.NewGuid();
+        var assignTime = now.AddMinutes(2);
+        var act = () => ticket.Assign(newAgentId, assignTime);
+
+        act.Should().Throw<InvalidOperationException>()
+            .WithMessage($"Cannot assign ticket in status {TicketStatus.Resolved}");
+
+        ticket.Status.Should().Be(statusBefore);
+        ticket.AssignedToId.Should().Be(assigneeBefore);
+        ticket.AssignedAt.Should().Be(assignedAtBefore);
+        ticket.UpdatedAt.Should().Be(updatedAtBefore);
+    }
+
+    [Fact]
     public void FullLifecycle_Resolve_Reopen_Close_Works()
     {
         var ticket = CreateValidTicket();
