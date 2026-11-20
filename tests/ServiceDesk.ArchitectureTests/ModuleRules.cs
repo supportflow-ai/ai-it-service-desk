@@ -51,6 +51,7 @@ internal static class ModuleRules
         if (name.StartsWith("ServiceDesk.Platform.", StringComparison.Ordinal)) return new("Platform");
         if (name.StartsWith("ServiceDesk.Api.Endpoints.", StringComparison.Ordinal)) return new("HostPresentation");
         if (name.StartsWith("ServiceDesk.Api.Authentication.", StringComparison.Ordinal)) return new("HostAdapter");
+        if (name.StartsWith("ServiceDesk.Worker.", StringComparison.Ordinal)) return new("HostWorker");
         foreach (var module in Modules)
         {
             var prefix = $"ServiceDesk.Modules.{module}.";
@@ -92,7 +93,7 @@ internal static class ModuleRules
     {
         var persistence = PersistenceFrameworks.Any(prefix => name.StartsWith(prefix, StringComparison.Ordinal));
         var web = name.StartsWith("Microsoft.AspNetCore.", StringComparison.Ordinal);
-        if (persistence && (assembly == "ServiceDesk.Api" || source.Kind is "Shared" or "SharedWeb" or "HostPresentation" or "HostAdapter" ||
+        if (persistence && (assembly == "ServiceDesk.Api" || assembly == "ServiceDesk.Worker" || source.Kind is "Shared" or "SharedWeb" or "HostPresentation" or "HostAdapter" or "HostWorker" ||
                             source.Layer is "Domain" or "Application" or "Presentation"))
             return "Persistence access outside a module adapter";
         if (web && (source.Kind == "Shared" || source.Layer is "Domain" or "Application"))
@@ -112,6 +113,7 @@ internal static class ModuleRules
                 {
                     // Điểm đăng ký DependencyInjection được phân loại là Composition.
                     if (other.Kind == "Platform") return false;
+                    if (other.Kind == "HostWorker") return true;
                     if (other.Kind == "Module")
                         return other.Layer == "Module" || (assembly == "ServiceDesk.Api" && other.Layer == "Presentation");
                 }
@@ -124,6 +126,9 @@ internal static class ModuleRules
                 return other.Kind is "Shared" or "HostAdapter";
             case "HostPresentation":
                 return other.Kind is "Shared" or "SharedWeb" or "HostPresentation";
+            case "HostWorker":
+                return other.Kind is "Shared" or "HostWorker" ||
+                       (other.Kind == "Module" && other.Layer is "Application" or "Contracts" or "Module");
             case "Platform":
                 // DbContext, migration và bảo trì database cần thực thể, cấu hình ánh xạ và điểm vào module;
                 // không bao giờ dùng use case hay endpoint.
