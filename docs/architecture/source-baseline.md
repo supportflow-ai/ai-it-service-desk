@@ -1,24 +1,32 @@
 # Mốc mã nguồn và phạm vi tài liệu
 
-Trạng thái: chỉ mục mốc nguồn hiện hành; cập nhật ngày 2026-11-13 (Asia/Bangkok).
+Chỉ mục mốc nguồn hiện hành cập nhật ngày 21/11/2026 (Asia/Bangkok). [Bản đồ tài liệu Backend](../README.md)
 
 ## Mốc áp dụng
 
-Hai mốc được ghi riêng:
+Mốc mã, mốc đối chiếu cũ và mốc tài liệu được ghi riêng.
 
-- **Mốc mã:** `dev@07ce07a9dd50bcd143690c7ba1a19cc0048b9508` (2026-11-13). Từ mốc `a182c9f` (2026-11-08), mã đổi qua PR #59–#60 (nền dữ liệu nhóm hỗ trợ), #64 (B1-PR3: phạm vi đọc và lệnh ghi của Agent theo nhóm hỗ trợ hoặc phân công trực tiếp, [ADR-016](../adr/ADR-016-support-team-routing-and-agent-scope.md)) và #65 (B3: hạn mức tệp đính kèm theo phiếu, xử lý lock timeout khi xác nhận). PR #61, #63, #66 đổi tài liệu và kiểm thử. Các commit #68, #70 và `07ce07a` chỉ đổi cấu trúc thư mục và tên project, không đổi API hay dữ liệu. Mốc mã cuối cùng đổi hợp đồng hay hành vi người dùng thấy được là `dcd104e` (PR #65).
-- **Tài liệu:** cập nhật tới mốc `07ce07a` (2026-11-13).
+- **Mốc mã hiện hành** `dev@b3cc19a80fa70fde0945a99b483050198de5c129`. PR #82 bổ sung quyền phân công của Lead/Admin, SLA và hai thao tác tạm dừng/tiếp tục. [Hợp đồng hiện hành](current-backend-contract.md)
+- **Mốc trước PR #82** `dev@3640c33eb83e049b9cc8488608c18a155b225292`, được rà ngày 21/11/2026. Từ `dev@07ce07a9dd50bcd143690c7ba1a19cc0048b9508` (13/11), thay đổi duy nhất dưới `src`, `tests` và `contracts` là chú thích của [`AIAnalysis.TicketRevision`](../../src/backend/Modules/AIAssistance/Domain/AIAnalysis.cs) về điều kiện hết hạn theo `InputHash`.
+- **Mốc tài liệu** 21/11/2026, bổ sung phạm vi `AI-02`, phương án SupportTeam và đường đến kế hoạch lưu trữ sau khi ADR-017 được chấp nhận. Xem [chỉ mục kiến trúc](README.md) và [danh mục ADR](../adr/README.md).
 
-Các mốc này mô tả mã, không phải bằng chứng nghiệm thu; kết quả CI gắn với SHA của từng PR.
+Kết quả CI gắn với SHA của từng lượt chạy. Kết quả nghiệm thu gắn với cấu hình ứng viên được ghi trong `DEC-08`.
 
 | Thành phần | Phạm vi |
 | --- | --- |
-| Mã backend | Bốn module (Identity, Ticketing, Knowledge, AIAssistance); 36 luồng nghiệp vụ |
-| Hợp đồng OpenAPI | 40 đường dẫn, 41 thao tác trong `contracts/backend/openapi-baseline.json` |
+| Mã backend | Bốn module (Identity, Ticketing, Knowledge, AIAssistance). Tại `3640c33` có 36 luồng nghiệp vụ; PR #82 bổ sung tạm dừng, tiếp tục và đánh giá SLA nền |
+| [OpenAPI HTTP Backend](../../contracts/backend/openapi-baseline.json) | Tại `b3cc19a`: 42 đường dẫn, 43 thao tác, SHA-256 trên byte Git `8c31b7d2b5c952b3daa3da547732b268324005adc5bb50ce413a1378d51c1f6e`. Tại `3640c33`: 40 đường dẫn, 41 thao tác, SHA-256 `c60fa717629e075adde1b13c5480b0f067fda755d46c3fb9c5c16edb2b10fa38` |
+| [OpenAPI phân loại AI v1](../../contracts/ai/v1/openapi.yaml) | SHA-256 trên byte Git là `ad1d93230158b9ee66c6e3d0843edafcadde97b01bd2adef62265e4cf7f16428`. AI Service dùng bản ghim cùng hash |
 | Kiểm thử hợp đồng | `PublishedApiMatchesBaseline` so sánh toàn bộ tài liệu OpenAPI |
 | Tài liệu hiện hành | Tiếng Việt, phân biệt hành vi đang có, đề xuất, quyết định và bằng chứng lịch sử |
 
-[Hợp đồng backend](current-backend-contract.md) và [mô-đun/luồng xử lý](backend-modules-and-use-cases.md) mô tả mã tại mốc này. Liên kết mã tương đối mở checkout của người đọc; kiểm tra HEAD trước khi áp dụng. Kết quả kiểm thử của một commit cũ không xác nhận thay đổi mới. Mốc cũ `dev@47634bc` (sau PR #28 và #29) và bản local `codex/backend-clean-architecture@334485d` chỉ còn trong [báo cáo rà soát](../reviews/documentation-audit-20261020.md) để truy vết.
+[Hợp đồng Backend](current-backend-contract.md) và [mô-đun/luồng xử lý](backend-modules-and-use-cases.md) ghi mốc rà riêng. Kiểm tra HEAD trước khi dùng liên kết mã tương đối. Snapshot Web còn ghim Backend `0f189b5`, SHA-256 `3884d37d…`. Soát chênh lệch của từng mốc theo `ai-it-service-desk-web/docs/architecture/api-baseline.md` trước khi ghép phiên bản.
+
+## Mốc đã đối chiếu ngày 13/11/2026
+
+Từ `a182c9f` đến `07ce07a`, PR #59–#60 bổ sung nền dữ liệu nhóm hỗ trợ, #64 giới hạn phạm vi Agent theo nhóm hoặc phân công trực tiếp và #65 thêm hạn mức tệp theo phiếu cùng xử lý lock timeout. Các mốc #68, #70 và `07ce07a` đổi cấu trúc thư mục và tên project. Mốc cuối trong khoảng này thay hợp đồng hoặc hành vi người dùng thấy được là `dcd104e` (PR #65). [ADR-016](../adr/ADR-016-support-team-routing-and-agent-scope.md)
+
+Mốc `dev@47634bc` (sau PR #28 và #29) và bản local `codex/backend-clean-architecture@334485d` được lưu để truy vết. [Báo cáo rà soát](../reviews/documentation-audit-20261020.md)
 
 ## Nhánh tái tổ chức theo module (2026-11-07)
 

@@ -4,6 +4,8 @@
 
 Đã chấp nhận ngày 2026-10-18, thay [ADR-009](ADR-009-jenkins-ci-cd.md) theo yêu cầu chủ dự án. Bản diễn giải tiếng Việt cập nhật 2026-10-20.
 
+**Hiện trạng ngày 21/11/2026.** Các phần dưới lưu quyết định tháng 10. Workflow trong kho Backend, Web và AI hiện có lượt phát hành GHCR theo yêu cầu và tạo artifact theo SHA. Infra ghép manifest và triển khai theo quy trình riêng. [Vận hành GitHub Actions](../runbooks/github-actions.md)
+
 ## Bối cảnh
 
 Backend, giao diện, hợp đồng AI và hạ tầng đã tách thành các kho GitHub. Duy trì Jenkinsfile song song với GitHub Actions làm trùng các bước kiểm tra và cần thêm máy chủ CI.

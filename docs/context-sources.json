@@ -42,6 +42,16 @@
     "contracts/ai/v1/README.md": {
       "kind": "current"
     },
+    "docs/architecture/ai-integration-plan.md": {
+      "kind": "proposal",
+      "notice": "kế hoạch đề xuất",
+      "replacement": "docs/adr/ADR-012-ai-contract-and-future-transport.md"
+    },
+    "docs/architecture/r2-storage-plan.md": {
+      "kind": "proposal",
+      "notice": "kế hoạch đề xuất",
+      "replacement": "docs/adr/ADR-017-cloudflare-r2-object-storage.md"
+    },
     "docs/architecture/01-actor-use-cases.md": {
       "kind": "proposal",
       "notice": "Đề xuất",

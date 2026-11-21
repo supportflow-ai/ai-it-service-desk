@@ -4,6 +4,8 @@
 
 Đã chấp nhận. Bản diễn giải tiếng Việt cập nhật 2026-10-20.
 
+**Hiện trạng ngày 21/11/2026 tại Backend `dev@3640c33`.** Cổng phân loại đã có adapter HTTP sau giai đoạn NoOp ban đầu. Lưu phân tích và luồng Ticketing gọi AI rồi chuyển cho người duyệt còn chờ triển khai. Các đoạn dưới ghi quyết định ban đầu. [Adapter tại mốc đối chiếu](ADR-012-ai-contract-and-future-transport.md#adapter-http-tại-mốc-đối-chiếu)
+
 ## Bối cảnh
 
 AI hỗ trợ phân loại phiếu và định hướng tìm kiếm kho tri thức. Cần giảm phụ thuộc vào một nhà cung cấp và duy trì nghiệp vụ khi AI không sẵn sàng.
