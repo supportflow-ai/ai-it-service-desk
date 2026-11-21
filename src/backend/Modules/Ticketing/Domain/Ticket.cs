@@ -62,6 +62,33 @@ public class Ticket
     /// <summary>Thời điểm cập nhật vé gần nhất (UTC).</summary>
     public DateTime UpdatedAt { get; private set; }
 
+    /// <summary>Xác định phiếu có áp dụng cam kết SLA hay không.</summary>
+    public bool IsSlaApplicable { get; private set; }
+
+    /// <summary>Target phản hồi đầu tiên snapshot đang áp dụng (phút).</summary>
+    public int? FirstResponseTargetMinutes { get; private set; }
+
+    /// <summary>Thời điểm ghi nhận phản hồi đầu tiên hợp lệ (UTC).</summary>
+    public DateTime? FirstRespondedAt { get; private set; }
+
+    /// <summary>Đánh dấu đã từng vi phạm cam kết First Response (bảo toàn vĩnh viễn).</summary>
+    public bool FirstResponseBreached { get; private set; }
+
+    /// <summary>Target thời gian giải quyết snapshot đang áp dụng (phút).</summary>
+    public int? ResolutionTargetMinutes { get; private set; }
+
+    /// <summary>Tổng thời gian làm việc thực tế đã tích lũy từ các đoạn trước (đã loại trừ tạm dừng Pending và thời gian ở Resolved giữa các lần Reopen).</summary>
+    public TimeSpan ResolutionAccumulatedDuration { get; private set; } = TimeSpan.Zero;
+
+    /// <summary>Mốc thời gian bắt đầu đoạn đang chạy hiện tại (UTC). Null khi đang tạm dừng hoặc hoàn thành.</summary>
+    public DateTime? ResolutionSegmentStartedAt { get; private set; }
+
+    /// <summary>Thời điểm giải quyết phiếu gần nhất (UTC).</summary>
+    public DateTime? ResolvedAt { get; private set; }
+
+    /// <summary>Đánh dấu đã từng vi phạm cam kết Resolution (bảo toàn vĩnh viễn).</summary>
+    public bool ResolutionBreached { get; private set; }
+
     // Cột hệ thống xmin của PostgreSQL đóng vai trò concurrency token - EF Core tự động xử lý
 
     /// <summary>
@@ -146,7 +173,7 @@ public class Ticket
     public void Assign(Guid agentId, DateTime now)
     {
         if (agentId == Guid.Empty) throw new ArgumentException("Agent ID is required.");
-        if (Status == TicketStatus.Closed || Status == TicketStatus.Cancelled)
+        if (Status == TicketStatus.Closed || Status == TicketStatus.Cancelled || Status == TicketStatus.Resolved)
             throw new InvalidOperationException($"Cannot assign ticket in status {Status}");
         AssignedToId = agentId;
         AssignedAt = now;
@@ -189,13 +216,38 @@ public class Ticket
     }
 
     /// <summary>
-    /// Đánh dấu vé đã được giải quyết xong (InProgress -> Resolved).
+    /// Đánh dấu vé đã được giải quyết xong (InProgress hoặc PendingExternal -> Resolved).
     /// </summary>
     public void Resolve(DateTime now)
     {
-        if (Status != TicketStatus.InProgress)
+        if (Status != TicketStatus.InProgress && Status != TicketStatus.PendingExternal)
         {
             throw new InvalidOperationException($"Cannot resolve ticket in status {Status}");
+        }
+
+        // Chốt đoạn đang chạy nếu còn (từ InProgress), từ PendingExternal thì segment đang null
+        if (ResolutionSegmentStartedAt.HasValue)
+        {
+            if (now >= ResolutionSegmentStartedAt.Value)
+            {
+                ResolutionAccumulatedDuration += (now - ResolutionSegmentStartedAt.Value);
+            }
+            ResolutionSegmentStartedAt = null;
+        }
+
+        ResolvedAt = now;
+        if (IsSlaApplicable && !FirstRespondedAt.HasValue)
+        {
+            RecordFirstResponse(now);
+        }
+
+        if (IsSlaApplicable && ResolutionTargetMinutes.HasValue)
+        {
+            var target = TimeSpan.FromMinutes(ResolutionTargetMinutes.Value);
+            if (ResolutionAccumulatedDuration > target)
+            {
+                ResolutionBreached = true;
+            }
         }
 
         Status = TicketStatus.Resolved;
@@ -210,6 +262,12 @@ public class Ticket
         if (Status != TicketStatus.Resolved)
         {
             throw new InvalidOperationException($"Cannot reopen ticket in status {Status}");
+        }
+
+        // Tiếp tục tích lũy ngân sách (Carry-over): bắt đầu đoạn chạy mới từ now, thời gian ở Resolved không tính
+        if (IsSlaApplicable)
+        {
+            ResolutionSegmentStartedAt = now;
         }
 
         Status = TicketStatus.InProgress;
@@ -240,7 +298,241 @@ public class Ticket
             throw new InvalidOperationException($"Cannot cancel ticket in status {Status}");
         }
 
+        if (IsSlaApplicable && ResolutionSegmentStartedAt.HasValue)
+        {
+            if (now >= ResolutionSegmentStartedAt.Value)
+            {
+                ResolutionAccumulatedDuration += (now - ResolutionSegmentStartedAt.Value);
+            }
+            ResolutionSegmentStartedAt = null;
+
+            if (ResolutionTargetMinutes.HasValue && ResolutionAccumulatedDuration > TimeSpan.FromMinutes(ResolutionTargetMinutes.Value))
+            {
+                ResolutionBreached = true;
+            }
+            if (!FirstRespondedAt.HasValue && FirstResponseTargetMinutes.HasValue && (now - CreatedAt) > TimeSpan.FromMinutes(FirstResponseTargetMinutes.Value))
+            {
+                FirstResponseBreached = true;
+            }
+        }
+
         Status = TicketStatus.Cancelled;
+        UpdatedAt = now;
+    }
+
+    /// <summary>
+    /// Khởi tạo cam kết SLA cho phiếu mới tạo.
+    /// </summary>
+    public void InitializeSla(SlaTargetDuration targets, DateTime now)
+    {
+        if (IsSlaApplicable)
+        {
+            throw new InvalidOperationException("Ticket SLA has already been initialized.");
+        }
+
+        IsSlaApplicable = true;
+        FirstResponseTargetMinutes = targets.FirstResponseMinutes;
+        ResolutionTargetMinutes = targets.ResolutionMinutes;
+        ResolutionAccumulatedDuration = TimeSpan.Zero;
+        ResolutionSegmentStartedAt = now;
+        UpdatedAt = now;
+    }
+
+    /// <summary>
+    /// Tính tổng thời gian đã trôi qua cho First Response tại thời điểm t.
+    /// </summary>
+    public TimeSpan GetFirstResponseElapsed(DateTime now)
+    {
+        if (!IsSlaApplicable) return TimeSpan.Zero;
+        return FirstRespondedAt.HasValue
+            ? FirstRespondedAt.Value - CreatedAt
+            : (now >= CreatedAt ? now - CreatedAt : TimeSpan.Zero);
+    }
+
+    /// <summary>
+    /// Tính tổng thời gian làm việc thực tế cho Resolution tại thời điểm t (đã trừ pause và thời gian ở Resolved).
+    /// </summary>
+    public TimeSpan GetResolutionElapsed(DateTime now)
+    {
+        if (!IsSlaApplicable) return TimeSpan.Zero;
+        var runningSegment = ResolutionSegmentStartedAt.HasValue && now >= ResolutionSegmentStartedAt.Value
+            ? now - ResolutionSegmentStartedAt.Value
+            : TimeSpan.Zero;
+        return ResolutionAccumulatedDuration + runningSegment;
+    }
+
+    /// <summary>
+    /// Ghi nhận phản hồi đầu tiên hợp lệ của Agent/Admin.
+    /// </summary>
+    public void RecordFirstResponse(DateTime now)
+    {
+        if (!IsSlaApplicable || FirstRespondedAt.HasValue) return;
+
+        FirstRespondedAt = now;
+        if (FirstResponseTargetMinutes.HasValue)
+        {
+            var target = TimeSpan.FromMinutes(FirstResponseTargetMinutes.Value);
+            var elapsed = now >= CreatedAt ? now - CreatedAt : TimeSpan.Zero;
+            if (elapsed > target)
+            {
+                FirstResponseBreached = true;
+            }
+        }
+        UpdatedAt = now;
+    }
+
+    /// <summary>
+    /// Chốt đoạn đang chạy vào thời gian tích lũy và chuyển sang trạng thái tạm dừng đồng hồ Resolution.
+    /// </summary>
+    public void PauseResolution(DateTime now)
+    {
+        if (!IsSlaApplicable) return;
+        if (ResolutionSegmentStartedAt.HasValue)
+        {
+            if (now >= ResolutionSegmentStartedAt.Value)
+            {
+                ResolutionAccumulatedDuration += (now - ResolutionSegmentStartedAt.Value);
+            }
+            ResolutionSegmentStartedAt = null;
+            UpdatedAt = now;
+        }
+    }
+
+    /// <summary>
+    /// Tiếp tục tính giờ cho đồng hồ Resolution từ mốc now.
+    /// </summary>
+    public void ResumeResolution(DateTime now)
+    {
+        if (!IsSlaApplicable) return;
+        if (!ResolutionSegmentStartedAt.HasValue)
+        {
+            ResolutionSegmentStartedAt = now;
+            UpdatedAt = now;
+        }
+    }
+
+    /// <summary>
+    /// Cập nhật Target SLA khi Priority thay đổi trên phiếu đang xử lý.
+    /// Đánh giá vi phạm theo target cũ trước khi áp dụng target mới.
+    /// </summary>
+    public void UpdateSlaPriority(Priority newPriority, DateTime now)
+    {
+        if (!IsSlaApplicable) return;
+
+        var newTargets = PrioritySlaTargets.GetFor(newPriority);
+
+        // 1. First Response: chỉ cập nhật nếu chưa phản hồi
+        if (!FirstRespondedAt.HasValue && FirstResponseTargetMinutes.HasValue)
+        {
+            var oldFrTarget = TimeSpan.FromMinutes(FirstResponseTargetMinutes.Value);
+            var frElapsed = now >= CreatedAt ? now - CreatedAt : TimeSpan.Zero;
+            if (frElapsed > oldFrTarget)
+            {
+                FirstResponseBreached = true;
+            }
+            FirstResponseTargetMinutes = newTargets.FirstResponseMinutes;
+            var newFrTarget = TimeSpan.FromMinutes(FirstResponseTargetMinutes.Value);
+            if (frElapsed > newFrTarget)
+            {
+                FirstResponseBreached = true;
+            }
+        }
+
+        // 2. Resolution: chỉ cập nhật nếu chưa Resolved hoặc Closed
+        if (Status != TicketStatus.Resolved && Status != TicketStatus.Closed && ResolutionTargetMinutes.HasValue)
+        {
+            var oldResTarget = TimeSpan.FromMinutes(ResolutionTargetMinutes.Value);
+            var resElapsed = GetResolutionElapsed(now);
+            if (resElapsed > oldResTarget)
+            {
+                ResolutionBreached = true;
+            }
+            ResolutionTargetMinutes = newTargets.ResolutionMinutes;
+            var newResTarget = TimeSpan.FromMinutes(ResolutionTargetMinutes.Value);
+            if (resElapsed > newResTarget)
+            {
+                ResolutionBreached = true;
+            }
+        }
+
+        Priority = newPriority;
+        UpdatedAt = now;
+    }
+
+    /// <summary>
+    /// Đánh giá trạng thái vi phạm cam kết SLA tại thời điểm hiện tại và cập nhật các cờ vi phạm nếu có.
+    /// Trả về true nếu có bất kỳ cờ vi phạm nào thay đổi từ false sang true.
+    /// </summary>
+    public bool EvaluateSlaBreach(DateTime now)
+    {
+        if (!IsSlaApplicable || Status == TicketStatus.Closed || Status == TicketStatus.Cancelled)
+            return false;
+
+        var changed = false;
+
+        // 1. First Response Clock: tiếp tục tính kể cả khi ticket Pending; vi phạm khi E > T
+        if (!FirstResponseBreached && !FirstRespondedAt.HasValue && FirstResponseTargetMinutes.HasValue)
+        {
+            var target = TimeSpan.FromMinutes(FirstResponseTargetMinutes.Value);
+            var elapsed = GetFirstResponseElapsed(now);
+            if (elapsed > target)
+            {
+                FirstResponseBreached = true;
+                changed = true;
+            }
+        }
+
+        // 2. Resolution Clock: tạm dừng khi Pending; vi phạm khi E > T
+        if (!ResolutionBreached && Status != TicketStatus.Resolved && Status != TicketStatus.Closed && Status != TicketStatus.Cancelled && ResolutionTargetMinutes.HasValue)
+        {
+            var target = TimeSpan.FromMinutes(ResolutionTargetMinutes.Value);
+            var elapsed = GetResolutionElapsed(now);
+            if (elapsed > target)
+            {
+                ResolutionBreached = true;
+                changed = true;
+            }
+        }
+
+        if (changed)
+        {
+            UpdatedAt = now;
+        }
+
+        return changed;
+    }
+
+    /// <summary>
+    /// Chuyển trạng thái phiếu sang PendingUser hoặc PendingExternal (yêu cầu phiếu đang InProgress).
+    /// </summary>
+    public void MarkPending(TicketStatus pendingStatus, DateTime now)
+    {
+        if (Status != TicketStatus.InProgress)
+        {
+            throw new InvalidOperationException($"Cannot move ticket to {pendingStatus} from status {Status}");
+        }
+        if (pendingStatus != TicketStatus.PendingUser && pendingStatus != TicketStatus.PendingExternal)
+        {
+            throw new ArgumentException($"Invalid pending status: {pendingStatus}", nameof(pendingStatus));
+        }
+
+        PauseResolution(now);
+        Status = pendingStatus;
+        UpdatedAt = now;
+    }
+
+    /// <summary>
+    /// Chuyển trạng thái phiếu từ PendingUser hoặc PendingExternal trở lại InProgress.
+    /// </summary>
+    public void ResumeFromPending(DateTime now)
+    {
+        if (Status != TicketStatus.PendingUser && Status != TicketStatus.PendingExternal)
+        {
+            throw new InvalidOperationException($"Cannot resume ticket from status {Status}");
+        }
+
+        ResumeResolution(now);
+        Status = TicketStatus.InProgress;
         UpdatedAt = now;
     }
 

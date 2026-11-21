@@ -893,6 +893,13 @@
               "type": "boolean",
               "default": false
             }
+          },
+          {
+            "name": "slaStatus",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -1153,6 +1160,116 @@
           },
           "401": {
             "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "409": {
+            "description": "Conflict"
+          }
+        }
+      }
+    },
+    "/api/tickets/{id}/pending": {
+      "post": {
+        "tags": [
+          "Tickets"
+        ],
+        "operationId": "PendingTicket",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PendingTicketRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TicketDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "409": {
+            "description": "Conflict"
+          }
+        }
+      }
+    },
+    "/api/tickets/{id}/resume": {
+      "post": {
+        "tags": [
+          "Tickets"
+        ],
+        "operationId": "ResumeTicket",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "expectedRevision",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TicketDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
           },
           "404": {
             "description": "Not Found"
@@ -2037,6 +2154,20 @@
         },
         "additionalProperties": false
       },
+      "PendingTicketRequest": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/TicketStatus"
+          },
+          "expectedRevision": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "PublishArticleRequest": {
         "type": "object",
         "properties": {
@@ -2108,6 +2239,62 @@
           "refreshToken": {
             "type": "string",
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "SlaClockSummaryDto": {
+        "type": "object",
+        "properties": {
+          "targetMinutes": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "elapsedMinutes": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "remainingMinutes": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "deadline": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "isBreached": {
+            "type": "boolean"
+          },
+          "state": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "SlaSummaryDto": {
+        "type": "object",
+        "properties": {
+          "isApplicable": {
+            "type": "boolean"
+          },
+          "evaluatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "overallStatus": {
+            "type": "string",
+            "nullable": true
+          },
+          "firstResponse": {
+            "$ref": "#/components/schemas/SlaClockSummaryDto"
+          },
+          "resolution": {
+            "$ref": "#/components/schemas/SlaClockSummaryDto"
           }
         },
         "additionalProperties": false
@@ -2220,9 +2407,28 @@
           "urgency": {
             "type": "string",
             "nullable": true
+          },
+          "sla": {
+            "$ref": "#/components/schemas/SlaSummaryDto"
           }
         },
         "additionalProperties": false
+      },
+      "TicketStatus": {
+        "enum": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "type": "integer",
+        "format": "int32"
       },
       "TimelineItemDto": {
         "type": "object",

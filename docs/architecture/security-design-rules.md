@@ -1,6 +1,6 @@
 # Quy tắc thiết kế quyền và ranh giới nghiệp vụ
 
-Trạng thái: hướng dẫn kỹ thuật hiện hành, cập nhật 2026-10-20. Đối chiếu mã `dev` tại `47634bc8162c13bd6ae024233ec24a0076738c51`. Áp dụng [ADR-014](../adr/ADR-014-feature-use-cases-and-published-contracts.md); chính sách nhóm/phân công mới cần quyết định riêng.
+Hướng dẫn kỹ thuật hiện hành đối chiếu quyền trên Backend `dev@3640c33` ngày 21/11/2026. Bản 20/10 dùng `dev@47634bc`. Áp dụng [ADR-014](../adr/ADR-014-feature-use-cases-and-published-contracts.md) và phạm vi nhóm theo [ADR-016](../adr/ADR-016-support-team-routing-and-agent-scope.md).
 
 ## Module sở hữu quyền nghiệp vụ
 
@@ -33,6 +33,6 @@ Các trường hợp assignment/revision là tiêu chí cho lần triển khai t
 
 ## Đối chiếu sáu thao tác của PR #28
 
-Các lệnh cập nhật, mở lại, đóng và hủy hiện kiểm tra chủ sở hữu hoặc Admin trong Application. Lệnh nhận xử lý có khác biệt Agent/Admin giữa HTTP và Application; lệnh giải quyết tải ID trước khi kiểm tra vai trò. Các điểm này được ghi tại [những phần cần xử lý](current-backend-contract.md#các-điểm-chưa-đạt-cần-xử-lý), không làm thay đổi quy tắc bảo mật ở trên.
+Các lệnh cập nhật, mở lại, đóng và hủy kiểm tra chủ sở hữu hoặc Admin trong Application. Ở mốc rà PR #28, nhận xử lý chưa thống nhất quyền Agent/Admin giữa HTTP và Application, còn giải quyết tải phiếu trước khi kiểm vai trò. Tại `dev@3640c33`, nhận xử lý kiểm Agent/Admin và giới hạn nhận thay cho Admin. Giải quyết kiểm vai trò trước khi tải phiếu. [Kết quả sau refactor](current-backend-contract.md#các-điểm-đã-xử-lý-sau-refactor)
 
 Khi sửa các lệnh này, kiểm tra cả người ngoài phạm vi, vai trò không đủ quyền, người nhiều vai trò, trạng thái bị cấm và hai yêu cầu cùng ghi. Một bảng trạng thái hoặc ảnh chụp OpenAPI chỉ mô tả một phần hợp đồng; bằng chứng cho quyền và ghi đồng thời phải đến từ kiểm thử hành vi tương ứng.

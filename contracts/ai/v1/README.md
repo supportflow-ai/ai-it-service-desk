@@ -1,6 +1,6 @@
 # Mã băm đầu vào và liên kết yêu cầu phân loại AI v1
 
-Trạng thái: hướng dẫn hợp đồng hiện hành; đối chiếu mã `dev` tại `47634bc8162c13bd6ae024233ec24a0076738c51`, cập nhật 2026-10-20. Đợt Việt hóa không đổi OpenAPI, dữ liệu mẫu, mã băm hoặc phiên bản giao thức.
+Hướng dẫn hợp đồng hiện hành, đối chiếu Backend `dev@3640c33` ngày 21/11/2026. Thuật toán và giá trị kiểm chứng giữ từ mốc `47634bc`. OpenAPI, fixture và phiên bản giao thức vẫn theo bản ghim v1.
 
 Backend tính `inputHash`. Nhà cung cấp AI coi đây là giá trị cần phản hồi nguyên trạng, cùng `requestId`, `ticketId`, `ticketRevision`; không tự suy ra quyền hoặc tính lại bằng cách chuẩn hóa riêng.
 
@@ -23,4 +23,6 @@ Tiền tố độ dài ngăn nhầm ranh giới giữa các trường. Thuật t
 
 ## Phạm vi triển khai
 
-Chưa lưu bản ghi AI hoặc kết nối nhà cung cấp thật. Phạm vi bộ tích hợp tương lai nằm trong [ADR-012](../../../docs/adr/ADR-012-ai-contract-and-future-transport.md). Cách chạy công cụ kiểm tra hợp đồng nằm trong [hướng dẫn môi trường](../../../docs/runbooks/environment-runbook.md#python-venv-và-hợp-đồng-ai).
+Backend có adapter HTTP chọn bằng `Ai:Enabled` và kiểm bốn trường tương quan. Tại mốc rà còn thiếu caller từ Ticketing, lưu phân tích và luồng duyệt. [Adapter hiện hành](../../../docs/adr/ADR-012-ai-contract-and-future-transport.md#adapter-http-tại-mốc-đối-chiếu) · [Kiểm tra hợp đồng](../../../docs/runbooks/environment-runbook.md#python-venv-và-hợp-đồng-ai)
+
+Trong bộ checkout liên kho, xem sai khác giữa bản ghim và runtime ở `ai-service/docs/backend-alignment.md` mục “Đối chiếu phản hồi HTTP phân loại”. Khi cập nhật hợp đồng có chủ đích, phối hợp cùng bản ghim AI Service và kiểm lại trên ứng viên.

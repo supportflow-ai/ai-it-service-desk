@@ -1,6 +1,6 @@
 # Hợp đồng backend đang triển khai
 
-Trạng thái: mô tả hiện hành, đối chiếu mã `dev` tại `8036e2c185dfef7c4ed9941d736388c781e85f52`, cập nhật 2026-11-08, sau PR #50–#55. Bản chuẩn HTTP là [OpenAPI baseline](../../contracts/backend/openapi-baseline.json) (40 đường dẫn, 41 thao tác); tài liệu này mô tả thêm quyền, trạng thái và lỗi mà OpenAPI không nêu. Mốc nguồn có thể mới hơn nhánh local của người đọc; đối chiếu commit trước khi chạy. Cập nhật tài liệu không thay API, quyền hoặc dữ liệu và không xác nhận phiên bản VPS hay một bản phát hành. Quyết định kiến trúc: [ADR-014](../adr/ADR-014-feature-use-cases-and-published-contracts.md). Chính sách cần chốt: [bảng quyết định](pending-business-decisions.md). Hồ sơ các đợt củng cố đầu tháng 11 là lịch sử: [giai đoạn 1](../runbooks/supportflow-hardening-phase-1.md), [giai đoạn 2–6](../runbooks/supportflow-hardening-phase-2-6.md).
+Trạng thái: mô tả hiện hành tại `dev@b3cc19a` sau PR #82. Bản đầu đối chiếu `dev@8036e2c` ngày 08/11/2026, sau PR #50–#55. Bổ sung 2026-11-16 (đối chiếu `dev@ef4390d`): phân công, hủy phân công, Impact/Urgency/Priority, nhóm hỗ trợ và các trạng thái chưa có lệnh chuyển. Bản chuẩn HTTP là [OpenAPI baseline](../../contracts/backend/openapi-baseline.json) (42 đường dẫn, 43 thao tác); tài liệu này mô tả thêm quyền, trạng thái và lỗi mà OpenAPI không nêu. Mốc nguồn có thể mới hơn nhánh local của người đọc; đối chiếu commit trước khi chạy. Cập nhật tài liệu không thay API, quyền hoặc dữ liệu và không xác nhận phiên bản VPS hay một bản phát hành. Quyết định kiến trúc: [ADR-014](../adr/ADR-014-feature-use-cases-and-published-contracts.md). Chính sách cần chốt: [bảng quyết định](pending-business-decisions.md). Hồ sơ các đợt củng cố đầu tháng 11 là lịch sử: [giai đoạn 1](../runbooks/supportflow-hardening-phase-1.md), [giai đoạn 2–6](../runbooks/supportflow-hardening-phase-2-6.md).
 
 ## HTTP và danh tính
 
@@ -13,15 +13,17 @@ Trạng thái: mô tả hiện hành, đối chiếu mã `dev` tại `8036e2c185
 | Xác thực | Đổi mật khẩu, hồ sơ bản thân | `POST /api/auth/change-password`, `GET /api/auth/me` | Đã đăng nhập | Tài khoản hợp lệ nhưng không còn trong cơ sở dữ liệu trả 404 |
 | Người dùng | Danh sách theo vai trò; gán vai trò | `GET /api/users`, `PUT /api/users/{id}/roles` | Agent hoặc Admin; Admin | |
 | Phòng ban | Danh sách | `GET /api/departments` | Đã đăng nhập | Phòng ban của người gửi, không phải nhóm hỗ trợ |
-| Phiếu | Tạo; danh sách cá nhân; hàng đợi; chi tiết; cập nhật | `POST /api/tickets`, `GET /api/tickets/me`, `GET /api/tickets/queue`, `GET /api/tickets/{id}`, `POST /api/tickets/{id}/update` | Requester (gồm Agent/Admin); hàng đợi chỉ Agent/Admin | Tạo: Submitted, 201 với `Location`, hỗ trợ `Idempotency-Key`; danh sách phân trang; cập nhật chỉ ở Submitted, chủ sở hữu hoặc Admin |
-| Phiếu | Nhận, phân công, hủy phân công | `POST /api/tickets/{id}/claim`, `/assign`, `/unassign` | Agent hoặc Admin | Lưu người phụ trách và ghi audit; phiếu đã phân công cho người khác chỉ Admin nhận thay được |
-| Phiếu | Giải quyết, mở lại, đóng, hủy | `POST /api/tickets/{id}/resolve`, `/reopen`, `/close`, `/cancel` | Đã đăng nhập; Application kiểm vai trò và chủ sở hữu | Bảng chuyển trạng thái bên dưới |
-| Trao đổi | Bình luận; ghi chú nội bộ; timeline | `POST /api/tickets/{id}/comments`, `POST /api/tickets/{id}/internal-notes`, `GET /api/tickets/{id}/timeline` | Requester; Agent; Requester | Requester chỉ thấy phiếu của mình; ghi chú nội bộ không lộ cho Requester |
+| Phiếu | Tạo; danh sách cá nhân; hàng đợi; chi tiết; cập nhật | `POST /api/tickets`, `GET /api/tickets/me`, `GET /api/tickets/queue`, `GET /api/tickets/{id}`, `POST /api/tickets/{id}/update` | Requester (gồm Agent/Admin); hàng đợi chỉ Agent/Admin | Tạo: Submitted, 201 với `Location`, hỗ trợ `Idempotency-Key`; danh sách phân trang; hàng đợi hỗ trợ lọc theo trạng thái, danh mục, phạm vi, mức ưu tiên và `slaStatus`; cập nhật chỉ ở Submitted, chủ sở hữu hoặc Admin |
+| Phiếu | Nhận, phân công, hủy phân công | `POST /api/tickets/{id}/claim`, `/assign`, `/unassign` | Agent hoặc Admin | Lưu người phụ trách và ghi audit; phân công/hủy phân công yêu cầu Lead của nhóm đang phụ trách phiếu hoặc Admin; phiếu đã phân công cho người khác chỉ Admin nhận thay được |
+| Phiếu | Giải quyết, mở lại, đóng, hủy, tạm dừng, tiếp tục | `POST /api/tickets/{id}/resolve`, `/reopen`, `/close`, `/cancel`, `/pending`, `/resume` | Đã đăng nhập; Application kiểm vai trò và chủ sở hữu (tạm dừng/tiếp tục yêu cầu Agent hoặc Admin) | Bảng chuyển trạng thái bên dưới |
+| Trao đổi | Bình luận; ghi chú nội bộ; timeline | `POST /api/tickets/{id}/comments`, `POST /api/tickets/{id}/internal-notes`, `GET /api/tickets/{id}/timeline` | Bình luận và timeline theo phạm vi đọc. Ghi chú nội bộ yêu cầu quyền nhân viên trên phiếu | Quyền chủ sở hữu chỉ cấp nội dung công khai |
 | Tệp | Xin quyền tải lên; xác nhận; danh sách; xin URL tải xuống | `POST /api/tickets/{id}/attachments/upload-url`, `/attachments/confirm`, `GET /api/tickets/{id}/attachments`, `/attachments/download-url` | Requester (theo phạm vi phiếu) | Luồng ở cuối tài liệu |
 | Tri thức | Tạo bản nháp, sửa, xuất bản, lưu trữ | `POST /api/knowledge/articles`, `PUT .../{id}/draft`, `POST .../{id}/publish`, `POST .../{id}/archive` | Agent hoặc Admin | Sửa, xuất bản và lưu trữ bắt buộc `expectedRevision` |
 | Tri thức | Chi tiết, tìm kiếm, danh sách | `GET /api/knowledge/articles/{id}`, `/search`, `GET /api/knowledge/articles` | Đã đăng nhập | Quyền đọc theo trạng thái bài viết |
 
-Tại mốc đối chiếu trên, Agent và Admin đọc chi tiết toàn hệ thống. B1-PR3 thu hẹp quyền Agent theo [ADR-016](../adr/ADR-016-support-team-routing-and-agent-scope.md): nhóm đang hoạt động hoặc phân công trực tiếp. Bộ lọc áp dụng cho chi tiết, hàng đợi và số lượng, timeline, tệp và lệnh của nhân viên. Phiếu ngoài phạm vi trả 404. Agent vẫn truy cập được phần công khai của phiếu mình tạo theo quyền chủ sở hữu. Admin đọc toàn hệ thống. Tạo phiếu và danh sách cá nhân luôn theo người đăng nhập.
+Admin đọc toàn hệ thống. Phạm vi xử lý của Agent là hợp của phiếu thuộc nhóm đang hoạt động mà Agent là thành viên và phiếu đang được gán trực tiếp cho Agent. Hàng đợi, tổng số phiếu và các lệnh của nhân viên dùng phạm vi này. Phiếu ngoài phạm vi của thao tác trả `404`.
+
+Requester và Agent là chủ phiếu truy cập chi tiết, bình luận công khai, timeline công khai và các API tệp theo quyền chủ sở hữu. Đọc hoặc viết ghi chú nội bộ cần quyền nhân viên trên phiếu. Tạo phiếu lấy người gọi làm chủ sở hữu. Danh sách cá nhân dùng danh tính của người gọi. [Ma trận quyền hiện hành](rbac-permission-matrix.md) · [Phương án SupportTeam](../adr/ADR-016-support-team-routing-and-agent-scope.md#phương-án-supportteam-đã-chốt)
 
 Application từ chối actor chưa xác thực, ID không phải GUID hợp lệ hoặc GUID rỗng trước persistence. Endpoint còn có policy role; role không được cấp bị từ chối tại HTTP. Worker dùng actor anonymous, không đăng ký HttpContext. Không chỉ dựa vào middleware để bảo vệ use case.
 
@@ -50,18 +52,22 @@ Bộ lọc lỗi `ApiErrorFilter` giữ mã 400/403/404/409/503. Thông điệp 
 
 ## Thao tác vòng đời phiếu
 
-Các thao tác đều dùng POST. Chỉ `update` nhận nội dung JSON; các thao tác còn lại nhận ID trên đường dẫn. Điều kiện chuyển trạng thái nằm trong `Ticket`, quyền nằm trong từng luồng Application. Agent đọc được một phiếu không tự có quyền cập nhật, mở lại, đóng hoặc hủy phiếu của người khác.
+Các thao tác đều dùng POST và nhận `id` trên đường dẫn. `update` nhận JSON với `title`, `description`, `categoryId` và `expectedRevision`. `assign` nhận JSON với `agentId` và `expectedRevision`. `pending` nhận JSON với `status` và `expectedRevision`. Các lệnh `claim`, `unassign`, `resolve`, `reopen`, `close`, `cancel` và `resume` nhận `expectedRevision` qua query. `Ticket` kiểm chuyển trạng thái. Các lệnh `update/reopen/close/cancel` yêu cầu quyền chủ sở hữu hoặc Admin.
 
 | Thao tác | Trạng thái trước | Trạng thái sau | Giới hạn hiện tại |
 | --- | --- | --- | --- |
 | Cập nhật | Submitted | Submitted | Quy tắc tiêu đề, mô tả và danh mục như khi tạo |
-| Nhận xử lý | Submitted hoặc Assigned | InProgress | Agent hoặc Admin; lưu người phụ trách và ghi audit. Phiếu đã phân công cho người khác chỉ Admin nhận thay được. Chưa có nhóm |
-| Giải quyết | InProgress | Resolved | Chưa có nội dung giải quyết, thời điểm giải quyết riêng hoặc lịch sử nghiệp vụ |
+| Nhận xử lý | Submitted hoặc Assigned | InProgress | Agent trong phạm vi xử lý hoặc Admin. Phiếu đã phân công cho người khác chỉ Admin nhận thay được. Lệnh lưu người phụ trách và ghi audit |
+| Phân công | Mọi trạng thái trừ Closed, Cancelled và Resolved | Assigned nếu đang Submitted. Trạng thái khác giữ nguyên | Lead của nhóm phụ trách phiếu hoặc Admin. Người nhận có vai trò Agent hoặc Admin theo [`AgentDirectory`](../../src/backend/Modules/Ticketing/Infrastructure/AgentDirectory.cs). Lead chỉ gán cho thành viên cùng nhóm. Admin được gán ngoài nhóm |
+| Hủy phân công | Assigned | Submitted | Lead của nhóm phụ trách phiếu hoặc Admin. Chỉ khi đang Assigned và đã có người phụ trách |
+| Tạm dừng | InProgress | PendingUser hoặc PendingExternal | Agent hoặc Admin (`RequireAgent`); body `PendingTicketRequest` (Status, ExpectedRevision) |
+| Tiếp tục | PendingUser hoặc PendingExternal | InProgress | Agent hoặc Admin (`RequireAgent`); query `expectedRevision` |
+| Giải quyết | InProgress hoặc PendingExternal | Resolved | Chưa có nội dung giải quyết hoặc lịch sử nghiệp vụ. Đồng hồ SLA ghi `ResolvedAt` |
 | Mở lại | Resolved | InProgress | Chưa có cửa sổ thời gian, kiểm tra người phụ trách hoặc tác vụ tự đóng |
 | Đóng | Resolved | Closed | Chưa có tác vụ đóng tự động |
 | Hủy | Submitted | Cancelled | Chưa nhận lý do hủy hoặc lưu lịch sử nghiệp vụ |
 
-Mọi lệnh ghi phiếu (cập nhật, nhận xử lý, phân công, hủy phân công, giải quyết, mở lại, đóng, hủy) bắt buộc `expectedRevision`: thiếu hoặc bằng 0 trả 400, khác revision hiện tại (`xmin`) trả 409. Trạng thái khác bị Domain từ chối; `TicketCommandGuard` chuyển lỗi trạng thái thành `ArgumentException`, bộ lọc HTTP trả 400 với `{ error }`. Phiếu thiếu hoặc ngoài quyền chủ sở hữu của các lệnh `update/reopen/close/cancel` trả 404. Các lệnh mới chưa có cơ chế khóa chống tạo trùng hoặc phát lại phản hồi như thao tác tạo phiếu. Yêu cầu đã thực hiện thành công rồi gửi lại có thể nhận lỗi trạng thái.
+Mọi lệnh ghi phiếu (cập nhật, nhận xử lý, phân công, hủy phân công, giải quyết, mở lại, đóng, hủy, tạm dừng, tiếp tục) bắt buộc `expectedRevision`: thiếu hoặc bằng 0 trả 400, khác revision hiện tại (`xmin`) trả 409. Trạng thái khác bị Domain từ chối; `TicketCommandGuard` chuyển lỗi trạng thái thành `ArgumentException`, bộ lọc HTTP trả 400 với `{ error }`. Phiếu thiếu hoặc ngoài quyền chủ sở hữu của các lệnh `update/reopen/close/cancel` trả 404. Các lệnh mới chưa có cơ chế khóa chống tạo trùng hoặc phát lại phản hồi như thao tác tạo phiếu. Yêu cầu đã thực hiện thành công rồi gửi lại có thể nhận lỗi trạng thái.
 
 ## Các điểm đã xử lý sau refactor
 
@@ -77,6 +83,14 @@ Mọi lệnh ghi phiếu (cập nhật, nhận xử lý, phân công, hủy phâ
 
 `GetForUpdateAsync` vẫn đọc phiếu bằng `SingleOrDefaultAsync` (không khóa dòng); xung đột được phát hiện bằng revision. Xem [quy tắc bảo mật](security-design-rules.md) và [hướng dẫn kiểm chứng](../runbooks/backend-hardening-verification.md).
 
+## Phân công tại mốc trước PR #82
+
+Phần này ghi tình trạng tại `dev@3640c33`. Tại `dev@b3cc19a`, PR #82 bổ sung quyền Lead/Admin và sửa sai lệch DEC-05. [Ma trận quyền hiện hành](rbac-permission-matrix.md)
+
+| Chính sách đã chốt | Mã tại mốc cũ | Việc còn thiếu tại mốc cũ |
+| --- | --- | --- |
+| Không phân công (`assign`) khi phiếu ở trạng thái Resolved (DEC-05, xác nhận 2026-11-13) | `Ticket.Assign` chỉ chặn Closed và Cancelled; Resolved vẫn được gán | Sửa `Ticket.Assign`, trả 400 cho phiếu Resolved, thêm kiểm thử từ chối ở Domain, Application và HTTP, cập nhật OpenAPI nếu mô tả đổi, báo web |
+
 ## Dữ liệu phiếu và mã trạng thái
 
 | Trường | Ràng buộc hiện tại |
@@ -88,6 +102,9 @@ Mọi lệnh ghi phiếu (cập nhật, nhận xử lý, phân công, hủy phâ
 | `ticketNumber` | Sinh bằng sequence DB, `IT-YYYY-…`, độ rộng tối thiểu bốn chữ số; không reset theo năm |
 | `requesterDepartmentId` | Nullable; chưa có luồng snapshot hồ sơ/phòng ban hoàn chỉnh |
 | `status` | Số nguyên trong JSON; khi tạo là Submitted (1) |
+| `impact`, `urgency`, `priority` | Khi tạo là Medium, Medium, P3. Chưa có endpoint hay use case ghi các trường này (`Ticket.SetTriage` có trong Domain nhưng chưa được gọi), nên mọi phiếu hiện mang P3; bộ lọc và sắp xếp theo `priority` của hàng đợi chạy trên giá trị này |
+| `supportTeamId` | Phiếu mới vào `MANUAL_TRIAGE`. Agent trực thấy phiếu chưa gán khi đã được cấp thành viên của hàng đợi đang hoạt động. `RoutingRule` và API chuyển nhóm thuộc [phương án SupportTeam](../adr/ADR-016-support-team-routing-and-agent-scope.md#phương-án-supportteam-đã-chốt) |
+| `sla` | Nullable, DTO `SlaSummaryDto` gồm `isApplicable`, `evaluatedAt`, `overallStatus`, `firstResponse`, `resolution` |
 | Phân trang | Mặc định page=1, pageSize=10; page ≥ 1, pageSize từ 1 đến 100; kiểm tra tràn offset ở Application |
 
 | Giá trị đã định nghĩa | Tên |
@@ -103,7 +120,7 @@ Mọi lệnh ghi phiếu (cập nhật, nhận xử lý, phân công, hủy phâ
 | 8 | Assigned |
 | 9 | PendingExternal |
 
-Nguồn: [TicketStatus](../../src/backend/Modules/Ticketing/Domain/TicketStatus.cs), [Ticket](../../src/backend/Modules/Ticketing/Domain/Ticket.cs), [TicketDto](../../src/backend/Modules/Ticketing/Application/Contracts/TicketDto.cs), [mapping](../../src/backend/Modules/Ticketing/Infrastructure/Configurations/TicketConfiguration.cs). Có enum không có nghĩa đã triển khai lệnh chuyển trạng thái. Không đổi nghĩa 0–6, loại Cancelled hoặc đổi JSON sang chuỗi để khớp bảng 0–8 trong tài liệu lịch sử.
+Nguồn: [TicketStatus](../../src/backend/Modules/Ticketing/Domain/TicketStatus.cs), [Ticket](../../src/backend/Modules/Ticketing/Domain/Ticket.cs), [TicketDto](../../src/backend/Modules/Ticketing/Application/Contracts/TicketDto.cs), [mapping](../../src/backend/Modules/Ticketing/Infrastructure/Configurations/TicketConfiguration.cs). Có enum không có nghĩa đã triển khai lệnh chuyển trạng thái: chưa lệnh nào tạo hoặc chuyển tới Draft (0) và Triaged (7). Lệnh tạm dừng đã dùng PendingUser (3) và PendingExternal (9). Không đổi nghĩa 0–6, loại Cancelled hoặc đổi JSON sang chuỗi để khớp bảng 0–8 trong tài liệu lịch sử.
 
 ## Lỗi và idempotency
 
@@ -119,6 +136,6 @@ Nguồn: [TicketStatus](../../src/backend/Modules/Ticketing/Domain/TicketStatus.
 
 Kiểm thử `PublishedApiMatchesBaseline` so sánh toàn bộ tài liệu OpenAPI với bản chuẩn, phát hiện cả mục mới chưa công bố và thay đổi mô tả/bảo mật. Cập nhật bản chuẩn có chủ đích theo [quy chuẩn tài liệu](../process/documentation-standard.md).
 
-Chưa có luồng Draft/Submit riêng, API quản trị nhóm hỗ trợ (dữ liệu và phạm vi đọc theo nhóm đã có), SLA, AI thật hoặc thu hồi tức thời quyền trong access token đã phát. Luồng tệp đính kèm: xin quyền tải lên nhận form multipart POST đã ký (giới hạn 10 MiB, gắn actor/ticket/tên/dung lượng/MIME/key/hết hạn) → xác nhận đối chiếu metadata object, sao chép sang key cuối bất biến rồi mới ghi metadata vào DB → tải xuống bằng URL ký ngắn hạn. Grant PUT cũ còn hạn vẫn được xác nhận theo cùng cách (xem [runbook](../runbooks/supportflow-hardening-phase-2-6.md)). Còn mở: đối soát object mồ côi khi lưu trữ thành công nhưng kết quả giao dịch DB không xác định. FullName chưa có dữ liệu hồ sơ riêng được lưu. Các phần còn thiếu thuộc đợt phát triển được quyết định riêng.
+Chưa có luồng Draft/Submit riêng, API quản trị nhóm hỗ trợ (dữ liệu và phạm vi đọc theo nhóm đã có), luồng Ticketing gọi adapter AI và duyệt gợi ý hoặc thu hồi tức thời quyền trong access token đã phát. Dữ liệu SLA tóm tắt bước đầu được gắn kèm trong `TicketDto` và hỗ trợ lọc qua tham số query `slaStatus` trên hàng đợi. Luồng tệp đính kèm: xin quyền tải lên nhận form multipart POST đã ký (giới hạn 10 MiB, gắn actor/ticket/tên/dung lượng/MIME/key/hết hạn) → xác nhận đối chiếu metadata object, sao chép sang key cuối bất biến rồi mới ghi metadata vào DB → tải xuống bằng URL ký ngắn hạn. Grant PUT cũ còn hạn vẫn được xác nhận theo cùng cách (xem [runbook](../runbooks/supportflow-hardening-phase-2-6.md)). Còn mở: đối soát object mồ côi khi lưu trữ thành công nhưng kết quả giao dịch DB không xác định. FullName chưa có dữ liệu hồ sơ riêng được lưu. Các phần còn thiếu thuộc đợt phát triển được quyết định riêng.
 
 Ứng viên B3 áp dụng [DEC-07](pending-business-decisions.md) cho tệp đã xác nhận. Mỗi phiếu có tối đa 10 tệp với tổng dung lượng tối đa 50 MiB. Khi xác nhận tệp mới, backend kiểm tra hạn mức và lưu metadata trong cùng giao dịch khóa theo phiếu. Nếu vượt hạn mức, API trả 400. Nếu hết thời gian chờ khóa, API trả 503 với `Retry-After` và giữ grant để gửi lại. Gửi lại yêu cầu xác nhận thành công trả về tệp đã ghi mà không tính thêm dung lượng. Grant đang chờ xác nhận chưa chiếm hạn mức tệp đã xác nhận.
