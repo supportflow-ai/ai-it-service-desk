@@ -4,7 +4,7 @@ Trạng thái: mô tả hiện hành. Đối chiếu mã `dev` tại `07ce07a9dd
 
 ## Chiều phụ thuộc
 
-Mã nguồn tổ chức theo module trước, Clean bên trong module theo [ADR-015](../adr/ADR-015-module-first-clean-architecture.md) (đã hợp nhất vào `dev` qua PR #50–#53; ADR còn ở trạng thái Đề xuất, chờ nhóm duyệt). Đối chiếu [bảng mốc nguồn](source-baseline.md) trước khi đọc liên kết mã tương đối.
+Mã nguồn tổ chức theo module trước, Clean bên trong module theo [ADR-015](../adr/ADR-015-module-first-clean-architecture.md) (đã hợp nhất vào `dev` qua PR #50–#53; ADR được chấp nhận ngày 13/11/2026). Đối chiếu [bảng mốc nguồn](source-baseline.md) trước khi đọc liên kết mã tương đối.
 
 ```mermaid
 flowchart TD
@@ -32,7 +32,7 @@ Danh sách kiểu được phép truy cập xuyên mô-đun và ngoại lệ k�
 
 ## Cập nhật sau refactor (2026-11-07)
 
-Phần này mô tả mã sau PR #50 và PR #51 vào `dev`. Số luồng hiện tại: Identity 11, Ticketing 19, Knowledge 6; bảng bên dưới chỉ liệt kê 12 luồng ban đầu, danh sách đầy đủ theo endpoint ở [hợp đồng hiện hành](current-backend-contract.md#http-và-danh-tính).
+Phần này mô tả mã sau PR #50 và PR #51 vào `dev`. Số luồng tại mốc này: Identity 11, Ticketing 19, Knowledge 6; bảng bên dưới chỉ liệt kê 12 luồng ban đầu, danh sách đầy đủ theo endpoint ở [hợp đồng hiện hành](current-backend-contract.md#http-và-danh-tính).
 
 - Identity có Domain riêng: `RefreshToken` (`Issue`, `Revoke`, `IsActiveAt`), `OtpCode` (`Issue`, `IsValid`, `Matches`) và `Department`; ba bảng `refresh_tokens`, `otp_codes`, `departments` ánh xạ trong `Infrastructure/Configurations` của module. Luồng refresh, revoke, đổi/quên/đặt lại mật khẩu, gán vai trò và phòng ban được mô tả ở [hợp đồng hiện hành](current-backend-contract.md#identity-sau-pr-47-48-và-nhánh-refactor).
 - Identity công bố `IUserDirectory` trong SharedKernel. `AgentDirectory` của Ticketing tra vai trò và tên hiển thị qua cổng này, không đọc bảng ASP.NET Core Identity; kiểm thử kiến trúc chặn Ticketing, Knowledge, AIAssistance phụ thuộc `Microsoft.AspNetCore.Identity`.
@@ -64,13 +64,13 @@ Mỗi tính năng có thư mục chứa giao diện, dữ liệu đầu vào và
 
 ## Quyền truy cập và các lệnh ghi
 
-Tại mốc đối chiếu, chi tiết dùng `OwnTickets(actorId)` cho Requester và `AllTickets` cho Agent/Admin. B1-PR3 dùng thêm `AgentTickets` cho Agent theo [ADR-016](../adr/ADR-016-support-team-routing-and-agent-scope.md). PostgreSQL lọc theo phân công hoặc thành viên của nhóm đang hoạt động trước khi đếm, phân trang và chiếu dữ liệu. Phiếu thiếu hoặc ngoài phạm vi trả 404.
+Trước B1-PR3, chi tiết dùng `AllTickets` cho Agent/Admin. Tại `dev@3640c33`, Admin dùng `AllTickets` và Agent dùng `AgentTickets` cho phạm vi xử lý. PostgreSQL lọc theo phân công trực tiếp hoặc thành viên của nhóm đang hoạt động trước khi đếm, phân trang và chiếu dữ liệu. Các thao tác công khai cho chủ phiếu còn dùng `OwnTickets(actorId)`, kể cả khi chủ phiếu có vai trò Agent. Phiếu thiếu hoặc ngoài phạm vi của thao tác trả `404`. [Ma trận quyền](rbac-permission-matrix.md) · [ADR-016](../adr/ADR-016-support-team-routing-and-agent-scope.md)
 
 Từ B1-PR3, `ITicketWriter.GetForUpdateAsync` nhận `TicketReadScope` để tải phiếu trong phạm vi trước khi áp dụng quy tắc của từng lệnh. Bộ tích hợp dùng `SingleOrDefaultAsync`; cập nhật phiếu dựa vào revision để phát hiện xung đột.
 
-Các điểm cần xử lý được ghi trong [hợp đồng hiện hành](current-backend-contract.md#các-điểm-chưa-đạt-cần-xử-lý): quyền nhận xử lý Agent/Admin chưa thống nhất giữa HTTP và Application; giải quyết phiếu tải ID trước khi kiểm tra vai trò; lỗi ghi đồng thời chưa có ánh xạ phản hồi riêng.
+Các điểm từng cần xử lý gồm quyền nhận xử lý Agent/Admin giữa HTTP và Application, giải quyết tải ID trước khi kiểm tra vai trò và ánh xạ lỗi ghi đồng thời. [Các điểm đã xử lý sau refactor](current-backend-contract.md#các-điểm-đã-xử-lý-sau-refactor)
 
-Mở lại chưa kiểm tra thời gian hoặc lịch sử giải quyết. B1-PR3 kiểm quyền nhóm qua cơ sở dữ liệu ở request hiện tại. Luồng chuyển nhóm và điều phối Lead được theo dõi trong [bảng quyết định](pending-business-decisions.md); quy tắc xem ghi chú sau chuyển nhóm đã chốt trong ADR-016.
+Mở lại chưa kiểm tra thời gian hoặc lịch sử giải quyết. B1-PR3 kiểm quyền nhóm qua cơ sở dữ liệu ở request hiện tại. Luồng chuyển nhóm được theo dõi trong [bảng quyết định](pending-business-decisions.md); quy tắc xem ghi chú sau chuyển nhóm đã chốt trong ADR-016. PR #82 bổ sung quyền phân công Lead/Admin, tạm dừng, tiếp tục và Worker đánh giá SLA. [Hợp đồng hiện hành](current-backend-contract.md)
 
 ## Giao dịch và lưu dữ liệu
 
@@ -80,7 +80,7 @@ Application kiểm tra định danh người gọi độc lập với HTTP. Work
 
 Tạo phiếu với khóa chống tạo trùng giữ giao dịch, khóa PostgreSQL, biên nhận và phiếu trong cùng bộ tích hợp `ITicketWriter`. Hiệu lực biên nhận 10 phút theo giờ cơ sở dữ liệu; thời gian chờ khóa 5 giây. Thuật toán dấu vân tay, phạm vi chủ sở hữu và phản hồi phát lại được giữ nguyên.
 
-Các lệnh vòng đời gọi quy tắc trên `Ticket`, sau đó `SaveChangesAsync`. Chưa có bản ghi lịch sử nghiệp vụ hoặc cơ chế chống lặp tương tự tạo phiếu cho các lệnh này. `xmin` phát hiện xung đột ở cơ sở dữ liệu; việc chuyển lỗi đó thành phản hồi nghiệp vụ còn cần hoàn thiện.
+Các lệnh vòng đời gọi quy tắc trên `Ticket`, sau đó `SaveChangesAsync`. Chưa có bản ghi lịch sử nghiệp vụ hoặc cơ chế chống lặp tương tự tạo phiếu cho các lệnh này. `xmin` phát hiện xung đột ở cơ sở dữ liệu; sau refactor, xung đột ghi trả `409`.
 
 ## Ranh giới AI
 

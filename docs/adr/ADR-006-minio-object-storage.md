@@ -2,7 +2,9 @@
 
 ## Trạng thái
 
-Đã chấp nhận. Bản diễn giải tiếng Việt cập nhật 2026-10-20.
+**Bị thay thế bởi [ADR-017](ADR-017-cloudflare-r2-object-storage.md) từ ngày 2026-11-16.** Lưu trữ tệp chuyển hoàn toàn sang Cloudflare R2, không giữ MinIO ở môi trường nào. Mã hiện vẫn dùng `MinioObjectStorageService` cho tới khi PR R2 hoàn tất; không mở rộng thêm. Phần dưới giữ nguyên làm bản ghi lịch sử.
+
+Đã chấp nhận (trước khi bị thay thế). Bản diễn giải tiếng Việt cập nhật 2026-10-20.
 
 ## Bối cảnh
 

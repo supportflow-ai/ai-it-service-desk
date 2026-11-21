@@ -2,7 +2,7 @@
 
 ## Trạng thái
 
-Đề xuất ngày 2026-11-07 trên nhánh `refactor/backend-module-first`. Chỉ chuyển sang Đã chấp nhận khi nhóm duyệt và CI (restore khóa phiên bản, build, unit, kiến trúc, integration PostgreSQL, build image) đạt trên đúng commit. Thay thế phần tổ chức vật lý của [ADR-011](ADR-011-backend-module-boundaries.md) ("không đưa một dự án riêng cho mỗi mô-đun") và cách đặt module bên trong các tầng của [ADR-002](ADR-002-clean-architecture.md). Các luật nghiệp vụ, giao dịch và quyền trong ADR-011/014 giữ nguyên.
+**Đã chấp nhận ngày 2026-11-13** theo chỉ dẫn của chủ dự án. Đề xuất ngày 2026-11-07 trên nhánh `refactor/backend-module-first`; mã đã hợp nhất vào `dev` (PR #50–#53) và CI (restore khóa phiên bản, build, unit, kiến trúc, integration PostgreSQL, build image) đạt. Cấu trúc thư mục được tinh gọn thêm ngày 2026-11-13, xem mục "Cập nhật cấu trúc thư mục". Thay thế phần tổ chức vật lý của [ADR-011](ADR-011-backend-module-boundaries.md) ("không đưa một dự án riêng cho mỗi mô-đun") và cách đặt module bên trong các tầng của [ADR-002](ADR-002-clean-architecture.md). Các luật nghiệp vụ, giao dịch và quyền trong ADR-011/014 giữ nguyên.
 
 ## Bối cảnh
 
@@ -56,6 +56,45 @@ Các quyết định đi kèm:
 - **Ngoại lệ nghiệp vụ dùng chung.** `ConflictException` (409) và `RetryLaterException` (503 + Retry-After) nằm trong SharedKernel; `ConcurrencyConflictException`, `IdempotencyConflictException`, `IdempotencyInProgressException` kế thừa chúng. Bộ lọc `ApiErrorFilter` chỉ biết các lớp cơ sở nên không phụ thuộc Ticketing và giữ nguyên mã trạng thái HTTP cũ.
 - **Xác thực và phiên đăng nhập là trách nhiệm của Identity.** API gọi `AddIdentityAuthentication` để đăng ký JWT Bearer. Identity dùng chung cấu hình khi cấp và xác thực token. Tạo và thu hồi refresh token đi qua khóa dòng người dùng; đăng xuất và phát hiện token bị dùng lại thu hồi theo chuỗi phiên (`family_id`). Quy tắc chi tiết nằm ở [hợp đồng Identity](../architecture/current-backend-contract.md#identity-sau-pr-47-48-và-nhánh-refactor); module khác không đọc hay ghi bảng phiên.
 - **Không đổi hợp đồng HTTP, hợp đồng AI v1, tên bảng, migration hay hành vi nghiệp vụ.** Đường dẫn route, tên schema OpenAPI và thứ tự đăng ký endpoint giữ nguyên.
+
+## Cập nhật cấu trúc thư mục (2026-11-13)
+
+Sau khi ADR được chấp nhận, hai đợt đổi tên và gom thư mục (PR #68, #70 và commit `07ce07a`) tinh gọn cấu trúc mà **không đổi** tên tệp `.csproj`, assembly, namespace, hợp đồng HTTP hay dữ liệu. Cấu trúc hiện hành:
+
+```text
+src/backend/
+  Hosts/
+    Api/           # host HTTP: composition root, middleware, health (ServiceDesk.Api)
+    Worker/        # host nền (ServiceDesk.Worker)
+    Migrator/      # công cụ migration và khởi tạo (ServiceDesk.Migrator)
+  Platform/        # hạ tầng kỹ thuật dùng chung: ApplicationDbContext, migration, bảo trì DB, lưu trữ tệp, đồng hồ (ServiceDesk.Platform)
+  BuildingBlocks/
+    SharedKernel/      # ServiceDesk.SharedKernel
+    SharedKernel.Web/  # ServiceDesk.SharedKernel.Web
+  Modules/<Module>/    # Identity, Ticketing, Knowledge, AIAssistance (ServiceDesk.Modules.<Module>)
+```
+
+| Tại thời điểm quyết định (2026-11-07) | Hiện nay |
+| --- | --- |
+| `ServiceDesk.Infrastructure/` | `Platform/` |
+| `ServiceDesk.Api/` | `Hosts/Api/` |
+| `ServiceDesk.Worker/` | `Hosts/Worker/` |
+| `ServiceDesk.Database/` | `Hosts/Migrator/` |
+| `BuildingBlocks/ServiceDesk.SharedKernel(.Web)/` | `BuildingBlocks/SharedKernel(.Web)/` |
+
+```mermaid
+flowchart TD
+    Api["Hosts/Api"] --> Platform["Platform (dùng chung)"]
+    Api --> Mods["Modules.*"]
+    Worker["Hosts/Worker"] --> Platform
+    Worker --> Mods
+    Migrator["Hosts/Migrator"] --> Platform
+    Platform --> Mods
+    Mods --> SK["SharedKernel / SharedKernel.Web"]
+    AI["Modules.AIAssistance"] --> Ticketing["Modules.Ticketing (kiểu đã công bố)"]
+```
+
+Các sơ đồ và cây thư mục ở mục "Quyết định" phía trên giữ nguyên làm bản ghi tại thời điểm quyết định.
 
 ## Hệ quả
 
