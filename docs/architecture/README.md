@@ -1,6 +1,6 @@
 # Chỉ mục kiến trúc backend
 
-Trạng thái: hiện hành cho kho backend. Đối chiếu `dev` tại `8036e2c185dfef7c4ed9941d736388c781e85f52`; cập nhật 2026-11-08. Quy tắc chọn nguồn nằm trong [bản đồ tài liệu](../README.md).
+Chỉ mục hiện hành cập nhật ngày 21/11/2026, đối chiếu Backend `dev@3640c33`. Xem [mốc mã và hợp đồng](source-baseline.md) và [quy tắc chọn nguồn](../README.md).
 
 ## Nguồn đang áp dụng
 
@@ -10,14 +10,20 @@ Trạng thái: hiện hành cho kho backend. Đối chiếu `dev` tại `8036e2c
 | [Mô-đun và luồng xử lý](backend-modules-and-use-cases.md) | Tổ chức module trước, Clean bên trong module (ADR-015), 12 luồng nghiệp vụ, giao diện công khai và giao dịch |
 | [Hợp đồng backend](current-backend-contract.md) | API, mười mã trạng thái, dữ liệu và quyền đã triển khai tại SHA được ghi |
 | [Quy tắc thiết kế bảo mật](security-design-rules.md) | Quyền trước revision, vị trí policy Ticketing, tình huống phủ định |
-| [Danh mục ADR](../adr/README.md) | Quan hệ giữa quyết định nền tảng và ADR-011–016 |
+| [Danh mục ADR](../adr/README.md) | Quan hệ giữa quyết định nền tảng và ADR-011–017 |
 | [Ma trận quyền](rbac-permission-matrix.md) | Quyền hiện tại và đích đã duyệt (đã triển khai / đã duyệt chưa triển khai / mở) |
 | [Kiểm kê yêu cầu cũ](legacy-requirements-inventory.md) | Yêu cầu trong các tệp `01–08` đã có, đã duyệt chưa làm, còn mở hay thay thế |
-| [Quyết định còn mở](pending-business-decisions.md) | Các lựa chọn nghiệp vụ chưa cấp phép triển khai |
+| [Quyết định còn mở](pending-business-decisions.md) | Các lựa chọn, quyết định đã có và sai lệch còn cần xử lý |
 
 Tạo ticket hiện tại vẫn là Submitted; JSON status là số. Không đổi sang Draft, bảng enum 0–8 hoặc `/api/v1` chỉ vì gặp yêu cầu đó trong hồ sơ cũ. API/DB đang có được bảo vệ bằng baseline và kiểm thử; thay hợp đồng cần nhiệm vụ và phương án chuyển đổi rõ ràng.
 
 ## Các đề xuất cần quyết định trước khi triển khai
+
+| Phạm vi phối hợp | Nguồn chính | Đang chờ |
+| --- | --- | --- |
+| Phân loại AI có người duyệt theo `AI-02` | [Kế hoạch tích hợp Backend–AI](ai-integration-plan.md) và [ADR-012](../adr/ADR-012-ai-contract-and-future-transport.md) | Quyền xem, thời điểm gọi, cách biểu diễn triage, bằng chứng dùng model tại ứng viên |
+| Định tuyến đội hỗ trợ | [Phương án SupportTeam](../adr/ADR-016-support-team-routing-and-agent-scope.md#phương-án-supportteam-đã-chốt) | Chạy pilot có người trực, chốt thẩm quyền bàn giao và kiểm quyền sau khi chuyển đội |
+| Đích lưu trữ R2 | [ADR-017](../adr/ADR-017-cloudflare-r2-object-storage.md) và [kế hoạch chuyển đổi](r2-storage-plan.md) | Phiên bản tương thích Backend/Web và bằng chứng cutover |
 
 | Tài liệu | Mốc/phạm vi | Quyết định liên quan |
 | --- | --- | --- |

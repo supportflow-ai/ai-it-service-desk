@@ -1,6 +1,6 @@
 # Vận hành GitHub Actions
 
-Trạng thái: hướng dẫn hiện hành; cập nhật 2026-10-20. Đối chiếu các quy trình đã công bố tại mốc backend `47634bc8162c13bd6ae024233ec24a0076738c51`; cấu hình cụ thể lấy từ từng kho và commit đang kiểm tra.
+Hướng dẫn hiện hành cập nhật ngày 21/11/2026. Đối chiếu workflow Backend `dev@3640c33`, Web `dev@89eabc4`, AI Service `b35f08b` và Infra `df08561`. Quyết định thay Jenkins ghi ở ADR-013.
 
 ## Nguồn và phạm vi
 
@@ -8,7 +8,7 @@ Nguồn quy trình là `.github/workflows/ci.yml` trong các kho backend, giao d
 
 Backend kiểm thử và tạo ảnh API/Worker/Database. Giao diện tự kiểm tra mã, kiểm thử và tạo ảnh tại kho riêng. Hạ tầng ghim mã backend/giao diện rồi chạy hệ thống tạm qua cổng truy cập. Kho AI kiểm tra phiên bản, checksum và dữ liệu mẫu hợp đồng.
 
-Ảnh tạo trên máy chạy kiểm tra được thu dọn, chưa phát hành lên kho ảnh. Quy trình hiện chưa tự triển khai production.
+Ở lượt push hoặc pull request, CI chạy kiểm tra và build kiểm chứng. Ba kho ứng dụng có job phát hành lên GHCR theo `workflow_dispatch` với `publish_images=true`, dành cho ref `main` hoặc `dev` và kho thuộc `supportflow-ai` theo workflow ở mốc rà. Job phát hành có quyền ghi package và lưu artifact theo SHA để Infra ghép manifest. Việc triển khai production dùng quy trình release của Infra. [Truy vết image Backend](backend-ghcr-traceability.md) · [Workflow Backend](../../.github/workflows/ci.yml)
 
 ## Kiểm tra tài liệu trong backend
 

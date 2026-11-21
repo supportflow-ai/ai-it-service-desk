@@ -1,58 +1,68 @@
 # Kế hoạch tích hợp AI vào backend (phân loại phiếu và chỉ mục Knowledge)
 
-Trạng thái: kế hoạch đề xuất chờ chủ dự án duyệt, chưa triển khai. Hợp đồng và ranh giới hiện hành nằm ở [ADR-012](../adr/ADR-012-ai-contract-and-future-transport.md). Cập nhật 2026-11-13, đối chiếu mã `dev` tại `ef4390d`. Kế hoạch phía ai-service: `docs/ml-classifier-plan.md` trong kho `ai-service`.
+Trạng thái: kế hoạch đề xuất cho luồng tích hợp. Mục 1 ghi phần đã chốt, mục 2 ghi phần có trong mã. Đối chiếu ngày 21/11/2026 tại Backend `dev@3640c33`, Web `dev@89eabc4`, AI Service `b35f08b` và Infra `df08561`. [Hợp đồng và adapter Backend](../adr/ADR-012-ai-contract-and-future-transport.md)
 
-## 1. Quyết định đã chốt (chủ dự án, 2026-11-13)
+## 1. Quyết định đã chốt
 
-1. MVP tích hợp **mô hình phân loại thật**. ai-service dùng **mô hình học máy cục bộ cho cả phân loại và embedding và không gọi API hay dịch vụ model bên ngoài**. Backend vì vậy chỉ cần kết nối nội bộ tới ai-service bằng Bearer dịch vụ; không có khóa nhà cung cấp AI bên ngoài.
-2. **Backend tiêu thụ** endpoint `POST /v1/knowledge-indexes:prepare` của ai-service.
-3. Backend giữ nguyên quyền: phân quyền, trạng thái phiếu, bước người duyệt (HITL), lưu trữ, audit. AI chỉ gợi ý.
+1. Ngày 13/11/2026, chủ dự án chốt chạy mô hình phân loại và embedding cục bộ, với Bearer dịch vụ trên kết nối nội bộ giữa Backend và AI Service.
+2. Ngày 21/11/2026, `AI-02` chốt nghiệm thu Identity, Ticketing và phân loại bằng mô hình học máy cục bộ có người duyệt trên cùng ứng viên. `rule` dùng kiểm thử tích hợp. Chọn mô hình và tiêu chí đánh giá theo `AI-07`. Xem tiêu chí trong `supportflow-ai-infra/docs/project/mvp.md` của bộ checkout liên kho.
+3. Backend sở hữu phân quyền, dữ liệu phiếu, quyết định của người duyệt, Priority và audit. AI Service trả gợi ý theo hợp đồng phân loại v1. Backend sẽ tiêu thụ `POST /v1/knowledge-indexes:prepare` theo hướng đã chốt ngày 13/11. Mốc tích hợp prepare thuộc `AI-09`. Phạm vi phát hành Kho tri thức, truy hồi ngữ nghĩa và RAG được xét riêng.
 
 ## 2. Hiện trạng (đã kiểm tra trong mã)
 
 | Phần | Có | Chưa có |
 | --- | --- | --- |
-| Phân loại | Domain `AIAnalysis`, `AISuggestion`, `SuggestionDecision`, `ConfidencePolicy` (Low dưới 0,4, High từ 0,75), `TriagePolicy`, `InputHashComputer` (`ai-input-v2`); cổng `ITicketClassificationService`; bộ tích hợp HTTP (`HttpTicketClassificationService`, ngắt mạch `ClassificationCircuit`) và `NoOp`; `AiOptions` (`Enabled` mặc định tắt, `Endpoint`, `BearerToken` từ 32 ký tự, `TimeoutSeconds` 1 đến 30) | Không bảng, ánh xạ EF hay migration cho `AIAnalysis`/`AISuggestion`; không use case hay mã nào ngoài module AIAssistance gọi cổng phân loại; không endpoint xem kết quả hay duyệt gợi ý |
-| Knowledge | `Article`, `ArticleVersion` (ảnh chụp tạo khi xuất bản), xuất bản, lưu trữ, tìm kiếm theo từ khóa | Xuất bản lại tạo phiên bản mới (`Version` vẫn là 1), hợp đồng chỉ mục, job nền, bảng chỉ mục và vector, phía gọi ai-service; `IEmbeddingService` chỉ có `NoOp` |
-| Hạ tầng cho vector | Hạ tầng đã chạy pgvector (image `pgvector/pgvector`) và truyền `KnowledgeIndex__BearerToken` cho API và Worker | Backend chưa có cấu hình `KnowledgeIndex`; kiểm thử tích hợp dùng `postgres:17-alpine` **không có pgvector** |
+| Phân loại Backend | `AIAnalysis`, `AISuggestion`, `SuggestionDecision`, `ConfidencePolicy`, `TriagePolicy`, `InputHashComputer` và cổng `ITicketClassificationService`. Chọn HTTP hoặc NoOp theo `Ai:Enabled`, mặc định NoOp | Luồng Ticketing gọi cổng phân loại, lưu phân tích/gợi ý và API xem/duyệt. Domain đã có kiểu dữ liệu, schema chưa lưu các kiểu AI này |
+| Web và AI Service | Web có `WorkspaceTriagePanel` truyền `result={null}` và `ticketRevision={null}`. AI Service có endpoint v1 và provider `rule`/`noop` | Kết nối Web với API triage của Backend và provider phân loại học máy cục bộ cho nghiệm thu |
+| Knowledge | Backend có bài viết, ảnh chụp `ArticleVersion` khi xuất bản và tìm kiếm từ khóa. AI Service có prepare với embedding `local-e5` | Backend chưa có consumer prepare, hợp đồng nguồn, job, migration chỉ mục, lưu vector hay truy hồi theo vector. `IEmbeddingService` ở Backend vẫn là NoOp |
+| Hạ tầng cho vector | Compose có image pgvector và truyền nhóm biến `KnowledgeIndex__*` cho API/Worker | Backend chưa dùng nhóm biến này. Việc có image pgvector chỉ chứng minh cấu hình runtime, còn schema chỉ mục phụ thuộc migration của Backend |
 
 ## 3. Phần A: phân loại phiếu
 
 ### 3.1 Luồng đề xuất
 
-1. Phiếu mới (và phiếu được sửa khi còn `Submitted`) tạo một **tác vụ phân loại nền** trong cùng giao dịch ghi phiếu. Tạo phiếu **không chờ AI** và không thất bại vì AI.
-2. Worker lấy tác vụ, tính `inputHash`, gọi `POST /v1/ticket-classifications` tới ai-service (`ticketId`, `ticketRevision`, `inputHash`, tiêu đề, mô tả), kiểm tra phản hồi lặp đúng định danh và hash (mapper hiện có từ chối enum, điểm và trường lạ).
-3. Lưu `AIAnalysis` và `AISuggestion` (Category, Impact, Urgency kèm điểm hoặc `null`, dải độ tin cậy). Gợi ý lưu kèm `ticketRevision` để truy vết, nhưng **chỉ hết hiệu lực (`Expired`) khi `inputHash` không còn khớp tiêu đề và mô tả hiện tại**. Không xét theo revision: revision là `xmin`, đổi theo mọi lần ghi phiếu (nhận xử lý, phân công, hủy phân công), nên xét theo revision sẽ làm mọi gợi ý hết hiệu lực ngay khi Agent nhận phiếu.
-4. Phiếu vẫn vào hàng đợi phân loại thủ công theo [ADR-016](../adr/ADR-016-support-team-routing-and-agent-scope.md) (`MANUAL_TRIAGE`). **AI không chọn nhóm hay Agent**; định tuyến tự động nếu có là chính sách của backend, ghi audit. Quy tắc SEC trong `TriagePolicy` vẫn bắt buộc phân loại thủ công.
-5. AI không khả dụng (tắt, hết thời gian, ngắt mạch, 4xx/5xx): ghi trạng thái tác vụ, không ảnh hưởng phiếu; thử lại có giới hạn.
+`AI-03` còn mở. Hai phương án cùng bảo toàn việc lưu phiếu độc lập với lần gọi AI:
+
+| Phương án | Điều kiện thực hiện |
+| --- | --- |
+| Nhân viên yêu cầu phân tích sau khi phiếu đã lưu | Kiểm quyền trên phiếu trước khi lấy snapshot và giới hạn yêu cầu lặp. Là phương án đề xuất để thử pilot |
+| Chạy nền khi tạo phiếu hoặc nội dung phiếu `Submitted` đổi | Ghi yêu cầu phân tích cùng giao dịch lưu phiếu, dùng Worker gọi AI sau khi commit. Thiết kế khóa chống tác vụ trùng, giới hạn hàng đợi, quyền đọc của Worker và thời hạn thử lại |
+
+Sau khi lấy ảnh chụp hợp lệ, Backend gửi `requestId`, `ticketId`, `ticketRevision`, `inputHash`, tiêu đề và mô tả đến `POST /v1/ticket-classifications`. Adapter hiện đối chiếu bốn trường tương quan của phản hồi. Việc lưu phân tích/gợi ý và mở bước duyệt là thiết kế cần triển khai.
+
+Phiếu mới tiếp tục vào `MANUAL_TRIAGE`. Backend đề xuất đội theo quy trình SupportTeam đã chốt và người có quyền xác nhận trước khi gán Agent. Phiếu `SEC` phân loại thủ công. Khi AI lỗi, hết thời gian hoặc trả về `suggestions: []`, nhân viên tiếp tục xử lý thủ công. [Phương án SupportTeam](../adr/ADR-016-support-team-routing-and-agent-scope.md#phương-án-supportteam-đã-chốt)
 
 ### 3.2 Bước người duyệt (HITL) và API
 
 Đề xuất tối thiểu (tên và hình dạng chốt khi duyệt, cập nhật OpenAPI có chủ đích và báo web):
 
-- `GET /api/tickets/{id}/triage`: nhân viên trong phạm vi đọc thấy gợi ý, dải tin cậy và trạng thái; người yêu cầu chỉ thấy dải tin cậy khi Thấp hoặc thiếu (theo quy tắc hiện có ở web), không thấy điểm.
+- `GET /api/tickets/{id}/triage`: trả gợi ý, dải tin cậy và trạng thái theo chính sách hiển thị được duyệt ở `AI-01`. Quy tắc hiển thị cục bộ của Web chưa phải quyền đọc ở API.
 - `POST /api/tickets/{id}/triage/decision`: chấp nhận, ghi đè (bắt buộc lý do) hoặc từ chối, kèm `expectedRevision`. Revision cũ hoặc gợi ý đã hết hiệu lực trả 409. Ghi audit người duyệt và thời điểm.
 - `POST /api/tickets/{id}/triage`: Agent hoặc Admin tự đặt Category, Impact, Urgency, không cần gợi ý AI. Đây cũng là đường ghi duy nhất mà luồng duyệt gợi ý dùng lại.
 
-### 3.2.1 Ràng buộc từ mã hiện tại (đối chiếu `dev@ef4390d`, 2026-11-16)
+Trong thiết kế duyệt, `inputHash` kiểm gợi ý còn khớp tiêu đề và mô tả hiện hành theo `ai-input-v2`. Phản hồi trả `ticketRevision` của snapshot để đối chiếu. Thiết kế sẽ lưu revision đó để truy vết. `expectedRevision` kiểm ghi đồng thời theo revision Ticketing (`xmin`) lúc lưu quyết định. Một thay đổi phân công có thể làm đổi revision nhưng vẫn giữ nguyên nội dung. Trong trường hợp đó gợi ý có thể còn mới và yêu cầu ghi vẫn phải gửi revision hiện tại. Bước xem và ghi tiếp tục kiểm quyền và trạng thái.
+
+### 3.2.1 Ràng buộc cho thiết kế và kiểm thử
 
 Các điểm dưới đây do kiểm thử kiến trúc hoặc mã hiện có buộc phải theo; vi phạm sẽ làm đỏ CI hoặc mất dữ liệu.
 
 - **Ghi Category sau `Submitted`.** `Ticket.Update` chỉ chạy khi `Submitted`, còn `Ticket.SetTriage` chỉ nhận Impact, Urgency và chưa có guard trạng thái. Cần mở rộng `SetTriage` để nhận Category tùy chọn, chặn Resolved, Closed, Cancelled, và không đổi `Status`.
-- **Giữ nhãn của người gửi.** Thêm `RequesterCategoryId`: gán khi tạo; `Update` chỉ ghi khi người sửa là chủ phiếu (tham số bắt buộc, vì Admin cũng gọi được `Update`); `SetTriage` không chạm vào. Migration backfill `requester_category_id = category_id` là chính xác, vì trước thay đổi này chưa có đường ghi triage nào. Cặp (nhãn người gửi, nhãn cuối) là nguồn dữ liệu cho gold set của ai-service.
+- **Giữ nhãn của người gửi.** Phương án thêm `RequesterCategoryId` khi tạo và chỉ đổi khi chủ phiếu cập nhật. Trước backfill, kiểm lại nguồn ghi lịch sử có bảo toàn nghĩa của `category_id`. Nhãn phiếu chỉ dùng làm dữ liệu sau khi đáp ứng `AI-06` và quy trình đánh giá theo `AI-07`.
 - **Ranh giới module.** AIAssistance chỉ được dùng kiểu Ticketing nằm trong `ModuleRules.Published` (hiện là `TicketCategory`, `Impact`, `Urgency`). Ticketing công bố một contract (lấy ảnh chụp để phân tích, áp dụng kết quả triage) và thêm tên kiểu vào `Published`. Ticketing không tham chiếu ngược AIAssistance được, vì sẽ thành phụ thuộc vòng.
 - **Lưu nguyên tử mà không mở transaction ở Application.** `CleanArchitectureTests` cấm Application dùng EF Core. Theo mẫu `UpdateTicketWithAuditAsync`: contract của Ticketing kiểm quyền, kiểm `expectedRevision`, sửa phiếu và thêm audit vào `DbContext` dùng chung nhưng **không lưu**; luồng duyệt thêm `AIReview` rồi lưu **một lần** qua adapter Infrastructure, adapter này chuyển `DbUpdateConcurrencyException` thành 409. Không ghi audit triage qua `ITicketTimelineStore`, vì `AddToOpenTicketAsync` tự mở transaction riêng. Cần kiểm thử tích hợp: phiếu và bản ghi duyệt cùng được lưu, hoặc cùng không.
-- **Worker không có người dùng.** Worker đăng ký `AnonymousCurrentUser`, nên tác vụ phân loại nền ở mục 3.1 cần đường đọc riêng cho hệ thống, không đi qua contract kiểm `ICurrentUser`.
+- **Worker không có người dùng.** Nếu chọn chạy nền ở `AI-03`, thiết kế quyền đọc snapshot cho tác vụ hệ thống. Worker hiện đăng ký `AnonymousCurrentUser`.
 - **Kiểu revision.** `uint` ở Ticketing, `long` từ 0 trở lên ở AIAssistance, `int` với `ge=0` ở ai-service; giữ nguyên hợp đồng v1.
-- **Phụ thuộc quyết định.** Có dùng trạng thái `Triaged` hay không thuộc DEC-09 ([quyết định còn mở](pending-business-decisions.md)); kế hoạch này không đổi `Status` khi triage.
+- **Phụ thuộc quyết định.** Có dùng trạng thái `Triaged` hay không thuộc [DEC-09](pending-business-decisions.md). Các đề xuất ghi triage ở trên giả định giữ `Status` hiện hành.
 
 ### 3.3 Cấu hình và vận hành
 
-`Ai:Enabled` mặc định tắt; bật theo môi trường bằng cấu hình (`Ai__Endpoint`, `Ai__BearerToken`). Dữ liệu phiếu chỉ đi tới ai-service trong mạng nội bộ; không ghi tiêu đề hay mô tả vào log. Hợp đồng v1 vẫn do backend sở hữu; đổi hợp đồng phải cập nhật bản sao và `contract.lock.json` ở ai-service.
+`Ai:Enabled` mặc định tắt. HTTP yêu cầu bật `Ai__Enabled`, cấu hình origin `Ai__Endpoint` và `Ai__BearerToken` riêng. Có endpoint và token trong Compose chưa làm luồng phân loại hoạt động. Adapter dùng ngân sách chung mặc định 5 giây, cấu hình 1–30 giây. Chỉ thử lại một lần với 502/503/504 sau 100 ms, giữ cùng request và ngân sách. Circuit của từng tiến trình ngắt 30 giây sau ba kết quả lỗi liên tiếp. [Chi tiết và khác biệt với thiết kế gốc](../adr/ADR-012-ai-contract-and-future-transport.md#adapter-http-tại-mốc-đối-chiếu)
+
+Dữ liệu phiếu đi qua API nội bộ. Log vận hành chỉ cần định danh, thời lượng và loại kết quả. Backend sở hữu hợp đồng v1. Thay đổi hợp đồng cần phối hợp với bản ghim và fixture phía AI Service.
 
 ## 4. Phần B: chỉ mục Knowledge
 
-Thiết kế của phía ai-service nằm ở `docs/knowledge-index-pipeline.md` (kho ai-service). Backend ("Core" trong tài liệu đó) cần làm:
+Các bước sau là thiết kế Backend khi xác định mốc `AI-09`. AI Service đã cung cấp route prepare và bản hợp đồng v1 riêng. Mục này mô tả việc Backend tiêu thụ và lưu chỉ mục. Tìm kiếm từ khóa của Knowledge hiện vẫn hoạt động riêng. Tham chiếu `docs/knowledge-index-pipeline.md` của kho `ai-service`.
 
 1. **Hợp đồng chuẩn**: đặt `contracts/ai/knowledge-index/v1/` (OpenAPI, profile, fixture, manifest) ở backend làm bản chuẩn; ai-service giữ bản sao cùng byte (hiện bản này mới nằm ở ai-service và chưa có SHA nguồn để ghim).
 2. **Xuất bản lại và ảnh chụp bất biến**: xuất bản lần đầu ghi `ArticleVersion` V1; xuất bản lại tạo V2 trong một giao dịch, giữ V1, tăng phiên bản, kiểm tra `xmin`. Đây là thay đổi hành vi Knowledge hiện nay (phiên bản luôn là 1).
@@ -66,29 +76,26 @@ Ngoài phạm vi: truy vấn ngữ nghĩa và sinh câu trả lời (RAG).
 
 ## 5. Thứ tự thực hiện
 
-| Bước | Nội dung | Phụ thuộc |
+| Nhánh | Nội dung | Điều kiện |
 | --- | --- | --- |
-| 1 | Chốt hình dạng API triage, chính sách hiển thị cho người yêu cầu, định tuyến tự động, lưu giữ dữ liệu AI | Chủ dự án |
-| 2 | Kiểm thử tích hợp dùng image pgvector; chuẩn của PostgreSQL 17 trong infra | infra |
-| 3 | Xuất bản lại Knowledge và ảnh chụp bất biến (không cần AI) | – |
-| 4 | Migration và tác vụ chỉ mục, gọi ai-service ở chế độ NoOp rồi `local-e5` | Bước 2, 3 và ai-service |
-| 5 | Lưu `AIAnalysis`/`AISuggestion`, tác vụ phân loại nền (dùng `rule` trước khi có mô hình thật) | Bước 1 |
-| 6 | Endpoint xem và duyệt triage; cập nhật OpenAPI; web | Bước 5 |
-| 7 | Bật `Ai:Enabled` theo môi trường khi mô hình thật đạt tiêu chí đánh giá | ai-service |
+| Phân loại 1 | Chốt thời điểm gọi, quyền hiển thị, API triage, vòng đời và dữ liệu lưu | `AI-01`, `AI-03`, `AI-06`, `DEC-09` |
+| Phân loại 2 | Nối snapshot → AI → lưu gợi ý → người duyệt → cập nhật và audit. Cập nhật API và Web khi triển khai | Chính sách phân loại đã chốt. Dùng `rule` thử tích hợp và kiểm tra lỗi |
+| Phân loại 3 | Đánh giá mô hình học máy cục bộ và chạy nghiệm thu chung | `AI-07` và bằng chứng cùng ứng viên theo `AI-02`/`DEC-08` |
+| Knowledge | Ghim hợp đồng riêng, làm ảnh chụp phiên bản, migration, job và consumer. Kiểm đường lỗi khi embedding chưa sẵn sàng, rồi thử prepare với `local-e5` và PostgreSQL có pgvector | Mốc `AI-09` và các điều kiện ở mục 4 |
 
-Bước 7 không thuộc riêng backend: tiêu chí đạt (chỉ số, tập đánh giá, ngưỡng) do kế hoạch của ai-service và chủ dự án chốt.
+Hai nhánh dùng tiêu chí riêng. Việc Backend tiêu thụ prepare có mốc riêng với nghiệm thu phân loại.
 
 ## 6. Rủi ro và quyết định còn mở
 
 | Chủ đề | Nội dung |
 | --- | --- |
-| Hiển thị cho người yêu cầu | Quy tắc "chỉ thấy dải Thấp hoặc thiếu" đang ở web; cần chốt ở backend để API không lộ điểm |
+| Hiển thị cho người yêu cầu | Chốt trường và đối tượng được xem ở AI-01 trước khi xuất bản API |
 | Định tuyến tự động theo AI | ADR-016 để dành cho chính sách backend; chưa có quyết định |
 | Lưu giữ dữ liệu phân tích AI | Thời hạn giữ `AIAnalysis`/`AISuggestion` và nội dung đã gửi |
-| Tải lên hàng đợi | Số tác vụ chờ, thứ tự ưu tiên, giới hạn thử lại khi ai-service quá tải |
-| Mô hình chưa sẵn sàng | Dùng `rule` làm provider mặc định đến khi mô hình học máy đạt tiêu chí; không bật `Ai:Enabled` ở production trước đó |
+| Tải lên hàng đợi | Nếu chọn chạy nền ở AI-03, chốt số tác vụ chờ, thứ tự ưu tiên và giới hạn thử lại |
+| Mô hình chưa sẵn sàng | Dùng `rule` để thử tích hợp ở môi trường kiểm thử. Chốt tiêu chí và chọn mô hình cho ứng viên nghiệm thu theo AI-02/07 |
 | Thay đổi hành vi Knowledge | Xuất bản lại tạo phiên bản mới ảnh hưởng web và hợp đồng Knowledge |
 
 ## 7. Tài liệu phải cập nhật khi triển khai
 
-[Hợp đồng hiện hành](current-backend-contract.md) (mục "Chưa có … AI thật"), [mô-đun và luồng xử lý](backend-modules-and-use-cases.md) (mục Ranh giới AI), README (mục AI contract), [ADR-012](../adr/ADR-012-ai-contract-and-future-transport.md) (mục "tương lai"), [baseline OpenAPI](../../contracts/backend/openapi-baseline.json), `docs/knowledge-index-pipeline.md` ở ai-service (mốc backend), [cẩm nang chung](../team-handbook.md) (bốn kho cùng lúc).
+[Hợp đồng Backend hiện hành](current-backend-contract.md) · [Mô-đun và luồng xử lý](backend-modules-and-use-cases.md) · [ADR-012](../adr/ADR-012-ai-contract-and-future-transport.md) · [OpenAPI Backend](../../contracts/backend/openapi-baseline.json). Khi triển khai consumer Knowledge, cập nhật hợp đồng riêng và mốc Backend ở kho AI Service, rồi kiểm lại cấu hình Infra.

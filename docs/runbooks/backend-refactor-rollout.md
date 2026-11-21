@@ -2,6 +2,8 @@
 
 Trạng thái: hướng dẫn vận hành hiện hành; cập nhật 2026-10-20. Đối chiếu mã `dev` tại `47634bc8162c13bd6ae024233ec24a0076738c51`. Quy trình không xác nhận đã nghiệm thu hoặc đã triển khai commit này. Người vận hành phải có nhiệm vụ và đích môi trường được xác định rõ.
 
+Ngày 21/11/2026 bổ sung điểm dừng khi nâng qua B1-PR3 tại Backend `dev@3640c33`. Trong bộ checkout liên kho, `supportflow-ai-infra/deploy/README.md` sở hữu các lệnh ghép stack và `supportflow-ai-infra/docs/infra/operations-runbook.md` sở hữu quy trình phục hồi PostgreSQL cùng object storage.
+
 ## Phạm vi và nguồn cấu hình
 
 | Thành phần | Nguồn sở hữu |
@@ -23,10 +25,10 @@ Chuẩn bị cửa sổ bảo trì, người phụ trách, phiên bản khôi ph
 
 ## Các bước ở môi trường thử nghiệm hoặc production
 
-1. Đối chiếu các commit đã ghim với kết quả kiểm chứng đúng phiên bản. Các điểm quyền/ghi đồng thời còn mở trong [hợp đồng backend](../architecture/current-backend-contract.md#các-điểm-chưa-đạt-cần-xử-lý) phải có kết luận trước khi nghiệm thu phạm vi liên quan.
+1. Đối chiếu các commit đã ghim với kết quả kiểm chứng đúng phiên bản. Các điểm quyền/ghi đồng thời còn mở trong [hợp đồng backend](../architecture/current-backend-contract.md#điểm-còn-lệch-giữa-chính-sách-và-mã) phải có kết luận trước khi nghiệm thu phạm vi liên quan.
 2. Cấp cấu hình cơ sở dữ liệu/kho đối tượng và khóa ký JWT riêng ít nhất 32 byte UTF-8. Giữ khóa mạnh, issuer và audience đang dùng; thay khóa mẫu theo kế hoạch quản trị.
 3. Tạo ảnh API, Worker và Database từ cùng commit backend. Ghim ảnh bất biến trong cấu hình hạ tầng.
-4. Trong cửa sổ đã thống nhất, xác minh đúng đích rồi chạy Database `migrate`, sau đó `seed-roles`. Migration sửa số phiếu chỉ đổi cách cấp số tiếp theo, giữ số cũ và sequence.
+4. Trong cửa sổ đã thống nhất, xác minh đúng đích rồi chạy Database `migrate`, sau đó `seed-roles`. Migration sửa số phiếu chỉ đổi cách cấp số tiếp theo, giữ số cũ và sequence. Khi nâng từ bản trước B1-PR3, dừng mọi API cũ đang ghi trước lượt backfill cuối. Trước khi bật API có phạm vi đọc mới, xác nhận có **0 phiếu chưa kết thúc thiếu đội** và kiểm hàng đợi triage có thành viên phù hợp. Lệnh `migrate` bỏ qua migration đã ghi vào lịch sử. Thực hiện bước kiểm và backfill lại theo [runbook kiểm chứng nhóm hỗ trợ](backend-hardening-verification.md#nhóm-hỗ-trợ-adr-016-b1).
 5. Chạy Database `check-production` trong phạm vi được giao. Nếu phát hiện tài khoản mẫu còn mật khẩu mẫu, dừng nghiệm thu, đổi mật khẩu qua quy trình quản trị và xem xét vai trò. Hành vi và giới hạn của lệnh nằm trong [hướng dẫn môi trường](environment-runbook.md#các-lệnh-tài-khoản-và-check-production).
 6. Nếu cần tạo quản trị viên đầu tiên, dùng `bootstrap-admin` với `BootstrapAdmin__Email`/`BootstrapAdmin__Password` chỉ trên tiến trình một lần. Lệnh từ chối tài khoản đã tồn tại. Giữ các giá trị này ngoài tiến trình API/Worker.
 7. Khởi động các bản API và Worker. Kiểm tra `/health/live`, `/health/ready`, `/health`; thử đăng ký, đăng nhập, tạo, liệt kê và xem phiếu qua cổng chung. Kiểm tra phát lại cùng khóa qua hai bản API và xem nhật ký lỗi.

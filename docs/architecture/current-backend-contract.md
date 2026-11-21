@@ -16,12 +16,14 @@ Trạng thái: mô tả hiện hành, đối chiếu mã `dev` tại `8036e2c185
 | Phiếu | Tạo; danh sách cá nhân; hàng đợi; chi tiết; cập nhật | `POST /api/tickets`, `GET /api/tickets/me`, `GET /api/tickets/queue`, `GET /api/tickets/{id}`, `POST /api/tickets/{id}/update` | Requester (gồm Agent/Admin); hàng đợi chỉ Agent/Admin | Tạo: Submitted, 201 với `Location`, hỗ trợ `Idempotency-Key`; danh sách phân trang; cập nhật chỉ ở Submitted, chủ sở hữu hoặc Admin |
 | Phiếu | Nhận, phân công, hủy phân công | `POST /api/tickets/{id}/claim`, `/assign`, `/unassign` | Agent hoặc Admin | Lưu người phụ trách và ghi audit; phiếu đã phân công cho người khác chỉ Admin nhận thay được |
 | Phiếu | Giải quyết, mở lại, đóng, hủy | `POST /api/tickets/{id}/resolve`, `/reopen`, `/close`, `/cancel` | Đã đăng nhập; Application kiểm vai trò và chủ sở hữu | Bảng chuyển trạng thái bên dưới |
-| Trao đổi | Bình luận; ghi chú nội bộ; timeline | `POST /api/tickets/{id}/comments`, `POST /api/tickets/{id}/internal-notes`, `GET /api/tickets/{id}/timeline` | Requester; Agent; Requester | Requester chỉ thấy phiếu của mình; ghi chú nội bộ không lộ cho Requester |
+| Trao đổi | Bình luận; ghi chú nội bộ; timeline | `POST /api/tickets/{id}/comments`, `POST /api/tickets/{id}/internal-notes`, `GET /api/tickets/{id}/timeline` | Bình luận và timeline theo phạm vi đọc. Ghi chú nội bộ yêu cầu quyền nhân viên trên phiếu | Quyền chủ sở hữu chỉ cấp nội dung công khai |
 | Tệp | Xin quyền tải lên; xác nhận; danh sách; xin URL tải xuống | `POST /api/tickets/{id}/attachments/upload-url`, `/attachments/confirm`, `GET /api/tickets/{id}/attachments`, `/attachments/download-url` | Requester (theo phạm vi phiếu) | Luồng ở cuối tài liệu |
 | Tri thức | Tạo bản nháp, sửa, xuất bản, lưu trữ | `POST /api/knowledge/articles`, `PUT .../{id}/draft`, `POST .../{id}/publish`, `POST .../{id}/archive` | Agent hoặc Admin | Sửa, xuất bản và lưu trữ bắt buộc `expectedRevision` |
 | Tri thức | Chi tiết, tìm kiếm, danh sách | `GET /api/knowledge/articles/{id}`, `/search`, `GET /api/knowledge/articles` | Đã đăng nhập | Quyền đọc theo trạng thái bài viết |
 
-Tại mốc đối chiếu trên, Agent và Admin đọc chi tiết toàn hệ thống. B1-PR3 thu hẹp quyền Agent theo [ADR-016](../adr/ADR-016-support-team-routing-and-agent-scope.md): nhóm đang hoạt động hoặc phân công trực tiếp. Bộ lọc áp dụng cho chi tiết, hàng đợi và số lượng, timeline, tệp và lệnh của nhân viên. Phiếu ngoài phạm vi trả 404. Agent vẫn truy cập được phần công khai của phiếu mình tạo theo quyền chủ sở hữu. Admin đọc toàn hệ thống. Tạo phiếu và danh sách cá nhân luôn theo người đăng nhập.
+Phạm vi phiếu đối chiếu ngày 21/11/2026 tại `dev@3640c33`. Admin đọc toàn hệ thống. Phạm vi xử lý của Agent là hợp của phiếu thuộc nhóm đang hoạt động mà Agent là thành viên và phiếu đang được gán trực tiếp cho Agent. Hàng đợi, tổng số phiếu và các lệnh của nhân viên dùng phạm vi này. Phiếu ngoài phạm vi của thao tác trả `404`.
+
+Requester và Agent là chủ phiếu truy cập chi tiết, bình luận công khai, timeline công khai và các API tệp theo quyền chủ sở hữu. Đọc hoặc viết ghi chú nội bộ cần quyền nhân viên trên phiếu. Tạo phiếu lấy người gọi làm chủ sở hữu. Danh sách cá nhân dùng danh tính của người gọi. [Ma trận quyền hiện hành](rbac-permission-matrix.md) · [Phương án SupportTeam](../adr/ADR-016-support-team-routing-and-agent-scope.md#phương-án-supportteam-đã-chốt)
 
 Application từ chối actor chưa xác thực, ID không phải GUID hợp lệ hoặc GUID rỗng trước persistence. Endpoint còn có policy role; role không được cấp bị từ chối tại HTTP. Worker dùng actor anonymous, không đăng ký HttpContext. Không chỉ dựa vào middleware để bảo vệ use case.
 
@@ -50,13 +52,13 @@ Bộ lọc lỗi `ApiErrorFilter` giữ mã 400/403/404/409/503. Thông điệp 
 
 ## Thao tác vòng đời phiếu
 
-Các thao tác đều dùng POST. Chỉ `update` nhận nội dung JSON; các thao tác còn lại nhận ID trên đường dẫn. Điều kiện chuyển trạng thái nằm trong `Ticket`, quyền nằm trong từng luồng Application. Agent đọc được một phiếu không tự có quyền cập nhật, mở lại, đóng hoặc hủy phiếu của người khác.
+Các thao tác đều dùng POST và nhận `id` trên đường dẫn. `update` nhận JSON với `title`, `description`, `categoryId` và `expectedRevision`. `assign` nhận JSON với `agentId` và `expectedRevision`. Các lệnh `claim`, `unassign`, `resolve`, `reopen`, `close` và `cancel` nhận `expectedRevision` qua query. `Ticket` kiểm chuyển trạng thái. Các lệnh `update/reopen/close/cancel` yêu cầu quyền chủ sở hữu hoặc Admin.
 
 | Thao tác | Trạng thái trước | Trạng thái sau | Giới hạn hiện tại |
 | --- | --- | --- | --- |
 | Cập nhật | Submitted | Submitted | Quy tắc tiêu đề, mô tả và danh mục như khi tạo |
-| Nhận xử lý | Submitted hoặc Assigned | InProgress | Agent hoặc Admin; lưu người phụ trách và ghi audit. Phiếu đã phân công cho người khác chỉ Admin nhận thay được. Chưa có nhóm |
-| Phân công | Mọi trạng thái trừ Closed và Cancelled | Assigned nếu đang Submitted; trạng thái khác giữ nguyên | Agent hoặc Admin. Mã hiện vẫn cho phân công khi Resolved, trái với phần đã chốt của DEC-05 trong [quyết định còn mở](pending-business-decisions.md) |
+| Nhận xử lý | Submitted hoặc Assigned | InProgress | Agent trong phạm vi xử lý hoặc Admin. Phiếu đã phân công cho người khác chỉ Admin nhận thay được. Lệnh lưu người phụ trách và ghi audit |
+| Phân công | Mọi trạng thái trừ Closed và Cancelled | Assigned nếu đang Submitted. Trạng thái khác giữ nguyên | Người gọi là Agent trong phạm vi xử lý hoặc Admin. Người nhận có vai trò Agent hoặc Admin theo [`AgentDirectory`](../../src/backend/Modules/Ticketing/Infrastructure/AgentDirectory.cs). Mã hiện chưa kiểm membership đội của người nhận. Lệnh còn cho gán khi Resolved, trái [DEC-05](pending-business-decisions.md) |
 | Hủy phân công | Assigned | Submitted | Chỉ khi đang Assigned; InProgress không hủy phân công được |
 | Giải quyết | InProgress | Resolved | Chưa có nội dung giải quyết, thời điểm giải quyết riêng hoặc lịch sử nghiệp vụ |
 | Mở lại | Resolved | InProgress | Chưa có cửa sổ thời gian, kiểm tra người phụ trách hoặc tác vụ tự đóng |
@@ -97,7 +99,7 @@ Mọi lệnh ghi phiếu (cập nhật, nhận xử lý, phân công, hủy phâ
 | `requesterDepartmentId` | Nullable; chưa có luồng snapshot hồ sơ/phòng ban hoàn chỉnh |
 | `status` | Số nguyên trong JSON; khi tạo là Submitted (1) |
 | `impact`, `urgency`, `priority` | Khi tạo là Medium, Medium, P3. Chưa có endpoint hay use case ghi các trường này (`Ticket.SetTriage` có trong Domain nhưng chưa được gọi), nên mọi phiếu hiện mang P3; bộ lọc và sắp xếp theo `priority` của hàng đợi chạy trên giá trị này |
-| `supportTeamId` | Phiếu mới vào `MANUAL_TRIAGE`. Chưa có `RoutingRule` hay API chuyển nhóm ([ADR-016](../adr/ADR-016-support-team-routing-and-agent-scope.md)) |
+| `supportTeamId` | Phiếu mới vào `MANUAL_TRIAGE`. Agent trực thấy phiếu chưa gán khi đã được cấp thành viên của hàng đợi đang hoạt động. `RoutingRule` và API chuyển nhóm thuộc [phương án SupportTeam](../adr/ADR-016-support-team-routing-and-agent-scope.md#phương-án-supportteam-đã-chốt) |
 | Phân trang | Mặc định page=1, pageSize=10; page ≥ 1, pageSize từ 1 đến 100; kiểm tra tràn offset ở Application |
 
 | Giá trị đã định nghĩa | Tên |

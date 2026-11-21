@@ -1,10 +1,12 @@
 # Kế hoạch chuyển lưu trữ tệp sang R2 (backend)
 
-Trạng thái: kế hoạch đề xuất, đã duyệt cùng ADR-017 (chấp nhận 2026-11-16, toàn phạm vi: không dùng MinIO ở mọi môi trường, kể cả kiểm thử và CI); chưa triển khai, bắt đầu bằng giai đoạn 0. Quyết định và thiết kế nằm ở [ADR-017](../adr/ADR-017-cloudflare-r2-object-storage.md). Cập nhật 2026-11-13, đối chiếu mã `dev` tại `07ce07a9dd50bcd143690c7ba1a19cc0048b9508`. Kế hoạch của các kho khác: web (`docs/architecture/r2-upload-plan.md`), infra (`docs/infra/r2-storage-plan.md`), ai-service (`docs/r2-impact.md`).
+Trạng thái: **Đã chốt · chờ triển khai**. [ADR-017](../adr/ADR-017-cloudflare-r2-object-storage.md) được chấp nhận ngày 16/11/2026, áp dụng R2 cho local, kiểm thử, CI, staging và production. Đợt D5 đối chiếu `dev@3640c33` ngày 21/11/2026. Backend tại mốc này vẫn đăng ký `MinioObjectStorageService`, cấp presigned POST cùng `formData` và ký GET theo cấu hình MinIO. Chi tiết là kế hoạch đề xuất cần kiểm chứng. Kế hoạch phối hợp nằm ở Web (`docs/architecture/r2-upload-plan.md`), Infra (`docs/infra/r2-storage-plan.md`) và AI Service (`docs/r2-impact.md`).
 
 ## 1. Phạm vi
 
 Thay bộ cài đặt lưu trữ tệp từ MinIO sang Cloudflare R2, đổi cơ chế tải lên từ presigned POST sang presigned PUT, giữ nguyên nghiệp vụ tệp đính kèm (quyền, hạn mức, vòng đời phiếu, xác nhận hai bước). Không chuyển dữ liệu cũ. Không thêm tính năng mới (quét mã độc, lưu giữ, xóa tệp đã xác nhận vẫn thuộc DEC-07 còn mở).
+
+Hiện tại grant, URL tải lên và URL tải xuống đều dùng hạn 3.600 giây. Cấp grant kiểm quyền, trạng thái phiếu, giới hạn 10 MiB/tệp và tối đa 20 grant chưa tiêu thụ, còn hạn trên mỗi người gọi. Giới hạn 10 tệp và 50 MiB theo phiếu áp dụng với metadata đã xác nhận trong giao dịch. [Hợp đồng Backend hiện hành](current-backend-contract.md)
 
 Nguyên tắc: cổng `IObjectStorageService` vẫn do tầng Application sở hữu; chỉ `Platform` biết AWSSDK; không nới kiểm thử kiến trúc; không sửa migration đã phát hành.
 
@@ -47,16 +49,16 @@ Giữ: `DefaultBucket`, `CreateUploadAsync`, `StatAsync`, `CopyAsync`, `DeleteAs
 
 ### 3.3 Cấu hình `R2Options`
 
-`Endpoint`, `AccessKeyId`, `SecretAccessKey`, `Bucket`, `UploadExpirySeconds` (mặc định 900), `DownloadExpirySeconds` (mặc định 300). Kiểm tra khi khởi động nếu đã cấu hình: `Endpoint` là `https` và host kết thúc `.r2.cloudflarestorage.com`, không có path, query hay thông tin đăng nhập; `Bucket` không rỗng; khóa không rỗng; hạn trong khoảng 60 đến 3600 giây. Thông báo lỗi nêu tên trường, không in giá trị.
+`Endpoint`, `AccessKeyId`, `SecretAccessKey`, `Bucket`, `UploadExpirySeconds` (đề xuất 900), `DownloadExpirySeconds` (đề xuất 300). Khi có cấu hình, kiểm tra endpoint HTTPS thuộc miền S3 của tài khoản R2, với host hợp lệ và không chứa path bổ sung, query hay thông tin đăng nhập. Bucket và cả hai khóa phải có giá trị. Khoảng 60–3.600 giây là giới hạn dự kiến của ứng dụng. Ghi tên trường lỗi, tránh ghi giá trị. Giai đoạn 0 chốt thời hạn URL và grant sau khi đo thời gian tải, xác nhận và thử lại.
 
 ### 3.4 Chưa cấu hình
 
-Hiện nay API chạy được khi `Minio:*` để trống vì đăng nhập và phiếu không cần tệp. Giữ nguyên tinh thần đó: khi `R2:*` hoàn toàn trống, đăng ký một bộ lưu trữ "chưa cấu hình" làm mọi thao tác tệp ném `ServiceUnavailableException`. Nhờ vậy người không làm việc với tệp **không cần giữ khóa R2** và không phải chạy gì thêm. Cấu hình điền dở (chỉ một phần) thì dừng khởi động.
+Thiết kế cho phép phát triển tính năng chính khi `R2:*` hoàn toàn trống. Adapter "chưa cấu hình" trả `ServiceUnavailableException` cho thao tác tệp. Cấu hình một phần thì dừng khởi động. Stack hệ thống hoặc release đã bật luồng tệp cần kiểm đủ bộ biến từ trước khi khởi động.
 
 ### 3.5 Use case
 
-- **Cấp URL:** kiểm tra như cũ (đuôi tệp, ≤ 10 MiB, quyền, phiếu chưa kết thúc, hạn mức theo phiếu), tạo grant rồi ký. `RequiredHeaders` phải đúng giá trị web cần gửi, do backend là bên duy nhất biết `Content-Type` đã ký.
-- **Xác nhận:** logic hiện có giữ nguyên (grant, `Stat`, `Copy` có ETag, `Stat` lại, giao dịch). Thêm: khi `VerifyObject` từ chối vì dung lượng hoặc loại tệp, xóa object tạm (best effort, timeout ngắn như `TryCleanupAsync`) trước khi ném lỗi. Giữ nguyên nguyên tắc không xóa đích khi kết quả commit chưa xác định.
+- **Cấp URL:** kiểm đuôi tệp, dung lượng khai báo ≤ 10 MiB, quyền, trạng thái phiếu và hạn mức grant chờ. Tạo grant gắn phiếu, người gọi và metadata, ký đúng key tạm và chỉ trả URL sau khi lưu grant thành công. `RequiredHeaders` cung cấp đúng `Content-Type` đã ký. Giới hạn tổng tệp của phiếu tiếp tục được quyết định khi xác nhận dưới khóa.
+- **Xác nhận:** kiểm quyền, grant và metadata, `HEAD` vùng tạm, `CopyObject` theo ETag nguồn, `HEAD` đích rồi ghi metadata. Giao dịch dùng khóa theo grant và khóa ghi theo phiếu để chống xác nhận trùng và vượt hạn mức đồng thời. Lần xác nhận hợp lệ sau commit trả metadata đã liên kết. Khi copy hoặc commit chưa rõ kết quả, đối soát metadata và object trước khi dọn đích. Với mismatch đã xác định trên object tạm, thiết kế xóa best-effort trong ngân sách ngắn. Kiểm rằng cleanup an toàn với confirm song song và thất bại không biến thành ghi nhận thành công.
 - **Tải xuống:** chỉ đổi hạn URL. Không thêm `HEAD` để tránh một thao tác tính phí cho mỗi lượt tải; object thiếu (ví dụ bản ghi cũ trỏ vào khóa MinIO) làm R2 trả `404` khi mở liên kết.
 
 ### 3.6 Hợp đồng HTTP
@@ -95,7 +97,20 @@ Cỡ việc: S ≤ 1 ngày, M 2–3 ngày, L > 3 ngày (ước lượng thô).
 | 4. Chuyển môi trường dev | Phát khóa `dev` cho nhóm, dọn bản ghi tệp cũ, bỏ nhận tiền tố cũ, cập nhật cẩm nang chung và tài liệu | cả bốn | M | Một thành viên mới dựng được môi trường chỉ từ tài liệu |
 | 5. Trước phát hành | Bucket và token riêng staging, production; xoay hoặc thu hồi khóa `dev`; quyết định phần DEC-07 còn mở | infra, backend | M | Chủ dự án duyệt |
 
-Điểm không quay lại: sau giai đoạn 3 (hạ tầng bỏ MinIO). Trước đó có thể hoàn nguyên bằng revert mã.
+### Điều kiện chuyển môi trường và hoàn nguyên
+
+- Chọn cùng ứng viên Backend/Web. Kiểm baseline phản hồi `upload-url`, môi trường đã gắn bucket riêng, ảnh ứng viên và kiểm thử thật ở Infra. Ngừng cấp grant theo luồng cũ và xử lý grant đang mở theo thời hạn đã ghi trước khi đổi storage. Theo ADR-017, object MinIO cũ không được chuyển sang R2.
+- Trước lần ghi hoặc dọn dữ liệu đầu tiên với R2, có thể quay về cặp phiên bản cũ nếu metadata vẫn trỏ đúng MinIO và schema còn tương thích. Sau đó revert mã hoặc đổi endpoint riêng lẻ không khôi phục quyền đọc tệp R2. Nếu cần lùi, dừng ghi tệp, đối soát metadata với object của từng bên, xác nhận điểm phục hồi và mất dữ liệu chấp nhận được. Phương án phục hồi đưa metadata, object, schema và image về tổ hợp đã kiểm. Khi chưa có phương án cho dữ liệu thật, dừng phát hành và xử lý tiếp trên ứng viên tương thích. [Quy trình triển khai và khôi phục Backend](../runbooks/backend-refactor-rollout.md#khôi-phục-phiên-bản-trước)
+
+### Bằng chứng cần ghi trên ứng viên R2
+
+| Hạng mục | Điều kiện đạt |
+| --- | --- |
+| Grant và xác nhận | Trình duyệt PUT theo grant rồi confirm. Xác nhận lặp sau commit trả cùng ID tệp. Thử confirm đồng thời và sát hạn mức trên đúng schema, đối soát chỉ có một metadata cho một grant và quota không vượt 10 tệp/50 MiB. |
+| Giới hạn và suy giảm | Ghi kết quả thực đo về giới hạn PUT, hạn URL/grant, ETag nguồn, timeout và phản hồi khi xác nhận chưa hoàn tất. Sau lỗi có thể thử lại bằng grant còn hợp lệ. Trường hợp đã từ chối vì sai metadata phải xin grant mới. |
+| Đọc và dọn | Quyền đọc được kiểm trước khi ký GET. Kiểm tên tệp ở trình duyệt, URL hết hạn và quy tắc dọn `uploads/pending/` trên bucket thử. Đối soát object đích nếu lỗi xảy ra gần commit. |
+
+Mỗi kết quả ghi môi trường, thời điểm, SHA/digest ứng viên, phiên bản SDK và mã trạng thái đã che dữ liệu nhạy cảm. Giữ `R2Live` là kiểm chứng riêng trên bucket thử. Kết quả mô phỏng hoặc smoke gateway không xác nhận luồng tệp thật.
 
 ## 7. Rủi ro
 
@@ -111,7 +126,7 @@ Cỡ việc: S ≤ 1 ngày, M 2–3 ngày, L > 3 ngày (ước lượng thô).
 
 ## 8. Tài liệu phải cập nhật trong cùng thay đổi
 
-`.env.example`, `.github/pull_request_template.md`, `AGENTS.md` (bảng cấu trúc, dòng `Platform`), `README.md` (các đoạn MinIO), [ADR-006](../adr/ADR-006-minio-object-storage.md) (đánh dấu bị ADR-017 thay thế), [danh mục ADR](../adr/README.md), [mô-đun và luồng xử lý](backend-modules-and-use-cases.md), [hợp đồng hiện hành](current-backend-contract.md) (đoạn luồng tệp đính kèm), [môi trường](../runbooks/environment-runbook.md), [bảng quyết định](pending-business-decisions.md) (DEC-06, DEC-07), [cẩm nang chung](../team-handbook.md) (bốn kho cùng lúc). Tài liệu lịch sử và bằng chứng (`docs/reviews`, `docs/sprint-1`, `artifacts`, runbook hardening cũ) giữ nguyên.
+`.env.example`, `.github/pull_request_template.md`, `AGENTS.md` (bảng cấu trúc, dòng `Platform`), `README.md` (các đoạn MinIO), [ADR-006](../adr/ADR-006-minio-object-storage.md) (đánh dấu bị ADR-017 thay thế), [danh mục ADR](../adr/README.md), [mô-đun và luồng xử lý](backend-modules-and-use-cases.md), [hợp đồng hiện hành](current-backend-contract.md) (đoạn luồng tệp đính kèm), [môi trường](../runbooks/environment-runbook.md), [bảng quyết định](pending-business-decisions.md) (DEC-06, DEC-07), [cẩm nang chung](../team-handbook.md) (bốn kho cùng lúc). Khi SHA/digest ghim đã chuyển và qua kiểm chứng, chuyển lệnh MinIO của cấu hình tương ứng sang lịch sử. Giữ hướng dẫn MinIO còn cần cho phiên bản được ghim hiện hành và giữ các bằng chứng lịch sử tại đúng mốc đã chạy.
 
 ## 9. Quyết định còn mở cho chủ dự án
 

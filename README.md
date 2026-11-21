@@ -2,16 +2,18 @@
 
 Backend .NET của SupportFlow AI, tổ chức theo module trước, Clean Architecture bên trong từng module (Identity, Ticketing, Knowledge, AIAssistance). Kho này sở hữu API, nghiệp vụ, truy cập dữ liệu, tiến trình nền, migration và kiểm thử backend.
 
+Theo `AI-02`, phân loại AI có người duyệt được nghiệm thu cùng Identity và Ticketing. Backend chịu trách nhiệm phân quyền, áp dụng quyết định duyệt và ghi audit. Phần phân loại đã có hợp đồng và adapter, còn thiếu luồng tích hợp từ phiếu đến bước duyệt. Bộ checkout liên kho có phạm vi và tiêu chí nghiệm thu trong `supportflow-ai-infra/docs/project/mvp.md`.
+
 Mốc tài liệu: đối chiếu mã `dev` tại `07ce07a9dd50bcd143690c7ba1a19cc0048b9508`, cập nhật 2026-11-13, sau B1-PR3 (#64, phạm vi đọc phiếu của Agent theo nhóm hỗ trợ), B3 (#65, hạn mức tệp đính kèm và lock timeout) và các đợt gom cấu trúc thư mục (#68, #70, thư mục `Hosts`). Mốc này mô tả mã nguồn, không thay bằng chứng nghiệm thu. Xem [cẩm nang chung](docs/team-handbook.md), [quy chuẩn tài liệu](docs/process/documentation-standard.md) và [bảng thuật ngữ](docs/process/technical-glossary.md).
 
 | Thành phần | Repo |
 |---|---|
 | Backend | https://github.com/supportflow-ai/ai-it-service-desk |
 | Giao diện React | https://github.com/supportflow-ai/ai-it-service-desk-web |
-| Hợp đồng và dịch vụ AI tương lai | https://github.com/supportflow-ai/ai-service |
+| Dịch vụ phân loại AI và bản ghim hợp đồng | https://github.com/supportflow-ai/ai-service |
 | Compose, NGINX và kiểm tra toàn hệ thống qua GitHub Actions | https://github.com/supportflow-ai/supportflow-ai-infra |
 
-Bắt đầu tại [bản đồ tài liệu](docs/README.md) và [hợp đồng backend hiện hành](docs/architecture/current-backend-contract.md). Các hợp đồng lịch sử và đề xuất chưa duyệt được phân loại riêng.
+Bắt đầu tại [bản đồ tài liệu](docs/README.md) và [hợp đồng backend hiện hành](docs/architecture/current-backend-contract.md). Khi tích hợp, xem [quyền và điều kiện thao tác](docs/architecture/rbac-permission-matrix.md), [phương án tích hợp AI](docs/architecture/ai-integration-plan.md) và [lộ trình chuyển lưu trữ](docs/architecture/r2-storage-plan.md).
 
 [Bảng mốc mã nguồn](docs/architecture/source-baseline.md) ghi mốc đối chiếu của tài liệu hiện hành. Hợp đồng OpenAPI và công cụ Python được công bố cùng mã tương ứng; đối chiếu HEAD và kết quả kiểm thử trước khi tích hợp.
 
@@ -84,7 +86,7 @@ Mở `http://localhost:5173`. Máy chủ phát triển Vite chuyển `/api` sang
 
 Repo `supportflow-ai-infra` ghép các dịch vụ thành môi trường chạy chung: Compose khai báo container và mạng/volume, NGINX định tuyến frontend và `/api`, cấu hình môi trường xác định các dịch vụ kết nối với nhau, smoke test kiểm tra hệ thống qua gateway. Đây là nơi quản lý cách triển khai và khởi động các thành phần cùng nhau; nghiệp vụ vẫn thuộc backend.
 
-Có thể phát triển backend trực tiếp trên máy với PostgreSQL được cấp mà không chạy cả repo infra. Muốn kiểm chứng đầy đủ hệ thống qua gateway hoặc triển khai các image độc lập thì cần cấu hình infra. Việc có repo infra không có nghĩa các dịch vụ đã được triển khai; môi trường VPS được ghi riêng trong runbook. Phạm vi GitHub Actions hiện tại là test, build image và smoke, chưa phát hành image hoặc tự deploy production.
+Có thể phát triển backend trực tiếp trên máy với PostgreSQL được cấp mà không chạy cả repo infra. Muốn kiểm chứng đầy đủ hệ thống qua gateway hoặc triển khai các image độc lập thì cần cấu hình infra. Việc có repo infra không có nghĩa các dịch vụ đã được triển khai; môi trường VPS được ghi riêng trong runbook. GitHub Actions kiểm thử, build và chạy smoke theo từng kho. Phát hành GHCR dùng lượt chạy được yêu cầu riêng. Triển khai dùng manifest và runbook Infra. [Vận hành GitHub Actions](docs/runbooks/github-actions.md)
 
 ## Kiến trúc
 
@@ -113,7 +115,9 @@ Module là ranh giới ngoài cùng. Bên trong module, Presentation và Infrast
 
 Application tổ chức theo mô-đun và tính năng, mỗi tính năng một thư mục có giao diện `I<TínhNăng>` và lớp `<TínhNăng>UseCase`: Identity 11 luồng (đăng ký, đăng nhập, hồ sơ, làm mới/thu hồi phiên, đổi/quên/đặt lại mật khẩu, gán vai trò, danh sách người dùng, phòng ban), Ticketing 19 luồng (tạo, danh sách cá nhân và hàng đợi, chi tiết, cập nhật, nhận/phân công/hủy phân công, giải quyết/mở lại/đóng/hủy, bình luận, ghi chú nội bộ, timeline, tệp đính kèm), Knowledge 6 luồng (bản nháp, xuất bản, lưu trữ, chi tiết, tìm kiếm). Hàm xử lý HTTP gọi giao diện nghiệp vụ; lớp triển khai là `internal`. Các giao diện công khai và cổng tích hợp được kiểm tra riêng bằng kiểm thử kiến trúc. [Tài liệu mô-đun và luồng xử lý](docs/architecture/backend-modules-and-use-cases.md) mô tả trách nhiệm, giao dịch và phạm vi quyền hiện tại.
 
-Quyền, điều kiện chuyển trạng thái, `expectedRevision` và mã lỗi của từng thao tác ticket nằm trong [hợp đồng hiện hành](docs/architecture/current-backend-contract.md). Requester chỉ đọc phiếu của mình. Agent chỉ đọc phiếu thuộc nhóm hỗ trợ đang hoạt động mà mình là thành viên hoặc phiếu được phân công trực tiếp cho mình ([ADR-016](docs/adr/ADR-016-support-team-routing-and-agent-scope.md), đã chốt DEC-02); phiếu ngoài phạm vi trả 404. Admin đọc toàn hệ thống. Identity khóa dòng người dùng trong PostgreSQL khi tạo hoặc thu hồi phiên để các bản API chạy song song vẫn nhất quán.
+Quyền, điều kiện chuyển trạng thái, `expectedRevision` và mã lỗi của từng thao tác ticket nằm trong [hợp đồng hiện hành](docs/architecture/current-backend-contract.md). Agent xử lý phiếu thuộc nhóm đang hoạt động mà mình là thành viên hoặc phiếu được phân công trực tiếp theo `DEC-02`. Chủ phiếu có quyền công khai trên phiếu mình tạo, kể cả khi có vai trò Agent. Admin đọc toàn hệ thống. Phiếu ngoài phạm vi của từng thao tác trả `404`. [ADR-016](docs/adr/ADR-016-support-team-routing-and-agent-scope.md)
+
+Identity khóa dòng người dùng trong PostgreSQL khi tạo hoặc thu hồi phiên để các bản API chạy song song vẫn nhất quán.
 
 ## Build và test
 
@@ -138,7 +142,7 @@ Integration tests dùng PostgreSQL 17 Testcontainers và cần Docker đang ho�
 
 [Backend quality gates](.github/workflows/ci.yml) chạy khi mở/cập nhật PR, push vào main/dev/staging hoặc nhánh `codex/**`, và khi chạy thủ công trong tab Actions. Pipeline restore khóa phiên bản, build, unit/architecture/compatibility tests, integration PostgreSQL thật, kiểm tra AI contract và build ba image API, Worker và Migrator. Kết quả test TRX và AI contract được lưu thành workflow artifacts.
 
-Frontend tự lint/test/build image trong repo web. Repo infra ghim SHA backend/web và chạy Compose, migration, smoke qua gateway. Repo AI kiểm tra contract/checksum/fixtures. Các workflow chỉ cần quyền đọc mã nguồn, không cần Jenkins hoặc secrets registry; không push image hay tự deploy production. Xem [ADR-013](docs/adr/ADR-013-github-actions.md) và [hướng dẫn chuyển CI](docs/runbooks/github-actions.md).
+Frontend và AI Service kiểm thử và build ở kho riêng. Infra dùng SHA Backend/Web đã ghim cho smoke. Job phát hành GHCR của Backend, Web và AI dùng `workflow_dispatch` với `publish_images=true` khi ref và kho thỏa điều kiện trong workflow. Job này cần quyền ghi package để công bố image và hiện vật truy vết. Việc triển khai production theo runbook Infra. [Hướng dẫn CI và phát hành](docs/runbooks/github-actions.md) · [Truy vết image Backend](docs/runbooks/backend-ghcr-traceability.md)
 
 ## Database và triển khai
 

@@ -64,7 +64,7 @@ Mỗi tính năng có thư mục chứa giao diện, dữ liệu đầu vào và
 
 ## Quyền truy cập và các lệnh ghi
 
-Tại mốc đối chiếu, chi tiết dùng `OwnTickets(actorId)` cho Requester và `AllTickets` cho Agent/Admin. B1-PR3 dùng thêm `AgentTickets` cho Agent theo [ADR-016](../adr/ADR-016-support-team-routing-and-agent-scope.md). PostgreSQL lọc theo phân công hoặc thành viên của nhóm đang hoạt động trước khi đếm, phân trang và chiếu dữ liệu. Phiếu thiếu hoặc ngoài phạm vi trả 404.
+Trước B1-PR3, chi tiết dùng `AllTickets` cho Agent/Admin. Tại `dev@3640c33`, Admin dùng `AllTickets` và Agent dùng `AgentTickets` cho phạm vi xử lý. PostgreSQL lọc theo phân công trực tiếp hoặc thành viên của nhóm đang hoạt động trước khi đếm, phân trang và chiếu dữ liệu. Các thao tác công khai cho chủ phiếu còn dùng `OwnTickets(actorId)`, kể cả khi chủ phiếu có vai trò Agent. Phiếu thiếu hoặc ngoài phạm vi của thao tác trả `404`. [Ma trận quyền](rbac-permission-matrix.md) · [ADR-016](../adr/ADR-016-support-team-routing-and-agent-scope.md)
 
 Từ B1-PR3, `ITicketWriter.GetForUpdateAsync` nhận `TicketReadScope` để tải phiếu trong phạm vi trước khi áp dụng quy tắc của từng lệnh. Bộ tích hợp dùng `SingleOrDefaultAsync`; cập nhật phiếu dựa vào revision để phát hiện xung đột.
 

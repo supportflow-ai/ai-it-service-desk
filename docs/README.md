@@ -1,8 +1,8 @@
 # Bản đồ tài liệu dự án
 
-[Tài liệu chung SupportFlow AI](https://github.com/supportflow-ai/supportflow-ai-infra/blob/main/README.md) tập hợp phạm vi MVP, luồng nghiệm thu và ranh giới bốn kho. Backend sở hữu API, quy tắc nghiệp vụ, phân quyền và migration. Đọc [hợp đồng backend hiện hành](architecture/current-backend-contract.md) trước khi phối hợp với Frontend hoặc AI Service.
+Trong bộ checkout liên kho, `supportflow-ai-infra/docs/project/README.md` tập hợp phạm vi MVP, luồng nghiệm thu và ranh giới bốn kho. Backend sở hữu API, quy tắc nghiệp vụ, phân quyền và migration. Đọc [hợp đồng backend hiện hành](architecture/current-backend-contract.md) trước khi phối hợp với Frontend hoặc AI Service.
 
-Trạng thái: hiện hành cho kho backend. Cập nhật: 2026-11-13. Phần mô tả chức năng đã đối chiếu `dev` tại `07ce07a9dd50bcd143690c7ba1a19cc0048b9508`; hợp đồng API và phân quyền đổi lần cuối ở PR #64 (quyền đọc của Agent theo nhóm hỗ trợ) và #65 (hạn mức tệp đính kèm), các thay đổi sau đó là cấu trúc thư mục và tài liệu; kết quả kiểm thử phải gắn với mốc chạy riêng.
+Chỉ mục hiện hành cập nhật ngày 21/11/2026, đối chiếu Backend `dev@3640c33`. Mỗi hồ sơ giữ ngày và SHA của lần đối chiếu riêng. [Mốc nguồn và thay đổi từ 13/11](architecture/source-baseline.md)
 
 [Quy chuẩn tài liệu](process/documentation-standard.md) quy định cách viết tiếng Việt, ghi mốc nguồn và cập nhật theo thay đổi. [Bảng thuật ngữ](process/technical-glossary.md) thống nhất cách gọi giữa các tài liệu.
 
@@ -15,9 +15,10 @@ Trạng thái: hiện hành cho kho backend. Cập nhật: 2026-11-13. Phần m�
 | Loại | Nguồn | Cách sử dụng |
 | --- | --- | --- |
 | Cách làm việc | AGENTS, [cẩm nang chung](team-handbook.md), [nhánh, commit, PR](process/branch-commit-pr-convention.md), [DoR/DoD](process/definition-of-ready-done.md) | Phạm vi thao tác, ngôn ngữ, kiểm chứng và bàn giao |
-| Quyết định kiến trúc | [Danh mục ADR](adr/README.md), đặc biệt ADR-011–015 | Ranh giới và quyết định còn hiệu lực; đọc cả phần bổ sung/thay thế của ADR cũ |
+| Quyết định kiến trúc | [Danh mục ADR](adr/README.md), đặc biệt ADR-011–017 | Ranh giới, quyết định còn hiệu lực và phần bổ sung hoặc thay thế ADR cũ |
 | Hành vi đang triển khai | [Hợp đồng backend](architecture/current-backend-contract.md), mã nguồn, [baseline HTTP](../contracts/backend/openapi-baseline.json) và kiểm thử | Đối chiếu tương thích tại cùng SHA; mã hiện tại không tự chứng minh mọi yêu cầu sản phẩm đã đúng |
 | Nghiệp vụ tương lai | [Bảng quyết định còn mở](architecture/pending-business-decisions.md), các đề xuất trong [chỉ mục kiến trúc](architecture/README.md) | Đầu vào cho quyết định tiếp theo; không tự mở rộng nhiệm vụ |
+| Đích tích hợp đã thống nhất | [Phân loại có người duyệt](architecture/ai-integration-plan.md), [SupportTeam](adr/ADR-016-support-team-routing-and-agent-scope.md#phương-án-supportteam-đã-chốt), [lộ trình R2](architecture/r2-storage-plan.md) | Xác định phần đã có trong mã, phần đã chốt hướng và bằng chứng còn thiếu |
 | Vận hành | [Môi trường](runbooks/environment-runbook.md), [kiểm chứng](runbooks/backend-hardening-verification.md), [triển khai](runbooks/backend-refactor-rollout.md), [CI](runbooks/github-actions.md), [truy vết image GHCR](runbooks/backend-ghcr-traceability.md) | Chạy đúng môi trường và phạm vi được giao |
 | Database nhóm | [VPS phát triển dùng chung](runbooks/shared-development-database.md) | Địa chỉ, SSH tunnel, tài khoản ứng dụng và giới hạn vận hành |
 | Bằng chứng khởi chạy tại mốc cũ | [Kết quả nạp cấu hình và kết nối giao diện/backend](runbooks/local-startup-verification.md) | Chỉ phản ánh lần chạy ngày 2026-10-19; không mô tả trạng thái môi trường hôm nay |
