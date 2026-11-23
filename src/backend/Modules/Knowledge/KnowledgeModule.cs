@@ -2,8 +2,11 @@ using Microsoft.Extensions.DependencyInjection;
 using ServiceDesk.Modules.Knowledge.Application.ArchiveArticle;
 using ServiceDesk.Modules.Knowledge.Application.CreateDraftArticle;
 using ServiceDesk.Modules.Knowledge.Application.GetArticleDetail;
+using ServiceDesk.Modules.Knowledge.Application.GetArticleVersions;
+using ServiceDesk.Modules.Knowledge.Application.GetKnowledgeTags;
 using ServiceDesk.Modules.Knowledge.Application.Ports;
 using ServiceDesk.Modules.Knowledge.Application.PublishArticle;
+using ServiceDesk.Modules.Knowledge.Application.RepublishArticle;
 using ServiceDesk.Modules.Knowledge.Application.SearchKnowledge;
 using ServiceDesk.Modules.Knowledge.Application.UpdateDraftArticle;
 using ServiceDesk.Modules.Knowledge.Infrastructure;
@@ -26,8 +29,11 @@ public static class KnowledgeModule
         services.AddScoped<ICreateDraftArticle, CreateDraftArticleUseCase>();
         services.AddScoped<IUpdateDraftArticle, UpdateDraftArticleUseCase>();
         services.AddScoped<IPublishArticle, PublishArticleUseCase>();
+        services.AddScoped<IRepublishArticle, RepublishArticleUseCase>();
         services.AddScoped<IArchiveArticle, ArchiveArticleUseCase>();
         services.AddScoped<IGetArticleDetail, GetArticleDetailUseCase>();
+        services.AddScoped<IGetArticleVersions, GetArticleVersionsUseCase>();
+        services.AddScoped<IGetKnowledgeTags, GetKnowledgeTagsUseCase>();
         services.AddScoped<ISearchKnowledge, SearchKnowledgeUseCase>();
         return services;
     }

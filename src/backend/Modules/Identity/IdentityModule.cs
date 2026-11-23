@@ -20,6 +20,7 @@ using ServiceDesk.Modules.Identity.Application.RefreshAuth;
 using ServiceDesk.Modules.Identity.Application.RegisterUser;
 using ServiceDesk.Modules.Identity.Application.ResetPassword;
 using ServiceDesk.Modules.Identity.Application.RevokeToken;
+using ServiceDesk.Modules.Identity.Application.UpdateCurrentUserProfile;
 using ServiceDesk.Modules.Identity.Infrastructure;
 using ServiceDesk.Modules.Identity.Infrastructure.Options;
 using ServiceDesk.SharedKernel.Application.Abstractions;
@@ -83,6 +84,7 @@ public static class IdentityModule
         services.AddScoped<PasswordResetCodeIssuer>();
         services.AddScoped<IResetPassword, ResetPasswordUseCase>();
         services.AddScoped<IAssignUserRoles, AssignUserRolesUseCase>();
+        services.AddScoped<IUpdateCurrentUserProfile, UpdateCurrentUserProfileUseCase>();
         return services;
     }
 

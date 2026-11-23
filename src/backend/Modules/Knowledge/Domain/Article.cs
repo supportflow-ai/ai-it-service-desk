@@ -94,6 +94,37 @@ public class Article
         _versions.Add(new ArticleVersion(Guid.NewGuid(), Id, Version, Title, Content, publishedById, now));
     }
 
+    public void Republish(
+        string title,
+        string content,
+        IEnumerable<string>? tags,
+        Guid publishedById,
+        DateTime now)
+    {
+        if (Status != ArticleStatus.Published)
+        {
+            throw new InvalidOperationException("Chỉ có thể tái xuất bản bài viết đang ở trạng thái đã xuất bản.");
+        }
+
+        if (publishedById == Guid.Empty)
+        {
+            throw new ArgumentException("PublishedBy ID is required.");
+        }
+
+        var normalizedTitle = ValidateAndNormalizeTitle(title);
+        var normalizedContent = ValidateAndNormalizeContent(content);
+        var normalizedTags = NormalizeTags(Id, tags);
+
+        Title = normalizedTitle;
+        Content = normalizedContent;
+        _tags.Clear();
+        _tags.AddRange(normalizedTags);
+        Version++;
+        PublishedAt = now;
+        UpdatedAt = now;
+        _versions.Add(new ArticleVersion(Guid.NewGuid(), Id, Version, Title, Content, publishedById, now));
+    }
+
     public void Archive(DateTime now)
     {
         if (Status != ArticleStatus.Published)

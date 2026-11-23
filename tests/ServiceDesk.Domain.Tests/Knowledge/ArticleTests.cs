@@ -403,6 +403,72 @@ public class ArticleTests
         version.VersionNumber.Should().Be(2);
     }
 
+    [Fact]
+    public void Republish_FromPublished_IncrementsVersionAndAppendsNewVersionSnapshot()
+    {
+        var article = CreateValidDraft();
+        var publisherId1 = Guid.NewGuid();
+        article.Publish(publisherId1, Now);
+
+        article.Version.Should().Be(1);
+        article.Versions.Should().HaveCount(1);
+
+        var publisherId2 = Guid.NewGuid();
+        article.Republish(
+            "Updated Title for V2",
+            "Updated content with at least ten characters.",
+            new[] { "vpn", "v2" },
+            publisherId2,
+            Later);
+
+        article.Status.Should().Be(ArticleStatus.Published);
+        article.Version.Should().Be(2);
+        article.Title.Should().Be("Updated Title for V2");
+        article.Content.Should().Be("Updated content with at least ten characters.");
+        article.UpdatedAt.Should().Be(Later);
+        article.PublishedAt.Should().Be(Later);
+        article.Tags.Select(t => t.Name).Should().ContainInOrder("vpn", "v2");
+
+        article.Versions.Should().HaveCount(2);
+        var v2 = article.Versions.Last();
+        v2.VersionNumber.Should().Be(2);
+        v2.Title.Should().Be("Updated Title for V2");
+        v2.PublishedById.Should().Be(publisherId2);
+        v2.PublishedAt.Should().Be(Later);
+    }
+
+    [Fact]
+    public void Republish_FromDraft_ThrowsInvalidOperationException()
+    {
+        var article = CreateValidDraft();
+        var act = () => article.Republish("New Title", "New content at least ten chars", null, Guid.NewGuid(), Later);
+        act.Should().Throw<InvalidOperationException>()
+            .WithMessage("*Chỉ có thể tái xuất bản bài viết đang ở trạng thái đã xuất bản.*");
+    }
+
+    [Fact]
+    public void Republish_FromArchived_ThrowsInvalidOperationException()
+    {
+        var article = CreateValidDraft();
+        article.Publish(Guid.NewGuid(), Now);
+        article.Archive(Later);
+
+        var act = () => article.Republish("New Title", "New content at least ten chars", null, Guid.NewGuid(), ArchiveTime);
+        act.Should().Throw<InvalidOperationException>()
+            .WithMessage("*Chỉ có thể tái xuất bản bài viết đang ở trạng thái đã xuất bản.*");
+    }
+
+    [Fact]
+    public void Republish_EmptyPublisherId_ThrowsArgumentException()
+    {
+        var article = CreateValidDraft();
+        article.Publish(Guid.NewGuid(), Now);
+
+        var act = () => article.Republish("New Title", "New content at least ten chars", null, Guid.Empty, Later);
+        act.Should().Throw<ArgumentException>()
+            .WithMessage("*PublishedBy ID is required.*");
+    }
+
     private static Article CreateValidDraft()
     {
         return Article.CreateDraft(

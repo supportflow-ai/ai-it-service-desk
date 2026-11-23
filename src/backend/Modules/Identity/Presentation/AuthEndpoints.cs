@@ -19,10 +19,14 @@ using ServiceDesk.Modules.Identity.Application.ChangePassword;
 using ServiceDesk.Modules.Identity.Application.ForgotPassword;
 using ServiceDesk.Modules.Identity.Application.ResetPassword;
 using ServiceDesk.Modules.Identity.Application.AssignUserRoles;
+using ServiceDesk.Modules.Identity.Application.UpdateCurrentUserProfile;
 using ServiceDesk.Modules.Identity.Application.Contracts;
 using ServiceDesk.SharedKernel.Authorization;
 
 namespace ServiceDesk.Modules.Identity.Presentation;
+
+/// <summary>Request body cập nhật thông tin người dùng đang đăng nhập.</summary>
+public record UpdateCurrentUserProfileRequest(string? FullName, string? PhoneNumber);
 
 /// <summary>
 /// Định nghĩa các API endpoints cho phân hệ định danh & xác thực người dùng (Identity & Authentication).
@@ -192,6 +196,28 @@ public static class AuthEndpoints
         .AddEndpointFilter<ApiErrorFilter>()
         .WithName("GetCurrentUser")
         .RequireAuthorization();
+
+        // PUT /api/auth/me: Cập nhật thông tin tài khoản người dùng đang đăng nhập (họ tên, số điện thoại)
+        group.MapPut("/me", async (
+            [FromBody] UpdateCurrentUserProfileRequest request,
+            IUpdateCurrentUserProfile updateProfile,
+            CancellationToken ct) =>
+        {
+            var user = await updateProfile.ExecuteAsync(new(request.FullName, request.PhoneNumber), ct);
+            if (user == null)
+            {
+                return Results.NotFound();
+            }
+
+            return Results.Ok(user);
+        })
+        .AddEndpointFilter<ApiErrorFilter>()
+        .WithName("UpdateCurrentUserProfile")
+        .RequireAuthorization()
+        .Produces<UserInfo>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status404NotFound);
 
         // GET /api/users: Lấy danh sách người dùng theo vai trò (Agent/Admin)
         app.MapGet("/api/users", async (
