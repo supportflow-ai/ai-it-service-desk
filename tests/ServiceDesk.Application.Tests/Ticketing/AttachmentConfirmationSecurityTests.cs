@@ -45,6 +45,8 @@ public sealed class AttachmentConfirmationSecurityTests
     {
         _storage.Setup(value => value.StatAsync("configured-bucket", _upload.StorageKey, It.IsAny<CancellationToken>()))
             .ReturnsAsync(size == 0 ? null : new StoredObject(size, type, "etag"));
+        _storage.Setup(value => value.DeleteAsync("configured-bucket", _upload.StorageKey, It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
         await Assert.ThrowsAsync<ArgumentException>(() => Confirm().ExecuteAsync(new(_ticket, Request())));
         _store.Verify(value => value.ConfirmAsync(It.IsAny<Guid>(), It.IsAny<TicketAttachment>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -54,6 +56,8 @@ public sealed class AttachmentConfirmationSecurityTests
     {
         _storage.Setup(value => value.StatAsync("configured-bucket", _upload.StorageKey, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new StoredObject(1024, null!, "etag"));
+        _storage.Setup(value => value.DeleteAsync("configured-bucket", _upload.StorageKey, It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
         await Assert.ThrowsAsync<ArgumentException>(() => Confirm().ExecuteAsync(new(_ticket, Request())));
         _store.Verify(value => value.ConfirmAsync(It.IsAny<Guid>(), It.IsAny<TicketAttachment>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Never);
     }

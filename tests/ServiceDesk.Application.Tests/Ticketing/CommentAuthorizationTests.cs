@@ -25,6 +25,8 @@ public sealed class CommentAuthorizationTests
         _user.SetupGet(user => user.IsAuthenticated).Returns(true);
         _user.SetupGet(user => user.UserId).Returns(_actor.ToString());
         _clock.SetupGet(clock => clock.UtcNow).Returns(_now);
+        _timeline.Setup(store => store.FindRecentDuplicateAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((TimelineItemDto?)null);
     }
 
     [Theory]

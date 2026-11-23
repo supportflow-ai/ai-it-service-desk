@@ -27,6 +27,8 @@ public sealed class AddCommentSlaTests
         _clock.SetupGet(c => c.UtcNow).Returns(_now);
         _agentDirectory.Setup(d => d.GetDisplayNameAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync("Test User");
+        _timelineStore.Setup(s => s.FindRecentDuplicateAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((TimelineItemDto?)null);
     }
 
     [Fact]

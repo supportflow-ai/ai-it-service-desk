@@ -14,6 +14,9 @@ public sealed record UserInfo
     /// <summary>Họ và tên người dùng.</summary>
     public string? FullName { get; init; }
 
+    /// <summary>Số điện thoại liên hệ của người dùng.</summary>
+    public string? PhoneNumber { get; init; }
+
     /// <summary>Danh sách các vai trò (Requester, Agent, Admin).</summary>
     public IReadOnlyList<string> Roles { get; init; } = [];
 }

@@ -17,4 +17,18 @@ public sealed class SupportTeamMember
     public Guid UserId { get; private set; }
 
     public bool IsLead { get; private set; }
+
+    public static SupportTeamMember Create(Guid teamId, Guid userId, bool isLead = false)
+    {
+        if (teamId == Guid.Empty) throw new ArgumentException("TeamId is required.", nameof(teamId));
+        if (userId == Guid.Empty) throw new ArgumentException("UserId is required.", nameof(userId));
+        return new SupportTeamMember
+        {
+            TeamId = teamId,
+            UserId = userId,
+            IsLead = isLead
+        };
+    }
+
+    public void SetLead(bool isLead) => IsLead = isLead;
 }

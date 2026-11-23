@@ -157,10 +157,21 @@ public class Ticket
     /// </summary>
     public void SetTriage(Impact impact, Urgency urgency, DateTime now)
     {
+        if (Status is TicketStatus.Closed or TicketStatus.Cancelled)
+            throw new InvalidOperationException($"Không thể phân loại vé đã ở trạng thái {Status}.");
+
         Impact = impact;
         Urgency = urgency;
-        Priority = PriorityMatrix.Calculate(impact, urgency);
-        UpdatedAt = now;
+        var newPriority = PriorityMatrix.Calculate(impact, urgency);
+        if (IsSlaApplicable && Priority.HasValue && Priority.Value != newPriority)
+        {
+            UpdateSlaPriority(newPriority, now);
+        }
+        else
+        {
+            Priority = newPriority;
+            UpdatedAt = now;
+        }
     }
 
     /// <summary>Kiểm tra quyền sở hữu của người gửi đối với ticket này.</summary>

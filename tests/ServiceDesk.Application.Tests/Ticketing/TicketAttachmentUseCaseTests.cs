@@ -185,9 +185,9 @@ public sealed class TicketAttachmentUseCaseTests
     public async Task GenerateUpload_IssuesCanonicalGrantAndBoundedPostPolicy()
     {
         AttachmentUploadGrant? issued = null;
-        var fields = new Dictionary<string, string> { ["policy"] = "synthetic-policy" };
+        var headers = new Dictionary<string, string> { ["Content-Type"] = "text/plain" };
         _storageService.Setup(s => s.CreateUploadAsync("servicedesk-test", It.IsAny<string>(), "text/plain", 5, 3600, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new PresignedUpload("https://storage.example.invalid/bucket", fields));
+            .ReturnsAsync(new PresignedUpload("https://storage.example.invalid/bucket", FormData: null, RequiredHeaders: headers));
         _attachmentStore.Setup(s => s.CreateUploadGrantAsync(It.IsAny<AttachmentUploadGrant>(), It.IsAny<CancellationToken>()))
             .Callback<AttachmentUploadGrant, CancellationToken>((grant, _) => issued = grant)
             .Returns(Task.CompletedTask);
@@ -199,7 +199,7 @@ public sealed class TicketAttachmentUseCaseTests
         Assert.StartsWith($"uploads/pending/{_ticketId}/", issued.StorageKey);
         Assert.Equal(issued.StorageKey, result.StorageKey);
         Assert.Equal(_now.UtcDateTime.AddHours(1), issued.ExpiresAt);
-        Assert.Same(fields, result.FormData);
+        Assert.Same(headers, result.RequiredHeaders);
         _attachmentStore.Verify(s => s.CreateUploadGrantAsync(It.IsAny<AttachmentUploadGrant>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 }

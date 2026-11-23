@@ -5,7 +5,6 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
-using Minio;
 using Moq;
 using ServiceDesk.Platform.Options;
 using ServiceDesk.Platform.Persistence;
@@ -44,21 +43,20 @@ public sealed class AttachmentStorageContractTests
     }
 
     [Fact]
-    public async Task SignedPostPolicy_UsesPublicOriginAndExactSize()
+    public async Task PresignedPut_UsesR2EndpointAndRequiredHeaders()
     {
-        var options = new MinioOptions { Endpoint = "minio:9000", PublicEndpoint = "https://files.example.invalid",
-            AccessKey = "synthetic-key", SecretKey = "synthetic-secret-only-for-tests", Bucket = "configured-bucket" };
-        using var adapter = new MinioObjectStorageService(new Mock<IMinioClient>().Object,
-            NullLogger<MinioObjectStorageService>.Instance, Options.Create(options));
+        var options = new R2Options
+        {
+            Endpoint = "https://example.r2.cloudflarestorage.com",
+            AccessKeyId = "synthetic-key",
+            SecretAccessKey = "synthetic-secret-only-for-tests",
+            Bucket = "configured-bucket"
+        };
+        using var adapter = new R2ObjectStorageService(Options.Create(options), NullLogger<R2ObjectStorageService>.Instance);
         var upload = await adapter.CreateUploadAsync(adapter.DefaultBucket, "tickets/test/pending/object", "image/png", 1024, 3600);
-        Assert.Equal("https://files.example.invalid", new Uri(upload.Url).GetLeftPart(UriPartial.Authority));
-        Assert.Equal("tickets/test/pending/object", upload.FormData["key"]);
-        using var policy = JsonDocument.Parse(Encoding.UTF8.GetString(Convert.FromBase64String(upload.FormData["policy"])));
-        Assert.Contains(policy.RootElement.GetProperty("conditions").EnumerateArray(), condition =>
-            condition.ValueKind == JsonValueKind.Array && condition[0].GetString() == "content-length-range" &&
-            // SDK MinIO 6.0.5 emits integer strings; MinIO's toInteger accepts both forms.
-            // Keep checking exact bounds rather than assuming a JSON representation.
-            long.Parse(condition[1].ToString(), System.Globalization.CultureInfo.InvariantCulture) == 1024 &&
-            long.Parse(condition[2].ToString(), System.Globalization.CultureInfo.InvariantCulture) == 1024);
+        Assert.Equal("https://example.r2.cloudflarestorage.com", new Uri(upload.Url).GetLeftPart(UriPartial.Authority));
+        Assert.NotNull(upload.RequiredHeaders);
+        Assert.True(upload.RequiredHeaders.ContainsKey("Content-Type"));
+        Assert.Equal("image/png", upload.RequiredHeaders["Content-Type"]);
     }
 }

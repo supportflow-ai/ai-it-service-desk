@@ -28,4 +28,14 @@ public interface ITicketTimelineStore
         TicketComment? systemAudit,
         CancellationToken cancellationToken = default);
     Task<IReadOnlyList<TimelineItemDto>> GetForTicketAsync(Guid ticketId, bool includeInternal, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Tìm bình luận hoặc ghi chú trùng lặp gần nhất của cùng tác giả trên cùng vé trong khoảng thời gian chỉ định (BIZ-02).
+    /// </summary>
+    Task<TimelineItemDto?> FindRecentDuplicateAsync(
+        Guid ticketId,
+        Guid authorId,
+        string content,
+        DateTime sinceUtc,
+        CancellationToken cancellationToken = default);
 }
