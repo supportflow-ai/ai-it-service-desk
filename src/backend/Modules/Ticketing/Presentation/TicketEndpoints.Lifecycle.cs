@@ -9,6 +9,7 @@ using ServiceDesk.Modules.Ticketing.Application.PendingTicket;
 using ServiceDesk.Modules.Ticketing.Application.ReopenTicket;
 using ServiceDesk.Modules.Ticketing.Application.ResolveTicket;
 using ServiceDesk.Modules.Ticketing.Application.ResumeTicket;
+using ServiceDesk.Modules.Ticketing.Application.TriageTicket;
 using ServiceDesk.Modules.Ticketing.Domain;
 using ServiceDesk.SharedKernel.Authorization;
 
@@ -125,6 +126,24 @@ public static partial class TicketEndpoints
         })
         .WithName("CancelTicket")
         .RequireAuthorization()
+        .Produces<TicketDto>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status404NotFound)
+        .Produces(StatusCodes.Status409Conflict);
+
+        // POST /api/tickets/{id}/triage: Phân loại thủ công mức độ ảnh hưởng và mức độ khẩn cấp (DEC-09)
+        group.MapPost("/{id:guid}/triage", async (
+            Guid id,
+            [FromBody] TriageTicketRequest request,
+            [FromServices] ITriageTicket triageTicket,
+            CancellationToken ct) =>
+        {
+            var ticket = await triageTicket.ExecuteAsync(new(id, request.Impact, request.Urgency, request.ExpectedRevision), ct);
+            return Results.Ok(ticket);
+        })
+        .WithName("TriageTicket")
+        .RequireAuthorization(PolicyNames.RequireAgent)
         .Produces<TicketDto>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status400BadRequest)
         .Produces(StatusCodes.Status401Unauthorized)

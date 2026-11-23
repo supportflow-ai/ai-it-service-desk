@@ -38,6 +38,20 @@ internal sealed class AddInternalNoteUseCase(
 
         var authorName = await agentDirectory.GetDisplayNameAsync(actorId, cancellationToken);
         var authorRole = currentUser.Roles.FirstOrDefault() ?? "Agent";
+        var now = clock.UtcNow.UtcDateTime;
+
+        // BIZ-02: Chống gửi ghi chú nội bộ trùng lặp cùng tác giả/vé trong 30 giây
+        var recentDuplicate = await timelineStore.FindRecentDuplicateAsync(
+            command.TicketId,
+            actorId,
+            command.Content,
+            now.AddSeconds(-30),
+            cancellationToken);
+
+        if (recentDuplicate is not null)
+        {
+            return recentDuplicate;
+        }
 
         var comment = TicketComment.CreateInternalNote(
             command.TicketId,
@@ -45,7 +59,7 @@ internal sealed class AddInternalNoteUseCase(
             authorName,
             authorRole,
             command.Content,
-            clock.UtcNow.UtcDateTime);
+            now);
 
         return await timelineStore.AddAsync(comment, cancellationToken);
     }

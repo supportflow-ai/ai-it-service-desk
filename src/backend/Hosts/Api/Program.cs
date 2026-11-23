@@ -124,6 +124,7 @@ app.UseAuthorization();
 app.MapAuthEndpoints();
 app.MapDiagnosticEndpoints();
 app.MapTicketEndpoints();
+app.MapSupportTeamEndpoints();
 app.MapKnowledgeEndpoints();
 app.MapDepartmentEndpoints();
 

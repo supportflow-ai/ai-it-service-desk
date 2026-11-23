@@ -5,7 +5,6 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Minio;
 using ServiceDesk.SharedKernel.Application.Abstractions;
 using ServiceDesk.Platform.Persistence;
 using Testcontainers.PostgreSql;
@@ -49,13 +48,7 @@ public class ServiceDeskWebApplicationFactory : WebApplicationFactory<ServiceDes
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseNpgsql(_postgres.GetConnectionString()));
 
-            // Remove MinIO registrations â€” not available in test environment
-            var minioClientDescriptor = services.SingleOrDefault(
-                d => d.ServiceType == typeof(IMinioClient));
-
-            if (minioClientDescriptor != null)
-                services.Remove(minioClientDescriptor);
-
+            // Remove real Object Storage registration — not available in test environment
             var storageDescriptor = services.SingleOrDefault(
                 d => d.ServiceType == typeof(IObjectStorageService));
 
@@ -88,32 +81,15 @@ public class ServiceDeskWebApplicationFactory : WebApplicationFactory<ServiceDes
     {
         public string DefaultBucket => "servicedesk-test";
         public Task<PresignedUpload> CreateUploadAsync(string bucket, string key, string contentType, long size, int expirySeconds, CancellationToken cancellationToken = default)
-            => Task.FromResult(new PresignedUpload($"https://test-storage/{bucket}", new Dictionary<string, string> { ["key"] = key }));
+            => Task.FromResult(new PresignedUpload($"https://test-storage/{bucket}", new Dictionary<string, string> { ["Content-Type"] = contentType }, new Dictionary<string, string> { ["key"] = key }));
         public Task<StoredObject?> StatAsync(string bucket, string key, CancellationToken cancellationToken = default)
             => Task.FromResult<StoredObject?>(null);
         public Task CopyAsync(string bucket, string source, string destination, string expectedETag, CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task DeleteAsync(string bucket, string key, CancellationToken cancellationToken = default) => Task.CompletedTask;
 
-        public Task<string> GetPresignedUploadUrlAsync(
-            string bucketName, string objectName, int expiryInSeconds = 3600,
-            CancellationToken cancellationToken = default)
-            => Task.FromResult($"https://test-storage/{bucketName}/{objectName}");
-
         public Task<string> GetPresignedDownloadUrlAsync(
             string bucketName, string objectName, int expiryInSeconds = 3600,
             CancellationToken cancellationToken = default)
             => Task.FromResult($"https://test-storage/{bucketName}/{objectName}");
-
-        public Task<ObjectStorageObjectInfo> StatObjectAsync(
-            string bucketName, string objectName, CancellationToken cancellationToken = default)
-            => throw new FileNotFoundException("Test storage không có object đã tải lên.");
-
-        public Task<bool> BucketExistsAsync(
-            string bucketName, CancellationToken cancellationToken = default)
-            => Task.FromResult(true);
-
-        public Task EnsureBucketExistsAsync(
-            string bucketName, CancellationToken cancellationToken = default)
-            => Task.CompletedTask;
     }
 }

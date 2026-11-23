@@ -3,7 +3,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
-using Minio;
 using ServiceDesk.Platform.Clock;
 using ServiceDesk.Platform.Options;
 using ServiceDesk.Platform.Persistence;
@@ -60,17 +59,11 @@ public static class DependencyInjection
         return services;
     }
 
-    /// <summary>Đăng ký client MinIO Object Storage (tương thích AWS S3).</summary>
+    /// <summary>Đăng ký client Cloudflare R2 Object Storage (tương thích AWS S3, ADR-017).</summary>
     public static IServiceCollection AddStorage(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddOptions<MinioOptions>().Bind(configuration.GetSection(MinioOptions.SectionName));
-        services.AddSingleton<IMinioClient>(sp =>
-        {
-            var options = sp.GetRequiredService<IOptions<MinioOptions>>().Value;
-            return new MinioClient().WithEndpoint(options.Endpoint).WithCredentials(options.AccessKey, options.SecretKey)
-                .WithSSL(options.UseSsl).Build();
-        });
-        services.AddSingleton<IObjectStorageService, MinioObjectStorageService>();
+        services.AddOptions<R2Options>().Bind(configuration.GetSection(R2Options.SectionName));
+        services.AddSingleton<IObjectStorageService, R2ObjectStorageService>();
         return services;
     }
 }

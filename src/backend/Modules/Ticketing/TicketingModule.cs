@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using ServiceDesk.Modules.Ticketing.Application.AddComment;
 using ServiceDesk.Modules.Ticketing.Application.AddInternalNote;
 using ServiceDesk.Modules.Ticketing.Application.AssignTicket;
+using ServiceDesk.Modules.Ticketing.Application.AutoCloseTickets;
 using ServiceDesk.Modules.Ticketing.Application.CancelTicket;
 using ServiceDesk.Modules.Ticketing.Application.ClaimTicket;
 using ServiceDesk.Modules.Ticketing.Application.CloseTicket;
@@ -20,6 +21,8 @@ using ServiceDesk.Modules.Ticketing.Application.Ports;
 using ServiceDesk.Modules.Ticketing.Application.ReopenTicket;
 using ServiceDesk.Modules.Ticketing.Application.ResolveTicket;
 using ServiceDesk.Modules.Ticketing.Application.ResumeTicket;
+using ServiceDesk.Modules.Ticketing.Application.SupportTeams;
+using ServiceDesk.Modules.Ticketing.Application.TriageTicket;
 using ServiceDesk.Modules.Ticketing.Application.UnassignTicket;
 using ServiceDesk.Modules.Ticketing.Application.UpdateTicket;
 using ServiceDesk.Modules.Ticketing.Infrastructure;
@@ -63,6 +66,11 @@ public static class TicketingModule
         services.AddScoped<IGetAttachmentDownloadUrl, GetAttachmentDownloadUrlUseCase>();
         services.AddScoped<IConfirmAttachmentUpload, ConfirmAttachmentUploadUseCase>();
         services.AddScoped<IGetTicketAttachments, GetTicketAttachmentsUseCase>();
+        services.AddScoped<IGetSupportTeams, GetSupportTeamsUseCase>();
+        services.AddScoped<IAddTeamMember, AddTeamMemberUseCase>();
+        services.AddScoped<IRemoveTeamMember, RemoveTeamMemberUseCase>();
+        services.AddScoped<ITriageTicket, TriageTicketUseCase>();
+        services.AddScoped<IAutoCloseTickets, AutoCloseTicketsUseCase>();
         return services;
     }
 
@@ -74,8 +82,10 @@ public static class TicketingModule
         services.AddScoped<ITicketTimelineStore, PostgresTicketTimelineStore>();
         services.AddScoped<ITicketAttachmentStore, PostgresTicketAttachmentStore>();
         services.AddScoped<ISlaEvaluationGateway, PostgresSlaEvaluationAdapter>();
+        services.AddScoped<IAutoCloseTicketsGateway, PostgresAutoCloseTicketsAdapter>();
         services.AddScoped<IAgentDirectory, AgentDirectory>();
         services.AddScoped<ISupportTeamMembershipReader, PostgresSupportTeamMembershipReader>();
+        services.AddScoped<ISupportTeamStore, PostgresSupportTeamStore>();
         return services;
     }
 }

@@ -128,7 +128,11 @@ internal sealed class IdentityAccountGateway(UserManager<IdentityUser> users, Db
 
         return roleUsers.Select(user => new UserInfo
         {
-            UserId = user.Id, Email = user.Email!, FullName = names.GetValueOrDefault(user.Id), Roles = roles[user.Id].ToArray()
+            UserId = user.Id,
+            Email = user.Email!,
+            FullName = names.GetValueOrDefault(user.Id),
+            PhoneNumber = user.PhoneNumber,
+            Roles = roles[user.Id].ToArray()
         }).ToArray();
     }
 
@@ -222,7 +226,10 @@ internal sealed class IdentityAccountGateway(UserManager<IdentityUser> users, Db
 
     private async Task<UserInfo> ToUserAsync(IdentityUser user) => new()
     {
-        UserId = user.Id, Email = user.Email!, FullName = (await users.GetClaimsAsync(user)).FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value,
+        UserId = user.Id,
+        Email = user.Email!,
+        FullName = (await users.GetClaimsAsync(user)).FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value,
+        PhoneNumber = user.PhoneNumber,
         Roles = (await users.GetRolesAsync(user)).ToArray()
     };
 }

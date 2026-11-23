@@ -731,6 +731,124 @@
         }
       }
     },
+    "/api/support-teams": {
+      "get": {
+        "tags": [
+          "SupportTeams"
+        ],
+        "operationId": "GetSupportTeams",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SupportTeamDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/support-teams/{id}/members": {
+      "post": {
+        "tags": [
+          "SupportTeams"
+        ],
+        "operationId": "AddSupportTeamMember",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddTeamMemberRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportTeamMemberDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "409": {
+            "description": "Conflict"
+          }
+        }
+      }
+    },
+    "/api/support-teams/{id}/members/{userId}": {
+      "delete": {
+        "tags": [
+          "SupportTeams"
+        ],
+        "operationId": "RemoveSupportTeamMember",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
     "/api": {
       "get": {
         "tags": [
@@ -1484,6 +1602,59 @@
         }
       }
     },
+    "/api/tickets/{id}/triage": {
+      "post": {
+        "tags": [
+          "Tickets"
+        ],
+        "operationId": "TriageTicket",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TriageTicketRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TicketDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "409": {
+            "description": "Conflict"
+          }
+        }
+      }
+    },
     "/api/tickets/{id}/comments": {
       "post": {
         "tags": [
@@ -1841,6 +2012,19 @@
         },
         "additionalProperties": false
       },
+      "AddTeamMemberRequest": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "isLead": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
       "ArchiveArticleRequest": {
         "type": "object",
         "properties": {
@@ -2082,6 +2266,15 @@
         },
         "additionalProperties": false
       },
+      "Impact": {
+        "enum": [
+          0,
+          1,
+          2
+        ],
+        "type": "integer",
+        "format": "int32"
+      },
       "LoginRequest": {
         "required": [
           "email",
@@ -2299,6 +2492,54 @@
         },
         "additionalProperties": false
       },
+      "SupportTeamDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "isTriageQueue": {
+            "type": "boolean"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "members": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SupportTeamMemberDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "SupportTeamMemberDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "displayName": {
+            "type": "string",
+            "nullable": true
+          },
+          "isLead": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
       "TicketAttachmentDto": {
         "type": "object",
         "properties": {
@@ -2467,6 +2708,23 @@
         },
         "additionalProperties": false
       },
+      "TriageTicketRequest": {
+        "type": "object",
+        "properties": {
+          "impact": {
+            "$ref": "#/components/schemas/Impact"
+          },
+          "urgency": {
+            "$ref": "#/components/schemas/Urgency"
+          },
+          "expectedRevision": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "UpdateDraftArticleRequest": {
         "type": "object",
         "properties": {
@@ -2537,9 +2795,25 @@
               "type": "string"
             },
             "nullable": true
+          },
+          "requiredHeaders": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "nullable": true
           }
         },
         "additionalProperties": false
+      },
+      "Urgency": {
+        "enum": [
+          0,
+          1,
+          2
+        ],
+        "type": "integer",
+        "format": "int32"
       }
     },
     "securitySchemes": {
