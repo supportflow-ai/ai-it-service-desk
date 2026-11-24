@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Routing;
 using ServiceDesk.Modules.Ticketing.Application.AssignTicket;
 using ServiceDesk.Modules.Ticketing.Application.ClaimTicket;
 using ServiceDesk.Modules.Ticketing.Application.Contracts;
+using ServiceDesk.Modules.Ticketing.Application.TransferTicket;
 using ServiceDesk.Modules.Ticketing.Application.UnassignTicket;
 using ServiceDesk.SharedKernel.Authorization;
 
@@ -65,6 +66,24 @@ public static partial class TicketEndpoints
             return Results.Ok(ticket);
         })
         .WithName("UnassignTicket")
+        .RequireAuthorization(PolicyNames.RequireAgent)
+        .Produces<TicketDto>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status404NotFound)
+        .Produces(StatusCodes.Status409Conflict);
+
+        // POST /api/tickets/{id}/transfer: Điều phối chuyển phiếu sang nhóm hỗ trợ khác
+        group.MapPost("/{id:guid}/transfer", async (
+            Guid id,
+            [FromBody] TransferTicketRequest request,
+            [FromServices] ITransferTicket transferTicket,
+            CancellationToken ct) =>
+        {
+            var ticket = await transferTicket.ExecuteAsync(new(id, request), ct);
+            return Results.Ok(ticket);
+        })
+        .WithName("TransferTicket")
         .RequireAuthorization(PolicyNames.RequireAgent)
         .Produces<TicketDto>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status400BadRequest)

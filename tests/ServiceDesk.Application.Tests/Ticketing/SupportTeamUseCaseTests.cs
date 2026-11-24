@@ -133,4 +133,59 @@ public class SupportTeamUseCaseTests
         var useCase = new RemoveTeamMemberUseCase(_store.Object, _membershipReader.Object, _currentUser.Object);
         await Assert.ThrowsAsync<KeyNotFoundException>(() => useCase.ExecuteAsync(new(_teamId, _agentId)));
     }
+
+    [Fact]
+    public async Task CreateSupportTeam_WhenNotAdmin_ThrowsUnauthorized()
+    {
+        _currentUser.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(false);
+        var useCase = new CreateSupportTeamUseCase(_store.Object, _currentUser.Object);
+
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+            useCase.ExecuteAsync(new("NET_DEV", "Network Development")));
+    }
+
+    [Fact]
+    public async Task CreateSupportTeam_WhenCodeExists_ThrowsConflict()
+    {
+        _store.Setup(s => s.ExistsCodeAsync("NET_DEV", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+        var useCase = new CreateSupportTeamUseCase(_store.Object, _currentUser.Object);
+
+        await Assert.ThrowsAsync<SupportTeamConflictException>(() =>
+            useCase.ExecuteAsync(new("NET_DEV", "Network Development")));
+    }
+
+    [Fact]
+    public async Task CreateSupportTeam_WhenValid_ReturnsCreatedDto()
+    {
+        _store.Setup(s => s.ExistsCodeAsync("NET_DEV", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+        var useCase = new CreateSupportTeamUseCase(_store.Object, _currentUser.Object);
+
+        var result = await useCase.ExecuteAsync(new("net_dev", "Network Development"));
+
+        Assert.Equal("NET_DEV", result.Code);
+        Assert.Equal("Network Development", result.Name);
+        Assert.True(result.IsActive);
+        _store.Verify(s => s.AddTeamAsync(It.Is<SupportTeam>(t => t.Code == "NET_DEV"), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task UpdateSupportTeam_WhenValid_UpdatesAndReturnsDto()
+    {
+        var team = SupportTeam.Create("NET_DEV", "Old Name");
+        _store.Setup(s => s.GetTeamByIdAsync(team.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(team);
+        _store.Setup(s => s.GetMembersAsync(team.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
+
+        var agentDirectory = new Mock<IAgentDirectory>();
+        var useCase = new UpdateSupportTeamUseCase(_store.Object, agentDirectory.Object, _currentUser.Object);
+
+        var result = await useCase.ExecuteAsync(team.Id, new("New Name", false));
+
+        Assert.Equal("New Name", result.Name);
+        Assert.False(result.IsActive);
+        _store.Verify(s => s.UpdateTeamAsync(It.Is<SupportTeam>(t => t.Name == "New Name" && !t.IsActive), It.IsAny<CancellationToken>()), Times.Once);
+    }
 }

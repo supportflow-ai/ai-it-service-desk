@@ -10,6 +10,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using ServiceDesk.Modules.Identity.Application.AssignUserRoles;
 using ServiceDesk.Modules.Identity.Application.ChangePassword;
+using ServiceDesk.Modules.Identity.Application.Departments;
 using ServiceDesk.Modules.Identity.Application.ForgotPassword;
 using ServiceDesk.Modules.Identity.Application.GetCurrentUser;
 using ServiceDesk.Modules.Identity.Application.GetDepartments;
@@ -85,6 +86,8 @@ public static class IdentityModule
         services.AddScoped<IResetPassword, ResetPasswordUseCase>();
         services.AddScoped<IAssignUserRoles, AssignUserRolesUseCase>();
         services.AddScoped<IUpdateCurrentUserProfile, UpdateCurrentUserProfileUseCase>();
+        services.AddScoped<ICreateDepartment, CreateDepartmentUseCase>();
+        services.AddScoped<IUpdateDepartment, UpdateDepartmentUseCase>();
         return services;
     }
 
@@ -152,6 +155,7 @@ public static class IdentityModule
         services.AddScoped<IRefreshTokenStore, PostgresRefreshTokenStore>();
         services.AddScoped<IOtpCodeStore, PostgresOtpCodeStore>();
         services.AddScoped<IDepartmentQueries, PostgresDepartmentQueries>();
+        services.AddScoped<IDepartmentStore, PostgresDepartmentStore>();
         return services;
     }
 }

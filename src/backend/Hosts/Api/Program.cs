@@ -5,6 +5,7 @@ using ServiceDesk.Api.Authentication;
 using ServiceDesk.Api.Endpoints;
 using ServiceDesk.Platform;
 using ServiceDesk.Modules.AIAssistance;
+using ServiceDesk.Modules.AIAssistance.Presentation;
 using ServiceDesk.Modules.Identity;
 using ServiceDesk.Modules.Identity.Presentation;
 using ServiceDesk.Modules.Knowledge;
@@ -125,8 +126,10 @@ app.MapAuthEndpoints();
 app.MapDiagnosticEndpoints();
 app.MapTicketEndpoints();
 app.MapSupportTeamEndpoints();
+app.MapReportEndpoints();
 app.MapKnowledgeEndpoints();
 app.MapDepartmentEndpoints();
+app.MapAiTriageEndpoints();
 
 // Endpoints kiểm tra sức khỏe
 app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false });
