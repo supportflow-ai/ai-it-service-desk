@@ -2,10 +2,12 @@ using Microsoft.Extensions.DependencyInjection;
 using ServiceDesk.Modules.Ticketing.Application.AddComment;
 using ServiceDesk.Modules.Ticketing.Application.AddInternalNote;
 using ServiceDesk.Modules.Ticketing.Application.AssignTicket;
+using ServiceDesk.Modules.Ticketing.Application.AutoCloseTickets;
 using ServiceDesk.Modules.Ticketing.Application.CancelTicket;
 using ServiceDesk.Modules.Ticketing.Application.ClaimTicket;
 using ServiceDesk.Modules.Ticketing.Application.CloseTicket;
 using ServiceDesk.Modules.Ticketing.Application.ConfirmAttachmentUpload;
+using ServiceDesk.Modules.Ticketing.Application.Contracts;
 using ServiceDesk.Modules.Ticketing.Application.CreateTicket;
 using ServiceDesk.Modules.Ticketing.Application.EvaluateSla;
 using ServiceDesk.Modules.Ticketing.Application.GenerateAttachmentUploadUrl;
@@ -13,13 +15,18 @@ using ServiceDesk.Modules.Ticketing.Application.GetAgentQueue;
 using ServiceDesk.Modules.Ticketing.Application.GetAttachmentDownloadUrl;
 using ServiceDesk.Modules.Ticketing.Application.GetMyTickets;
 using ServiceDesk.Modules.Ticketing.Application.GetTicketAttachments;
+using ServiceDesk.Modules.Ticketing.Application.GetTicketCategories;
 using ServiceDesk.Modules.Ticketing.Application.GetTicketDetail;
 using ServiceDesk.Modules.Ticketing.Application.GetTicketTimeline;
 using ServiceDesk.Modules.Ticketing.Application.PendingTicket;
 using ServiceDesk.Modules.Ticketing.Application.Ports;
 using ServiceDesk.Modules.Ticketing.Application.ReopenTicket;
+using ServiceDesk.Modules.Ticketing.Application.Reports;
 using ServiceDesk.Modules.Ticketing.Application.ResolveTicket;
 using ServiceDesk.Modules.Ticketing.Application.ResumeTicket;
+using ServiceDesk.Modules.Ticketing.Application.SupportTeams;
+using ServiceDesk.Modules.Ticketing.Application.TransferTicket;
+using ServiceDesk.Modules.Ticketing.Application.TriageTicket;
 using ServiceDesk.Modules.Ticketing.Application.UnassignTicket;
 using ServiceDesk.Modules.Ticketing.Application.UpdateTicket;
 using ServiceDesk.Modules.Ticketing.Infrastructure;
@@ -63,6 +70,18 @@ public static class TicketingModule
         services.AddScoped<IGetAttachmentDownloadUrl, GetAttachmentDownloadUrlUseCase>();
         services.AddScoped<IConfirmAttachmentUpload, ConfirmAttachmentUploadUseCase>();
         services.AddScoped<IGetTicketAttachments, GetTicketAttachmentsUseCase>();
+        services.AddScoped<IGetSupportTeams, GetSupportTeamsUseCase>();
+        services.AddScoped<IGetSupportTeamDetail, GetSupportTeamDetailUseCase>();
+        services.AddScoped<IAddTeamMember, AddTeamMemberUseCase>();
+        services.AddScoped<IRemoveTeamMember, RemoveTeamMemberUseCase>();
+        services.AddScoped<ITriageTicket, TriageTicketUseCase>();
+        services.AddScoped<IAutoCloseTickets, AutoCloseTicketsUseCase>();
+        services.AddScoped<ITransferTicket, TransferTicketUseCase>();
+        services.AddScoped<ICreateSupportTeam, CreateSupportTeamUseCase>();
+        services.AddScoped<IUpdateSupportTeam, UpdateSupportTeamUseCase>();
+        services.AddScoped<IGetTicketCategories, GetTicketCategoriesUseCase>();
+        services.AddScoped<IGetSlaPerformanceReport, GetSlaPerformanceReportUseCase>();
+        services.AddScoped<IGetTicketDistributionReport, GetTicketDistributionReportUseCase>();
         return services;
     }
 
@@ -74,8 +93,12 @@ public static class TicketingModule
         services.AddScoped<ITicketTimelineStore, PostgresTicketTimelineStore>();
         services.AddScoped<ITicketAttachmentStore, PostgresTicketAttachmentStore>();
         services.AddScoped<ISlaEvaluationGateway, PostgresSlaEvaluationAdapter>();
+        services.AddScoped<IAutoCloseTicketsGateway, PostgresAutoCloseTicketsAdapter>();
         services.AddScoped<IAgentDirectory, AgentDirectory>();
         services.AddScoped<ISupportTeamMembershipReader, PostgresSupportTeamMembershipReader>();
+        services.AddScoped<ISupportTeamStore, PostgresSupportTeamStore>();
+        services.AddScoped<ITicketReportQueries, PostgresTicketReportQueries>();
+        services.AddScoped<ITicketTriageBridge, PostgresTicketTriageBridge>();
         return services;
     }
 }

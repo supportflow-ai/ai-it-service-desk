@@ -39,10 +39,18 @@
           "Npgsql": "8.0.3"
         }
       },
-      "CommunityToolkit.HighPerformance": {
+      "AWSSDK.Core": {
         "type": "Transitive",
-        "resolved": "8.4.0",
-        "contentHash": "flxspiBs0G/0GMp7IK2J2ijV9bTG6hEwFc/z6ekHqB6nwRJ4Ry2yLdx+TkbCUYFCl4XhABkAwomeKbT6zM2Zlg=="
+        "resolved": "3.7.400",
+        "contentHash": "qw+WGhxcYtZ6wc1uibOu9XXLsfUpQ1r+gWa0euFnm1e9HowQbcwvKvOqQzwBNqIBO7S5IJ26T9kV/eFiwvZAkQ=="
+      },
+      "AWSSDK.S3": {
+        "type": "Transitive",
+        "resolved": "3.7.400",
+        "contentHash": "OWCTOIDLd9tisJBigWlws3zXXU8IPc6MGracx0zojB4z0ki7ruL77ZWbj5j9j3zSVvnnLe4uOL/4w2lco/9kBw==",
+        "dependencies": {
+          "AWSSDK.Core": "[3.7.400, 4.0.0)"
+        }
       },
       "Humanizer.Core": {
         "type": "Transitive",
@@ -229,16 +237,6 @@
         "resolved": "1.0.52",
         "contentHash": "oNv2JtYXhpdJrX63nibx1JT3uCESOBQ1LAk7Dtz/sr0+laW0KRM6eKp4CZ3MHDR2siIkKsY8MmUkeP5DKkQQ5w=="
       },
-      "Minio": {
-        "type": "Transitive",
-        "resolved": "6.0.5",
-        "contentHash": "AK3JIDZnFZg2Hpkqo6vlzyiEC4OifG+jQbuqpAtXePnIo49G4pNn27THh3DI8s4o84b/MMBQF+n1DEwBNenxsg==",
-        "dependencies": {
-          "CommunityToolkit.HighPerformance": "8.4.0",
-          "System.IO.Hashing": "9.0.4",
-          "System.Reactive": "6.0.1"
-        }
-      },
       "Mono.TextTemplating": {
         "type": "Transitive",
         "resolved": "3.0.0",
@@ -350,16 +348,6 @@
           "Microsoft.IdentityModel.Tokens": "8.19.2"
         }
       },
-      "System.IO.Hashing": {
-        "type": "Transitive",
-        "resolved": "9.0.4",
-        "contentHash": "WogPvgAFqQORFD8Iyha6RZ+/1QB3dsWRWxbwi8/HHVgiGQ8z0oMWpwe8Kk3Ti+Roe+P6a3sBg+WwBfEsyziZKg=="
-      },
-      "System.Reactive": {
-        "type": "Transitive",
-        "resolved": "6.0.1",
-        "contentHash": "rHaWtKDwCi9qJ3ObKo8LHPMuuwv33YbmQi7TcUK1C264V3MFnOr5Im7QgCTdLniztP3GJyeiSg5x8NqYJFqRmg=="
-      },
       "servicedesk.modules.aiassistance": {
         "type": "Project",
         "dependencies": {
@@ -397,9 +385,9 @@
       "servicedesk.platform": {
         "type": "Project",
         "dependencies": {
+          "AWSSDK.S3": "[3.7.400, )",
           "AspNetCore.HealthChecks.NpgSql": "[9.0.0, )",
           "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "[10.0.13, )",
-          "Minio": "[6.0.5, )",
           "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.3, )",
           "ServiceDesk.Modules.Identity": "[1.0.0, )",
           "ServiceDesk.Modules.Knowledge": "[1.0.0, )",

@@ -65,7 +65,14 @@ internal sealed class ConfirmAttachmentUploadUseCase(
         try
         {
             var source = await storageService.StatAsync(bucket, upload.StorageKey, cancellationToken);
-            VerifyObject(source, upload);
+            if (source is null || source.Size != upload.FileSizeBytes || source.Size <= 0 || source.Size > 10 * 1024 * 1024 ||
+                string.IsNullOrWhiteSpace(source.ContentType) ||
+                !string.Equals(source.ContentType.Split(';')[0].Trim(), upload.ContentType.Split(';')[0].Trim(), StringComparison.OrdinalIgnoreCase))
+            {
+                await TryCleanupAsync(bucket, upload.StorageKey);
+                VerifyObject(source, upload);
+            }
+
             await storageService.CopyAsync(bucket, upload.StorageKey, finalKey, source!.ETag, cancellationToken);
             VerifyObject(await storageService.StatAsync(bucket, finalKey, cancellationToken), upload);
         }

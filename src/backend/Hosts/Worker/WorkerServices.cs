@@ -27,6 +27,7 @@ public static class WorkerServices
         services.AddAIAssistanceModule(configuration);
         services.AddScoped<ICurrentUser, AnonymousCurrentUser>();
         services.AddHostedService<SlaEvaluationWorker>();
+        services.AddHostedService<AutoCloseResolvedTicketsWorker>();
         return services;
     }
 }

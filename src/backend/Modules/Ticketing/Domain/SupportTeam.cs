@@ -30,4 +30,28 @@ public sealed class SupportTeam
     public bool IsTriageQueue { get; private set; }
 
     public bool IsActive { get; private set; }
+
+    public static SupportTeam Create(string code, string name, bool isTriageQueue = false, bool isActive = true, Guid? id = null)
+    {
+        if (string.IsNullOrWhiteSpace(code)) throw new ArgumentException("Code is required.", nameof(code));
+        if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("Name is required.", nameof(name));
+        return new SupportTeam
+        {
+            Id = id ?? Guid.NewGuid(),
+            Code = code.Trim().ToUpperInvariant(),
+            Name = name.Trim(),
+            IsTriageQueue = isTriageQueue,
+            IsActive = isActive
+        };
+    }
+
+    public void Update(string name, bool isActive)
+    {
+        if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("Tên nhóm hỗ trợ không được để trống.", nameof(name));
+        if (IsTriageQueue && !isActive)
+            throw new InvalidOperationException("Không thể vô hiệu hóa hàng đợi phân loại thủ công.");
+
+        Name = name.Trim();
+        IsActive = isActive;
+    }
 }

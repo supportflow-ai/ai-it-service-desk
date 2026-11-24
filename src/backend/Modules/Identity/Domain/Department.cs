@@ -16,4 +16,25 @@ public sealed class Department
     public string Name { get; private set; } = string.Empty;
     public string? Description { get; private set; }
     public DateTime CreatedAt { get; private set; }
+
+    public static Department Create(string code, string name, string? description, DateTime now)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(code);
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        return new Department
+        {
+            Id = Guid.NewGuid(),
+            Code = code.Trim().ToUpperInvariant(),
+            Name = name.Trim(),
+            Description = description?.Trim(),
+            CreatedAt = now
+        };
+    }
+
+    public void Update(string name, string? description)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        Name = name.Trim();
+        Description = description?.Trim();
+    }
 }

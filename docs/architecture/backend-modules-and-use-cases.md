@@ -21,10 +21,10 @@ Trong mỗi module: `Presentation` → `Application` → `Domain` và `Infrastru
 
 | Mô-đun | Sở hữu | Giao diện hoặc kiểu được công khai |
 | --- | --- | --- |
-| Identity | Đăng ký, mật khẩu, vai trò, bảo vệ đăng nhập và truy vấn hồ sơ bản thân | Mười một giao diện nghiệp vụ, dữ liệu yêu cầu/kết quả; tên vai trò và quy tắc HTTP |
-| Ticketing | Kiểm tra phiếu, quyền chủ sở hữu, phạm vi truy vấn, phân trang, tạo phiếu nguyên tử và các thao tác vòng đời | Mười chín giao diện nghiệp vụ, lệnh/truy vấn, DTO phiếu và trang; các kiểu danh mục, mức ảnh hưởng, mức khẩn cấp |
+| Identity | Đăng ký, mật khẩu, vai trò, bảo vệ đăng nhập, truy vấn hồ sơ bản thân và quản lý phòng ban | Mười ba giao diện nghiệp vụ, dữ liệu yêu cầu/kết quả; tên vai trò và quy tắc HTTP |
+| Ticketing | Kiểm tra phiếu, quyền chủ sở hữu, phạm vi truy vấn, phân trang, tạo phiếu nguyên tử, điều phối đội nhóm, báo cáo SLA và các thao tác vòng đời | Hai mươi bảy giao diện nghiệp vụ, lệnh/truy vấn, DTO phiếu và trang; các kiểu danh mục, mức ảnh hưởng, mức khẩn cấp |
 | Knowledge | Bài viết tri thức: tạo/sửa bản nháp, xuất bản, lưu trữ, xem chi tiết và tìm kiếm theo quyền đọc | Sáu giao diện nghiệp vụ, lệnh/truy vấn, DTO bài viết và trang; trạng thái bài viết |
-| AIAssistance | Đầu vào/kết quả phân loại, độ tin cậy, bất biến đề xuất và chuyển đổi hợp đồng AI | Cổng phân loại/biểu diễn vectơ; các kiểu Ticketing được cho phép rõ ràng |
+| AIAssistance | Đầu vào/kết quả phân loại, độ tin cậy, bất biến đề xuất, phân loại AI HITL (yêu cầu phân tích, xem đề xuất, duyệt/ghi đè) và chuyển đổi hợp đồng AI | Ba giao diện nghiệp vụ triage, cổng phân loại/biểu diễn vectơ; các kiểu Ticketing được cho phép rõ ràng |
 
 `ServiceDesk.SharedKernel` chứa giao diện danh tính hiện tại, đồng hồ, lưu trữ, tên vai trò/chính sách và ngoại lệ nghiệp vụ dùng chung. Nó không chứa thực thể phiếu hoặc kho dữ liệu của mô-đun nào. Ánh xạ EF thuộc `Infrastructure/Configurations` của từng module. Một `ApplicationDbContext` dùng chung gom cấu hình từ các module và giữ các bảng, migration hiện có.
 

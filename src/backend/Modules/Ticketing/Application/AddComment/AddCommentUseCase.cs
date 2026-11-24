@@ -45,6 +45,20 @@ internal sealed class AddCommentUseCase(
             : currentUser.IsInRole(RoleNames.Agent) ? RoleNames.Agent : RoleNames.Requester;
 
         var now = clock.UtcNow.UtcDateTime;
+
+        // BIZ-02: Chống gửi bình luận trùng lặp cùng tác giả/vé trong 30 giây
+        var recentDuplicate = await timelineStore.FindRecentDuplicateAsync(
+            command.TicketId,
+            actorId,
+            command.Content,
+            now.AddSeconds(-30),
+            cancellationToken);
+
+        if (recentDuplicate is not null)
+        {
+            return recentDuplicate;
+        }
+
         var comment = TicketComment.CreatePublic(
             command.TicketId,
             actorId,

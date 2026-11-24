@@ -87,4 +87,28 @@ internal sealed class PostgresTicketTimelineStore(DbContext context) : ITicketTi
                 c.CreatedAt))
             .ToListAsync(cancellationToken);
     }
+
+    public async Task<TimelineItemDto?> FindRecentDuplicateAsync(
+        Guid ticketId,
+        Guid authorId,
+        string content,
+        DateTime sinceUtc,
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedContent = content.Trim();
+        var existing = await context.Set<TicketComment>().AsNoTracking()
+            .Where(c => c.TicketId == ticketId && c.AuthorId == authorId && c.CreatedAt >= sinceUtc && c.Content == normalizedContent)
+            .OrderByDescending(c => c.CreatedAt)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return existing is null ? null : new TimelineItemDto(
+            existing.Id,
+            existing.TicketId,
+            existing.AuthorId,
+            existing.AuthorName,
+            existing.AuthorRole,
+            existing.Content,
+            existing.IsInternal,
+            existing.CreatedAt);
+    }
 }

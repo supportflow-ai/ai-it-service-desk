@@ -9,6 +9,7 @@ using ServiceDesk.Modules.Ticketing.Application.PendingTicket;
 using ServiceDesk.Modules.Ticketing.Application.ReopenTicket;
 using ServiceDesk.Modules.Ticketing.Application.ResolveTicket;
 using ServiceDesk.Modules.Ticketing.Application.ResumeTicket;
+using ServiceDesk.Modules.Ticketing.Application.TriageTicket;
 using ServiceDesk.Modules.Ticketing.Domain;
 using ServiceDesk.SharedKernel.Authorization;
 
@@ -16,6 +17,9 @@ namespace ServiceDesk.Modules.Ticketing.Presentation;
 
 /// <summary>Request body chuyển trạng thái phiếu sang tạm dừng.</summary>
 public record PendingTicketRequest(TicketStatus Status, uint? ExpectedRevision = null);
+
+/// <summary>Request body đánh dấu giải quyết phiếu kèm giải pháp.</summary>
+public record ResolveTicketRequest(string? ResolutionNote = null, uint? ExpectedRevision = null);
 
 public static partial class TicketEndpoints
 {
@@ -63,10 +67,12 @@ public static partial class TicketEndpoints
         group.MapPost("/{id:guid}/resolve", async (
             Guid id,
             [FromQuery] uint? expectedRevision,
+            [FromBody] ResolveTicketRequest? body,
             IResolveTicket resolveTicket,
             CancellationToken ct) =>
         {
-            var ticket = await resolveTicket.ExecuteAsync(new(id, expectedRevision), ct);
+            var rev = expectedRevision ?? body?.ExpectedRevision;
+            var ticket = await resolveTicket.ExecuteAsync(new(id, body?.ResolutionNote, rev), ct);
             return Results.Ok(ticket);
         })
         .WithName("ResolveTicket")
@@ -125,6 +131,24 @@ public static partial class TicketEndpoints
         })
         .WithName("CancelTicket")
         .RequireAuthorization()
+        .Produces<TicketDto>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status404NotFound)
+        .Produces(StatusCodes.Status409Conflict);
+
+        // POST /api/tickets/{id}/triage: Phân loại thủ công mức độ ảnh hưởng và mức độ khẩn cấp (DEC-09)
+        group.MapPost("/{id:guid}/triage", async (
+            Guid id,
+            [FromBody] TriageTicketRequest request,
+            [FromServices] ITriageTicket triageTicket,
+            CancellationToken ct) =>
+        {
+            var ticket = await triageTicket.ExecuteAsync(new(id, request.Impact, request.Urgency, request.ExpectedRevision), ct);
+            return Results.Ok(ticket);
+        })
+        .WithName("TriageTicket")
+        .RequireAuthorization(PolicyNames.RequireAgent)
         .Produces<TicketDto>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status400BadRequest)
         .Produces(StatusCodes.Status401Unauthorized)

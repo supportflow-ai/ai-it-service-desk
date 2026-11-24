@@ -60,7 +60,7 @@ internal sealed class GenerateAttachmentUploadUrlUseCase(
         {
             var signed = await storageService.CreateUploadAsync(storageService.DefaultBucket, upload.StorageKey, upload.ContentType, upload.FileSizeBytes, expirySeconds, cancellationToken);
             await attachmentStore.CreateUploadGrantAsync(upload, cancellationToken);
-            return new UploadUrlResult(signed.Url, upload.StorageKey, expirySeconds, signed.FormData);
+            return new UploadUrlResult(signed.Url, upload.StorageKey, expirySeconds, signed.FormData, signed.RequiredHeaders);
         }
         catch (Exception ex) when (ex is not OperationCanceledException and not ArgumentException)
         {

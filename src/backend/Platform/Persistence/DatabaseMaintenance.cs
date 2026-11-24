@@ -43,6 +43,26 @@ public sealed class DatabaseMaintenance(ApplicationDbContext context, RoleManage
                 Ensure(await users.AddToRoleAsync(user, demoRoles[i]));
                 await transaction.CommitAsync(ct);
             }
+
+            // BIZ-03: Đảm bảo agent@test.com được gán vào nhóm phân loại thủ công (ManualTriageId)
+            var agent = await users.FindByEmailAsync("agent@test.com");
+            if (agent is not null && Guid.TryParse(agent.Id, out var agentId))
+            {
+                var triageTeamExists = await context.SupportTeams.AnyAsync(t => t.Id == ServiceDesk.Modules.Ticketing.Domain.SupportTeam.ManualTriageId, ct);
+                if (triageTeamExists)
+                {
+                    var isMember = await context.SupportTeamMembers.AnyAsync(
+                        m => m.TeamId == ServiceDesk.Modules.Ticketing.Domain.SupportTeam.ManualTriageId && m.UserId == agentId, ct);
+                    if (!isMember)
+                    {
+                        await using var memberTx = await context.Database.BeginTransactionAsync(ct);
+                        context.SupportTeamMembers.Add(ServiceDesk.Modules.Ticketing.Domain.SupportTeamMember.Create(
+                            ServiceDesk.Modules.Ticketing.Domain.SupportTeam.ManualTriageId, agentId, isLead: true));
+                        await context.SaveChangesAsync(ct);
+                        await memberTx.CommitAsync(ct);
+                    }
+                }
+            }
         }, ct);
     }
 

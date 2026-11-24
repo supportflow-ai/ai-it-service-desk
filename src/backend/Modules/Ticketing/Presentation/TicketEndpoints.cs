@@ -1,6 +1,9 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
+using ServiceDesk.Modules.Ticketing.Application.Contracts;
+using ServiceDesk.Modules.Ticketing.Application.GetTicketCategories;
 using ServiceDesk.SharedKernel.Web;
 
 namespace ServiceDesk.Modules.Ticketing.Presentation;
@@ -21,6 +24,21 @@ public static partial class TicketEndpoints
         MapTicketLifecycle(group);
         MapTicketConversation(group);
         MapTicketAttachments(group);
+
+        // GET /api/categories: Lấy danh mục sự cố ITIL kèm mô tả và độ ưu tiên khuyến nghị
+        app.MapGet("/api/categories", async (
+            [FromServices] IGetTicketCategories getTicketCategories,
+            CancellationToken ct) =>
+        {
+            var categories = await getTicketCategories.ExecuteAsync(ct);
+            return Results.Ok(categories);
+        })
+        .AddEndpointFilter<ApiErrorFilter>()
+        .WithTags("Categories")
+        .WithName("GetTicketCategories")
+        .RequireAuthorization()
+        .Produces<IReadOnlyList<TicketCategoryMetadataDto>>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status401Unauthorized);
 
         return app;
     }

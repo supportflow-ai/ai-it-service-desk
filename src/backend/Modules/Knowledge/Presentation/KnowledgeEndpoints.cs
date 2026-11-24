@@ -13,8 +13,11 @@ using ServiceDesk.Modules.Knowledge.Application.Contracts;
 using ServiceDesk.Modules.Knowledge.Application.CreateDraftArticle;
 using ServiceDesk.Modules.Knowledge.Application.UpdateDraftArticle;
 using ServiceDesk.Modules.Knowledge.Application.PublishArticle;
+using ServiceDesk.Modules.Knowledge.Application.RepublishArticle;
 using ServiceDesk.Modules.Knowledge.Application.ArchiveArticle;
 using ServiceDesk.Modules.Knowledge.Application.GetArticleDetail;
+using ServiceDesk.Modules.Knowledge.Application.GetArticleVersions;
+using ServiceDesk.Modules.Knowledge.Application.GetKnowledgeTags;
 using ServiceDesk.Modules.Knowledge.Application.SearchKnowledge;
 using ServiceDesk.SharedKernel.Authorization;
 using ServiceDesk.Modules.Knowledge.Domain;
@@ -29,6 +32,9 @@ public record UpdateDraftArticleRequest(string Title, string Content, IReadOnlyL
 
 /// <summary>Request body xuất bản bài viết tri thức.</summary>
 public record PublishArticleRequest(uint? ExpectedRevision = null);
+
+/// <summary>Request body tái xuất bản bài viết tri thức.</summary>
+public record RepublishArticleRequest(string Title, string Content, IReadOnlyList<string>? Tags = null, uint? ExpectedRevision = null);
 
 /// <summary>Request body lưu trữ bài viết tri thức.</summary>
 public record ArchiveArticleRequest(uint? ExpectedRevision = null);
@@ -118,6 +124,27 @@ public static class KnowledgeEndpoints
         .Produces(StatusCodes.Status404NotFound)
         .Produces(StatusCodes.Status409Conflict);
 
+        // POST /api/knowledge/articles/{id}/republish: Tái xuất bản bài viết đã xuất bản (Agent/Admin)
+        group.MapPost("/{id:guid}/republish", async (
+            Guid id,
+            [FromQuery] uint? expectedRevision,
+            [FromBody] RepublishArticleRequest request,
+            IRepublishArticle republishArticle,
+            CancellationToken ct) =>
+        {
+            var effectiveRevision = request.ExpectedRevision ?? expectedRevision;
+            var res = await republishArticle.ExecuteAsync(new RepublishArticleCommand(id, request.Title, request.Content, request.Tags, effectiveRevision), ct);
+            return Results.Ok(res);
+        })
+        .WithName("RepublishArticle")
+        .RequireAuthorization(PolicyNames.RequireAgent)
+        .Produces<ArticleDto>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status403Forbidden)
+        .Produces(StatusCodes.Status404NotFound)
+        .Produces(StatusCodes.Status409Conflict);
+
         // POST /api/knowledge/articles/{id}/archive: Lưu trữ bài viết (Agent/Admin)
         group.MapPost("/{id:guid}/archive", async (
             Guid id,
@@ -158,6 +185,20 @@ public static class KnowledgeEndpoints
         .Produces(StatusCodes.Status401Unauthorized)
         .Produces(StatusCodes.Status404NotFound);
 
+        // GET /api/knowledge/articles/{id}/versions: Lấy lịch sử phiên bản của bài viết (Requester/Agent/Admin)
+        group.MapGet("/{id:guid}/versions", async (
+            Guid id,
+            IGetArticleVersions getArticleVersions,
+            CancellationToken ct) =>
+        {
+            var versions = await getArticleVersions.ExecuteAsync(new GetArticleVersionsQuery(id), ct);
+            return Results.Ok(versions);
+        })
+        .WithName("GetArticleVersions")
+        .RequireAuthorization(PolicyNames.RequireRequester)
+        .Produces<IReadOnlyList<ArticleVersionDto>>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status401Unauthorized);
+
         // GET /api/knowledge/articles/search: Tìm kiếm bài viết tri thức (Requester/Agent/Admin)
         group.MapGet("/search", async (
             [FromQuery] string? query,
@@ -192,6 +233,20 @@ public static class KnowledgeEndpoints
         .WithName("ListKnowledgeArticles")
         .RequireAuthorization(PolicyNames.RequireRequester)
         .Produces<PagedArticleResult>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status401Unauthorized);
+
+        // GET /api/knowledge/tags: Lấy danh sách tags phổ biến kèm số lượng bài viết (Requester/Agent/Admin)
+        app.MapGet("/api/knowledge/tags", async (
+            IGetKnowledgeTags getKnowledgeTags,
+            CancellationToken ct) =>
+        {
+            var tags = await getKnowledgeTags.ExecuteAsync(new GetKnowledgeTagsQuery(), ct);
+            return Results.Ok(tags);
+        })
+        .WithTags("Knowledge")
+        .WithName("GetKnowledgeTags")
+        .RequireAuthorization(PolicyNames.RequireRequester)
+        .Produces<IReadOnlyList<TagSummaryDto>>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status401Unauthorized);
 
         return app;

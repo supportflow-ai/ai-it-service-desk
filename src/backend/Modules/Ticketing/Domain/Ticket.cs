@@ -157,10 +157,21 @@ public class Ticket
     /// </summary>
     public void SetTriage(Impact impact, Urgency urgency, DateTime now)
     {
+        if (Status is TicketStatus.Resolved or TicketStatus.Closed or TicketStatus.Cancelled)
+            throw new InvalidOperationException($"Không thể phân loại vé đã ở trạng thái {Status}.");
+
         Impact = impact;
         Urgency = urgency;
-        Priority = PriorityMatrix.Calculate(impact, urgency);
-        UpdatedAt = now;
+        var newPriority = PriorityMatrix.Calculate(impact, urgency);
+        if (IsSlaApplicable && Priority.HasValue && Priority.Value != newPriority)
+        {
+            UpdateSlaPriority(newPriority, now);
+        }
+        else
+        {
+            Priority = newPriority;
+            UpdatedAt = now;
+        }
     }
 
     /// <summary>Kiểm tra quyền sở hữu của người gửi đối với ticket này.</summary>
@@ -195,6 +206,36 @@ public class Ticket
         AssignedToId = null;
         AssignedAt = null;
         Status = TicketStatus.Submitted;
+        UpdatedAt = now;
+    }
+
+    /// <summary>
+    /// Chuyển phiếu sang nhóm hỗ trợ khác (ADR-016: TEAM-05/06).
+    /// </summary>
+    public void TransferToTeam(Guid targetTeamId, string reason, bool targetTeamHasCurrentAssignee, DateTime now)
+    {
+        if (targetTeamId == Guid.Empty) throw new ArgumentException("Mã nhóm hỗ trợ đích là bắt buộc.", nameof(targetTeamId));
+        if (string.IsNullOrWhiteSpace(reason)) throw new ArgumentException("Lý do chuyển đội là bắt buộc.", nameof(reason));
+
+        if (Status is TicketStatus.Resolved or TicketStatus.Closed or TicketStatus.Cancelled)
+            throw new InvalidOperationException($"Không thể chuyển đội cho phiếu ở trạng thái {Status}.");
+
+        if (SupportTeamId.HasValue && SupportTeamId.Value == targetTeamId)
+            throw new InvalidOperationException("Phiếu đã thuộc nhóm hỗ trợ này.");
+
+        SupportTeamId = targetTeamId;
+
+        // Nếu kỹ thuật viên đang xử lý không thuộc nhóm mới, gỡ bỏ người phụ trách
+        if (AssignedToId.HasValue && !targetTeamHasCurrentAssignee)
+        {
+            AssignedToId = null;
+            AssignedAt = null;
+            if (Status == TicketStatus.Assigned)
+            {
+                Status = TicketStatus.Submitted;
+            }
+        }
+
         UpdatedAt = now;
     }
 
