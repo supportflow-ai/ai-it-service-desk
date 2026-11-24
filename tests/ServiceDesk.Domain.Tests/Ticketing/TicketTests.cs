@@ -224,6 +224,50 @@ public class TicketTests
         ticket.UpdatedAt.Should().Be(now);
     }
 
+    [Fact]
+    public void SetTriage_WhenSubmittedOrInProgress_CalculatesPriority()
+    {
+        var ticket = CreateValidTicket();
+        var now = DateTime.UtcNow;
+
+        ticket.SetTriage(Impact.High, Urgency.High, now);
+
+        ticket.Impact.Should().Be(Impact.High);
+        ticket.Urgency.Should().Be(Urgency.High);
+        ticket.Priority.Should().Be(Priority.P1);
+    }
+
+    [Theory]
+    [InlineData(TicketStatus.Resolved)]
+    [InlineData(TicketStatus.Closed)]
+    [InlineData(TicketStatus.Cancelled)]
+    public void SetTriage_WhenResolvedClosedOrCancelled_ThrowsInvalidOperationException(TicketStatus terminalOrResolved)
+    {
+        var ticket = CreateValidTicket();
+        var agentId = Guid.NewGuid();
+        var now = DateTime.UtcNow;
+
+        if (terminalOrResolved == TicketStatus.Resolved)
+        {
+            ticket.Claim(agentId, now);
+            ticket.Resolve(now);
+        }
+        else if (terminalOrResolved == TicketStatus.Closed)
+        {
+            ticket.Claim(agentId, now);
+            ticket.Resolve(now);
+            ticket.Close(now);
+        }
+        else if (terminalOrResolved == TicketStatus.Cancelled)
+        {
+            ticket.Cancel(now);
+        }
+
+        var act = () => ticket.SetTriage(Impact.High, Urgency.High, now);
+        act.Should().Throw<InvalidOperationException>()
+            .WithMessage($"*Không thể phân loại vé đã ở trạng thái {terminalOrResolved}*");
+    }
+
     private static Ticket CreateValidTicket(
         Guid? requesterId = null,
         string title = "Cannot access VPN",

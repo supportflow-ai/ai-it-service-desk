@@ -157,7 +157,7 @@ public class Ticket
     /// </summary>
     public void SetTriage(Impact impact, Urgency urgency, DateTime now)
     {
-        if (Status is TicketStatus.Closed or TicketStatus.Cancelled)
+        if (Status is TicketStatus.Resolved or TicketStatus.Closed or TicketStatus.Cancelled)
             throw new InvalidOperationException($"Không thể phân loại vé đã ở trạng thái {Status}.");
 
         Impact = impact;
