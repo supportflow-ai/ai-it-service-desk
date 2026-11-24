@@ -18,6 +18,9 @@ namespace ServiceDesk.Modules.Ticketing.Presentation;
 /// <summary>Request body chuyển trạng thái phiếu sang tạm dừng.</summary>
 public record PendingTicketRequest(TicketStatus Status, uint? ExpectedRevision = null);
 
+/// <summary>Request body đánh dấu giải quyết phiếu kèm giải pháp.</summary>
+public record ResolveTicketRequest(string? ResolutionNote = null, uint? ExpectedRevision = null);
+
 public static partial class TicketEndpoints
 {
     /// <summary>Endpoint chuyển trạng thái giải quyết, mở lại, đóng, hủy, tạm dừng và tiếp tục.</summary>
@@ -64,10 +67,12 @@ public static partial class TicketEndpoints
         group.MapPost("/{id:guid}/resolve", async (
             Guid id,
             [FromQuery] uint? expectedRevision,
+            [FromBody] ResolveTicketRequest? body,
             IResolveTicket resolveTicket,
             CancellationToken ct) =>
         {
-            var ticket = await resolveTicket.ExecuteAsync(new(id, expectedRevision), ct);
+            var rev = expectedRevision ?? body?.ExpectedRevision;
+            var ticket = await resolveTicket.ExecuteAsync(new(id, body?.ResolutionNote, rev), ct);
             return Results.Ok(ticket);
         })
         .WithName("ResolveTicket")

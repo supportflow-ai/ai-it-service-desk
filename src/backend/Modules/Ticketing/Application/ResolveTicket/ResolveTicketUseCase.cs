@@ -10,7 +10,10 @@ using ServiceDesk.Modules.Ticketing.Domain;
 namespace ServiceDesk.Modules.Ticketing.Application.ResolveTicket;
 
 /// <summary>Lệnh hoàn thành xử lý ticket (Resolve).</summary>
-public record ResolveTicketCommand(Guid Id, uint? ExpectedRevision = null);
+public record ResolveTicketCommand(Guid Id, string? ResolutionNote = null, uint? ExpectedRevision = null)
+{
+    public ResolveTicketCommand(Guid id, uint? expectedRevision) : this(id, null, expectedRevision) { }
+}
 
 /// <summary>Hợp đồng use case đánh dấu giải quyết vé.</summary>
 public interface IResolveTicket
@@ -51,6 +54,10 @@ internal sealed class ResolveTicketUseCase(
         var now = clock.UtcNow.UtcDateTime;
         TicketCommandGuard.ApplyRule(ticket, t => t.Resolve(now));
 
-        return await TicketCommandGuard.SaveWithSystemAuditAsync(writer, ticket, actorId, "Yêu cầu đã được đánh dấu giải quyết xong.", now, cancellationToken);
+        var auditMessage = string.IsNullOrWhiteSpace(command.ResolutionNote)
+            ? "Yêu cầu đã được đánh dấu giải quyết xong."
+            : $"Yêu cầu đã được đánh dấu giải quyết xong. Giải pháp: {command.ResolutionNote.Trim()}";
+
+        return await TicketCommandGuard.SaveWithSystemAuditAsync(writer, ticket, actorId, auditMessage, now, cancellationToken);
     }
 }

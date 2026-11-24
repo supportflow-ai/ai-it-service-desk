@@ -11,3 +11,7 @@ public record SupportTeamDto(
     IReadOnlyList<SupportTeamMemberDto> Members);
 
 public record AddTeamMemberRequest(Guid UserId, bool IsLead = false);
+
+public record CreateSupportTeamRequest(string Code, string Name);
+
+public record UpdateSupportTeamRequest(string Name, bool IsActive);

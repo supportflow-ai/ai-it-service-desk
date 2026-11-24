@@ -2,6 +2,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using ServiceDesk.Modules.AIAssistance.Application.Ports;
+using ServiceDesk.Modules.AIAssistance.Application.Triage;
 using ServiceDesk.Modules.AIAssistance.Infrastructure;
 using ServiceDesk.Modules.AIAssistance.Infrastructure.Options;
 
@@ -13,11 +14,20 @@ namespace ServiceDesk.Modules.AIAssistance;
 /// </summary>
 public static class AIAssistanceModule
 {
-    /// <summary>Đăng ký toàn bộ module.</summary>
+    /// <summary>Đăng ký toàn bộ module: use case và adapter.</summary>
     public static IServiceCollection AddAIAssistanceModule(this IServiceCollection services, IConfiguration? configuration = null) =>
-        services.AddAIAssistanceInfrastructure(configuration);
+        services.AddAIAssistanceApplication().AddAIAssistanceInfrastructure(configuration);
 
-    /// <summary>Đăng ký adapter phân loại (HTTP hoặc NoOp theo <c>Ai:Enabled</c>) và adapter embedding.</summary>
+    /// <summary>Đăng ký các use case của AIAssistance.</summary>
+    public static IServiceCollection AddAIAssistanceApplication(this IServiceCollection services)
+    {
+        services.AddScoped<IRequestAiTriage, RequestAiTriageUseCase>();
+        services.AddScoped<IGetTicketTriage, GetTicketTriageUseCase>();
+        services.AddScoped<IDecideAiTriage, DecideAiTriageUseCase>();
+        return services;
+    }
+
+    /// <summary>Đăng ký adapter phân loại (HTTP hoặc NoOp theo <c>Ai:Enabled</c>), embedding và bộ lưu trữ gợi ý.</summary>
     public static IServiceCollection AddAIAssistanceInfrastructure(this IServiceCollection services, IConfiguration? configuration = null)
     {
         var section = configuration?.GetSection(AiOptions.SectionName);
@@ -31,6 +41,7 @@ public static class AIAssistanceModule
         services.AddScoped<ITicketClassificationService>(sp => sp.GetRequiredService<IOptions<AiOptions>>().Value.Enabled
             ? sp.GetRequiredService<HttpTicketClassificationService>() : sp.GetRequiredService<NoOpTicketClassificationService>());
         services.AddSingleton<IEmbeddingService, NoOpEmbeddingService>();
+        services.AddSingleton<IAiAnalysisStore, InMemoryAiAnalysisStore>();
         return services;
     }
 }

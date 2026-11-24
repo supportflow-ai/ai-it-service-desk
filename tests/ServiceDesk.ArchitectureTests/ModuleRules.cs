@@ -23,7 +23,9 @@ internal static class ModuleRules
     internal static readonly HashSet<string> Published = new(StringComparer.Ordinal)
     {
         "ServiceDesk.Modules.Ticketing.Domain.TicketCategory", "ServiceDesk.Modules.Ticketing.Domain.Impact",
-        "ServiceDesk.Modules.Ticketing.Domain.Urgency"
+        "ServiceDesk.Modules.Ticketing.Domain.Urgency",
+        "ServiceDesk.Modules.Ticketing.Application.Contracts.TicketTriageSnapshotDto",
+        "ServiceDesk.Modules.Ticketing.Application.Contracts.ITicketTriageBridge"
     };
 
     private static readonly HashSet<string> Composition = new(StringComparer.Ordinal)

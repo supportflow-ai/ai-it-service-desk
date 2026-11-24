@@ -18,6 +18,25 @@ internal sealed class PostgresSupportTeamStore(DbContext context) : ISupportTeam
             .AsNoTracking()
             .FirstOrDefaultAsync(t => t.Id == teamId, cancellationToken);
 
+    public async Task<bool> ExistsCodeAsync(string code, CancellationToken cancellationToken = default)
+    {
+        var normalized = code.Trim().ToUpperInvariant();
+        return await context.Set<SupportTeam>()
+            .AnyAsync(t => t.Code == normalized, cancellationToken);
+    }
+
+    public async Task AddTeamAsync(SupportTeam team, CancellationToken cancellationToken = default)
+    {
+        context.Set<SupportTeam>().Add(team);
+        await context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task UpdateTeamAsync(SupportTeam team, CancellationToken cancellationToken = default)
+    {
+        context.Set<SupportTeam>().Update(team);
+        await context.SaveChangesAsync(cancellationToken);
+    }
+
     public async Task<IReadOnlyList<SupportTeamMember>> GetMembersAsync(Guid teamId, CancellationToken cancellationToken = default) =>
         await context.Set<SupportTeamMember>()
             .AsNoTracking()

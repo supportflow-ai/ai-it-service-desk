@@ -81,6 +81,41 @@ public static class SupportTeamEndpoints
         .Produces(StatusCodes.Status401Unauthorized)
         .Produces(StatusCodes.Status404NotFound);
 
+        // POST /api/support-teams: Tạo nhóm hỗ trợ mới
+        group.MapPost("/", async (
+            [FromBody] CreateSupportTeamRequest request,
+            [FromServices] ICreateSupportTeam createSupportTeam,
+            CancellationToken ct) =>
+        {
+            var team = await createSupportTeam.ExecuteAsync(request, ct);
+            return Results.Created($"/api/support-teams/{team.Id}", team);
+        })
+        .WithName("CreateSupportTeam")
+        .RequireAuthorization(PolicyNames.RequireAdmin)
+        .Produces<SupportTeamDto>(StatusCodes.Status201Created)
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status403Forbidden)
+        .Produces(StatusCodes.Status409Conflict);
+
+        // PUT /api/support-teams/{id}: Cập nhật thông tin nhóm hỗ trợ
+        group.MapPut("/{id:guid}", async (
+            Guid id,
+            [FromBody] UpdateSupportTeamRequest request,
+            [FromServices] IUpdateSupportTeam updateSupportTeam,
+            CancellationToken ct) =>
+        {
+            var team = await updateSupportTeam.ExecuteAsync(id, request, ct);
+            return Results.Ok(team);
+        })
+        .WithName("UpdateSupportTeam")
+        .RequireAuthorization(PolicyNames.RequireAdmin)
+        .Produces<SupportTeamDto>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status403Forbidden)
+        .Produces(StatusCodes.Status404NotFound);
+
         return app;
     }
 }

@@ -44,4 +44,14 @@ public sealed class SupportTeam
             IsActive = isActive
         };
     }
+
+    public void Update(string name, bool isActive)
+    {
+        if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("Tên nhóm hỗ trợ không được để trống.", nameof(name));
+        if (IsTriageQueue && !isActive)
+            throw new InvalidOperationException("Không thể vô hiệu hóa hàng đợi phân loại thủ công.");
+
+        Name = name.Trim();
+        IsActive = isActive;
+    }
 }

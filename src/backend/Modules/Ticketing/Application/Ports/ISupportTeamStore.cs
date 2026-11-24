@@ -11,6 +11,12 @@ public interface ISupportTeamStore
 
     Task<SupportTeam?> GetTeamByIdAsync(Guid teamId, CancellationToken cancellationToken = default);
 
+    Task<bool> ExistsCodeAsync(string code, CancellationToken cancellationToken = default);
+
+    Task AddTeamAsync(SupportTeam team, CancellationToken cancellationToken = default);
+
+    Task UpdateTeamAsync(SupportTeam team, CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<SupportTeamMember>> GetMembersAsync(Guid teamId, CancellationToken cancellationToken = default);
 
     Task<bool> ExistsMemberAsync(Guid teamId, Guid userId, CancellationToken cancellationToken = default);

@@ -1,0 +1,26 @@
+using Microsoft.EntityFrameworkCore;
+using ServiceDesk.Modules.Identity.Application.Ports;
+using ServiceDesk.Modules.Identity.Domain;
+
+namespace ServiceDesk.Modules.Identity.Infrastructure;
+
+internal sealed class PostgresDepartmentStore(DbContext context) : IDepartmentStore
+{
+    public Task<Department?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
+        context.Set<Department>().FirstOrDefaultAsync(d => d.Id == id, cancellationToken);
+
+    public Task<bool> ExistsCodeAsync(string code, CancellationToken cancellationToken = default) =>
+        context.Set<Department>().AnyAsync(d => d.Code == code.Trim().ToUpperInvariant(), cancellationToken);
+
+    public async Task AddAsync(Department department, CancellationToken cancellationToken = default)
+    {
+        await context.Set<Department>().AddAsync(department, cancellationToken);
+        await context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task UpdateAsync(Department department, CancellationToken cancellationToken = default)
+    {
+        context.Set<Department>().Update(department);
+        await context.SaveChangesAsync(cancellationToken);
+    }
+}
