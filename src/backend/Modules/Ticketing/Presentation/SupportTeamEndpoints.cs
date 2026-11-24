@@ -28,6 +28,25 @@ public static class SupportTeamEndpoints
         .Produces<IReadOnlyList<SupportTeamDto>>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status401Unauthorized);
 
+        // GET /api/support-teams/{id}: Lấy chi tiết nhóm hỗ trợ kèm danh sách thành viên
+        group.MapGet("/{id:guid}", async (
+            Guid id,
+            [FromServices] IGetSupportTeamDetail getSupportTeamDetail,
+            CancellationToken ct) =>
+        {
+            var team = await getSupportTeamDetail.ExecuteAsync(new(id), ct);
+            if (team == null)
+            {
+                return Results.NotFound(new { error = "Không tìm thấy nhóm hỗ trợ." });
+            }
+            return Results.Ok(team);
+        })
+        .WithName("GetSupportTeamDetail")
+        .RequireAuthorization(PolicyNames.RequireAgent)
+        .Produces<SupportTeamDto>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status404NotFound);
+
         // POST /api/support-teams/{id}/members: Thêm thành viên vào nhóm hỗ trợ
         group.MapPost("/{id:guid}/members", async (
             Guid id,

@@ -67,6 +67,7 @@ public static class TicketingModule
         services.AddScoped<IConfirmAttachmentUpload, ConfirmAttachmentUploadUseCase>();
         services.AddScoped<IGetTicketAttachments, GetTicketAttachmentsUseCase>();
         services.AddScoped<IGetSupportTeams, GetSupportTeamsUseCase>();
+        services.AddScoped<IGetSupportTeamDetail, GetSupportTeamDetailUseCase>();
         services.AddScoped<IAddTeamMember, AddTeamMemberUseCase>();
         services.AddScoped<IRemoveTeamMember, RemoveTeamMemberUseCase>();
         services.AddScoped<ITriageTicket, TriageTicketUseCase>();

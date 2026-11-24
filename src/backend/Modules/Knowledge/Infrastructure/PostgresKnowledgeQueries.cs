@@ -120,6 +120,47 @@ internal sealed class PostgresKnowledgeQueries(DbContext context) : IKnowledgeQu
         return new PagedArticleResult(items, safePage, safePageSize, totalCount, totalPages);
     }
 
+    public async Task<IReadOnlyList<ArticleVersionDto>> GetVersionsAsync(Guid articleId, KnowledgeReadScope scope, CancellationToken cancellationToken = default)
+    {
+        var articleQuery = _context.Set<Article>().AsNoTracking().Where(a => a.Id == articleId);
+
+        articleQuery = scope switch
+        {
+            KnowledgeReadScope.Public => articleQuery.Where(a => a.Status == ArticleStatus.Published),
+            KnowledgeReadScope.Author author => articleQuery.Where(a => a.Status == ArticleStatus.Published || a.AuthorId == author.AuthorId),
+            KnowledgeReadScope.Staff => articleQuery,
+            _ => throw new ArgumentException("Yêu cầu phạm vi quyền đọc hợp lệ.", nameof(scope))
+        };
+
+        var exists = await articleQuery.AnyAsync(cancellationToken);
+        if (!exists) return [];
+
+        return await _context.Set<ArticleVersion>().AsNoTracking()
+            .Where(v => v.ArticleId == articleId)
+            .OrderByDescending(v => v.VersionNumber)
+            .Select(v => new ArticleVersionDto(
+                v.Id,
+                v.ArticleId,
+                v.VersionNumber,
+                v.Title,
+                v.Content,
+                v.PublishedById,
+                v.PublishedAt
+            ))
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<TagSummaryDto>> GetTagsAsync(CancellationToken cancellationToken = default)
+    {
+        return await _context.Set<ArticleTag>().AsNoTracking()
+            .Where(t => _context.Set<Article>().Any(a => a.Id == t.ArticleId && a.Status == ArticleStatus.Published))
+            .GroupBy(t => t.Name)
+            .Select(g => new TagSummaryDto(g.Key, g.Count()))
+            .OrderByDescending(t => t.ArticleCount)
+            .ThenBy(t => t.Name)
+            .ToListAsync(cancellationToken);
+    }
+
     private static IQueryable<ArticleDto> ProjectToDto(IQueryable<Article> query) =>
         query.Select(a => new ArticleDto(
             a.Id,

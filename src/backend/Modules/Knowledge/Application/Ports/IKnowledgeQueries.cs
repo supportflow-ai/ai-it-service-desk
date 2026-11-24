@@ -16,4 +16,6 @@ public interface IKnowledgeQueries
         int page,
         int pageSize,
         CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<ArticleVersionDto>> GetVersionsAsync(Guid articleId, KnowledgeReadScope scope, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<TagSummaryDto>> GetTagsAsync(CancellationToken cancellationToken = default);
 }

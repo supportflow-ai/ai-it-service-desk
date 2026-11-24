@@ -42,4 +42,7 @@ public interface IUserAccountGateway
     /// </summary>
     Task<IdentityOperationResult> AssignRolesAsync(string userId, IReadOnlyList<string> roles, DateTime revokeSessionsAt,
         CancellationToken cancellationToken);
+
+    /// <summary>Cập nhật thông tin hồ sơ của người dùng (họ tên hiển thị, số điện thoại).</summary>
+    Task<UserInfo?> UpdateProfileAsync(string userId, string? fullName, string? phoneNumber, CancellationToken cancellationToken);
 }
