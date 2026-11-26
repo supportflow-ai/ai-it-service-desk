@@ -15,6 +15,8 @@ namespace ServiceDesk.Modules.Identity.Infrastructure;
 /// </summary>
 internal sealed class JwtTokenGenerator : IAccessTokenIssuer
 {
+    internal const string SecurityStampClaimType = "security_stamp";
+
     private readonly JwtOptions _options;
     private readonly IClock _clock;
 
@@ -36,6 +38,11 @@ internal sealed class JwtTokenGenerator : IAccessTokenIssuer
             new(JwtRegisteredClaimNames.Sub, user.UserId),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
+
+        if (!string.IsNullOrWhiteSpace(user.SecurityStamp))
+        {
+            claims.Add(new Claim(SecurityStampClaimType, user.SecurityStamp));
+        }
 
         if (!string.IsNullOrWhiteSpace(user.FullName))
         {

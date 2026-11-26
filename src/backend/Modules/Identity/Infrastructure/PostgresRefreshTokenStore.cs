@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using ServiceDesk.Modules.Identity.Application.Ports;
 using ServiceDesk.Modules.Identity.Domain;
@@ -42,6 +43,10 @@ internal sealed class PostgresRefreshTokenStore(DbContext context) : IRefreshTok
         await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
         await UserSessionLock.LockAsync(context, userId, cancellationToken);
         await RevokeFamilyInTransactionAsync(familyId, revokedAt, cancellationToken);
+        var nextSecurityStamp = Guid.NewGuid().ToString("N");
+        await context.Set<IdentityUser>()
+            .Where(u => u.Id == userId)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(u => u.SecurityStamp, nextSecurityStamp), cancellationToken);
         await transaction.CommitAsync(cancellationToken);
     }
 

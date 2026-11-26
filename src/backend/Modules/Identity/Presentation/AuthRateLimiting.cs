@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Globalization;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Builder;
@@ -42,6 +43,7 @@ public sealed class AuthRateLimitOptions
 /// <summary>Thao tác xác thực có ngân sách riêng theo email.</summary>
 public enum AuthEmailOperation
 {
+    Register,
     Login,
     ForgotPassword,
     ResetPassword
@@ -126,23 +128,18 @@ public static class AuthRateLimiting
     }
 }
 
-/// <summary>Bộ đếm theo email đã chuẩn hóa và loại thao tác (cửa sổ cố định, trong bộ nhớ).</summary>
+/// <summary>Bộ đếm theo email đã chuẩn hóa và loại thao tác (cửa sổ cố định, giới hạn số partition trong bộ nhớ).</summary>
 public sealed class AuthEmailRateLimiter : IDisposable
 {
+    internal const int MaxPartitions = 4096;
+
     private readonly AuthRateLimitOptions options;
-    private readonly PartitionedRateLimiter<string> limiter;
+    private readonly ConcurrentDictionary<string, WindowCounter> counters = new(StringComparer.Ordinal);
 
     public AuthEmailRateLimiter(IOptions<AuthRateLimitOptions> options)
     {
         ArgumentNullException.ThrowIfNull(options);
         this.options = options.Value;
-        limiter = PartitionedRateLimiter.Create<string, string>(key => RateLimitPartition.GetFixedWindowLimiter(key, _ =>
-            new FixedWindowRateLimiterOptions
-            {
-                PermitLimit = this.options.EmailPermitLimit,
-                Window = TimeSpan.FromSeconds(this.options.EmailWindowSeconds),
-                QueueLimit = 0
-            }));
     }
 
     /// <summary>Lấy một lượt cho email và thao tác; email rỗng không bị giới hạn ở lớp này (use case tự từ chối).</summary>
@@ -150,11 +147,73 @@ public sealed class AuthEmailRateLimiter : IDisposable
     {
         retryAfter = TimeSpan.Zero;
         if (!options.Enabled || string.IsNullOrWhiteSpace(email)) return true;
-        using var lease = limiter.AttemptAcquire(operation + ":" + email.Trim().ToLowerInvariant());
-        if (lease.IsAcquired) return true;
-        retryAfter = lease.TryGetMetadata(MetadataName.RetryAfter, out var value) ? value : TimeSpan.FromSeconds(options.EmailWindowSeconds);
-        return false;
+
+        var now = DateTimeOffset.UtcNow;
+        var window = TimeSpan.FromSeconds(options.EmailWindowSeconds);
+        var key = operation + ":" + email.Trim().ToLowerInvariant();
+
+        if (!counters.ContainsKey(key) && counters.Count >= MaxPartitions)
+        {
+            EvictExpiredOrExcess(now, window);
+        }
+
+        var counter = counters.GetOrAdd(key, _ => new WindowCounter(now));
+        return counter.TryAcquire(now, window, options.EmailPermitLimit, out retryAfter);
     }
 
-    public void Dispose() => limiter.Dispose();
+    private void EvictExpiredOrExcess(DateTimeOffset now, TimeSpan window)
+    {
+        foreach (var pair in counters)
+        {
+            if (pair.Value.IsExpired(now, window))
+            {
+                counters.TryRemove(pair.Key, out _);
+            }
+        }
+
+        if (counters.Count >= MaxPartitions)
+        {
+            counters.Clear();
+        }
+    }
+
+    public void Dispose() => counters.Clear();
+
+    private sealed class WindowCounter(DateTimeOffset initialStart)
+    {
+        private readonly object sync = new();
+        private DateTimeOffset windowStart = initialStart;
+        private int count;
+
+        public bool IsExpired(DateTimeOffset now, TimeSpan window)
+        {
+            lock (sync)
+            {
+                return now - windowStart >= window;
+            }
+        }
+
+        public bool TryAcquire(DateTimeOffset now, TimeSpan window, int permitLimit, out TimeSpan retryAfter)
+        {
+            lock (sync)
+            {
+                if (now - windowStart >= window)
+                {
+                    windowStart = now;
+                    count = 0;
+                }
+
+                if (count < permitLimit)
+                {
+                    count++;
+                    retryAfter = TimeSpan.Zero;
+                    return true;
+                }
+
+                var remaining = window - (now - windowStart);
+                retryAfter = remaining > TimeSpan.Zero ? remaining : TimeSpan.FromSeconds(1);
+                return false;
+            }
+        }
+    }
 }

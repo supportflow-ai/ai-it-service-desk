@@ -202,4 +202,37 @@ public sealed class TicketAttachmentUseCaseTests
         Assert.Same(headers, result.RequiredHeaders);
         _attachmentStore.Verify(s => s.CreateUploadGrantAsync(It.IsAny<AttachmentUploadGrant>(), It.IsAny<CancellationToken>()), Times.Once);
     }
+
+    [Theory]
+    [InlineData("malware.png", "text/html")]
+    [InlineData("vector.png", "image/svg+xml")]
+    [InlineData("script.pdf", "application/javascript")]
+    [InlineData("empty.txt", "")]
+    public async Task GenerateUpload_DisallowedContentTypeForExtension_ThrowsArgumentException(string fileName, string contentType)
+    {
+        var useCase = new GenerateAttachmentUploadUrlUseCase(_ticketQueries.Object, _storageService.Object,
+            _attachmentStore.Object, _clock.Object, _user.Object);
+
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            useCase.ExecuteAsync(new(_ticketId, new(fileName, 1024, contentType))));
+
+        _storageService.VerifyNoOtherCalls();
+        _attachmentStore.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task GenerateUpload_ContentTypeWithCharsetParameter_NormalizesAndAllows()
+    {
+        var headers = new Dictionary<string, string> { ["Content-Type"] = "text/plain", ["Content-Length"] = "10" };
+        _storageService.Setup(s => s.CreateUploadAsync("servicedesk-test", It.IsAny<string>(), "text/plain", 10, 3600, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new PresignedUpload("https://storage.example.invalid/bucket", FormData: null, RequiredHeaders: headers));
+
+        var useCase = new GenerateAttachmentUploadUrlUseCase(_ticketQueries.Object, _storageService.Object,
+            _attachmentStore.Object, _clock.Object, _user.Object);
+
+        var result = await useCase.ExecuteAsync(new(_ticketId, new("note.txt", 10, "text/plain; charset=utf-8")));
+
+        Assert.NotNull(result);
+        _storageService.Verify(s => s.CreateUploadAsync("servicedesk-test", It.IsAny<string>(), "text/plain", 10, 3600, It.IsAny<CancellationToken>()), Times.Once);
+    }
 }

@@ -66,6 +66,46 @@ public static class IdentityModule
                     RoleClaimType = ClaimTypes.Role,
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.SecretKey))
                 };
+                options.Events = new JwtBearerEvents
+                {
+                    OnTokenValidated = async context =>
+                    {
+                        var dbContext = context.HttpContext.RequestServices.GetService<DbContext>();
+                        if (dbContext is null)
+                        {
+                            return;
+                        }
+
+                        var userId = context.Principal?.FindFirstValue(ClaimTypes.NameIdentifier);
+                        if (string.IsNullOrWhiteSpace(userId))
+                        {
+                            context.Fail("Token thiếu thông tin định danh người dùng.");
+                            return;
+                        }
+
+                        var tokenStamp = context.Principal?.FindFirstValue(JwtTokenGenerator.SecurityStampClaimType);
+                        var currentStamp = await dbContext.Set<IdentityUser>()
+                            .AsNoTracking()
+                            .Where(u => u.Id == userId)
+                            .Select(u => u.SecurityStamp)
+                            .SingleOrDefaultAsync(context.HttpContext.RequestAborted);
+
+                        if (currentStamp is null)
+                        {
+                            if (!string.IsNullOrWhiteSpace(tokenStamp))
+                            {
+                                context.Fail("Tài khoản không còn tồn tại.");
+                            }
+
+                            return;
+                        }
+
+                        if (string.IsNullOrWhiteSpace(tokenStamp) || !string.Equals(currentStamp, tokenStamp, StringComparison.Ordinal))
+                        {
+                            context.Fail("Token đã bị thu hồi hoặc thông tin bảo mật đã thay đổi.");
+                        }
+                    }
+                };
             });
         return services;
     }

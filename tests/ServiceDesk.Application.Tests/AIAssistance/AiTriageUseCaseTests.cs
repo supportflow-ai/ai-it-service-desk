@@ -6,6 +6,7 @@ using ServiceDesk.Modules.AIAssistance.Domain;
 using ServiceDesk.Modules.Ticketing.Application.Contracts;
 using ServiceDesk.Modules.Ticketing.Domain;
 using ServiceDesk.SharedKernel.Application.Abstractions;
+using ServiceDesk.SharedKernel.Authorization;
 using Xunit;
 
 namespace ServiceDesk.Application.Tests.AIAssistance;
@@ -15,6 +16,8 @@ public class AiTriageUseCaseTests
     private readonly Mock<ITicketTriageBridge> _ticketBridge = new();
     private readonly Mock<ITicketClassificationService> _classificationService = new();
     private readonly Mock<IAiAnalysisStore> _analysisStore = new();
+    private readonly Mock<IRequestAiTriage> _requestAiTriage = new();
+    private readonly Mock<ICurrentUser> _currentUser = new();
     private readonly Mock<IClock> _clock = new();
 
     public AiTriageUseCaseTests()
@@ -180,4 +183,89 @@ public class AiTriageUseCaseTests
         Assert.True(result.AppliedToTicket);
         Assert.Equal(TriageDecisionType.Override, result.Decision);
     }
+
+    [Fact]
+    public async Task GetTicketTriage_WhenTicketNotFound_ThrowsKeyNotFoundException()
+    {
+        var ticketId = Guid.NewGuid();
+        var actorId = Guid.NewGuid();
+        SetupCurrentUser(actorId, RoleNames.Requester);
+        _ticketBridge.Setup(b => b.GetSnapshotAsync(ticketId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((TicketTriageSnapshotDto?)null);
+
+        var useCase = new GetTicketTriageUseCase(_analysisStore.Object, _requestAiTriage.Object, _ticketBridge.Object, _currentUser.Object);
+
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => useCase.ExecuteAsync(ticketId));
+    }
+
+    [Fact]
+    public async Task GetTicketTriage_WhenRequesterDoesNotOwnTicket_ThrowsUnauthorizedAccessException()
+    {
+        var ticketId = Guid.NewGuid();
+        var actorId = Guid.NewGuid();
+        var ownerId = Guid.NewGuid();
+        SetupCurrentUser(actorId, RoleNames.Requester);
+        _ticketBridge.Setup(b => b.GetSnapshotAsync(ticketId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(CreateSnapshot(ticketId, ownerId));
+
+        var useCase = new GetTicketTriageUseCase(_analysisStore.Object, _requestAiTriage.Object, _ticketBridge.Object, _currentUser.Object);
+
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => useCase.ExecuteAsync(ticketId));
+        _analysisStore.Verify(s => s.GetLatestAnalysisAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+        _requestAiTriage.Verify(r => r.ExecuteAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetTicketTriage_WhenRequesterOwnsTicketAndNoAnalysis_ReturnsUnavailableWithoutTriggeringAi()
+    {
+        var ticketId = Guid.NewGuid();
+        var ownerId = Guid.NewGuid();
+        SetupCurrentUser(ownerId, RoleNames.Requester);
+        _ticketBridge.Setup(b => b.GetSnapshotAsync(ticketId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(CreateSnapshot(ticketId, ownerId));
+        _analysisStore.Setup(s => s.GetLatestAnalysisAsync(ticketId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((AIAnalysis?)null);
+
+        var useCase = new GetTicketTriageUseCase(_analysisStore.Object, _requestAiTriage.Object, _ticketBridge.Object, _currentUser.Object);
+
+        var result = await useCase.ExecuteAsync(ticketId);
+
+        Assert.Equal(TriageOutcome.Unavailable, result.Outcome);
+        _requestAiTriage.Verify(r => r.ExecuteAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetTicketTriage_WhenAgentAndNoAnalysis_TriggersAiAnalysis()
+    {
+        var ticketId = Guid.NewGuid();
+        var agentId = Guid.NewGuid();
+        var ownerId = Guid.NewGuid();
+        SetupCurrentUser(agentId, RoleNames.Agent);
+        _ticketBridge.Setup(b => b.GetSnapshotAsync(ticketId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(CreateSnapshot(ticketId, ownerId));
+        _analysisStore.Setup(s => s.GetLatestAnalysisAsync(ticketId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((AIAnalysis?)null);
+        var expected = new AgentTriageView { Outcome = TriageOutcome.Success, SuggestedCategory = TicketCategory.NET };
+        _requestAiTriage.Setup(r => r.ExecuteAsync(ticketId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(expected);
+
+        var useCase = new GetTicketTriageUseCase(_analysisStore.Object, _requestAiTriage.Object, _ticketBridge.Object, _currentUser.Object);
+
+        var result = await useCase.ExecuteAsync(ticketId);
+
+        Assert.Same(expected, result);
+        _requestAiTriage.Verify(r => r.ExecuteAsync(ticketId, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    private void SetupCurrentUser(Guid userId, string role)
+    {
+        _currentUser.SetupGet(u => u.IsAuthenticated).Returns(true);
+        _currentUser.SetupGet(u => u.UserId).Returns(userId.ToString("D"));
+        _currentUser.SetupGet(u => u.Roles).Returns([role]);
+        _currentUser.Setup(u => u.IsInRole(It.IsAny<string>()))
+            .Returns((string r) => string.Equals(r, role, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static TicketTriageSnapshotDto CreateSnapshot(Guid ticketId, Guid requesterId) =>
+        new(ticketId, 1, "VPN down", "Cannot connect", "NET", null, null, null, TicketStatus.Submitted, requesterId);
 }
