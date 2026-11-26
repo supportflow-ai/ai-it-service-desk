@@ -27,6 +27,8 @@ public class HealthCheckTests : IClassFixture<ServiceDeskWebApplicationFactory>
 
         var content = await response.Content.ReadAsStringAsync();
         content.Should().Contain("Healthy");
+        content.Should().NotContain("postgresql");
+        content.Should().NotContain("totalDuration");
     }
 
     [Fact]

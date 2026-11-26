@@ -11,6 +11,8 @@ namespace ServiceDesk.Modules.Identity.Infrastructure;
 
 internal sealed class IdentityAccountGateway(UserManager<IdentityUser> users, DbContext context) : IUserAccountGateway
 {
+    private static readonly IdentityUser DummyUser = new() { UserName = "dummy", Email = "dummy@invalid" };
+    private static readonly string DummyPasswordHash = new PasswordHasher<IdentityUser>().HashPassword(DummyUser, "Dummy@123456789!");
     public async Task<AccountCreation> CreateRequesterAsync(string email, string password, string? fullName, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -74,7 +76,12 @@ internal sealed class IdentityAccountGateway(UserManager<IdentityUser> users, Db
             }
             else context.Attach(user);
         }
-        if (user is null || await users.IsLockedOutAsync(user)) return null;
+        if (user is null || await users.IsLockedOutAsync(user))
+        {
+            // Thực hiện băm giả lập cùng chi phí PBKDF2 để tránh rò rỉ thông tin tồn tại/khóa tài khoản qua thời gian phản hồi.
+            users.PasswordHasher.VerifyHashedPassword(DummyUser, DummyPasswordHash, password);
+            return null;
+        }
         if (!await users.CheckPasswordAsync(user, password))
         {
             var failed = await users.AccessFailedAsync(user);
@@ -267,6 +274,7 @@ internal sealed class IdentityAccountGateway(UserManager<IdentityUser> users, Db
         Email = user.Email!,
         FullName = (await users.GetClaimsAsync(user)).FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value,
         PhoneNumber = user.PhoneNumber,
-        Roles = (await users.GetRolesAsync(user)).ToArray()
+        Roles = (await users.GetRolesAsync(user)).ToArray(),
+        SecurityStamp = user.SecurityStamp
     };
 }

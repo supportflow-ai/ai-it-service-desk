@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace ServiceDesk.Modules.Identity.Application.Contracts;
 
 /// <summary>
@@ -19,4 +21,8 @@ public sealed record UserInfo
 
     /// <summary>Danh sách các vai trò (Requester, Agent, Admin).</summary>
     public IReadOnlyList<string> Roles { get; init; } = [];
+
+    /// <summary>Dấu bảo mật hiện tại của tài khoản để phát hiện phiên/JWT đã bị thu hồi.</summary>
+    [JsonIgnore]
+    public string? SecurityStamp { get; init; }
 }

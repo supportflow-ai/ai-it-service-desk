@@ -66,7 +66,7 @@ public sealed class TicketAuditUseCaseTests
             "assign" => new AssignTicketUseCase(writer.Object, directory.Object, memberships.Object, user.Object, clock.Object).ExecuteAsync(new(ticket.Id, actor, 42)),
             "unassign" => new UnassignTicketUseCase(writer.Object, memberships.Object, user.Object, clock.Object).ExecuteAsync(new(ticket.Id, 42)),
             "claim" => new ClaimTicketUseCase(writer.Object, user.Object, clock.Object).ExecuteAsync(new(ticket.Id, 42)),
-            "resolve" => new ResolveTicketUseCase(writer.Object, user.Object, clock.Object).ExecuteAsync(new(ticket.Id, 42)),
+            "resolve" => new ResolveTicketUseCase(writer.Object, memberships.Object, user.Object, clock.Object).ExecuteAsync(new(ticket.Id, 42)),
             "reopen" => new ReopenTicketUseCase(writer.Object, user.Object, clock.Object).ExecuteAsync(new(ticket.Id, 42)),
             "close" => new CloseTicketUseCase(writer.Object, user.Object, clock.Object).ExecuteAsync(new(ticket.Id, 42)),
             "cancel" => new CancelTicketUseCase(writer.Object, user.Object, clock.Object).ExecuteAsync(new(ticket.Id, 42)),

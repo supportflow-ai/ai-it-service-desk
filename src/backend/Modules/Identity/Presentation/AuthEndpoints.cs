@@ -58,6 +58,7 @@ public static class AuthEndpoints
         })
         .WithName("Register")
         .RequireRateLimiting(AuthRateLimiting.IpPolicy)
+        .RequireEmailRateLimit<RegisterRequest>(AuthEmailOperation.Register, r => r.Email)
         .Produces(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status429TooManyRequests)
         .AllowAnonymous();
@@ -123,6 +124,7 @@ public static class AuthEndpoints
             return Results.NoContent();
         })
         .WithName("RevokeToken")
+        .RequireRateLimiting(AuthRateLimiting.IpPolicy)
         .AllowAnonymous();
 
         // POST /api/auth/change-password: Đổi mật khẩu tài khoản đang đăng nhập

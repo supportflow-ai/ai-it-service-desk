@@ -125,6 +125,42 @@ public class AuthNegativeTests : IClassFixture<ServiceDeskWebApplicationFactory>
         _client.DefaultRequestHeaders.Authorization = null;
     }
 
+    [Fact]
+    public async Task ProtectedEndpoint_AfterRevoke_Returns401()
+    {
+        var email = $"revoke_{Guid.NewGuid():N}@test.com";
+        var regResp = await _client.PostAsJsonAsync("/api/auth/register", new
+        {
+            email,
+            password = "Test@1234"
+        });
+        regResp.EnsureSuccessStatusCode();
+
+        var loginResp = await _client.PostAsJsonAsync("/api/auth/login", new
+        {
+            email,
+            password = "Test@1234"
+        });
+        loginResp.EnsureSuccessStatusCode();
+        var body = await loginResp.Content.ReadFromJsonAsync<AuthResponse>();
+        var token = body!.Token!;
+        var refreshToken = body.RefreshToken!;
+        refreshToken.Should().NotBeNullOrWhiteSpace();
+
+        _client.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+        var beforeRevoke = await _client.GetAsync("/api/diag/protected");
+        beforeRevoke.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var revokeResp = await _client.PostAsJsonAsync("/api/auth/revoke", new { refreshToken });
+        revokeResp.EnsureSuccessStatusCode();
+
+        var afterRevoke = await _client.GetAsync("/api/diag/protected");
+        afterRevoke.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+
+        _client.DefaultRequestHeaders.Authorization = null;
+    }
+
     private async Task<string> RegisterAndGetToken(string prefix)
     {
         var email = $"{prefix}{Guid.NewGuid():N}@test.com";
@@ -155,5 +191,5 @@ public class AuthNegativeTests : IClassFixture<ServiceDeskWebApplicationFactory>
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
-    private sealed record AuthResponse(string? Token, object? User);
+    private sealed record AuthResponse(string? Token, string? RefreshToken, object? User);
 }

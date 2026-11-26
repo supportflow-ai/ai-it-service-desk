@@ -58,5 +58,23 @@ public sealed class AttachmentStorageContractTests
         Assert.NotNull(upload.RequiredHeaders);
         Assert.True(upload.RequiredHeaders.ContainsKey("Content-Type"));
         Assert.Equal("image/png", upload.RequiredHeaders["Content-Type"]);
+        Assert.True(upload.RequiredHeaders.ContainsKey("Content-Length"));
+        Assert.Equal("1024", upload.RequiredHeaders["Content-Length"]);
+        Assert.Contains("content-length", upload.Url, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task PresignedGet_SetsAttachmentContentDisposition()
+    {
+        var options = new R2Options
+        {
+            Endpoint = "https://example.r2.cloudflarestorage.com",
+            AccessKeyId = "synthetic-key",
+            SecretAccessKey = "synthetic-secret-only-for-tests",
+            Bucket = "configured-bucket"
+        };
+        using var adapter = new R2ObjectStorageService(Options.Create(options), NullLogger<R2ObjectStorageService>.Instance);
+        var url = await adapter.GetPresignedDownloadUrlAsync(adapter.DefaultBucket, "tickets/test/file.html", 3600);
+        Assert.Contains("response-content-disposition=attachment", url, StringComparison.OrdinalIgnoreCase);
     }
 }

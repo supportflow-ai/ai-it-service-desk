@@ -1,3 +1,4 @@
+using System.Globalization;
 using Amazon.S3;
 using Amazon.S3.Model;
 using Microsoft.Extensions.Logging;
@@ -50,6 +51,7 @@ internal sealed class R2ObjectStorageService : IObjectStorageService, IDisposabl
         var client = EnsureClient();
         var effectiveExpiry = expirySeconds > 0 ? expirySeconds : _options.UploadExpirySeconds;
 
+        var sizeValue = size.ToString(CultureInfo.InvariantCulture);
         var request = new GetPreSignedUrlRequest
         {
             BucketName = string.IsNullOrWhiteSpace(bucket) ? DefaultBucket : bucket,
@@ -58,11 +60,13 @@ internal sealed class R2ObjectStorageService : IObjectStorageService, IDisposabl
             Expires = DateTime.UtcNow.AddSeconds(effectiveExpiry),
             ContentType = contentType
         };
+        request.Headers["Content-Length"] = sizeValue;
 
         var url = await client.GetPreSignedURLAsync(request).ConfigureAwait(false);
         var headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
-            ["Content-Type"] = contentType
+            ["Content-Type"] = contentType,
+            ["Content-Length"] = sizeValue
         };
 
         return new PresignedUpload(url, FormData: null, RequiredHeaders: headers);
@@ -162,7 +166,11 @@ internal sealed class R2ObjectStorageService : IObjectStorageService, IDisposabl
             BucketName = string.IsNullOrWhiteSpace(bucketName) ? DefaultBucket : bucketName,
             Key = objectName,
             Verb = HttpVerb.GET,
-            Expires = DateTime.UtcNow.AddSeconds(effectiveExpiry)
+            Expires = DateTime.UtcNow.AddSeconds(effectiveExpiry),
+            ResponseHeaderOverrides = new ResponseHeaderOverrides
+            {
+                ContentDisposition = "attachment"
+            }
         };
 
         return await client.GetPreSignedURLAsync(request).ConfigureAwait(false);

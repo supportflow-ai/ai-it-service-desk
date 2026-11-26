@@ -29,6 +29,7 @@ public interface IResolveTicket
 /// </summary>
 internal sealed class ResolveTicketUseCase(
     ITicketWriter writer,
+    ISupportTeamMembershipReader membershipReader,
     ICurrentUser currentUser,
     IClock clock) : IResolveTicket
 {
@@ -47,6 +48,16 @@ internal sealed class ResolveTicketUseCase(
         if (ticket == null)
         {
             throw new KeyNotFoundException("Ticket not found.");
+        }
+
+        var isAdmin = TicketPermissions.IsAdmin(currentUser);
+        var isAssignedAgent = ticket.AssignedToId.HasValue && ticket.AssignedToId.Value == actorId;
+        var isTeamLead = ticket.SupportTeamId.HasValue &&
+            await membershipReader.IsLeadAsync(ticket.SupportTeamId.Value, actorId, cancellationToken);
+
+        if (!isAdmin && !isAssignedAgent && !isTeamLead)
+        {
+            throw new UnauthorizedAccessException("Chỉ kỹ thuật viên được phân công, Trưởng nhóm phụ trách hoặc Quản trị viên mới có quyền đánh dấu giải quyết phiếu.");
         }
 
         TicketCommandGuard.RequireCurrentRevision(writer, ticket, command.ExpectedRevision);
