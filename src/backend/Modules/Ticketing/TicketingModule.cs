@@ -2,7 +2,6 @@ using Microsoft.Extensions.DependencyInjection;
 using ServiceDesk.Modules.Ticketing.Application.AddComment;
 using ServiceDesk.Modules.Ticketing.Application.AddInternalNote;
 using ServiceDesk.Modules.Ticketing.Application.AssignTicket;
-using ServiceDesk.Modules.Ticketing.Application.AutoCloseTickets;
 using ServiceDesk.Modules.Ticketing.Application.CancelTicket;
 using ServiceDesk.Modules.Ticketing.Application.ClaimTicket;
 using ServiceDesk.Modules.Ticketing.Application.CloseTicket;
@@ -75,7 +74,6 @@ public static class TicketingModule
         services.AddScoped<IAddTeamMember, AddTeamMemberUseCase>();
         services.AddScoped<IRemoveTeamMember, RemoveTeamMemberUseCase>();
         services.AddScoped<ITriageTicket, TriageTicketUseCase>();
-        services.AddScoped<IAutoCloseTickets, AutoCloseTicketsUseCase>();
         services.AddScoped<ITransferTicket, TransferTicketUseCase>();
         services.AddScoped<ICreateSupportTeam, CreateSupportTeamUseCase>();
         services.AddScoped<IUpdateSupportTeam, UpdateSupportTeamUseCase>();
@@ -93,7 +91,6 @@ public static class TicketingModule
         services.AddScoped<ITicketTimelineStore, PostgresTicketTimelineStore>();
         services.AddScoped<ITicketAttachmentStore, PostgresTicketAttachmentStore>();
         services.AddScoped<ISlaEvaluationGateway, PostgresSlaEvaluationAdapter>();
-        services.AddScoped<IAutoCloseTicketsGateway, PostgresAutoCloseTicketsAdapter>();
         services.AddScoped<IAgentDirectory, AgentDirectory>();
         services.AddScoped<ISupportTeamMembershipReader, PostgresSupportTeamMembershipReader>();
         services.AddScoped<ISupportTeamStore, PostgresSupportTeamStore>();

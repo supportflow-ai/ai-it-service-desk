@@ -74,4 +74,24 @@ public sealed class BoundaryTests
         foreach (var forbidden in new[] { "Microsoft.AspNetCore.Http", "ServiceDesk.Api" })
             Assert.True(Types.InAssembly(worker).ShouldNot().HaveDependencyOn(forbidden).GetResult().IsSuccessful);
     }
+
+    /// <summary>
+    /// ARCH-15: tác vụ nền trong mã production phải thuộc phạm vi đã duyệt. DEC-05: MVP không tự đóng phiếu.
+    /// Thêm tác vụ nền mới cần quyết định nghiệp vụ và cập nhật danh sách này trong cùng PR.
+    /// </summary>
+    [Fact]
+    public void OnlyApprovedBackgroundServicesExist()
+    {
+        string[] approved = ["PasswordResetQueueProcessor", "SlaEvaluationWorker"];
+        var hosted = ModuleRules.Modules.Select(module => Assembly.Load($"ServiceDesk.Modules.{module}"))
+            .Append(Assembly.Load("ServiceDesk.Worker"))
+            .Append(typeof(ServiceDesk.Api.Program).Assembly)
+            .Append(typeof(ApplicationDbContext).Assembly)
+            .SelectMany(assembly => assembly.GetTypes())
+            .Where(type => !type.IsAbstract && type.GetInterfaces().Any(i => i.FullName == "Microsoft.Extensions.Hosting.IHostedService"))
+            .Select(type => type.Name)
+            .Order(StringComparer.Ordinal);
+
+        Assert.Equal(approved, hosted);
+    }
 }
