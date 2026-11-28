@@ -93,6 +93,8 @@ Bộ lọc lỗi `ApiErrorFilter` giữ mã 400/403/404/409/503. Thông điệp 
 
 ## Thao tác vòng đời phiếu
 
+Kiểm định G4-03: quyền metadata đính kèm và cấp URL mới dùng cùng scope Ticketing (owner, nhóm hoạt động, direct assignment, Admin). Thu hồi membership, vô hiệu hóa nhóm và chuyển nhóm được áp dụng ở request tiếp theo; actor ngoài scope không tới bước ký URL. URL đã phát không bị thu hồi tức thì chỉ bằng thay đổi membership. [Hồi quy attachment theo nhóm](../../tests/ServiceDesk.IntegrationTests/AttachmentAccessScopeTests.cs) dùng PostgreSQL thật và spy storage để tách bằng chứng quyền khỏi kiểm chứng R2.
+
 Các thao tác đều dùng POST và nhận `id` trên đường dẫn. `update` nhận JSON với `title`, `description`, `categoryId` và `expectedRevision`. `assign` nhận JSON với `agentId` và `expectedRevision`. `pending` nhận JSON với `status` và `expectedRevision`. Các lệnh `claim`, `unassign`, `resolve`, `reopen`, `close`, `cancel` và `resume` nhận `expectedRevision` qua query. `Ticket` kiểm chuyển trạng thái. Các lệnh `update/reopen/close/cancel` yêu cầu quyền chủ sở hữu hoặc Admin.
 
 | Thao tác | Trạng thái trước | Trạng thái sau | Giới hạn hiện tại |

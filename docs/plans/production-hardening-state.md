@@ -57,8 +57,9 @@ Hệ quả: chưa task nào có thể chuyển `Verified` trên máy này cho t�
 | G3-05 | Implemented | Admission/expiry/counter cùng khóa, tối đa 4096 partition email và 320 ký tự sau trim; đầy trả 429, giữ ngân sách cũ. RED/GREEN, proxy, toàn suite và image đạt local; chờ CI/duyệt đúng SHA. |
 | G4-01 | Implemented | Ma trận canonical và 96 ca source/target cho 12 lệnh, giữ DEC-09; sửa triage enum sai gây mutation một phần sau RED 4 ca. Domain 331/331, Application Ticketing và HTTP lifecycle/quyền/revision/audit đạt; chờ gate cuối đợt/CI/duyệt. |
 | G4-02 | Implemented | 6 ca race mutation hai host dùng chung PostgreSQL, rendezvous trước SaveChanges; một winner/một audit, stale retry không ghi lần hai. Hồi quy idempotency/commit failure/cancellation đạt; chờ review/gate cuối/CI/duyệt. |
-| G4-03 | In Progress | Kiểm policy team/attachment; không thay cơ chế quyền đã chốt. |
-| G4-04 … G4-09 | Pending | Đã đọc requirement; tiếp tục đối chiếu mã/kiểm thử và blocker chính sách/R2 theo phạm vi người dùng giao. |
+| G4-03 | Implemented | Policy team/Lead/assignment hiện có đạt; thêm HTTP metadata/download sau revoke, inactive, transfer và direct assignment; không cấp URL cho actor ngoài scope. Hồi quy chung 72/72; chờ review/gate cuối/CI/duyệt. |
+| G4-04, G4-05 | In Progress | Kiểm SLA characterization/domain/report và Worker; phát hiện Worker đang đổi exception thành zero-success, cần RED/sửa. |
+| G4-06 … G4-09 | Pending | Đã đọc requirement; G4-06 chờ chốt TTL, G4-08 chờ chính sách scanning; tiếp tục phần độc lập. |
 | G5-01 … G5-08 | Pending | Chưa rà |
 | G6-01 … G6-06 | Pending | Chưa rà |
 | G7-01 … G7-07 | Blocked | Cần các kho web, ai-service, infra, môi trường và phê duyệt DEC-08 |
@@ -274,3 +275,10 @@ Lệnh chạy trong SDK Linux riêng từ bản sao nguồn đã đồng bộ xo
 - Đọc command guard, scope query, writer và các use case mutation. Không thiếu cơ chế persistence: normal mutation dùng `xmin`, ticket và timeline cùng một SaveChanges/transaction EF; HITL giữ ordering analysis → ticket → team/membership; create dùng advisory lock theo requester/key và receipt cùng transaction. Không tăng isolation hoặc thêm idempotency cho mọi route.
 - Bổ sung **6 ca** PostgreSQL qua hai host: Claim/Claim, Assign/Transfer, Assign/Unassign, Transfer/Resolve, Close/Reopen và Update/Resolve. 5 cặp cùng hợp lệ được rendezvous ngay trước SaveChanges để chắc chắn đọc cùng revision trước ghi; một 200, một 409 và đúng một audit. Update ở InProgress không hợp lệ nên bị 400 hoặc 409, Resolve thắng; không đổi luật Update chỉ Submitted. Retry sau giả lập mất response bằng revision cũ trả 409 và giữ một audit (`g402-races`: **6/6**).
 - Bộ chung với idempotency, audit deferred failure tại commit, cancellation, lock timeout, hai host, quyền nhóm và attachment: **72/72** (`g402-403-regression`), build Release 0 warning/error; Failed/Skipped 0. Các characterization mới đạt trên implementation hiện có, không chế RED bằng cách nới/bẻ invariant rồi viết lại code. Bằng chứng mất response cho Create là replay receipt; mutation khác là stale-revision rejection, không tuyên bố có response replay cho các lệnh đó.
+
+### G4-03 — Support Team, routing và RBAC
+
+- Đối chiếu `TicketPermissions`, scope query, membership reader, assignment/transfer, timeline/attachment và bridge AI. Team Lead vẫn là membership `IsLead`, không thêm role JWT. Giữ ngoại lệ đã chốt: Admin gán ngoài nhóm; direct assignee còn quyền đọc khi team inactive; ownership không cho Agent ngoài nhóm đọc internal note.
+- HTTP mới trên PostgreSQL kiểm owner, Agent, Lead, Admin và actor khác nhóm; revoke membership/inactive team làm mất quyền metadata và cấp URL mới ở request kế tiếp; transfer chuyển quyền theo team đích và giữ attachment; direct assignee đọc theo chính sách hiện hành. Spy storage chứng minh request ngoài scope/cross-ticket key không tới bước ký URL. Đây là kiểm authorization, không giả làm R2 integration (`AttachmentAccessScopeTests`).
+- Bộ G4-02/03 **72/72** gồm các lớp `AssignmentEndpointTests`, `TicketAccessScopeTests`, `SupportTeam*`, internal comment authorization và hồi quy mới; Failed/Skipped 0. Không có implementation thiếu được chứng minh ở policy này, không viết lại policy đang đúng. URL đã cấp vẫn theo hạn ký, không tuyên bố thu hồi tức thì sau revoke.
+- Đã hỏi chủ dự án TTL cho G4-06 vì runtime hardcode 3600/3600 nhưng R2Options mặc định 900/300, DEC-06 để mở; phần phụ thuộc chưa sửa khi chưa có trả lời. G4-08 đang hỏi có bắt buộc scanning/quarantine hay không, không tự chốt DEC-07.
