@@ -50,6 +50,17 @@ class EnvironmentTests(unittest.TestCase):
                 self.load(text)
             self.assertNotIn("secret", str(error.exception))
 
+    def test_r2_legacy_bucket_name_is_normalized(self):
+        self.assertEqual(self.load("R2_BUCKET_NAME=private-test")["R2__Bucket"], "private-test")
+
+    def test_current_r2_bucket_alias_wins_legacy_name(self):
+        values = self.load("R2_BUCKET_NAME=legacy\nR2_BUCKET=current")
+        self.assertEqual(values["R2__Bucket"], "current")
+
+    def test_canonical_r2_bucket_wins_both_aliases(self):
+        values = self.load("R2_BUCKET_NAME=legacy\nR2_BUCKET=current\nR2__Bucket=canonical")
+        self.assertEqual(values["R2__Bucket"], "canonical")
+
     def test_parent_environment_unchanged(self):
         parent = {"Jwt__SecretKey": "parent"}
         self.load("KEY=file", parent)

@@ -18,6 +18,7 @@ ALIASES = {
     "R2_ACCESS_KEY_ID": "R2__AccessKeyId",
     "R2_SECRET_ACCESS_KEY": "R2__SecretAccessKey",
     "R2_BUCKET": "R2__Bucket",
+    "R2_BUCKET_NAME": "R2__Bucket",
     "MINIO_ENDPOINT": "Minio__Endpoint",
     "MINIO_ROOT_USER": "Minio__AccessKey",
     "MINIO_ROOT_PASSWORD": "Minio__SecretKey",
