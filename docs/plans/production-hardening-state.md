@@ -58,7 +58,8 @@ Hệ quả: chưa task nào có thể chuyển `Verified` trên máy này cho t�
 | G4-01 | Implemented | Ma trận canonical và 96 ca source/target cho 12 lệnh, giữ DEC-09; sửa triage enum sai gây mutation một phần sau RED 4 ca. Domain 331/331, Application Ticketing và HTTP lifecycle/quyền/revision/audit đạt; chờ gate cuối đợt/CI/duyệt. |
 | G4-02 | Implemented | 6 ca race mutation hai host dùng chung PostgreSQL, rendezvous trước SaveChanges; một winner/một audit, stale retry không ghi lần hai. Hồi quy idempotency/commit failure/cancellation đạt; chờ review/gate cuối/CI/duyệt. |
 | G4-03 | Implemented | Policy team/Lead/assignment hiện có đạt; thêm HTTP metadata/download sau revoke, inactive, transfer và direct assignment; không cấp URL cho actor ngoài scope. Hồi quy chung 72/72; chờ review/gate cuối/CI/duyệt. |
-| G4-04, G4-05 | In Progress | Kiểm SLA characterization/domain/report và Worker; phát hiện Worker đang đổi exception thành zero-success, cần RED/sửa. |
+| G4-04 | Implemented | Giữ domain semantics, thêm characterization ±1 tick, nhiều pause/reopen và marker/report consistency sau sweep. Nhóm SLA Domain 52/52 và PostgreSQL 19/19 đạt; chờ review/gate cuối/CI/duyệt. |
+| G4-05 | In Progress | Worker đang đổi exception thành zero-success; đang RED/sửa outage, cancellation, overlapping sweep và partial batch failure. |
 | G4-06 … G4-09 | Pending | Đã đọc requirement; G4-06 chờ chốt TTL, G4-08 chờ chính sách scanning; tiếp tục phần độc lập. |
 | G5-01 … G5-08 | Pending | Chưa rà |
 | G6-01 … G6-06 | Pending | Chưa rà |
@@ -282,3 +283,9 @@ Lệnh chạy trong SDK Linux riêng từ bản sao nguồn đã đồng bộ xo
 - HTTP mới trên PostgreSQL kiểm owner, Agent, Lead, Admin và actor khác nhóm; revoke membership/inactive team làm mất quyền metadata và cấp URL mới ở request kế tiếp; transfer chuyển quyền theo team đích và giữ attachment; direct assignee đọc theo chính sách hiện hành. Spy storage chứng minh request ngoài scope/cross-ticket key không tới bước ký URL. Đây là kiểm authorization, không giả làm R2 integration (`AttachmentAccessScopeTests`).
 - Bộ G4-02/03 **72/72** gồm các lớp `AssignmentEndpointTests`, `TicketAccessScopeTests`, `SupportTeam*`, internal comment authorization và hồi quy mới; Failed/Skipped 0. Không có implementation thiếu được chứng minh ở policy này, không viết lại policy đang đúng. URL đã cấp vẫn theo hạn ký, không tuyên bố thu hồi tức thì sau revoke.
 - Đã hỏi chủ dự án TTL cho G4-06 vì runtime hardcode 3600/3600 nhưng R2Options mặc định 900/300, DEC-06 để mở; phần phụ thuộc chưa sửa khi chưa có trả lời. G4-08 đang hỏi có bắt buộc scanning/quarantine hay không, không tự chốt DEC-07.
+
+### G4-04 — kiểm định SLA
+
+- Phép tính thuần đã được tách ở `SlaEvaluator`, mutation vẫn thuộc Ticket aggregate, Application dùng IClock. Giữ các characterization hiện có trước khi quyết định refactor; không cần tách thêm service hoặc đổi luật chỉ để đáp ứng tên task.
+- Bổ sung **7 ca Domain**: trước/đúng/sau deadline ở ±1 tick cho hai clock, read snapshot không mutation, nhiều pause/resume, loại thời gian Resolved khi reopen, carry-over và breach đã ghi không bị xóa khi giảm priority. Bổ sung PostgreSQL report/marker consistency trên running và paused ticket sau khi đánh giá marker. Nhóm SLA Domain **52/52**, PostgreSQL sweep/concurrent workers/queue filter/lifecycle/report **19/19**, Failed/Skipped 0 (`g404-{domain,postgres}`), build Release 0 warning/error. Lỗi biên dịch ban đầu do test mới gọi sai tên property DTO đã được sửa ở test, không đổi production DTO để hợp thức hóa.
+- Ruling: giữ báo cáo SLA hiện hành là snapshot theo marker đã lưu; queue/detail có thể tính trực tiếp tại thời điểm đọc. Kiểm nhất quán sau sweep, ghi rõ độ trễ trước sweep; không tự đổi denominator/compliance/MTTR hoặc semantics đã chốt trong một task refactor. Nếu cần báo cáo tức thời cùng thời điểm đọc phải có requirement riêng. Không đổi API/schema/migration.

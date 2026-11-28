@@ -180,6 +180,8 @@ Kiểm định G4-02 trên hai host và cùng PostgreSQL: normal mutation giữ 
 
 ## Kiểm chứng và giới hạn
 
+Kiểm định G4-04 giữ SLA breach theo `elapsed > target` (đúng deadline chưa breach), pause/resume và carry-over khi reopen; `SlaEvaluator` chỉ đọc, aggregate ghi marker. Báo cáo SLA hiện dùng marker đã lưu nên có độ trễ tới sweep thành công; queue/detail tính snapshot tại thời điểm đọc. [Characterization SLA](../../tests/ServiceDesk.Domain.Tests/Ticketing/SlaConsistencyTests.cs) và [đối chiếu report sau đánh giá marker](../../tests/ServiceDesk.IntegrationTests/SlaReportConsistencyTests.cs) bảo vệ semantics này; không tự đổi ý nghĩa compliance hoặc MTTR.
+
 [OpenAPI baseline](../../contracts/backend/openapi-baseline.json) cùng [ApiContractTests](../../tests/ServiceDesk.IntegrationTests/ApiContractTests.cs), [TicketAccessScopeTests](../../tests/ServiceDesk.IntegrationTests/TicketAccessScopeTests.cs), [TicketIdempotencyPostgresTests](../../tests/ServiceDesk.IntegrationTests/TicketIdempotencyPostgresTests.cs) bảo vệ các phần tương ứng. Baseline OpenAPI không thay kiểm thử hành vi, dữ liệu và quyền.
 
 Kiểm thử `PublishedApiMatchesBaseline` so sánh toàn bộ tài liệu OpenAPI với bản chuẩn, phát hiện cả mục mới chưa công bố và thay đổi mô tả/bảo mật. Cập nhật bản chuẩn có chủ đích theo [quy chuẩn tài liệu](../process/documentation-standard.md).
