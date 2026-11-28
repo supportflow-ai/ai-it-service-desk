@@ -20,14 +20,17 @@ internal sealed class EvaluateSlaUseCase(
     public async Task<SlaEvaluationResult> ExecuteAsync(CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        if (batchSize is <= 0 or > 1000) throw new ArgumentOutOfRangeException(nameof(batchSize));
         var now = clock.UtcNow.UtcDateTime;
         Guid? cursor = null;
         int processed = 0;
         int updated = 0;
         int conflicts = 0;
+        int failed = 0;
 
-        while (!cancellationToken.IsCancellationRequested)
+        while (true)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var batch = await gateway.GetActiveSlaTicketsBatchAsync(cursor, batchSize, cancellationToken);
             if (batch.Count == 0) break;
 
@@ -40,14 +43,14 @@ internal sealed class EvaluateSlaUseCase(
                 var changed = ticket.EvaluateSlaBreach(now);
                 if (changed)
                 {
-                    var success = await gateway.UpdateBreachedMarkersAsync(ticket, cancellationToken);
-                    if (success)
+                    try
                     {
-                        updated++;
+                        if (await gateway.UpdateBreachedMarkersAsync(ticket, cancellationToken)) updated++;
+                        else conflicts++;
                     }
-                    else
+                    catch (SlaTicketWriteException)
                     {
-                        conflicts++;
+                        failed++;
                     }
                 }
             }
@@ -55,6 +58,7 @@ internal sealed class EvaluateSlaUseCase(
             if (batch.Count < batchSize) break;
         }
 
-        return new SlaEvaluationResult(processed, updated, conflicts);
+        cancellationToken.ThrowIfCancellationRequested();
+        return new SlaEvaluationResult(processed, updated, conflicts, failed);
     }
 }

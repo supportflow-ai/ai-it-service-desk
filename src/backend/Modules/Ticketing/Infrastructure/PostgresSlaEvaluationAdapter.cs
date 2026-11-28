@@ -1,7 +1,9 @@
 using Microsoft.EntityFrameworkCore;
+using System.Data.Common;
 using Microsoft.Extensions.Logging;
 using ServiceDesk.Modules.Ticketing.Application.Ports;
 using ServiceDesk.Modules.Ticketing.Domain;
+using ServiceDesk.Modules.Ticketing.Application.EvaluateSla;
 
 namespace ServiceDesk.Modules.Ticketing.Infrastructure;
 
@@ -43,6 +45,12 @@ internal sealed class PostgresSlaEvaluationAdapter(
 
             logger.LogWarning(ex, "Xung đột đồng thời khi cập nhật vi phạm SLA cho ticket {TicketId}. Sẽ đánh giá lại ở lần sweep tiếp theo.", ticket.Id);
             return false;
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is not DbException { IsTransient: true })
+        {
+            context.Entry(ticket).State = EntityState.Detached;
+            logger.LogWarning("Không thể ghi marker SLA của phiếu {TicketId} ({FailureType}).", ticket.Id, ex.GetType().Name);
+            throw new SlaTicketWriteException(ex);
         }
     }
 }

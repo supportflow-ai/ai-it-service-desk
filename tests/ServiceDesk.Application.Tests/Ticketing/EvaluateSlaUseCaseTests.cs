@@ -216,4 +216,28 @@ public sealed class EvaluateSlaUseCaseTests
         var useCase = new EvaluateSlaUseCase(_gateway.Object, _clock.Object);
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => useCase.ExecuteAsync(cts.Token));
     }
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    [InlineData(1001)]
+    public async Task InvalidBatchSizeIsRejectedBeforeReading(int batchSize)
+    {
+        var useCase = new EvaluateSlaUseCase(_gateway.Object, _clock.Object, batchSize);
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => useCase.ExecuteAsync());
+        _gateway.Verify(g => g.GetActiveSlaTicketsBatchAsync(It.IsAny<Guid?>(), It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    public async Task CancellationAfterTheLastWriteDoesNotReturnSuccess(int batchSize)
+    {
+        using var cancellation = new CancellationTokenSource();
+        var ticket = CreateTicketWithSla(_baseTime.UtcDateTime.AddHours(-5));
+        _gateway.Setup(g => g.GetActiveSlaTicketsBatchAsync(null, batchSize, cancellation.Token)).ReturnsAsync(new[] { ticket });
+        _gateway.Setup(g => g.UpdateBreachedMarkersAsync(ticket, cancellation.Token))
+            .Callback(() => cancellation.Cancel()).ReturnsAsync(true);
+        var useCase = new EvaluateSlaUseCase(_gateway.Object, _clock.Object, batchSize);
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => useCase.ExecuteAsync(cancellation.Token));
+    }
 }

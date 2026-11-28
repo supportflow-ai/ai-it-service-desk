@@ -6,4 +6,10 @@ namespace ServiceDesk.Modules.Ticketing.Application.EvaluateSla;
 public sealed record SlaEvaluationResult(
     int ProcessedCount,
     int UpdatedCount,
-    int ConflictCount);
+    int ConflictCount,
+    int FailedCount = 0)
+{
+    public string Outcome => FailedCount > 0
+        ? FailedCount == ProcessedCount ? "Failure" : "PartialFailure"
+        : ProcessedCount == 0 ? "NoWork" : "Success";
+}
