@@ -101,6 +101,7 @@ Các thao tác đều dùng POST và nhận `id` trên đường dẫn. `update`
 | Nhận xử lý | Submitted hoặc Assigned | InProgress | Agent trong phạm vi xử lý hoặc Admin. Phiếu đã phân công cho người khác chỉ Admin nhận thay được. Lệnh lưu người phụ trách và ghi audit |
 | Phân công | Mọi trạng thái trừ Closed, Cancelled và Resolved | Assigned nếu đang Submitted. Trạng thái khác giữ nguyên | Lead của nhóm phụ trách phiếu hoặc Admin. Người nhận có vai trò Agent hoặc Admin theo [`AgentDirectory`](../../src/backend/Modules/Ticketing/Infrastructure/AgentDirectory.cs). Lead chỉ gán cho thành viên cùng nhóm. Admin được gán ngoài nhóm |
 | Hủy phân công | Assigned | Submitted | Lead của nhóm phụ trách phiếu hoặc Admin. Chỉ khi đang Assigned và đã có người phụ trách |
+| Chuyển nhóm | Submitted, Assigned, InProgress, PendingUser hoặc PendingExternal | Giữ trạng thái; Assigned trở về Submitted nếu người phụ trách không thuộc nhóm đích | Lead nhóm hiện tại hoặc Admin; nhóm đích phải hoạt động, có lý do. Gỡ assignee không thuộc nhóm đích, giữ toàn bộ timeline theo phiếu |
 | Tạm dừng | InProgress | PendingUser hoặc PendingExternal | Agent hoặc Admin (`RequireAgent`); body `PendingTicketRequest` (Status, ExpectedRevision) |
 | Tiếp tục | PendingUser hoặc PendingExternal | InProgress | Agent hoặc Admin (`RequireAgent`); query `expectedRevision` |
 | Giải quyết | InProgress hoặc PendingExternal | Resolved | Hỗ trợ ghi chú giải quyết (`ResolutionNote`), lưu vào timeline audit. Đồng hồ SLA ghi `ResolvedAt` |
@@ -109,6 +110,8 @@ Các thao tác đều dùng POST và nhận `id` trên đường dẫn. `update`
 | Hủy | Submitted | Cancelled | Chưa nhận lý do hủy hoặc lưu lịch sử nghiệp vụ |
 
 Mọi lệnh ghi phiếu (cập nhật, nhận xử lý, phân công, hủy phân công, chuyển đội, giải quyết, mở lại, đóng, hủy, tạm dừng, tiếp tục) bắt buộc `expectedRevision`: thiếu hoặc bằng 0 trả 400, khác revision hiện tại (`xmin`) trả 409. Trạng thái khác bị Domain từ chối; `TicketCommandGuard` chuyển lỗi trạng thái thành `ArgumentException`, bộ lọc HTTP trả 400 với `{ error }`. Phiếu thiếu hoặc ngoài quyền chủ sở hữu của các lệnh `update/reopen/close/cancel` trả 404. Các lệnh mới chưa có cơ chế khóa chống tạo trùng hoặc phát lại phản hồi như thao tác tạo phiếu. Yêu cầu đã thực hiện thành công rồi gửi lại có thể nhận lỗi trạng thái.
+
+Ma trận trên là nguồn vòng đời hiện hành; Create bắt đầu Submitted, không có đường ghi sang Draft hoặc Triaged. Giữ giá trị enum đã lưu và chờ DEC-09, không tự thêm bước Triaged. [Ma trận hồi quy Domain](../../tests/ServiceDesk.Domain.Tests/Ticketing/TicketTransitionMatrixTests.cs) kiểm 12 lệnh trên 8 trạng thái reachable, gồm không mutation khi bị từ chối. Giá trị Impact/Urgency sai bị từ chối trước khi đổi bất kỳ trường triage nào; priority, category và đồng hồ SLA giữ nguyên khi validation lỗi.
 
 ## Các điểm đã xử lý sau refactor
 

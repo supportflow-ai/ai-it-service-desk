@@ -55,7 +55,9 @@ Hệ quả: chưa task nào có thể chuyển `Verified` trên máy này cho t�
 | G3-04 | Implemented | OTP HMAC v1 gắn email/mục đích với khóa riêng bắt buộc. HTTP negative, concurrent reset, rollback password/stamp/OTP/session và log redaction đã kiểm PostgreSQL. Chờ CI/duyệt. |
 | G3-06 | Implemented | Actor bắt buộc ở Application, profile nguyên tử/kiểm IdentityResult, phòng ban kiểm input và conflict đồng thời, trả tên đã lưu và sửa status OpenAPI. RED/GREEN, ma trận role HTTP và hồi quy PostgreSQL đạt; chờ đồng bộ web, review toàn đợt, CI/duyệt đúng SHA. |
 | G3-05 | Implemented | Admission/expiry/counter cùng khóa, tối đa 4096 partition email và 320 ký tự sau trim; đầy trả 429, giữ ngân sách cũ. RED/GREEN, proxy, toàn suite và image đạt local; chờ CI/duyệt đúng SHA. |
-| G4-01 … G4-09 | Pending | Chưa rà |
+| G4-01 | Implemented | Ma trận canonical và 96 ca source/target cho 12 lệnh, giữ DEC-09; sửa triage enum sai gây mutation một phần sau RED 4 ca. Domain 331/331, Application Ticketing và HTTP lifecycle/quyền/revision/audit đạt; chờ gate cuối đợt/CI/duyệt. |
+| G4-02, G4-03 | In Progress | Đang kiểm concurrency hai host và policy team/attachment; không thay cơ chế idempotency đã có. |
+| G4-04 … G4-09 | Pending | Đã đọc requirement; tiếp tục đối chiếu mã/kiểm thử và blocker chính sách/R2 theo phạm vi người dùng giao. |
 | G5-01 … G5-08 | Pending | Chưa rà |
 | G6-01 … G6-06 | Pending | Chưa rà |
 | G7-01 … G7-07 | Blocked | Cần các kho web, ai-service, infra, môi trường và phê duyệt DEC-08 |
@@ -258,3 +260,10 @@ Lệnh chạy trong SDK Linux riêng từ bản sao nguồn đã đồng bộ xo
 - GREEN: Application Identity **83/83** (`g306-application-green`), Architecture **57/57** (`g306-architecture`), HTTP/Identity/JWT/idempotency **104/104** (`g306-http-green-v2`), Failed/Skipped 0. Lượt HTTP đầu bị shell làm mất quote của filter có `|` (exit 127), không dùng làm bằng chứng; chuyển sang script LF, không đổi filter để bỏ test.
 - Metadata OpenAPI cũ sai/thiếu status trên 7 thao tác: quan sát RED **7/7**, sửa mô tả theo status runtime, GREEN **7/7**; chỉ sau đó xuất baseline có chủ đích, tắt export và chạy lại ApiContractTests **10/10** (`g306-contract-{red,green,check}`), diff chỉ status không đổi schema/DTO. Web phải đồng bộ snapshot/checksum/nguồn, không đổi UI của người dùng; kết quả/commit liên kho sẽ ghi ở gate cuối đợt.
 - G3-06 giữ Implemented, còn review độc lập toàn đợt, suite/image/model check cuối, CI và người duyệt PR. Không gọi local pass là Verified. Không sửa G1/G2 hoặc tự làm G6-03 toàn bộ error contract.
+
+### G4-01 — vòng đời Ticket
+
+- G3-06 đã có commit riêng `8b96cf52a6f4f9e370dc4da5eae17075e7ba5f10`; web đang kiểm snapshot mới bằng Node 22, chỉ sửa 2 tệp hợp đồng.
+- Bổ sung ma trận Domain 12 lệnh × 8 trạng thái reachable = **96 characterization cases**, đã đạt trước sửa. Tìm thấy `SetTriage` ghi category/Impact/Urgency trước khi kiểm enum; 4 hồi quy mới RED vì aggregate bị mutation sau khi ném lỗi (`g401-red/`: 96 đạt, 4 lỗi). Chỉ chuyển tính/kiểm priority trước mutation, không thay luật vòng đời hoặc SLA.
+- GREEN sau sửa: Domain **331/331**, Application Ticketing **209/209**, HTTP/PostgreSQL lifecycle, team/role/resource scope, revision và audit **54/54** (`g401-{domain,application,http}`), Failed/Skipped 0; Release build 0 warning/error. Ma trận canonical bổ sung hàng Transfer, link test và ghi rõ không tự triển khai Draft/Triaged khi DEC-09 chưa chốt. Không đổi API/schema/migration hay audit semantics.
+- G4-02/03 tiếp tục bù ca race và biên policy theo phần còn thiếu của checklist; các ca idempotency/rollback/lock-timeout/thu hồi quyền đã có được giữ nguyên, không viết lại implementation vì nhãn Pending.

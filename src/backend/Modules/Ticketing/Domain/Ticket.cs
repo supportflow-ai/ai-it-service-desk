@@ -161,10 +161,10 @@ public class Ticket
         if (categoryId is not null && !TicketCategories.All.Contains(categoryId, StringComparer.Ordinal))
             throw new ArgumentException("Invalid category");
 
+        var newPriority = PriorityMatrix.Calculate(impact, urgency);
         if (categoryId is not null) CategoryId = categoryId;
         Impact = impact;
         Urgency = urgency;
-        var newPriority = PriorityMatrix.Calculate(impact, urgency);
         if (IsSlaApplicable && Priority.HasValue && Priority.Value != newPriority)
         {
             UpdateSlaPriority(newPriority, now);
