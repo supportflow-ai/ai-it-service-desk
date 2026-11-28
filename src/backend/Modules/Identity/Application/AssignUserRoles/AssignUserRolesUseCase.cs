@@ -1,4 +1,5 @@
 using ServiceDesk.SharedKernel.Application.Abstractions;
+using ServiceDesk.SharedKernel.Application;
 using ServiceDesk.Modules.Identity.Application.Contracts;
 using ServiceDesk.Modules.Identity.Application.Ports;
 using ServiceDesk.SharedKernel.Authorization;
@@ -12,7 +13,7 @@ public interface IAssignUserRoles
 
 /// <summary>
 /// Admin thay toàn bộ vai trò của một người dùng. Thành công thì thu hồi mọi refresh token của người đó
-/// để phiên mới nhận vai trò mới; access token đang có vẫn hiệu lực tới khi hết hạn.
+/// và đổi security stamp để access token cũ bị từ chối ở lần xác thực kế tiếp.
 /// Không cho gỡ vai trò Admin của quản trị viên cuối cùng (kiểm tra trong gateway).
 /// </summary>
 internal sealed class AssignUserRolesUseCase(
@@ -23,6 +24,7 @@ internal sealed class AssignUserRolesUseCase(
     public async Task<IdentityOperationResult> ExecuteAsync(Guid targetUserId, AssignRolesRequest request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
+        _ = AuthenticatedActor.RequireId(currentUser);
         if (targetUserId == Guid.Empty)
         {
             throw new ArgumentException("Target user ID is required.");

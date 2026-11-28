@@ -1,4 +1,5 @@
 using ServiceDesk.SharedKernel.Application.Abstractions;
+using ServiceDesk.SharedKernel.Application;
 using ServiceDesk.Modules.Identity.Application.Ports;
 using ServiceDesk.SharedKernel.Authorization;
 
@@ -17,6 +18,7 @@ internal sealed class GetUsersByRoleUseCase(IUserAccountGateway userGateway, ICu
 {
     public async Task<IReadOnlyList<UserDirectoryEntry>> ExecuteAsync(GetUsersByRoleQuery query, CancellationToken cancellationToken = default)
     {
+        _ = AuthenticatedActor.RequireId(currentUser);
         var isStaff = currentUser.IsInRole(RoleNames.Agent) || currentUser.IsInRole(RoleNames.Admin);
         if (!isStaff)
         {

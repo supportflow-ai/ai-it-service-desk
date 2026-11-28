@@ -16,6 +16,8 @@ public class DepartmentUseCaseTests
 
     public DepartmentUseCaseTests()
     {
+        _currentUser.SetupGet(u => u.IsAuthenticated).Returns(true);
+        _currentUser.SetupGet(u => u.UserId).Returns(Guid.NewGuid().ToString());
         _clock.SetupGet(c => c.UtcNow).Returns(new DateTimeOffset(2026, 11, 24, 12, 0, 0, TimeSpan.Zero));
     }
 

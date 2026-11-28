@@ -1,6 +1,7 @@
 using ServiceDesk.Modules.Identity.Application.Contracts;
 using ServiceDesk.Modules.Identity.Application.Ports;
 using ServiceDesk.SharedKernel.Application.Abstractions;
+using ServiceDesk.SharedKernel.Application;
 using ServiceDesk.SharedKernel.Authorization;
 
 namespace ServiceDesk.Modules.Identity.Application.Departments;
@@ -18,6 +19,7 @@ internal sealed class UpdateDepartmentUseCase(
 {
     public async Task<DepartmentDto> ExecuteAsync(UpdateDepartmentCommand command, CancellationToken cancellationToken = default)
     {
+        _ = AuthenticatedActor.RequireId(currentUser);
         if (!currentUser.IsInRole(RoleNames.Admin))
         {
             throw new UnauthorizedAccessException("Chỉ Quản trị viên (Admin) mới có quyền cập nhật phòng ban.");

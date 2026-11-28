@@ -59,7 +59,8 @@ public static class AuthEndpoints
         .WithName("Register")
         .RequireRateLimiting(AuthRateLimiting.IpPolicy)
         .RequireEmailRateLimit<RegisterRequest>(AuthEmailOperation.Register, r => r.Email)
-        .Produces(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status201Created)
+        .Produces(StatusCodes.Status400BadRequest)
         .Produces(StatusCodes.Status429TooManyRequests)
         .AllowAnonymous();
 
@@ -86,6 +87,7 @@ public static class AuthEndpoints
         .RequireRateLimiting(AuthRateLimiting.IpPolicy)
         .RequireEmailRateLimit<LoginRequest>(AuthEmailOperation.Login, r => r.Email)
         .Produces(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status401Unauthorized)
         .Produces(StatusCodes.Status429TooManyRequests)
         .AllowAnonymous();
 
@@ -111,6 +113,7 @@ public static class AuthEndpoints
         .WithName("RefreshToken")
         .RequireRateLimiting(AuthRateLimiting.RefreshPolicy)
         .Produces(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status401Unauthorized)
         .Produces(StatusCodes.Status429TooManyRequests)
         .AllowAnonymous();
 
@@ -125,6 +128,8 @@ public static class AuthEndpoints
         })
         .WithName("RevokeToken")
         .RequireRateLimiting(AuthRateLimiting.IpPolicy)
+        .Produces(StatusCodes.Status204NoContent)
+        .Produces(StatusCodes.Status429TooManyRequests)
         .AllowAnonymous();
 
         // POST /api/auth/change-password: Đổi mật khẩu tài khoản đang đăng nhập
@@ -143,6 +148,9 @@ public static class AuthEndpoints
         })
         .AddEndpointFilter<ApiErrorFilter>()
         .WithName("ChangePassword")
+        .Produces(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status401Unauthorized)
         .RequireAuthorization();
 
         // POST /api/auth/forgot-password: Yêu cầu gửi OTP đặt lại mật khẩu
@@ -183,6 +191,7 @@ public static class AuthEndpoints
         .RequireRateLimiting(AuthRateLimiting.IpPolicy)
         .RequireEmailRateLimit<ResetPasswordRequest>(AuthEmailOperation.ResetPassword, r => r.Email)
         .Produces(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest)
         .Produces(StatusCodes.Status429TooManyRequests)
         .AllowAnonymous();
 
@@ -201,6 +210,9 @@ public static class AuthEndpoints
         })
         .AddEndpointFilter<ApiErrorFilter>()
         .WithName("GetCurrentUser")
+        .Produces(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status404NotFound)
         .RequireAuthorization();
 
         // PUT /api/auth/me: Cập nhật thông tin tài khoản người dùng đang đăng nhập (họ tên, số điện thoại)

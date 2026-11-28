@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using System.Data.Common;
+using ServiceDesk.Modules.Identity.Application.Departments;
 using ServiceDesk.Modules.Identity.Application.Ports;
 using ServiceDesk.Modules.Identity.Domain;
 
@@ -15,7 +17,11 @@ internal sealed class PostgresDepartmentStore(DbContext context) : IDepartmentSt
     public async Task AddAsync(Department department, CancellationToken cancellationToken = default)
     {
         await context.Set<Department>().AddAsync(department, cancellationToken);
-        await context.SaveChangesAsync(cancellationToken);
+        try { await context.SaveChangesAsync(cancellationToken); }
+        catch (DbUpdateException ex) when (ex.InnerException is DbException { SqlState: "23505" })
+        {
+            throw new DepartmentConflictException("Phòng ban đã tồn tại.");
+        }
     }
 
     public async Task UpdateAsync(Department department, CancellationToken cancellationToken = default)

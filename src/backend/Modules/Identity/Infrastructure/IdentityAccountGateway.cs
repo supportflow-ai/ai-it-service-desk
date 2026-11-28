@@ -228,17 +228,15 @@ internal sealed class IdentityAccountGateway(UserManager<IdentityUser> users, Db
     public async Task<UserInfo?> UpdateProfileAsync(string userId, string? fullName, string? phoneNumber, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+        await UserSessionLock.LockAsync(context, userId, cancellationToken);
         var user = await users.FindByIdAsync(userId);
         if (user is null) return null;
 
         if (phoneNumber is not null)
         {
             user.PhoneNumber = string.IsNullOrWhiteSpace(phoneNumber) ? null : phoneNumber.Trim();
-            var updateResult = await users.UpdateAsync(user);
-            if (!updateResult.Succeeded)
-            {
-                throw new InvalidOperationException("Failed to update user phone number.");
-            }
+            EnsureSecurityWrite(await users.UpdateAsync(user));
         }
 
         if (fullName is not null)
@@ -249,17 +247,20 @@ internal sealed class IdentityAccountGateway(UserManager<IdentityUser> users, Db
             if (existingClaim is not null)
             {
                 if (string.IsNullOrWhiteSpace(trimmedName))
-                    await users.RemoveClaimAsync(user, existingClaim);
+                    EnsureSecurityWrite(await users.RemoveClaimAsync(user, existingClaim));
                 else
-                    await users.ReplaceClaimAsync(user, existingClaim, new Claim(ClaimTypes.Name, trimmedName));
+                    EnsureSecurityWrite(await users.ReplaceClaimAsync(user, existingClaim, new Claim(ClaimTypes.Name, trimmedName)));
             }
             else if (!string.IsNullOrWhiteSpace(trimmedName))
             {
-                await users.AddClaimAsync(user, new Claim(ClaimTypes.Name, trimmedName));
+                EnsureSecurityWrite(await users.AddClaimAsync(user, new Claim(ClaimTypes.Name, trimmedName)));
             }
         }
 
-        return await ToUserAsync(user);
+        var result = await ToUserAsync(user);
+        cancellationToken.ThrowIfCancellationRequested();
+        await transaction.CommitAsync(cancellationToken);
+        return result;
     }
 
     /// <summary>Thu hồi mọi refresh token còn hiệu lực của người dùng trong giao dịch hiện tại.</summary>

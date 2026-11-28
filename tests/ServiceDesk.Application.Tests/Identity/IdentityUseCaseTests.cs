@@ -27,7 +27,7 @@ public sealed class IdentityUseCaseTests
     [Fact]
     public async Task Registration_DoesNotForwardClientRole_AndPreservesFullName()
     {
-        var user = User;
+        var user = User with { FullName = "Example" };
         _accounts.Setup(a => a.CreateRequesterAsync(user.Email, "Test@1234", "Example", It.IsAny<CancellationToken>())).ReturnsAsync(new AccountCreation(user, []));
         _tokens.Setup(t => t.GenerateToken(It.Is<UserInfo>(u => u.FullName == "Example" && u.Roles.SequenceEqual(new[] { RoleNames.Requester })))).Returns("token");
         var result = await new RegisterUserUseCase(_accounts.Object, _tokens.Object).ExecuteAsync(new()

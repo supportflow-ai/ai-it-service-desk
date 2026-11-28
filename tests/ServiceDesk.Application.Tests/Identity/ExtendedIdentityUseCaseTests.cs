@@ -140,6 +140,8 @@ public sealed class ExtendedIdentityUseCaseTests
     [Fact]
     public async Task GetDepartments_ReturnsListFromQueries()
     {
+        _currentUser.SetupGet(u => u.IsAuthenticated).Returns(true);
+        _currentUser.SetupGet(u => u.UserId).Returns(Guid.NewGuid().ToString());
         var expected = new List<DepartmentDto>
         {
             new(Guid.NewGuid(), "IT", "Information Technology", "IT Dept"),
@@ -147,7 +149,7 @@ public sealed class ExtendedIdentityUseCaseTests
         };
         _departmentQueries.Setup(q => q.GetAllAsync(It.IsAny<CancellationToken>())).ReturnsAsync(expected);
 
-        var useCase = new GetDepartmentsUseCase(_departmentQueries.Object);
+        var useCase = new GetDepartmentsUseCase(_departmentQueries.Object, _currentUser.Object);
         var result = await useCase.ExecuteAsync(new GetDepartmentsQuery());
 
         Assert.Equal(2, result.Count);
@@ -290,6 +292,8 @@ public sealed class ExtendedIdentityUseCaseTests
     [Fact]
     public async Task AssignUserRoles_WhenAdminWithValidRoles_CallsGatewayWithClockTime()
     {
+        _currentUser.SetupGet(u => u.IsAuthenticated).Returns(true);
+        _currentUser.SetupGet(u => u.UserId).Returns(Guid.NewGuid().ToString());
         var targetId = Guid.NewGuid();
         _currentUser.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(true);
         _accounts.Setup(a => a.AssignRolesAsync(targetId.ToString(), It.IsAny<IReadOnlyList<string>>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
@@ -305,6 +309,8 @@ public sealed class ExtendedIdentityUseCaseTests
     [Fact]
     public async Task AssignUserRoles_WhenGatewayRejects_ReturnsItsError()
     {
+        _currentUser.SetupGet(u => u.IsAuthenticated).Returns(true);
+        _currentUser.SetupGet(u => u.UserId).Returns(Guid.NewGuid().ToString());
         var targetId = Guid.NewGuid();
         _currentUser.Setup(u => u.IsInRole(RoleNames.Admin)).Returns(true);
         _accounts.Setup(a => a.AssignRolesAsync(targetId.ToString(), It.IsAny<IReadOnlyList<string>>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))

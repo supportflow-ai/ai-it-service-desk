@@ -53,7 +53,7 @@ Hệ quả: chưa task nào có thể chuyển `Verified` trên máy này cho t�
 | G3-02 | Implemented | Kiểm định rotation/replay, family, expiry và hai host; bổ sung 3 test, nhóm session/Identity/JWT 42/42. TTL đã được chủ dự án chốt access 60 phút, refresh 7 ngày; đồng bộ infra trong đợt này. Chờ CI/duyệt. |
 | G3-03 | Implemented | PostgreSQL request/outbox nguyên tử, payload AES-GCM, claim/lease và retry cùng mã. Đã kiểm capacity/claim đồng thời, rollback, upgrade, lỗi SMTP và restart process thật; toàn suite nguồn cuối 994/994, ba image đạt. Chờ CI/duyệt đúng SHA; bằng chứng tiếp tục sau bàn giao tạm dừng ở cuối tệp. |
 | G3-04 | Implemented | OTP HMAC v1 gắn email/mục đích với khóa riêng bắt buộc. HTTP negative, concurrent reset, rollback password/stamp/OTP/session và log redaction đã kiểm PostgreSQL. Chờ CI/duyệt. |
-| G3-06 | Pending | Chưa rà |
+| G3-06 | Implemented | Actor bắt buộc ở Application, profile nguyên tử/kiểm IdentityResult, phòng ban kiểm input và conflict đồng thời, trả tên đã lưu và sửa status OpenAPI. RED/GREEN, ma trận role HTTP và hồi quy PostgreSQL đạt; chờ đồng bộ web, review toàn đợt, CI/duyệt đúng SHA. |
 | G3-05 | Implemented | Admission/expiry/counter cùng khóa, tối đa 4096 partition email và 320 ký tự sau trim; đầy trả 429, giữ ngân sách cũ. RED/GREEN, proxy, toàn suite và image đạt local; chờ CI/duyệt đúng SHA. |
 | G4-01 … G4-09 | Pending | Chưa rà |
 | G5-01 … G5-08 | Pending | Chưa rà |
@@ -105,7 +105,7 @@ OpenAPI baseline không đổi.
 
 ## Task tiếp theo
 
-G3-01/G3-05 và đợt G3-02/G3-04/G3-03 đã triển khai, đồng bộ caller/cấu hình và commit cục bộ; bằng chứng ở cuối tệp. Gate tiếp theo là CI/duyệt đúng SHA khi có ủy quyền push/PR. Task triển khai đề xuất kế tiếp là G3-06 (kiểm định toàn bộ Identity APIs), cần một đợt riêng; không tự bắt đầu trong phiên này. G2-04, G2-06/G7-02 và nâng dependency web vẫn là các đợt riêng. Trước khi gắn Verified: CI và duyệt đúng SHA bàn giao; không tự push để lấy bằng chứng này.
+G3-01…G3-05 đã có commit cục bộ. Người dùng đã giao G3-06 và G4: kiểm định Identity đã GREEN, tiếp tục các task G4 có đủ requirement và môi trường kiểm chứng theo mục cuối tệp. G2-04, G2-06/G7-02 và nâng dependency web vẫn là các đợt riêng. Gate phát hành là CI/duyệt đúng SHA và smoke liên hệ thống khi có ủy quyền tương ứng; không tự push để lấy bằng chứng hoặc gắn Verified từ local pass.
 
 ## Bằng chứng sau G2 và review ngày 28/11/2026
 
@@ -240,3 +240,21 @@ Lệnh chạy trong SDK Linux riêng từ bản sao nguồn đã đồng bộ xo
 - Đã kiểm nhãn `supportflow.hardening=otp-20261128`, dừng riêng `sd-hardening-otp-sdk` và `sd-hardening-otp-web`; không còn Testcontainers hoặc container mang nhãn phiên đang chạy. Giữ volume/cache/image local, không dừng dịch vụ hay đụng dữ liệu người dùng. Các process API/SMTP con trong test đã được fixture dọn.
 - Backend tracked/index sạch sau commit, chỉ còn `.serena/` có sẵn không theo dõi; infra sạch. Web còn nguyên các thay đổi riêng `.gitignore`, LandingPage, styles, test setup, Vitest và tài liệu MUJI/audit, không stage vào commit nhiệm vụ. Không push, tạo PR, publish image hay triển khai.
 - Artifact tổng hợp sau commit docs: `.cache/hardening-linux/otp-evidence.json`, cùng log/TRX/hash đã nêu; không đưa cache vào Git. SHA docs cuối không đổi mã đã kiểm thử hoặc baseline. Phiên sau đọc mục này và Git trước khi sửa; ưu tiên gate CI/duyệt, hoặc nhận phạm vi G3-06 riêng.
+
+## Đợt G3-06 và G4 — đang thực hiện
+
+- Người dùng giao tiếp tục G3-06 và G4 nếu có thể. Mốc đầu đợt `Refactor-2@841dc03f8407bcd090eff55079f2e94a7fda540b`, index/tracked sạch, giữ `.serena/`. Không đổi nhánh, không push/PR/publish/deploy hay truy cập database dùng chung.
+- Thứ tự: G3-06 → G4-01/G4-02/G4-03 → G4-04/G4-05 → G4-06/G4-07/G4-08 → G4-09. Đối chiếu mã và kiểm thử hiện có trước khi sửa; mỗi bug có RED đúng nguyên nhân rồi GREEN. Mỗi phần hoàn tất có commit riêng; review độc lập toàn đợt và kiểm chứng phần sửa finding trước bàn giao.
+- G3-06 đọc endpoint/use case/gateway: registration chỉ Requester, profile chỉ trường được phép, user directory và department theo role, role management và last-admin; bổ sung HTTP/PostgreSQL cho mass assignment, invalid department, concurrent admin và response không lộ trường nhạy cảm. Giữ chính sách email confirmation và khả năng account administration hiện hành, không tự thêm tính năng.
+- Pre-flight: G4-01/G4-02/G4-03 cùng dùng aggregate, command guard, revision/audit và policy team; kiểm ordering/transaction ở adapter thay vì sao chép policy. G4-04/G4-05 chung SLA clock/Worker; G4-06/G4-07/G4-08 chung upload grant/policy/storage. Giữ DEC-09, DEC-06 và DEC-07 hiện hành; khi cần quyết định mới, ghi blocker và tiếp tục phần độc lập. R2 thật chỉ kiểm nếu có môi trường thử nghiệm và đích được xác nhận; Testcontainers không thay bằng chứng R2.
+- Môi trường: SDK `global.json`, EF CLI khớp Design của API, Python theo CI; reuse SDK Linux chỉ sau kiểm nhãn/mount/local npipe và không có container khác dùng volume. Sync loại `.env*`, `.venv`, `.git`, `.serena`, cache/bin/obj; chờ copy/build xong trước `--no-build`. Baseline/gate mới dùng prefix `g34-*` tại `.cache/hardening-linux/`, không ghi đè artifact cũ.
+
+### G3-06 — kiểm định API Identity
+
+- Baseline mới: locked restore và Release build 0 warning/error; 746/746 ngoài Integration, 248/248 Integration (`g34-baseline-*`). Không dùng kết quả 994 của phiên trước thay baseline này.
+- RED trước sửa: 25 ca actor thiếu/chưa xác thực/ID sai/rỗng đều đi qua use case; 8/12 HTTP/PostgreSQL lỗi đúng nguyên nhân (4 invalid department trả 500, ghi claim lỗi để lại điện thoại đã đổi, IdentityResult lỗi vẫn trả thành công, trùng unique không phân loại, register trả tên thô khác tên đã lưu). 4 ca role matrix đã đạt trước sửa. Artifact `g306-actor-red/`, `g306-http-red/`.
+- Bản vá dùng `AuthenticatedActor` hiện có cho 5 use case, không tạo framework quyền mới; fixture dương dựng actor hợp lệ, giữ assertion nghiệp vụ. Profile dùng transaction/khóa dòng và kiểm kết quả Identity; rollback đã chứng minh bằng lỗi trigger PostgreSQL thật. Domain Department giữ giới hạn schema, validate trước lookup/ghi, adapter ánh xạ SQLSTATE unique thành 409 bằng API chuẩn .NET, không thêm dependency.
+- HTTP kiểm Requester/Agent/Admin/anonymous trên 8 endpoint được bảo vệ; mass assignment trong đăng ký/profile không đổi ID/email/roles/stamp, response không lộ hash/stamp. Hồi quy last-admin/concurrent role/session/lockout hiện có chạy nguyên trạng. Không hỗ trợ disabled-account/department assignment ở Identity nên không tự thêm API; email confirmation vẫn là chính sách auto-confirm hiện hành, không đồng nghĩa đã chứng minh sở hữu email. G3-06 chỉ kiểm định, không tự triển khai verification/invitation.
+- GREEN: Application Identity **83/83** (`g306-application-green`), Architecture **57/57** (`g306-architecture`), HTTP/Identity/JWT/idempotency **104/104** (`g306-http-green-v2`), Failed/Skipped 0. Lượt HTTP đầu bị shell làm mất quote của filter có `|` (exit 127), không dùng làm bằng chứng; chuyển sang script LF, không đổi filter để bỏ test.
+- Metadata OpenAPI cũ sai/thiếu status trên 7 thao tác: quan sát RED **7/7**, sửa mô tả theo status runtime, GREEN **7/7**; chỉ sau đó xuất baseline có chủ đích, tắt export và chạy lại ApiContractTests **10/10** (`g306-contract-{red,green,check}`), diff chỉ status không đổi schema/DTO. Web phải đồng bộ snapshot/checksum/nguồn, không đổi UI của người dùng; kết quả/commit liên kho sẽ ghi ở gate cuối đợt.
+- G3-06 giữ Implemented, còn review độc lập toàn đợt, suite/image/model check cuối, CI và người duyệt PR. Không gọi local pass là Verified. Không sửa G1/G2 hoặc tự làm G6-03 toàn bộ error contract.

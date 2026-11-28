@@ -12,6 +12,24 @@ namespace ServiceDesk.IntegrationTests;
 [Trait("Category", "Unit")]
 public sealed class ApiContractTests
 {
+    [Theory]
+    [InlineData("/api/auth/register", "post", "201,400,429")]
+    [InlineData("/api/auth/login", "post", "200,401,429")]
+    [InlineData("/api/auth/refresh", "post", "200,401,429")]
+    [InlineData("/api/auth/revoke", "post", "204,429")]
+    [InlineData("/api/auth/reset-password", "post", "200,400,429")]
+    [InlineData("/api/auth/change-password", "post", "200,400,401")]
+    [InlineData("/api/auth/me", "get", "200,401,404")]
+    public async Task IdentityDocumentsItsActualResponseCodes(string path, string method, string codes)
+    {
+        await using var factory = new ContractFactory();
+        using var client = factory.CreateClient();
+        var document = JsonNode.Parse(await client.GetStringAsync("/swagger/v1/swagger.json"))!;
+        var responses = document["paths"]![path]![method]!["responses"]!.AsObject();
+        foreach (var code in codes.Split(',')) Assert.True(responses.ContainsKey(code), $"{path} {code}");
+        if (path is "/api/auth/register" or "/api/auth/revoke") Assert.False(responses.ContainsKey("200"));
+    }
+
     [Fact]
     public async Task NullableSlaReferenceIsDocumentedAsNullable()
     {
