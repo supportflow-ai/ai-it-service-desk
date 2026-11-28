@@ -49,7 +49,7 @@ Hệ quả: chưa task nào có thể chuyển `Verified` trên máy này cho t�
 | G2-02, G2-03, G2-05 | Implemented | `analysisId`, hash, khóa scope, kiểm trạng thái/revision, quyết định/replay lưu bền. Test hai reviewer, rollback ticket/decision/audit, lỗi INSERT audit ở DB, cancellation, mất session, timeout khóa đạt. Audit nội bộ không lộ lý do Override cho Requester |
 | G2-04 | In Progress | Đã bảo toàn outcome và validation errors sau lưu/đọc; chưa đánh giá toàn bộ checklist lifecycle riêng |
 | G2-06 | In Progress | Snapshot OpenAPI, nguồn/checksum và kiểu sinh của web đã đồng bộ; sửa bộ sinh để giữ nullable trên `$ref`. Luồng UI cũ chưa nối hợp đồng toàn analysis; panel tiếp tục tắt. AI v1 chưa có metadata model/version, không giả lập provenance |
-| G3-01 | Pending — lỗi đã xác minh | `IdentityModule.cs:74-76` bỏ qua kiểm security stamp khi không resolve được `DbContext`; `:93-100` chấp nhận token không có stamp của user không tồn tại (fail-open) |
+| G3-01 | Implemented | Bắt buộc persistence, user/stamp hiện hành; RED đúng hai đường bypass, GREEN JWT/Identity/idempotency và PostgreSQL hai host. Chờ CI/duyệt đúng SHA; bằng chứng cuối tệp. |
 | G3-02 | Pending | Chưa rà |
 | G3-03 | Pending — lỗi đã xác minh | `PasswordResetQueue.cs` dùng `Channel<string>` trong RAM, mất khi tiến trình dừng |
 | G3-04, G3-06 | Pending | Chưa rà |
@@ -104,7 +104,7 @@ OpenAPI baseline không đổi.
 
 ## Task tiếp theo
 
-G3-01 (JWT fail-closed), sau đó G3-05 (rate limit), với test trong SDK Linux đã hoạt động. G2-06/G7-02 là nhánh công việc UI riêng: adapter hiện vẫn dùng route dự kiến và quyết định từng suggestion, cần chuyển sang quyết định toàn analysis trước khi bật capability. Trước khi gắn Verified cho phần backend: CI và duyệt đúng SHA bàn giao; không tự push để lấy bằng chứng này.
+G3-01 đã triển khai và kiểm chứng local; tiếp tục G3-05 (rate limit) trong phạm vi phiên. G2-06/G7-02 là nhánh công việc UI riêng: adapter hiện vẫn dùng route dự kiến và quyết định từng suggestion, cần chuyển sang quyết định toàn analysis trước khi bật capability. Trước khi gắn Verified cho phần backend: CI và duyệt đúng SHA bàn giao; không tự push để lấy bằng chứng này.
 
 ## Bằng chứng sau G2 và review ngày 28/11/2026
 
@@ -120,3 +120,17 @@ G3-01 (JWT fail-closed), sau đó G3-05 (rate limit), với test trong SDK Linux
 - Lượt cuối trên mã bàn giao: **728/728** không cần PostgreSQL và **190/190** PostgreSQL (`final-unit`, `final-integration`), tổng **918/918**, không bỏ qua test. OpenAPI GET dùng `anyOf`, vì Requester là tập con trường của Agent nên `oneOf` sẽ loại phản hồi khớp cả hai; test hồi quy đã thấy RED rồi GREEN. Build API cuối dùng cùng mã metadata này; Worker/Migrator không phụ thuộc thay đổi Swagger.
 - Web dùng Node 22 trong container riêng: `contract:check`, typecheck, lint, **481/481 test trong 65 tệp**, build đạt. Vite còn cảnh báo chunk lớn hơn 500 kB. Kết quả gắn với working tree web gồm các thay đổi UI/test setup có sẵn của người dùng; không xác nhận một checkout sạch chỉ có commit hợp đồng. Lượt Windows Node 26 treo đã dừng, không dùng làm bằng chứng.
 - Chỉ tạo commit cục bộ cho phần backend và 5 tệp hợp đồng/công cụ/tài liệu web của nhiệm vụ; không đưa thay đổi LandingPage/style/test setup hay `.serena/` vào commit. Không push/PR, không có CI, không nghiệm thu production. Giữ task ở Implemented cho tới khi có CI và duyệt trên SHA thực tế.
+
+
+## G3-01 — JWT fail-closed (28/11/2026)
+
+- Giữ `Refactor-2`, mốc bắt đầu `afc0e965bae73111c72d9946336078e8923742b5`; web xác minh chỉ đọc ở `eef7b8cbe037fa127cb5d613654a3fd08d723fe8`. Hai tài liệu có sẵn đã được kiểm tra và lưu riêng tại `88f075d`; không đụng `.serena/` hay thay đổi UI/test setup của web.
+- SDK theo `global.json` (Linux Docker), EF CLI đối chiếu `Microsoft.EntityFrameworkCore.Design` trong API, Python 3.12 theo CI (runtime Python 3.12 local). Không cài tool global, không đổi chính sách Windows. Container phiên `sd-hardening-g3-sdk` dùng Docker context local `desktop-linux`, PostgreSQL Testcontainers dùng một lần. Bản sao nguồn loại `.env*`, `.venv`, `.git`, `.serena`, output build và cache.
+- Baseline mới: locked restore, Release build (0 warning/error), 728/728 ngoài Integration. Không dùng số 918 cũ làm bằng chứng. Artifact local: `.cache/hardening-linux/g3-restore.log`, `g3-baseline-build.log`, `g3-baseline.log` và thư mục TRX `g3-baseline`.
+- Thay đổi: `IdentityModule` dùng persistence bắt buộc, từ chối user/stamp rỗng hoặc không khớp, giữ signature/issuer/audience/lifetime; không công bố chi tiết challenge. Lỗi DI hoặc database đi qua middleware production với 500 ProblemDetails chung, không biến thành 401 hay auth thành công. Không tách framework/validator mới và không thêm grace period. Register/Login/Refresh đã cấp stamp; không có bằng chứng token production cần cơ chế chuyển đổi.
+- RED (`g3-jwt-red.log`): 17 đạt, 2 lỗi đúng nguyên nhân: thiếu persistence trả 200; user đã xóa + token thiếu stamp đi qua auth tới `/me` trả 404. Bản vá đóng cả hai. Fixture idempotency nay tạo user/stamp thật và dùng validation production, giữ assertion 201/409/503/replay/rollback; thêm từ chối thiếu/sai stamp và user đã xóa. Nhóm endpoint này chuyển từ Unit sang Integration nên số ngoài Integration giảm 8, không mất coverage.
+- GREEN (`g3-jwt-green.log`): nhóm JWT/Identity/idempotency 82/82; ArchitectureTests 57/57 (`g3-jwt-architecture.log`). Có signature/issuer/audience/expiry sai, thiếu subject/stamp, stamp sai/rỗng, user đã xóa, thiếu dịch vụ, lỗi dependency inject, EF/Npgsql kết nối không khả dụng, Register/Login/Refresh và đổi/đặt lại mật khẩu/role/revoke trên hai host dùng chung PostgreSQL. Header 401 chỉ `Bearer`; lỗi DB không có challenge 401 hay chi tiết kết nối.
+- Suite trước bổ sung hai characterization cuối: 722/722 ngoài Integration (Domain 231, Application 365, Architecture 57, offline HTTP 69), 218/218 Integration; Failed/Skipped = 0. `g3-jwt-unit.log`, `g3-jwt-integration.log` và các thư mục TRX cùng tên; các project không có Category=Integration có discovery 0 được ghi riêng, tổng bước vẫn thực chạy 218. Hai ca cuối được kiểm qua nhóm 82 test; toàn suite cuối phiên sẽ gắn với nguồn cuối G3-05.
+- Build image API local đạt (`g3-jwt-image-api.log`), không publish. Worker/Migrator và image nguồn cuối kiểm ở bước bàn giao G3-05. Không thay migration, schema, dependency, DTO hay OpenAPI baseline. Web cần biết token không hợp lệ/stamp cũ nhận 401; không cần sinh lại contract. Đã sửa mô tả cũ về logout/role cho khớp mã thu hồi stamp có sẵn, không tự đổi chính sách.
+- Review độc lập chỉ đọc (`review_g3`): không còn finding P1/P2; nhận xét ban đầu về logout được rút sau khi đọc `RevokeFamilyAsync` ở mã gốc. Hai gap nhỏ (header challenge và lỗi kết nối thật) đã bổ sung kiểm chứng. Review agent không thay phê duyệt PR của thành viên khác.
+- Giữ **Implemented**, còn CI và duyệt PR đúng SHA; không push/PR, không gọi local pass là Verified hoặc production-ready.

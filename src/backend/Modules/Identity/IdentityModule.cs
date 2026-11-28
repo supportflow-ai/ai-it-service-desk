@@ -55,6 +55,7 @@ public static class IdentityModule
             .Configure<IOptions<JwtOptions>>((options, configured) =>
             {
                 var jwt = configured.Value;
+                options.IncludeErrorDetails = false;
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuer = true,
@@ -70,11 +71,7 @@ public static class IdentityModule
                 {
                     OnTokenValidated = async context =>
                     {
-                        var dbContext = context.HttpContext.RequestServices.GetService<DbContext>();
-                        if (dbContext is null)
-                        {
-                            return;
-                        }
+                        var dbContext = context.HttpContext.RequestServices.GetRequiredService<DbContext>();
 
                         var userId = context.Principal?.FindFirstValue(ClaimTypes.NameIdentifier);
                         if (string.IsNullOrWhiteSpace(userId))
@@ -90,17 +87,8 @@ public static class IdentityModule
                             .Select(u => u.SecurityStamp)
                             .SingleOrDefaultAsync(context.HttpContext.RequestAborted);
 
-                        if (currentStamp is null)
-                        {
-                            if (!string.IsNullOrWhiteSpace(tokenStamp))
-                            {
-                                context.Fail("Tài khoản không còn tồn tại.");
-                            }
-
-                            return;
-                        }
-
-                        if (string.IsNullOrWhiteSpace(tokenStamp) || !string.Equals(currentStamp, tokenStamp, StringComparison.Ordinal))
+                        if (string.IsNullOrWhiteSpace(currentStamp) || string.IsNullOrWhiteSpace(tokenStamp) ||
+                            !string.Equals(currentStamp, tokenStamp, StringComparison.Ordinal))
                         {
                             context.Fail("Token đã bị thu hồi hoặc thông tin bảo mật đã thay đổi.");
                         }

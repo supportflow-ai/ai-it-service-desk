@@ -56,20 +56,16 @@ public sealed class TicketIdempotencyPostgresTests : IClassFixture<TicketIdempot
 
     public TicketIdempotencyPostgresTests(TicketIdempotencyPostgresFixture fixture) => _fixture = fixture;
 
-    private static string Token(Guid user) => new JwtTokenGenerator(Options.Create(new JwtOptions
-    {
-        SecretKey = TicketIdempotencyPostgresFixture.Secret, Issuer = "ServiceDesk",
-        Audience = "ServiceDeskClient", ExpiryMinutes = 60
-    }), new SystemClock()).GenerateToken(new UserInfo { UserId = user.ToString(), Email = "requester@test.invalid", Roles = ["Requester"] });
+    private Task<string> TokenAsync(Guid user) => _fixture.CreateTokenAsync(user);
 
     private HttpClient Client(bool second = false) =>
         (second ? _fixture.Second! : _fixture.First!).CreateClient();
 
-    private static async Task<HttpResponseMessage> Post(
+    private async Task<HttpResponseMessage> Post(
         HttpClient client, Guid user, string? key, CreateTicketCommand? payload = null, bool authenticated = true)
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, "/api/tickets");
-        if (authenticated) request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token(user));
+        if (authenticated) request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", await TokenAsync(user));
         if (key is not null) request.Headers.Add("Idempotency-Key", key);
         request.Content = JsonContent.Create(payload ?? Payload);
         return await client.SendAsync(request);
@@ -96,7 +92,7 @@ public sealed class TicketIdempotencyPostgresTests : IClassFixture<TicketIdempot
         ticketB.Id.Should().NotBe(ticketA.Id);
         ticketB.Title.Should().Be("Requester B private ticket");
         using var getOther = new HttpRequestMessage(HttpMethod.Get, $"/api/tickets/{ticketA.Id}");
-        getOther.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token(userB));
+        getOther.Headers.Authorization = new AuthenticationHeaderValue("Bearer", await TokenAsync(userB));
         using var forbiddenRead = await client.SendAsync(getOther);
         forbiddenRead.StatusCode.Should().Be(HttpStatusCode.NotFound);
         await AssertCounts(userA, 1, 1); await AssertCounts(userB, 1, 1);
@@ -303,7 +299,7 @@ public sealed class TicketIdempotencyPostgresTests : IClassFixture<TicketIdempot
         (await second.Content.ReadFromJsonAsync<TicketDto>())!.Id.Should().NotBe(ticket.Id);
         ticket.Status.Should().Be(1);
         using var request = new HttpRequestMessage(HttpMethod.Get, $"/api/tickets/{ticket.Id}");
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token(user));
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", await TokenAsync(user));
         using var detail = await client.SendAsync(request);
         detail.StatusCode.Should().Be(HttpStatusCode.OK);
         (await detail.Content.ReadFromJsonAsync<TicketDto>()).Should().Be(ticket);
@@ -358,6 +354,9 @@ public sealed class TicketIdempotencyPostgresTests : IClassFixture<TicketIdempot
     [InlineData("issuer")]
     [InlineData("audience")]
     [InlineData("expired")]
+    [InlineData("missing-stamp")]
+    [InlineData("wrong-stamp")]
+    [InlineData("deleted-user")]
     public async Task T09_InvalidJwtCannotReplayAnExistingKey(string invalidPart)
     {
         var user = Guid.NewGuid(); var key = Guid.NewGuid().ToString();
@@ -373,7 +372,16 @@ public sealed class TicketIdempotencyPostgresTests : IClassFixture<TicketIdempot
             ExpiryMinutes = invalidPart == "expired" ? -60 : 60
         };
         var token = new JwtTokenGenerator(Options.Create(options), new SystemClock()).GenerateToken(
-            new UserInfo { UserId = user.ToString(), Email = "requester@test.invalid", Roles = ["Requester"] });
+            new UserInfo
+            {
+                UserId = user.ToString(), Email = "requester@test.invalid", Roles = ["Requester"],
+                SecurityStamp = invalidPart == "missing-stamp" ? null : invalidPart == "wrong-stamp" ? "wrong" : user.ToString("N")
+            });
+        if (invalidPart == "deleted-user")
+        {
+            await using var context = _fixture.CreateContext();
+            await context.Users.Where(u => u.Id == user.ToString()).ExecuteDeleteAsync();
+        }
         using var secondHost = Client(second: true);
         using var request = new HttpRequestMessage(HttpMethod.Post, "/api/tickets");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);

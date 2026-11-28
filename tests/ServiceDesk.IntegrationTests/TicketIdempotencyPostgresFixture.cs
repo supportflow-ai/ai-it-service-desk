@@ -36,6 +36,25 @@ public sealed class TicketIdempotencyPostgresFixture : IAsyncLifetime
     public ApplicationDbContext CreateContext() => new(
         new DbContextOptionsBuilder<ApplicationDbContext>().UseNpgsql(ConnectionString).Options);
 
+public async Task<string> CreateTokenAsync(Guid userId, string role = "Requester", int minutes = 60)
+    {
+        await using var context = CreateContext();
+        var id = userId.ToString();
+        var stamp = userId.ToString("N");
+        await context.Database.ExecuteSqlInterpolatedAsync($"""
+            INSERT INTO public."AspNetUsers" ("Id", "SecurityStamp", "EmailConfirmed", "PhoneNumberConfirmed", "TwoFactorEnabled", "LockoutEnabled", "AccessFailedCount")
+            VALUES ({id}, {stamp}, false, false, false, false, 0) ON CONFLICT ("Id") DO NOTHING
+            """);
+        var currentStamp = await context.Users.Where(u => u.Id == id).Select(u => u.SecurityStamp).SingleAsync();
+        return new JwtTokenGenerator(Microsoft.Extensions.Options.Options.Create(new ServiceDesk.Modules.Identity.Infrastructure.Options.JwtOptions
+        {
+            SecretKey = Secret, Issuer = "ServiceDesk", Audience = "ServiceDeskClient", ExpiryMinutes = minutes
+        }), new SystemClock()).GenerateToken(new UserInfo
+        {
+            UserId = id, Email = "requester@test.invalid", Roles = [role], SecurityStamp = currentStamp
+        });
+    }
+
     public async Task InitializeAsync()
     {
         await _postgres.StartAsync();
