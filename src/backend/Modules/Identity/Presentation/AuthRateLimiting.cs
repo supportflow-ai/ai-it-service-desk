@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using System.Globalization;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Builder;
@@ -7,6 +6,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using ServiceDesk.SharedKernel.Application.Abstractions;
 
 namespace ServiceDesk.Modules.Identity.Presentation;
 
@@ -78,11 +78,11 @@ public static class AuthRateLimiting
         services.AddRateLimiter(limiter =>
         {
             limiter.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-            limiter.OnRejected = (context, cancellationToken) =>
+            limiter.OnRejected = async (context, cancellationToken) =>
             {
                 if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
                     SetRetryAfter(context.HttpContext.Response, retryAfter);
-                return ValueTask.CompletedTask;
+                await context.HttpContext.Response.WriteAsJsonAsync(new { error = RejectionMessage }, cancellationToken);
             };
             limiter.AddPolicy(IpPolicy, context => IpPartition(context, o => o.PermitLimit));
             limiter.AddPolicy(RefreshPolicy, context => IpPartition(context, o => o.RefreshPermitLimit));
@@ -132,88 +132,77 @@ public static class AuthRateLimiting
 public sealed class AuthEmailRateLimiter : IDisposable
 {
     internal const int MaxPartitions = 4096;
+    internal const int MaxEmailLength = 320;
 
     private readonly AuthRateLimitOptions options;
-    private readonly ConcurrentDictionary<string, WindowCounter> counters = new(StringComparer.Ordinal);
+    private readonly IClock clock;
+    private readonly object sync = new();
+    private readonly Dictionary<string, WindowCounter> counters = new(StringComparer.Ordinal);
 
-    public AuthEmailRateLimiter(IOptions<AuthRateLimitOptions> options)
+    public AuthEmailRateLimiter(IOptions<AuthRateLimitOptions> options, IClock clock)
     {
         ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(clock);
         this.options = options.Value;
+        this.clock = clock;
     }
 
-    /// <summary>Lấy một lượt cho email và thao tác; email rỗng không bị giới hạn ở lớp này (use case tự từ chối).</summary>
+    /// <summary>Email rỗng để use case từ chối; khóa quá dài hoặc hết chỗ nhận cùng phản hồi giới hạn.</summary>
     public bool TryAcquire(AuthEmailOperation operation, string? email, out TimeSpan retryAfter)
     {
         retryAfter = TimeSpan.Zero;
         if (!options.Enabled || string.IsNullOrWhiteSpace(email)) return true;
 
-        var now = DateTimeOffset.UtcNow;
         var window = TimeSpan.FromSeconds(options.EmailWindowSeconds);
-        var key = operation + ":" + email.Trim().ToLowerInvariant();
-
-        if (!counters.ContainsKey(key) && counters.Count >= MaxPartitions)
+        var trimmed = email.AsSpan().Trim();
+        if (trimmed.Length > MaxEmailLength)
         {
-            EvictExpiredOrExcess(now, window);
+            retryAfter = window;
+            return false;
         }
+        var key = operation + ":" + trimmed.ToString().ToLowerInvariant();
 
-        var counter = counters.GetOrAdd(key, _ => new WindowCounter(now));
-        return counter.TryAcquire(now, window, options.EmailPermitLimit, out retryAfter);
-    }
-
-    private void EvictExpiredOrExcess(DateTimeOffset now, TimeSpan window)
-    {
-        foreach (var pair in counters)
+        lock (sync)
         {
-            if (pair.Value.IsExpired(now, window))
+            var now = clock.UtcNow;
+            if (!counters.TryGetValue(key, out var counter))
             {
-                counters.TryRemove(pair.Key, out _);
-            }
-        }
-
-        if (counters.Count >= MaxPartitions)
-        {
-            counters.Clear();
-        }
-    }
-
-    public void Dispose() => counters.Clear();
-
-    private sealed class WindowCounter(DateTimeOffset initialStart)
-    {
-        private readonly object sync = new();
-        private DateTimeOffset windowStart = initialStart;
-        private int count;
-
-        public bool IsExpired(DateTimeOffset now, TimeSpan window)
-        {
-            lock (sync)
-            {
-                return now - windowStart >= window;
-            }
-        }
-
-        public bool TryAcquire(DateTimeOffset now, TimeSpan window, int permitLimit, out TimeSpan retryAfter)
-        {
-            lock (sync)
-            {
-                if (now - windowStart >= window)
+                if (counters.Count >= MaxPartitions)
                 {
-                    windowStart = now;
-                    count = 0;
+                    retryAfter = window;
+                    foreach (var pair in counters)
+                    {
+                        var remaining = pair.Value.Start + window - now;
+                        if (remaining <= TimeSpan.Zero)
+                            counters.Remove(pair.Key);
+                        else if (remaining < retryAfter)
+                            retryAfter = remaining;
+                    }
+                    if (counters.Count >= MaxPartitions) return false;
                 }
+                counter = new WindowCounter(now, 0);
+            }
+            else if (now - counter.Start >= window)
+            {
+                counter = new WindowCounter(now, 0);
+            }
 
-                if (count < permitLimit)
-                {
-                    count++;
-                    retryAfter = TimeSpan.Zero;
-                    return true;
-                }
-
-                var remaining = window - (now - windowStart);
-                retryAfter = remaining > TimeSpan.Zero ? remaining : TimeSpan.FromSeconds(1);
+            if (counter.Count >= options.EmailPermitLimit)
+            {
+                retryAfter = counter.Start + window - now;
                 return false;
             }
+
+            counters[key] = counter with { Count = counter.Count + 1 };
+            retryAfter = TimeSpan.Zero;
+            return true;
         }
     }
+
+    public void Dispose()
+    {
+        lock (sync) counters.Clear();
+    }
+
+    private readonly record struct WindowCounter(DateTimeOffset Start, int Count);
 }

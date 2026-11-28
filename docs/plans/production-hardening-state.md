@@ -53,7 +53,7 @@ Hệ quả: chưa task nào có thể chuyển `Verified` trên máy này cho t�
 | G3-02 | Pending | Chưa rà |
 | G3-03 | Pending — lỗi đã xác minh | `PasswordResetQueue.cs` dùng `Channel<string>` trong RAM, mất khi tiến trình dừng |
 | G3-04, G3-06 | Pending | Chưa rà |
-| G3-05 | Pending — lỗi đã xác minh | `AuthRateLimiting.cs:176` xóa toàn bộ bộ đếm khi đạt `MaxPartitions` (kẻ tấn công lấp đầy partition để reset giới hạn) |
+| G3-05 | Implemented | Admission/expiry/counter cùng khóa, tối đa 4096 partition email và 320 ký tự sau trim; đầy trả 429, giữ ngân sách cũ. RED/GREEN, proxy, toàn suite và image đạt local; chờ CI/duyệt đúng SHA. |
 | G4-01 … G4-09 | Pending | Chưa rà |
 | G5-01 … G5-08 | Pending | Chưa rà |
 | G6-01 … G6-06 | Pending | Chưa rà |
@@ -104,7 +104,7 @@ OpenAPI baseline không đổi.
 
 ## Task tiếp theo
 
-G3-01 đã triển khai và kiểm chứng local; tiếp tục G3-05 (rate limit) trong phạm vi phiên. G2-06/G7-02 là nhánh công việc UI riêng: adapter hiện vẫn dùng route dự kiến và quyết định từng suggestion, cần chuyển sang quyết định toàn analysis trước khi bật capability. Trước khi gắn Verified cho phần backend: CI và duyệt đúng SHA bàn giao; không tự push để lấy bằng chứng này.
+G3-01 và G3-05 đã triển khai, kiểm chứng và commit cục bộ; tiếp theo là CI/duyệt đúng SHA khi có ủy quyền push/PR. Không tự mở rộng sang đợt khác. G2-06/G7-02 là nhánh công việc UI riêng: adapter hiện vẫn dùng route dự kiến và quyết định từng suggestion, cần chuyển sang quyết định toàn analysis trước khi bật capability. Trước khi gắn Verified cho phần backend: CI và duyệt đúng SHA bàn giao; không tự push để lấy bằng chứng này.
 
 ## Bằng chứng sau G2 và review ngày 28/11/2026
 
@@ -134,3 +134,34 @@ G3-01 đã triển khai và kiểm chứng local; tiếp tục G3-05 (rate limit
 - Build image API local đạt (`g3-jwt-image-api.log`), không publish. Worker/Migrator và image nguồn cuối kiểm ở bước bàn giao G3-05. Không thay migration, schema, dependency, DTO hay OpenAPI baseline. Web cần biết token không hợp lệ/stamp cũ nhận 401; không cần sinh lại contract. Đã sửa mô tả cũ về logout/role cho khớp mã thu hồi stamp có sẵn, không tự đổi chính sách.
 - Review độc lập chỉ đọc (`review_g3`): không còn finding P1/P2; nhận xét ban đầu về logout được rút sau khi đọc `RevokeFamilyAsync` ở mã gốc. Hai gap nhỏ (header challenge và lỗi kết nối thật) đã bổ sung kiểm chứng. Review agent không thay phê duyệt PR của thành viên khác.
 - Giữ **Implemented**, còn CI và duyệt PR đúng SHA; không push/PR, không gọi local pass là Verified hoặc production-ready.
+
+
+## G3-05 và gate cuối phiên (28/11/2026)
+
+- Commit G3-01: `3ba4ac5`; G3-05 là commit riêng chứa mục này (xác định SHA đầy đủ bằng `git log` và manifest local `.cache/hardening-linux/g3-evidence.json` sau commit). Nhánh giữ `Refactor-2`. Không viết lại G1/G2 đang chờ gate và không triển khai các task khác.
+- Phạm vi: `AuthRateLimiting` và các caller Register/Login/ForgotPassword/ResetPassword/Refresh đã đối chiếu; không đổi route/DTO/cấu hình mặc định. Thay ConcurrentDictionary/counter riêng bằng Dictionary và một khóa bao phủ đọc clock, admission, expiry và increment. Counter hết hạn mới được loại; không có `Clear` do áp lực capacity và không eviction counter còn hiệu lực. `Clear` chỉ còn khi Dispose. Giữ tối đa 4096 partition email trên instance, key chứa tối đa 320 ký tự email sau trim + prefix thao tác. Dùng `IClock` sẵn có, không thêm dependency.
+- Đầy capacity: email/thao tác mới nhận 429 với Retry-After tới expiry gần nhất, ngân sách cũ tiếp tục được giữ và dùng phần còn lại. Đây là đánh đổi khả dụng, có thể chặn người mới trong cửa sổ đầy. Khóa quá dài nhận cùng 429 trước khi lưu. Cả lớp IP/email trả cùng JSON `{error}` và Retry-After; không phụ thuộc tài khoản có tồn tại. Không coi limiter RAM là ngân sách chung toàn cụm, không thêm Redis/shared state; hai instance có ngân sách độc lập và restart mất counter.
+- RED `g3-rate-red.log`: 10 Failed, 6 Passed, 0 Skipped. Đã tái hiện Clear khi đầy, 64 admissions khi chỉ còn một chỗ, bỏ qua clock expiry, khóa dài được lưu, full capacity/khóa dài qua HTTP và body 429 IP lệch email. Kiểm trusted/untrusted forwarding đã giữ đúng địa chỉ; hai ca proxy RED ở assertion nội dung lỗi, không phải thay policy proxy.
+- GREEN `g3-rate-green.log`: 16/16, ArchitectureTests 57/57; build 0 warning/error. Bao phủ đủ full capacity, giữ mọi ngân sách cũ khi xuất hiện email mới, concurrent admission, concurrent expiry/renewal/eviction (5 vòng với gate đồng bộ), expiry/retry gần nhất, chuẩn hóa email, ngân sách theo từng thao tác, khóa 100.000 ký tự, ranh giới 320, disabled/empty input, hai limiter độc lập, HTTP 429/Retry-After và proxy spoofing. Fake clock thay sleep; gate kiểm thử được giải phóng cả khi readiness không đạt để tránh task treo.
+- Review độc lập chỉ đọc (`review_g3`) cho hai nhóm thay đổi: không còn finding P1/P2. Đã bổ sung canonical contract về đầy capacity, giới hạn 320, ngân sách per-instance và policy proxy. Chưa benchmark tải thực; không suy ra throughput hay giới hạn toàn cụm từ các test này.
+
+### Bằng chứng nguồn cuối G3-01/G3-05
+
+Lệnh chạy trong SDK Linux riêng từ bản sao nguồn đã đồng bộ xong; không chép `.env*`, `.venv` hay bí mật. Các helper `g3-final-checks.sh` và `g3-image-context.py` chỉ là artifact local, không đưa vào Git.
+
+| Lệnh/kiểm tra | Passed | Failed | Skipped | Artifact local dưới `.cache/hardening-linux/` |
+| --- | --- | --- | --- | --- |
+| `dotnet restore src/backend/ServiceDesk.sln --locked-mode` | Exit 0 | 0 | 0 | `g3-final-restore.log` |
+| `dotnet build src/backend/ServiceDesk.sln -c Release --no-restore` | Exit 0, 0 warning/error | 0 | 0 | `g3-final-build.log` |
+| `dotnet test src/backend/ServiceDesk.sln -c Release --no-build --filter "Category!=Integration"` | 734 (Domain 231, Application 365, Architecture 57, offline HTTP 81) | 0 | 0 | `g3-final-unit.log`, TRX `g3-final-unit/` |
+| `dotnet test src/backend/ServiceDesk.sln -c Release --no-build --filter "Category=Integration"` | 220 PostgreSQL/storage integration, gồm Identity/JWT/idempotency | 0 | 0 | `g3-final-integration.log`, TRX `g3-final-integration/` |
+| Build image theo Dockerfile hiện hành: Api, Worker, Migrator | 3 image local | 0 | 0 | `g3-final-image-api.log`, `g3-final-image-worker.log`, `g3-final-image-migrator.log` |
+| `python scripts/validate_project_docs.py` | 102 tài liệu, 639 liên kết | 0 | 0 | `g3-final-docs.log` (Python 3.12.14 theo dòng 3.12 của CI) |
+| `python -m unittest discover -s scripts/tests -p "test_*.py"` | 28 | 0 | 0 | `g3-final-doc-tools.log` |
+
+- Tổng .NET nguồn cuối: **954 Passed, 0 Failed, 0 Skipped**. Bước Integration có ba project không chứa test thuộc category này (discovery 0); project IntegrationTests thực chạy 220 test, không lấy exit code của project rỗng làm bằng chứng.
+- OpenAPI baseline, hợp đồng AI, lockfile, schema và migration không đổi. Không cần AI contract validator riêng vì không chạm hợp đồng/fixture/mapper AI; `ApiContractTests` nằm trong suite ngoài Integration đã đạt. Không chạy lệnh EF/Migrator vào database ngoài Testcontainers; migrate và seed trong fixture dùng một lần giữ nguyên. Không khởi động backend ngoài các test host, không gửi email thật và không kết nối AI thật. Storage test cũ được chạy nguyên trạng trong suite, không thêm mã/cấu hình/test MinIO mới.
+- Ba image chỉ build, không publish/chạy Migrator. Context image chỉ lấy 351 tệp được theo dõi, gồm `src/backend` và hai tệp ghim build, không lấy cache/.env/venv. Mã đã kiểm thử và image cùng nội dung nguồn cuối; manifest local gắn SHA/file hash sau commit.
+- G3-01/G3-05 giữ **Implemented**. Chưa push, chưa PR, chưa CI trên SHA mới, chưa duyệt PR của thành viên khác; không gọi đây là Verified hoặc production-ready. Web chỉ cần biết 401 với token thiếu/stamp cũ và body 429 thống nhất; không có snapshot OpenAPI cần đồng bộ. G2-04, G2-06/G7-02 và dependency web vẫn là các đợt riêng.
+
+- Cleanup: đã đối chiếu SHA-256 hai tệp production giữa workspace và bản sao Linux đã kiểm thử, khớp hoàn toàn. Không còn container Testcontainers đang chạy. Đã kiểm nhãn sở hữu và dừng riêng `sd-hardening-g3-sdk`; giữ nguyên container/volume cũ, dịch vụ và dữ liệu của người dùng. Không sửa `.serena/`.
