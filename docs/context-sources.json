@@ -159,6 +159,9 @@
     },
     "docs/architecture/legacy-requirements-inventory.md": {
       "kind": "current"
+    },
+    "docs/plans/production-hardening-plan.md": {
+      "kind": "proposal"
     }
   },
   "groups": {
@@ -168,6 +171,7 @@
     ".github/": "current",
     "docs/reviews/": "evidence",
     "docs/sprint-1/": "evidence",
-    "artifacts/": "evidence"
+    "artifacts/": "evidence",
+    "docs/plans/": "current"
   }
 }
