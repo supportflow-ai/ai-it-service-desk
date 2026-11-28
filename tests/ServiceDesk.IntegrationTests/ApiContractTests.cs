@@ -31,6 +31,7 @@ public sealed class ApiContractTests
     }
 
     [Theory]
+    [InlineData(true, 1)]
     [InlineData(true, 0)]
     [InlineData(true, -1)]
     [InlineData(true, 604801)]
@@ -47,6 +48,17 @@ public sealed class ApiContractTests
                 else options.DownloadExpirySeconds = seconds;
             })));
         Assert.ThrowsAny<Microsoft.Extensions.Options.OptionsValidationException>(() => invalid.CreateClient());
+    }
+
+[Fact]
+    public async Task MinimumSupportedUploadTtlStartsSuccessfully()
+    {
+        await using var factory = new ContractFactory();
+        await using var configured = factory.WithWebHostBuilder(builder => builder.ConfigureServices(services =>
+            services.PostConfigure<ServiceDesk.Platform.Options.R2Options>(options => options.UploadExpirySeconds = 2)));
+        using var client = configured.CreateClient();
+        using var response = await client.GetAsync("/swagger/v1/swagger.json");
+        Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
     }
 
     [Fact]

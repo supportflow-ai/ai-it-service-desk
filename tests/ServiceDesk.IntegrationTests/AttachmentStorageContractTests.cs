@@ -1,3 +1,5 @@
+using System.Globalization;
+using Microsoft.AspNetCore.WebUtilities;
 using System.Text;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
@@ -61,6 +63,20 @@ public sealed class AttachmentStorageContractTests
         Assert.True(upload.RequiredHeaders.ContainsKey("Content-Length"));
         Assert.Equal("1024", upload.RequiredHeaders["Content-Length"]);
         Assert.Contains("content-length", upload.Url, StringComparison.OrdinalIgnoreCase);
+    }
+
+[Fact]
+    public async Task MinimumUploadExpiryIsPositiveAndDoesNotExtendTheGrant()
+    {
+        var options = new R2Options { Endpoint = "https://example.r2.cloudflarestorage.com", AccessKeyId = "synthetic-key", SecretAccessKey = "synthetic-secret-only-for-tests", Bucket = "private-test", UploadExpirySeconds = 2 };
+        using var adapter = new R2ObjectStorageService(Options.Create(options), NullLogger<R2ObjectStorageService>.Instance);
+        var deadline = DateTime.UtcNow.AddSeconds(2);
+        var signed = await adapter.CreateUploadAsync(adapter.DefaultBucket, "minimum/file", "text/plain", 5, deadline);
+        var query = QueryHelpers.ParseQuery(new Uri(signed.Url).Query);
+        var seconds = int.Parse(query["X-Amz-Expires"].ToString(), CultureInfo.InvariantCulture);
+        var at = DateTime.ParseExact(query["X-Amz-Date"].ToString(), "yyyyMMddTHHmmssZ", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal);
+        Assert.InRange(seconds, 1, 2);
+        Assert.True(at.AddSeconds(seconds) <= deadline);
     }
 
     [Fact]

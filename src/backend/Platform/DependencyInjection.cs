@@ -63,7 +63,7 @@ public static class DependencyInjection
     public static IServiceCollection AddStorage(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddOptions<R2Options>().Bind(configuration.GetSection(R2Options.SectionName))
-            .Validate(o => o.UploadExpirySeconds is >= 1 and <= 604800, "R2:UploadExpirySeconds must be between 1 and 604800.")
+            .Validate(o => o.UploadExpirySeconds is >= 2 and <= 604800, "R2:UploadExpirySeconds must be between 2 and 604800.")
             .Validate(o => o.DownloadExpirySeconds is >= 1 and <= 604800, "R2:DownloadExpirySeconds must be between 1 and 604800.")
             .ValidateOnStart();
         services.AddSingleton<IObjectStorageService, R2ObjectStorageService>();

@@ -49,7 +49,7 @@ Giữ: `DefaultBucket`, `CreateUploadAsync`, `StatAsync`, `CopyAsync`, `DeleteAs
 
 ### 3.3 Cấu hình `R2Options`
 
-`Endpoint`, `AccessKeyId`, `SecretAccessKey`, `Bucket`, `UploadExpirySeconds` mặc định 900, `DownloadExpirySeconds` mặc định 300. Runtime chặn TTL ngoài 1–604800 giây (giới hạn kỹ thuật S3, không thay chính sách mặc định đã chốt). Thiếu cấu hình storage/scanner thì luồng tệp fail-closed. Gate R2 trước cutover phải xác nhận endpoint HTTPS S3 của đúng tài khoản, host/path không bất thường, bucket riêng tư và token giới hạn bucket; không ghi giá trị credential vào log. Adapter cho phép endpoint HTTP được cấu hình rõ ràng để kiểm thử S3 dùng một lần; kết quả đó không chứng nhận R2 production.
+`Endpoint`, `AccessKeyId`, `SecretAccessKey`, `Bucket`, `UploadExpirySeconds` mặc định 900, `DownloadExpirySeconds` mặc định 300. Runtime cho upload 2–604800 giây, download 1–604800 giây; tối thiểu upload 2 giây tránh signer làm tròn thành 0 khi hạ deadline xuống giây. Đây là giới hạn kỹ thuật, không thay chính sách mặc định đã chốt. Thiếu cấu hình storage/scanner thì luồng tệp fail-closed. Gate R2 trước cutover phải xác nhận endpoint HTTPS S3 của đúng tài khoản, host/path không bất thường, bucket riêng tư và token giới hạn bucket; không ghi giá trị credential vào log. Adapter cho phép endpoint HTTP được cấu hình rõ ràng để kiểm thử S3 dùng một lần; kết quả đó không chứng nhận R2 production.
 
 ### 3.4 Chưa cấu hình
 
