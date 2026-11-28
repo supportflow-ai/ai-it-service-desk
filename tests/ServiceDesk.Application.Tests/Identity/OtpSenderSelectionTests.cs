@@ -71,16 +71,4 @@ public sealed class OtpSenderSelectionTests
         Assert.False(message.IsBodyHtml);
     }
 
-    [Fact]
-    public void FullResetQueueReportsTheDroppedRequest()
-    {
-        var queue = new PasswordResetQueue(NullLogger<PasswordResetQueue>.Instance, capacity: 2);
-
-        Assert.True(queue.TryEnqueue("a@test.invalid"));
-        Assert.True(queue.TryEnqueue("b@test.invalid"));
-        Assert.False(queue.TryEnqueue("c@test.invalid"));
-        Assert.True(queue.Reader.TryRead(out var first));
-        Assert.Equal("a@test.invalid", first);
-        Assert.True(queue.TryEnqueue("c@test.invalid"));
-    }
 }

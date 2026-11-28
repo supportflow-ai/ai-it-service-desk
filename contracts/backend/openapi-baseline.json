@@ -376,8 +376,14 @@
           "200": {
             "description": "OK"
           },
+          "400": {
+            "description": "Bad Request"
+          },
           "429": {
             "description": "Too Many Requests"
+          },
+          "503": {
+            "description": "Service Unavailable"
           }
         }
       }

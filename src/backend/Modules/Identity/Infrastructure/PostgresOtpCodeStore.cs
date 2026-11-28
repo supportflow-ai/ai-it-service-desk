@@ -10,6 +10,13 @@ internal sealed class PostgresOtpCodeStore(DbContext context) : IOtpCodeStore
     {
         ArgumentNullException.ThrowIfNull(otp);
         await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+        var issued = await TryIssueInTransactionAsync(otp, maxIssued, since, cancellationToken);
+        if (issued) await transaction.CommitAsync(cancellationToken);
+        return issued;
+    }
+
+    internal async Task<bool> TryIssueInTransactionAsync(OtpCode otp, int maxIssued, DateTime since, CancellationToken cancellationToken)
+    {
         // Khóa tư vấn theo đích + mục đích: các yêu cầu cùng email chạy lần lượt qua đếm → vô hiệu → thêm.
         var scope = "otp:" + otp.Purpose + ":" + otp.Target;
         await context.Database.ExecuteSqlInterpolatedAsync(
@@ -28,7 +35,6 @@ internal sealed class PostgresOtpCodeStore(DbContext context) : IOtpCodeStore
             .ExecuteUpdateAsync(setters => setters.SetProperty(o => o.IsUsed, true), cancellationToken);
         context.Set<OtpCode>().Add(otp);
         await context.SaveChangesAsync(cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
         return true;
     }
 }

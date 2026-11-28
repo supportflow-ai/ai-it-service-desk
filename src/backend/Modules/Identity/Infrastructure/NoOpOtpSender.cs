@@ -13,6 +13,6 @@ internal sealed class NoOpOtpSender(ILogger<NoOpOtpSender> logger) : IOtpSender
     {
         cancellationToken.ThrowIfCancellationRequested();
         logger.LogWarning("Chưa cấu hình kênh gửi OTP; mã đặt lại mật khẩu không được gửi.");
-        return Task.CompletedTask;
+        throw new InvalidOperationException("Chưa cấu hình kênh gửi OTP.");
     }
 }

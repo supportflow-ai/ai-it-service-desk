@@ -51,7 +51,7 @@ API chạy tại `http://localhost:5000`; mở `http://localhost:5000/swagger` �
 
 Database mới cần được người phụ trách chạy `migrate` và `seed-roles` bằng công cụ Migrator sau khi xác minh đích. API/Worker không tự thực hiện các bước này. Database dùng chung đã khởi tạo thì thành viên chỉ cần kết nối, không chạy migration lại theo nhánh cá nhân.
 
-Đăng ký, đăng nhập và thao tác ticket không cần MinIO; chỉ luồng tệp đính kèm cần MinIO. Chỉ điền cấu hình MinIO khi có dịch vụ thật; tên `minio:9000` chỉ dùng được trong mạng Docker có dịch vụ tên đó. Quên mật khẩu gửi mã qua SMTP khi có `Email__Smtp__*`; chưa cấu hình thì chỉ ghi cảnh báo, không gửi (xem [.env.example](.env.example)). AI mặc định NoOp, không cần khóa hay dịch vụ AI. Hàng đợi gửi mã nằm trong tiến trình API; nếu cần chạy host Worker, dùng `python scripts/run_backend.py --no-build worker` ở terminal riêng.
+Đăng ký, đăng nhập và thao tác ticket không cần MinIO; chỉ luồng tệp đính kèm cần MinIO. Chỉ điền cấu hình MinIO khi có dịch vụ thật; tên `minio:9000` chỉ dùng được trong mạng Docker có dịch vụ tên đó. Quên mật khẩu ghi yêu cầu vào PostgreSQL; worker nhúng trong API gửi qua `Email__Smtp__*`. Chưa cấu hình SMTP thì job thất bại, không gửi (xem [.env.example](.env.example)). API bắt buộc khóa OTP riêng; các replica dùng cùng khóa và migration `AddDurablePasswordResetJobs` trước khi khởi động. Phản hồi 200 chỉ xác nhận tiếp nhận, không xác nhận thư đã gửi; queue đầy trả 503. AI mặc định NoOp, không cần khóa hay dịch vụ AI. Nếu cần chạy host Worker cho các tác vụ khác, dùng `python scripts/run_backend.py --no-build worker` ở terminal riêng.
 
 ## JWT là gì và lấy ở đâu?
 
@@ -144,7 +144,7 @@ Frontend và AI Service kiểm thử và build ở kho riêng. Infra dùng SHA B
 
 ## Database và triển khai
 
-API bắt buộc `Otp__Key`: khóa OTP riêng gồm 32 byte ngẫu nhiên, mã hóa Base64, dùng chung giữa các replica và giữ ổn định qua restart. Không dùng lại khóa JWT. Có thể tạo riêng bằng `python -c "import base64,secrets; print(base64.b64encode(secrets.token_bytes(32)).decode())"` trong terminal cá nhân; không gửi khóa vào chat hoặc đưa vào Git. Đổi khóa OTP làm các mã cũ mất hiệu lực; người dùng yêu cầu mã mới.
+API bắt buộc `Otp__Key`: khóa OTP riêng gồm 32 byte ngẫu nhiên, mã hóa Base64, dùng chung giữa các replica và giữ ổn định qua restart. Không dùng lại khóa JWT. Có thể tạo riêng bằng `python -c "import base64,secrets; print(base64.b64encode(secrets.token_bytes(32)).decode())"` trong terminal cá nhân; không gửi khóa vào chat hoặc đưa vào Git. Đổi khóa OTP làm các mã/payload cũ mất hiệu lực; người dùng yêu cầu mã mới và vẫn chịu hạn mức phát. Worker giữ nguyên mã khi retry; crash sau khi SMTP nhận thư có thể gây thư trùng. Xem [hợp đồng Identity](docs/architecture/current-backend-contract.md#identity-sau-pr-47-48-và-nhánh-refactor).
 
 Production bắt buộc khóa JWT riêng ít nhất 32 byte UTF-8; khóa mẫu/thiếu bị từ chối. Giữ khóa mạnh, issuer và audience đang dùng để duy trì token hợp lệ. Tài khoản demo chỉ được tạo bằng lệnh riêng `seed-demo` trong Development/Test khi được bật rõ ràng, không được seed lúc API/Worker khởi động.
 

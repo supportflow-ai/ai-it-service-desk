@@ -35,6 +35,7 @@ internal sealed class SmtpOtpSender(IOptions<SmtpEmailOptions> options, ILogger<
         {
             logger.LogError("Gửi mã OTP đặt lại mật khẩu qua SMTP thất bại ({ErrorType}, {SmtpStatus}).",
                 ex.GetType().Name, (ex as SmtpException)?.StatusCode);
+            throw;
         }
     }
 }

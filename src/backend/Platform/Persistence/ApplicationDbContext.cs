@@ -39,6 +39,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Department> Departments { get; set; }
     public DbSet<RefreshToken> RefreshTokens { get; set; }
     public DbSet<OtpCode> OtpCodes { get; set; }
+    public DbSet<PasswordResetJob> PasswordResetJobs { get; set; }
 
     public DbSet<AIAnalysis> AiAnalyses { get; set; }
 

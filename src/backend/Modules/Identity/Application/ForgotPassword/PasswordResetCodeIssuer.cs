@@ -5,34 +5,41 @@ using ServiceDesk.Modules.Identity.Domain;
 
 namespace ServiceDesk.Modules.Identity.Application.ForgotPassword;
 
-/// <summary>
-/// Phát mã OTP đặt lại mật khẩu cho một email lấy từ hàng đợi:
-/// - Chỉ phát khi email tồn tại và chưa có <see cref="OtpCode.MaxIssuedPerHour"/> mã trong một giờ.
-/// - Mã mới vô hiệu các mã cũ; chỉ giá trị băm được lưu, mã gốc chỉ đi qua cổng gửi.
-/// </summary>
+/// <summary>Phát mã và outbox nguyên tử; retry gửi lại cùng mã đã mã hóa, không phát mã mới.</summary>
 internal sealed class PasswordResetCodeIssuer(
     IUserAccountGateway accounts,
-    IOtpCodeStore otpStore,
+    IPasswordResetJobStore jobs,
     IOtpSender sender,
     IClock clock,
     IOtpCodeProtector protector)
 {
-    public async Task IssueAsync(string normalizedEmail, CancellationToken cancellationToken = default)
+    public async Task ProcessAsync(PasswordResetJob claim, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(normalizedEmail);
-        if (!await accounts.EmailExistsAsync(normalizedEmail, cancellationToken))
+        if (claim.ProtectedCode is null)
         {
-            return;
+            if (!await accounts.EmailExistsAsync(claim.Email, cancellationToken))
+            {
+                await jobs.CompleteAsync(claim, clock.UtcNow.UtcDateTime, "UnknownAccount", cancellationToken);
+                return;
+            }
+            var now = clock.UtcNow.UtcDateTime;
+            var raw = RandomNumberGenerator.GetInt32(100000, 1000000).ToString(System.Globalization.CultureInfo.InvariantCulture);
+            var code = OtpCode.Issue(claim.Email, OtpCode.ResetPasswordPurpose, protector.Hash(claim.Email, OtpCode.ResetPasswordPurpose, raw), now);
+            var prepared = await jobs.PrepareAsync(claim, code, protector.Protect(claim.Email, code.Id, raw), now, cancellationToken);
+            if (prepared is null)
+            {
+                await jobs.CompleteAsync(claim, clock.UtcNow.UtcDateTime, "IssuanceLimitOrLeaseLost", cancellationToken);
+                return;
+            }
+            claim = prepared;
         }
-
-        var now = clock.UtcNow.UtcDateTime;
-        var rawOtp = RandomNumberGenerator.GetInt32(100000, 1000000).ToString(System.Globalization.CultureInfo.InvariantCulture);
-        var otp = OtpCode.Issue(normalizedEmail, OtpCode.ResetPasswordPurpose, protector.Hash(normalizedEmail, OtpCode.ResetPasswordPurpose, rawOtp), now);
-        if (!await otpStore.TryIssueAsync(otp, OtpCode.MaxIssuedPerHour, now.AddHours(-1), cancellationToken))
-        {
-            return;
-        }
-
-        await sender.SendPasswordResetCodeAsync(normalizedEmail, rawOtp, otp.ExpiresAt, cancellationToken);
+        if (!await jobs.RenewForSendAsync(claim, clock.UtcNow.UtcDateTime, cancellationToken)) return;
+        var rawCode = protector.Unprotect(claim.Email, claim.OtpCodeId!.Value, claim.ProtectedCode!);
+        var remaining = claim.ExpiresAt - clock.UtcNow.UtcDateTime;
+        if (remaining <= TimeSpan.Zero) return;
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeout.CancelAfter(remaining < TimeSpan.FromSeconds(20) ? remaining : TimeSpan.FromSeconds(20));
+        await sender.SendPasswordResetCodeAsync(claim.Email, rawCode, claim.ExpiresAt, timeout.Token);
+        await jobs.CompleteAsync(claim, clock.UtcNow.UtcDateTime, cancellationToken: cancellationToken);
     }
 }

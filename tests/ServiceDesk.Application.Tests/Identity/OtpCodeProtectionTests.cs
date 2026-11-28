@@ -50,4 +50,20 @@ public sealed class OtpCodeProtectionTests
         Assert.Contains("Otp:Key", error.Message);
         if (key.Length > 0) Assert.DoesNotContain(key, error.Message);
     }
+    [Fact]
+    public void DeliveryCiphertextSurvivesProtectorRecreationAndRejectsTamperingOrWrongContext()
+    {
+        var protector = Protector();
+        var id = Guid.NewGuid();
+        var encrypted = protector.Protect("a@test.invalid", id, "739251");
+        Assert.DoesNotContain("739251", encrypted);
+        Assert.NotEqual(encrypted, protector.Protect("a@test.invalid", id, "739251"));
+        Assert.Equal("739251", Protector().Unprotect("a@test.invalid", id, encrypted));
+        Assert.ThrowsAny<System.Security.Cryptography.CryptographicException>(() => protector.Unprotect("b@test.invalid", id, encrypted));
+        Assert.ThrowsAny<System.Security.Cryptography.CryptographicException>(() => protector.Unprotect("a@test.invalid", Guid.NewGuid(), encrypted));
+        Assert.ThrowsAny<System.Security.Cryptography.CryptographicException>(() => Protector(2).Unprotect("a@test.invalid", id, encrypted));
+        var altered = Convert.FromBase64String(encrypted[3..]);
+        altered[^1] ^= 1;
+        Assert.ThrowsAny<System.Security.Cryptography.CryptographicException>(() => protector.Unprotect("a@test.invalid", id, "v1:" + Convert.ToBase64String(altered)));
+    }
 }

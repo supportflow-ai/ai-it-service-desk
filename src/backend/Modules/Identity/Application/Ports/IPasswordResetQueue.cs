@@ -6,6 +6,6 @@ namespace ServiceDesk.Modules.Identity.Application.Ports;
 /// </summary>
 public interface IPasswordResetQueue
 {
-    /// <summary>Đưa email đã chuẩn hóa vào hàng đợi; false khi hàng đợi đầy (yêu cầu bị bỏ, không báo cho client).</summary>
-    bool TryEnqueue(string normalizedEmail);
+    /// <summary>Lưu yêu cầu bền vững trước khi trả true; false khi hàng đợi đầy.</summary>
+    Task<bool> EnqueueAsync(string normalizedEmail, CancellationToken cancellationToken = default);
 }

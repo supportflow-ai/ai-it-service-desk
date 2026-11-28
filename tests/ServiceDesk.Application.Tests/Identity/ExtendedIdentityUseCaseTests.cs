@@ -22,7 +22,7 @@ namespace ServiceDesk.Application.Tests.Identity;
 public sealed class ExtendedIdentityUseCaseTests
 {
     private readonly Mock<IRefreshTokenStore> _refreshTokens = new();
-    private readonly Mock<IOtpCodeStore> _otpStore = new();
+    private readonly Mock<IPasswordResetJobStore> _jobs = new();
     private readonly Mock<IDepartmentQueries> _departmentQueries = new();
     private readonly Mock<IUserAccountGateway> _accounts = new();
     private readonly Mock<IAccessTokenIssuer> _tokens = new();
@@ -39,6 +39,7 @@ public sealed class ExtendedIdentityUseCaseTests
     public ExtendedIdentityUseCaseTests()
     {
         _clock.SetupGet(c => c.UtcNow).Returns(_now);
+        _resetQueue.Setup(q => q.EnqueueAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
     }
 
     private RefreshToken StoredToken(string userId, DateTime? revokedAt = null, int expiresInDays = 1)
@@ -189,7 +190,7 @@ public sealed class ExtendedIdentityUseCaseTests
 
     private ForgotPasswordUseCase ForgotPassword() => new(_resetQueue.Object);
 
-    private PasswordResetCodeIssuer Issuer() => new(_accounts.Object, _otpStore.Object, _otpSender.Object, _clock.Object, _protector);
+    private PasswordResetCodeIssuer Issuer() => new(_accounts.Object, _jobs.Object, _otpSender.Object, _clock.Object, _protector);
 
     [Theory]
     [InlineData(" User@Test.com ")]
@@ -199,7 +200,7 @@ public sealed class ExtendedIdentityUseCaseTests
         var result = await ForgotPassword().ExecuteAsync(new ForgotPasswordRequest(email));
 
         Assert.True(result.Succeeded);
-        _resetQueue.Verify(q => q.TryEnqueue(email.Trim().ToLowerInvariant()), Times.Once);
+        _resetQueue.Verify(q => q.EnqueueAsync(email.Trim().ToLowerInvariant(), It.IsAny<CancellationToken>()), Times.Once);
         _accounts.VerifyNoOtherCalls();
     }
 
@@ -209,37 +210,35 @@ public sealed class ExtendedIdentityUseCaseTests
         var result = await ForgotPassword().ExecuteAsync(new ForgotPasswordRequest(" "));
 
         Assert.False(result.Succeeded);
-        _resetQueue.Verify(q => q.TryEnqueue(It.IsAny<string>()), Times.Never);
+        _resetQueue.Verify(q => q.EnqueueAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
     public async Task ResetCodeIssuer_ForKnownEmail_IssuesHashedCodeAndSendsIt()
     {
         _accounts.Setup(a => a.EmailExistsAsync("user@test.com", It.IsAny<CancellationToken>())).ReturnsAsync(true);
-        _otpStore.Setup(s => s.TryIssueAsync(It.IsAny<OtpCode>(), OtpCode.MaxIssuedPerHour, _now.UtcDateTime.AddHours(-1), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(true);
+        _jobs.Setup(s => s.PrepareAsync(It.IsAny<PasswordResetJob>(), It.IsAny<OtpCode>(), It.IsAny<string>(), _now.UtcDateTime, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((PasswordResetJob job, OtpCode otp, string cipher, DateTime now, CancellationToken token) => { job.Prepare(otp, cipher); return job; });
+        _jobs.Setup(s => s.RenewForSendAsync(It.IsAny<PasswordResetJob>(), _now.UtcDateTime, It.IsAny<CancellationToken>())).ReturnsAsync(true);
         string? sentCode = null;
         _otpSender.Setup(s => s.SendPasswordResetCodeAsync("user@test.com", It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
-            .Callback<string, string, DateTime, CancellationToken>((_, code, _, _) => sentCode = code)
-            .Returns(Task.CompletedTask);
+            .Callback<string, string, DateTime, CancellationToken>((_, code, _, _) => sentCode = code).Returns(Task.CompletedTask);
 
-        await Issuer().IssueAsync("user@test.com");
+        await Issuer().ProcessAsync(PasswordResetJob.Request("user@test.com", _now.UtcDateTime));
 
         Assert.NotNull(sentCode);
         Assert.Matches("^[0-9]{6}$", sentCode);
-        _otpStore.Verify(s => s.TryIssueAsync(It.Is<OtpCode>(o => o.Target == "user@test.com" && o.Purpose == OtpCode.ResetPasswordPurpose &&
+        _jobs.Verify(s => s.PrepareAsync(It.IsAny<PasswordResetJob>(), It.Is<OtpCode>(o => o.Target == "user@test.com" && o.Purpose == OtpCode.ResetPasswordPurpose &&
             o.CodeHash.StartsWith("v1:") && o.CodeHash != sentCode && o.ExpiresAt == _now.UtcDateTime.AddMinutes(15) && o.FailedAttempts == 0),
-            OtpCode.MaxIssuedPerHour, _now.UtcDateTime.AddHours(-1), It.IsAny<CancellationToken>()), Times.Once);
+            It.Is<string>(c => c.StartsWith("v1:") && c != sentCode), _now.UtcDateTime, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
     public async Task ResetCodeIssuer_ForUnknownEmail_IssuesNothing()
     {
         _accounts.Setup(a => a.EmailExistsAsync("nobody@test.com", It.IsAny<CancellationToken>())).ReturnsAsync(false);
-
-        await Issuer().IssueAsync("nobody@test.com");
-
-        _otpStore.Verify(s => s.TryIssueAsync(It.IsAny<OtpCode>(), It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Never);
+        await Issuer().ProcessAsync(PasswordResetJob.Request("nobody@test.com", _now.UtcDateTime));
+        _jobs.Verify(s => s.PrepareAsync(It.IsAny<PasswordResetJob>(), It.IsAny<OtpCode>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Never);
         _otpSender.Verify(s => s.SendPasswordResetCodeAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -247,11 +246,9 @@ public sealed class ExtendedIdentityUseCaseTests
     public async Task ResetCodeIssuer_OverHourlyLimit_SendsNothing()
     {
         _accounts.Setup(a => a.EmailExistsAsync("user@test.com", It.IsAny<CancellationToken>())).ReturnsAsync(true);
-        _otpStore.Setup(s => s.TryIssueAsync(It.IsAny<OtpCode>(), It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(false);
-
-        await Issuer().IssueAsync("user@test.com");
-
+        _jobs.Setup(s => s.PrepareAsync(It.IsAny<PasswordResetJob>(), It.IsAny<OtpCode>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((PasswordResetJob?)null);
+        await Issuer().ProcessAsync(PasswordResetJob.Request("user@test.com", _now.UtcDateTime));
         _otpSender.Verify(s => s.SendPasswordResetCodeAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 

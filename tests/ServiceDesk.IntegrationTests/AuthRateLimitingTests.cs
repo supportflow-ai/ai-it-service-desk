@@ -164,6 +164,9 @@ public sealed class AuthRateLimitingTests
             builder.ConfigureTestServices(services =>
             {
                 services.AddTestOtpKey();
+                foreach (var descriptor in services.Where(d => d.ServiceType == typeof(IHostedService) &&
+                             d.ImplementationType?.Name == "PasswordResetQueueProcessor").ToArray())
+                    services.Remove(descriptor);
                 services.AddDataProtection().UseEphemeralDataProtectionProvider();
                 foreach (var service in services.Where(d => d.ServiceType == typeof(IHostedService) &&
                              d.ImplementationType?.Name == "IdentityDataSeeder").ToArray())

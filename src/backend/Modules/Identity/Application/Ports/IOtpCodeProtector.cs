@@ -4,4 +4,6 @@ namespace ServiceDesk.Modules.Identity.Application.Ports;
 public interface IOtpCodeProtector
 {
     string Hash(string normalizedEmail, string purpose, string code);
+    string Protect(string normalizedEmail, Guid otpId, string code);
+    string Unprotect(string normalizedEmail, Guid otpId, string protectedCode);
 }

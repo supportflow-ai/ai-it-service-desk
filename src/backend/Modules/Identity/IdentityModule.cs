@@ -130,8 +130,9 @@ public static class IdentityModule
             .Validate(o => o.HasValidKey(), "Otp:Key cần khóa riêng 32 byte được mã hóa Base64.").ValidateOnStart();
         services.AddSingleton<IOtpCodeProtector, OtpCodeProtector>();
         // Quên mật khẩu: endpoint chỉ xếp hàng, phát và gửi mã chạy nền để phản hồi không lộ email nào tồn tại.
-        services.AddSingleton<PasswordResetQueue>();
-        services.AddSingleton<IPasswordResetQueue>(sp => sp.GetRequiredService<PasswordResetQueue>());
+        services.AddScoped<PostgresPasswordResetJobStore>();
+        services.AddScoped<IPasswordResetQueue>(sp => sp.GetRequiredService<PostgresPasswordResetJobStore>());
+        services.AddScoped<IPasswordResetJobStore>(sp => sp.GetRequiredService<PostgresPasswordResetJobStore>());
         services.AddHostedService<PasswordResetQueueProcessor>();
         var smtpSection = configuration.GetSection(SmtpEmailOptions.SectionName);
         services.AddOptions<SmtpEmailOptions>().Bind(smtpSection).ValidateOnStart();
@@ -184,7 +185,8 @@ public static class IdentityModule
         services.AddScoped<IUserAccountGateway, IdentityAccountGateway>();
         services.AddScoped<IPasswordResetGateway, PasswordResetGateway>();
         services.AddScoped<IRefreshTokenStore, PostgresRefreshTokenStore>();
-        services.AddScoped<IOtpCodeStore, PostgresOtpCodeStore>();
+        services.AddScoped<PostgresOtpCodeStore>();
+        services.AddScoped<IOtpCodeStore>(sp => sp.GetRequiredService<PostgresOtpCodeStore>());
         services.AddScoped<IDepartmentQueries, PostgresDepartmentQueries>();
         services.AddScoped<IDepartmentStore, PostgresDepartmentStore>();
         return services;

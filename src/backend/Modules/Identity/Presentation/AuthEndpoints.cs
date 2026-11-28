@@ -151,14 +151,18 @@ public static class AuthEndpoints
             IForgotPassword forgotPassword,
             CancellationToken ct) =>
         {
-            await forgotPassword.ExecuteAsync(request, ct);
-            return Results.Ok(new { message = "Nếu email tồn tại trong hệ thống, mã OTP đã được gửi." });
+            var result = await forgotPassword.ExecuteAsync(request, ct);
+            if (!result.Succeeded) return Results.BadRequest(new { errors = result.Errors });
+            return Results.Ok(new { message = "Nếu email tồn tại trong hệ thống, yêu cầu đặt lại mật khẩu đã được tiếp nhận." });
         })
+        .AddEndpointFilter<ApiErrorFilter>()
         .WithName("ForgotPassword")
         .RequireRateLimiting(AuthRateLimiting.IpPolicy)
         .RequireEmailRateLimit<ForgotPasswordRequest>(AuthEmailOperation.ForgotPassword, r => r.Email)
         .Produces(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest)
         .Produces(StatusCodes.Status429TooManyRequests)
+        .Produces(StatusCodes.Status503ServiceUnavailable)
         .AllowAnonymous();
 
         // POST /api/auth/reset-password: Đặt lại mật khẩu bằng mã OTP

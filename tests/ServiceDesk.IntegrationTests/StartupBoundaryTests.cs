@@ -1,3 +1,4 @@
+using System.Net.Http.Json;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
@@ -47,6 +48,25 @@ public sealed class StartupBoundaryTests
     {
         using var factory = new Factory("valid_production_signing_key_0123456789abcdef", key);
         Assert.ThrowsAny<OptionsValidationException>(() => factory.CreateClient());
+    }
+
+[Fact]
+    public async Task ForgotPasswordCannotAcknowledgeARequestThatWasNotPersisted()
+    {
+        await using var factory = new Factory("valid_production_signing_key_0123456789abcdef");
+        using var client = factory.CreateClient();
+        using var response = await client.PostAsJsonAsync("/api/auth/forgot-password", new { email = "durable@test.invalid" });
+        Assert.Equal(System.Net.HttpStatusCode.InternalServerError, response.StatusCode);
+        Assert.DoesNotContain("Npgsql", await response.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task ForgotPasswordCannotAcknowledgeAnEmptyEmail()
+    {
+        await using var factory = new Factory("valid_production_signing_key_0123456789abcdef");
+        using var client = factory.CreateClient();
+        using var response = await client.PostAsJsonAsync("/api/auth/forgot-password", new { email = " " });
+        Assert.Equal(System.Net.HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     private sealed class Factory(string secret, string? otpKey = null) : WebApplicationFactory<ServiceDesk.Api.Program>
