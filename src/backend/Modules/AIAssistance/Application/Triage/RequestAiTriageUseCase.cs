@@ -19,10 +19,11 @@ internal sealed class RequestAiTriageUseCase(
 {
     public async Task<AgentTriageView> ExecuteAsync(Guid ticketId, CancellationToken cancellationToken = default)
     {
-        var snapshot = await ticketBridge.GetSnapshotAsync(ticketId, cancellationToken);
-        if (snapshot is null)
+        var snapshot = await ticketBridge.GetSnapshotAsync(ticketId, cancellationToken)
+            ?? throw new KeyNotFoundException($"Không tìm thấy vé hỗ trợ có mã {ticketId}.");
+        if (!snapshot.CanTriage)
         {
-            throw new KeyNotFoundException($"Không tìm thấy vé hỗ trợ có mã {ticketId}.");
+            throw new UnauthorizedAccessException("Bạn không có quyền phân tích AI cho vé hỗ trợ này.");
         }
 
         var inputHash = InputHashComputer.Compute(snapshot.Title, snapshot.Description);

@@ -16,7 +16,7 @@ Trạng thái: mô tả hiện hành tại `dev@b3cc19a` sau PR #82 và các tí
 | Đội nhóm | Tạo đội; cập nhật đội | `POST /api/support-teams`, `PUT /api/support-teams/{id}` | Admin hoặc Lead (`RequireLead`) | Quản lý đội ngũ kỹ thuật theo ADR-016 |
 | Danh mục | Danh sách danh mục dịch vụ chuẩn ITIL | `GET /api/categories` | Đã đăng nhập | Danh mục chuẩn ITIL cho phiếu |
 | Báo cáo | Báo cáo SLA; phân bố phiếu | `GET /api/reports/sla-performance`, `GET /api/reports/ticket-distribution` | Admin hoặc Lead (`RequireLead`) | Báo cáo thống kê hiệu suất tuân thủ SLA và phân bố phiếu |
-| Trợ lý AI | Phân tích vé; lấy kết quả triage; ra quyết định | `POST /api/tickets/{id}/ai-analyze`, `GET /api/tickets/{id}/triage`, `POST /api/tickets/{id}/triage/decision` | Agent hoặc Admin (`RequireAgent`) | Triage AI HITL cho phép Accept, Override kèm lý do, Reject theo DEC-09 |
+| Trợ lý AI | Phân tích vé; lấy kết quả triage; ra quyết định | `POST /api/tickets/{id}/ai-analyze`, `GET /api/tickets/{id}/triage`, `POST /api/tickets/{id}/triage/decision` | Hai POST: Agent hoặc Admin (`RequireAgent`) có quyền xử lý phiếu. GET: đã đăng nhập, theo phạm vi đọc phiếu | Triage AI HITL cho phép Accept, Override kèm lý do, Reject. [Quy tắc triage AI](#triage-ai) |
 | Phiếu | Tạo; danh sách cá nhân; hàng đợi; chi tiết; cập nhật | `POST /api/tickets`, `GET /api/tickets/me`, `GET /api/tickets/queue`, `GET /api/tickets/{id}`, `POST /api/tickets/{id}/update` | Requester (gồm Agent/Admin); hàng đợi chỉ Agent/Admin | Tạo: Submitted, 201 với `Location`, hỗ trợ `Idempotency-Key`; danh sách phân trang; hàng đợi hỗ trợ lọc theo trạng thái, danh mục, phạm vi, mức ưu tiên và `slaStatus`; cập nhật chỉ ở Submitted, chủ sở hữu hoặc Admin |
 | Phiếu | Nhận, phân công, hủy phân công, chuyển đội | `POST /api/tickets/{id}/claim`, `/assign`, `/unassign`, `/transfer` | Agent hoặc Admin | Lưu người phụ trách và ghi audit; phân công/hủy phân công yêu cầu Lead của nhóm đang phụ trách phiếu hoặc Admin; chuyển đội yêu cầu lý do chuyển và lưu timeline audit; phiếu đã phân công cho người khác chỉ Admin nhận thay được |
 | Phiếu | Giải quyết, mở lại, đóng, hủy, tạm dừng, tiếp tục | `POST /api/tickets/{id}/resolve`, `/reopen`, `/close`, `/cancel`, `/pending`, `/resume` | Đã đăng nhập; Application kiểm vai trò và chủ sở hữu (tạm dừng/tiếp tục yêu cầu Agent hoặc Admin) | Bảng chuyển trạng thái bên dưới |
@@ -32,6 +32,14 @@ Requester và Agent là chủ phiếu truy cập chi tiết, bình luận công 
 Application từ chối actor chưa xác thực, ID không phải GUID hợp lệ hoặc GUID rỗng trước persistence. Endpoint còn có policy role; role không được cấp bị từ chối tại HTTP. Worker dùng actor anonymous, không đăng ký HttpContext. Không chỉ dựa vào middleware để bảo vệ use case.
 
 Nguồn: [AuthEndpoints](../../src/backend/Modules/Identity/Presentation/AuthEndpoints.cs), [TicketEndpoints](../../src/backend/Modules/Ticketing/Presentation/TicketEndpoints.cs) (tách thành các tệp `TicketEndpoints.*.cs` cùng thư mục), [KnowledgeEndpoints](../../src/backend/Modules/Knowledge/Presentation/KnowledgeEndpoints.cs), [GetTicketDetail](../../src/backend/Modules/Ticketing/Application/GetTicketDetail/GetTicketDetailUseCase.cs).
+
+## Triage AI
+
+- Quyền do Ticketing quyết định qua `ITicketTriageBridge`, ở cả use case chứ không chỉ ở endpoint. Hai POST yêu cầu quyền xử lý phiếu; quyền của chủ phiếu không đủ (403). Phiếu ngoài phạm vi đọc trả `404`.
+- `GET /triage` chỉ đọc kết quả đã lưu, không gọi dịch vụ AI và không ghi dữ liệu. Chưa có kết quả thì trả `outcome` là Unavailable. Chỉ `POST /ai-analyze` yêu cầu phân tích. Người có quyền xử lý phiếu nhận đủ trường; người chỉ có quyền chủ phiếu nhận gợi ý Category và dải tin cậy (chính sách hiển thị AI-01 còn mở).
+- Accept cần kết quả phân tích thành công, chưa có quyết định, đúng nội dung phiếu hiện tại và có đủ Impact, Urgency; thiếu thì trả `409`, không dùng giá trị mặc định. Reject cũng cần kết quả như vậy (không bắt buộc đủ Impact, Urgency) và không đổi phiếu. Override cần lý do, Impact, Urgency; dùng được cả khi AI không khả dụng.
+- Accept và Override ghi Category (nếu có), Impact, Urgency, Priority cùng audit hệ thống, bắt buộc `expectedRevision`. Không đổi trạng thái, phân công hay nhóm hỗ trợ. Mã Category không hợp lệ trả `400`.
+- Giới hạn hiện tại: kết quả phân tích lưu trong bộ nhớ của từng tiến trình API (mất khi khởi động lại); quyết định chưa tham chiếu `analysisId` và chưa cùng giao dịch với lệnh ghi phiếu. Xem [trạng thái kế hoạch củng cố](../plans/production-hardening-state.md).
 
 ## Identity sau PR #47, #48 và nhánh refactor
 

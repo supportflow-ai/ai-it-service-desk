@@ -29,11 +29,11 @@ Hệ quả: chưa task nào có thể chuyển `Verified` trên máy này cho t�
 | G0-01 | In Progress | Tệp này; baseline ở trên |
 | G0-02 | Pending | Chưa lập ma trận endpoint |
 | G0-03 | In Progress | DEC-05 đã chốt "MVP không tự đóng"; DEC-09, AI-01, AI-03 còn mở ([pending-business-decisions](../architecture/pending-business-decisions.md), [ai-integration-plan](../architecture/ai-integration-plan.md)) |
-| G1-01 | Pending — lỗi đã xác minh | `PostgresTicketTriageBridge.cs:55` dùng `TicketReadScope.AllTickets()` vô điều kiện; `RequestAiTriageUseCase` và `DecideAiTriageUseCase` không kiểm actor hay phạm vi, chỉ dựa `RequireAgent` ở endpoint; `GetTicketTriageUseCase.cs:32` coi mọi Agent là staff mà không xét nhóm/phân công (trái ADR-016) |
-| G1-02 | Pending — lỗi đã xác minh | `GetTicketTriageUseCase.cs:43` gọi `IRequestAiTriage` khi chưa có analysis (GET gây mutation và gọi AI) |
-| G1-03 | Pending — lỗi đã xác minh | `DecideAiTriageUseCase.cs:36-37` mặc định `Impact.Medium`/`Urgency.Medium` khi không có analysis hợp lệ rồi vẫn ghi phiếu và báo thành công |
-| G1-04 | Pending — lỗi đã xác minh | `PostgresTicketTriageBridge.cs:62` chỉ gọi `SetTriage(impact, urgency)`; tham số `categoryId` bị bỏ qua. Domain chưa có lệnh đổi Category cho staff |
-| G1-05 | Pending — lỗi đã xác minh | DEC-05 "MVP không tự đóng" nhưng `WorkerServices.cs:30` đăng ký `AutoCloseResolvedTicketsWorker`; use case/gateway ở `TicketingModule.cs:78,96` |
+| G1-01 | Implemented | Quyền chuyển vào `Ticketing/Application/TriageTicket/TicketTriageBridge.cs` (thay adapter dùng `AllTickets`); 3 use case AI kiểm `CanTriage`; bỏ `reviewerId` truyền từ ngoài. `TicketTriageBridgeTests`, `AiTriageUseCaseTests` đạt. Còn thiếu: test PostgreSQL/HTTP cho Team Lead, thu hồi thành viên, vô hiệu hóa nhóm, chuyển nhóm; phạm vi ghi kiểm trước khi tải phiếu, chưa khóa thành viên nhóm trong cùng giao dịch |
+| G1-02 | Implemented | `GetTicketTriageUseCase` chỉ phụ thuộc store và bridge; không còn đường GET gọi AI hoặc ghi. Còn thiếu: test HTTP; xác nhận web không dựa vào GET tự phân tích |
+| G1-03 | Implemented | Bỏ mặc định `Medium`; Accept/Reject không hợp lệ trả 409 (`TriageDecisionConflictException`), không ghi phiếu; gợi ý chỉ đánh dấu sau khi ghi phiếu thành công. `analysisId` thuộc G2-02 |
+| G1-04 | Implemented | `Ticket.SetTriage(..., categoryId)` kiểm mã trước khi đổi; bridge ghi Category và audit trước/sau. Test Domain mới **chưa chạy trên mã cuối** (DLL bị chặn). Test rollback PostgreSQL chưa chạy |
+| G1-05 | Implemented | Gỡ worker, use case, port, adapter, đăng ký DI và test riêng của auto-close; thêm fitness function `OnlyApprovedBackgroundServicesExist` (ARCH-15). Migration và audit đã có giữ nguyên. Chưa smoke khởi động Worker với PostgreSQL |
 | G2-01 | Pending — lỗi đã xác minh | `AIAssistanceModule.cs:44` đăng ký `InMemoryAiAnalysisStore` (singleton, ghi đè theo `TicketId`, mất khi restart, không chia sẻ giữa replica) |
 | G2-02, G2-03, G2-05 | Pending | Phụ thuộc G2-01; hiện quyết định không tham chiếu `analysisId`, lưu analysis trước rồi mới ghi phiếu (không cùng giao dịch) |
 | G2-04, G2-06 | Pending | Chưa rà |
@@ -46,6 +46,30 @@ Hệ quả: chưa task nào có thể chuyển `Verified` trên máy này cho t�
 | G5-01 … G5-08 | Pending | Chưa rà |
 | G6-01 … G6-06 | Pending | Chưa rà |
 | G7-01 … G7-07 | Blocked | Cần các kho web, ai-service, infra, môi trường và phê duyệt DEC-08 |
+
+## Kiểm chứng sau G1 (28/11/2026)
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `dotnet build src/backend/ServiceDesk.sln -c Release --no-restore` | Đạt, 0 warning, 0 error |
+| `dotnet test ... --filter "Category!=Integration"` | Application 355/355, IntegrationTests (nhóm không cần PostgreSQL, gồm `PublishedApiMatchesBaseline`) 73/73, ArchitectureTests 57/57. **`Domain.Tests` bị bỏ qua** (0x800711C7) dù lệnh trả exit 0 |
+| Domain.Tests ở một lượt trước đó | 185 đạt, 37 lỗi: 34 do Application Control, 3 do giả định sai trong test mới (đã sửa, chưa chạy lại được) |
+| `HttpClassificationAdapterTests` | Một lần đỏ `Timeout` (lỗi chập chờn đã ghi trong AGENTS.md); chạy riêng 3 lần đạt 11/11 và đạt trong lượt cuối |
+| `python scripts/validate_project_docs.py` | Đạt |
+| `Category=Integration`, build image, smoke | Not Run: Docker không chạy |
+
+Mức chặn của Application Control thay đổi giữa các lần build. TDD: test hồi quy cho lỗi ghi sau commit ở Override đã thấy RED rồi GREEN; các test G1 còn lại **chưa quan sát được RED** trên mã cũ (baseline bị chặn, và chúng dùng chữ ký mới).
+
+Review: tự rà (self-review), chưa có kiểm định độc lập.
+
+## Thay đổi hành vi API cần báo kho web
+
+- `GET /triage` không còn tự phân tích; web phải gọi `POST /ai-analyze`.
+- `GET /triage`: phiếu ngoài phạm vi (kể cả Requester không phải chủ phiếu, trước đây 403) trả 404; Agent là chủ phiếu ngoài phạm vi xử lý chỉ nhận hình chiếu Requester.
+- Accept/Reject khi không có kết quả hợp lệ trả 409 (trước đây 200).
+- Accept/Override nay đổi cả Category; `categoryId` rỗng hoặc sai mã trả 400 (trước đây bị bỏ qua).
+
+OpenAPI baseline không đổi.
 
 ## Xung đột tài liệu cần chủ dự án chốt
 
@@ -62,8 +86,9 @@ Hệ quả: chưa task nào có thể chuyển `Verified` trên máy này cho t�
 
 ## Nhật ký vòng lặp
 
-- 28/11/2026 — G0-01: lưu kế hoạch, lập baseline, xác minh lỗi P0/P1 bằng đọc mã. Chưa sửa mã nghiệp vụ.
+- 28/11/2026 — G0-01: lưu kế hoạch, lập baseline, xác minh lỗi P0/P1 bằng đọc mã.
+- 28/11/2026 — G1-01…G1-05: đã triển khai (Implemented), chờ Domain.Tests, kiểm thử PostgreSQL và CI để Verified.
 
 ## Task tiếp theo
 
-G1-01 + G1-02 (một PR): chuyển kiểm quyền về Ticketing qua `ITicketTriageBridge`, bỏ phụ thuộc lệnh khỏi `GetTicketTriageUseCase`. Tệp: `Modules/Ticketing/Application/Contracts/TicketTriageBridge.cs`, `Modules/Ticketing/Infrastructure/PostgresTicketTriageBridge.cs`, `Modules/AIAssistance/Application/Triage/*.cs`, `tests/ServiceDesk.Application.Tests/AIAssistance/AiTriageUseCaseTests.cs`.
+G2-01 (lưu bền analysis và quyết định bằng PostgreSQL), kèm G2-02/G2-03. Cần migration và kiểm thử PostgreSQL thật, nên cần Docker. Tệp: `Modules/AIAssistance/{Domain,Application/Ports,Infrastructure}`, `Platform/Persistence`. Trong lúc Docker chưa sẵn: G3-01 (JWT fail-closed) và G3-05 (rate limit) kiểm được bằng test không cần database.

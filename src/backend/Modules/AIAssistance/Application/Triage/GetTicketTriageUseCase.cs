@@ -2,98 +2,53 @@ using ServiceDesk.Modules.AIAssistance.Application.Contracts;
 using ServiceDesk.Modules.AIAssistance.Application.Ports;
 using ServiceDesk.Modules.AIAssistance.Domain;
 using ServiceDesk.Modules.Ticketing.Application.Contracts;
-using ServiceDesk.Modules.Ticketing.Domain;
-using ServiceDesk.SharedKernel.Application;
-using ServiceDesk.SharedKernel.Application.Abstractions;
-using ServiceDesk.SharedKernel.Authorization;
 
 namespace ServiceDesk.Modules.AIAssistance.Application.Triage;
 
+/// <summary>Đúng một trong hai hình chiếu có giá trị, theo quyền xử lý phiếu mà Ticketing trả về.</summary>
+public sealed record TicketTriageReadResult(AgentTriageView? StaffView, RequesterTriageView? RequesterView);
+
 public interface IGetTicketTriage
 {
-    Task<AgentTriageView> ExecuteAsync(Guid ticketId, CancellationToken cancellationToken = default);
+    Task<TicketTriageReadResult> ExecuteAsync(Guid ticketId, CancellationToken cancellationToken = default);
 }
 
+/// <summary>Truy vấn thuần: chỉ đọc analysis đã lưu, không gọi dịch vụ AI và không ghi dữ liệu.</summary>
 internal sealed class GetTicketTriageUseCase(
     IAiAnalysisStore analysisStore,
-    IRequestAiTriage requestAiTriage,
-    ITicketTriageBridge ticketBridge,
-    ICurrentUser currentUser) : IGetTicketTriage
+    ITicketTriageBridge ticketBridge) : IGetTicketTriage
 {
-    public async Task<AgentTriageView> ExecuteAsync(Guid ticketId, CancellationToken cancellationToken = default)
+    public async Task<TicketTriageReadResult> ExecuteAsync(Guid ticketId, CancellationToken cancellationToken = default)
     {
-        var actorId = AuthenticatedActor.RequireId(currentUser);
-        var snapshot = await ticketBridge.GetSnapshotAsync(ticketId, cancellationToken);
-        if (snapshot is null)
-        {
-            throw new KeyNotFoundException($"Không tìm thấy vé hỗ trợ có mã {ticketId}.");
-        }
-
-        var isStaff = currentUser.IsInRole(RoleNames.Agent) || currentUser.IsInRole(RoleNames.Admin);
-        if (!isStaff && snapshot.RequesterId != actorId)
-        {
-            throw new UnauthorizedAccessException("Bạn không có quyền xem thông tin phân loại của vé hỗ trợ này.");
-        }
+        var snapshot = await ticketBridge.GetSnapshotAsync(ticketId, cancellationToken)
+            ?? throw new KeyNotFoundException($"Không tìm thấy vé hỗ trợ có mã {ticketId}.");
 
         var analysis = await analysisStore.GetLatestAnalysisAsync(ticketId, cancellationToken);
-        if (analysis is null)
-        {
-            if (isStaff)
-            {
-                return await requestAiTriage.ExecuteAsync(ticketId, cancellationToken);
-            }
+        var view = AgentTriageView.FromTriageResult(StoredTriage.ToResult(analysis));
+        return snapshot.CanTriage
+            ? new TicketTriageReadResult(view, null)
+            : new TicketTriageReadResult(null, RequesterTriageView.FromAgentView(view));
+    }
+}
 
-            return new AgentTriageView
-            {
-                Outcome = TriageOutcome.Unavailable,
-                FailureReason = "Chưa có kết quả phân loại AI cho vé hỗ trợ này."
-            };
-        }
+/// <summary>Dựng lại kết quả phân loại từ analysis đã lưu; giá trị không đọc được coi như không có gợi ý.</summary>
+internal static class StoredTriage
+{
+    public static TriageResult ToResult(AIAnalysis? analysis)
+    {
+        if (analysis is null) return TriageResult.Unavailable("Chưa có kết quả phân loại AI cho vé hỗ trợ này.");
+        if (!analysis.Succeeded) return TriageResult.Unavailable(analysis.FailureReason ?? "Phân loại AI thất bại.");
 
-        if (!analysis.Succeeded)
-        {
-            return new AgentTriageView
-            {
-                Outcome = TriageOutcome.Unavailable,
-                FailureReason = analysis.FailureReason
-            };
-        }
+        var category = Find(analysis, SuggestionType.Category, TriagePolicy.ParseCategory);
+        var impact = Find(analysis, SuggestionType.Impact, TriagePolicy.ParseImpact);
+        var urgency = Find(analysis, SuggestionType.Urgency, TriagePolicy.ParseUrgency);
+        return TriageResult.Success(category.Value, impact.Value, urgency.Value, category.Score, impact.Score, urgency.Score);
+    }
 
-        TicketCategory? cat = null;
-        Impact? imp = null;
-        Urgency? urg = null;
-        double? catScore = null;
-        double? impScore = null;
-        double? urgScore = null;
-
-        foreach (var s in analysis.Suggestions)
-        {
-            if (s.Type == SuggestionType.Category)
-            {
-                cat = TriagePolicy.ParseCategory(s.SuggestedValue);
-                catScore = s.ModelScore;
-            }
-            else if (s.Type == SuggestionType.Impact)
-            {
-                imp = TriagePolicy.ParseImpact(s.SuggestedValue);
-                impScore = s.ModelScore;
-            }
-            else if (s.Type == SuggestionType.Urgency)
-            {
-                urg = TriagePolicy.ParseUrgency(s.SuggestedValue);
-                urgScore = s.ModelScore;
-            }
-        }
-
-        return new AgentTriageView
-        {
-            Outcome = TriageOutcome.Success,
-            SuggestedCategory = cat,
-            SuggestedImpact = imp,
-            SuggestedUrgency = urg,
-            CategoryScore = catScore,
-            ImpactScore = impScore,
-            UrgencyScore = urgScore
-        };
+    private static (T? Value, double? Score) Find<T>(AIAnalysis analysis, SuggestionType type, Func<string?, T?> parse) where T : struct
+    {
+        var suggestion = analysis.Suggestions.FirstOrDefault(s => s.Type == type);
+        var value = parse(suggestion?.SuggestedValue);
+        return value is null ? (null, null) : (value, suggestion!.ModelScore);
     }
 }

@@ -5,8 +5,6 @@ using Microsoft.AspNetCore.Routing;
 using ServiceDesk.Modules.AIAssistance.Application.Contracts;
 using ServiceDesk.Modules.AIAssistance.Application.Triage;
 using ServiceDesk.Modules.Ticketing.Domain;
-using ServiceDesk.SharedKernel.Application;
-using ServiceDesk.SharedKernel.Application.Abstractions;
 using ServiceDesk.SharedKernel.Web;
 
 namespace ServiceDesk.Modules.AIAssistance.Presentation;
@@ -37,23 +35,10 @@ public static class AiTriageEndpoints
         group.MapGet("/{id:guid}/triage", async (
             Guid id,
             [FromServices] IGetTicketTriage getTicketTriage,
-            [FromServices] ICurrentUser currentUser,
             CancellationToken ct) =>
         {
             var result = await getTicketTriage.ExecuteAsync(id, ct);
-            if (currentUser.IsInRole("Agent") || currentUser.IsInRole("Admin"))
-            {
-                return Results.Ok(result);
-            }
-
-            return Results.Ok(new RequesterTriageView
-            {
-                Outcome = result.Outcome,
-                SuggestedCategory = result.SuggestedCategory,
-                CategoryConfidence = result.CategoryConfidence,
-                RequiresManualTriage = result.RequiresManualTriage,
-                FailureReason = result.FailureReason
-            });
+            return result.StaffView is not null ? Results.Ok(result.StaffView) : Results.Ok(result.RequesterView);
         })
         .WithName("GetTicketAiTriage")
         .RequireAuthorization()
@@ -67,10 +52,8 @@ public static class AiTriageEndpoints
             Guid id,
             [FromBody] TriageDecisionRequest request,
             [FromServices] IDecideAiTriage decideAiTriage,
-            [FromServices] ICurrentUser currentUser,
             CancellationToken ct) =>
         {
-            var reviewerId = AuthenticatedActor.RequireId(currentUser);
             var command = new TriageDecisionCommand(
                 id,
                 request.Decision,
@@ -80,7 +63,7 @@ public static class AiTriageEndpoints
                 request.Reason,
                 request.ExpectedRevision);
 
-            var decisionResult = await decideAiTriage.ExecuteAsync(command, reviewerId, ct);
+            var decisionResult = await decideAiTriage.ExecuteAsync(command, ct);
             return Results.Ok(decisionResult);
         })
         .WithName("DecideTicketAiTriage")

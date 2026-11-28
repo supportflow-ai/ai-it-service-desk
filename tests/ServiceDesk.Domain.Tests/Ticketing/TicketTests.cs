@@ -237,6 +237,33 @@ public class TicketTests
         ticket.Priority.Should().Be(Priority.P1);
     }
 
+    [Fact]
+    public void SetTriage_WithCategory_ChangesCategoryTogetherWithPriority()
+    {
+        var ticket = CreateValidTicket(categoryId: TicketCategories.VPN);
+
+        ticket.SetTriage(Impact.High, Urgency.Medium, DateTime.UtcNow, TicketCategories.SEC);
+
+        ticket.CategoryId.Should().Be(TicketCategories.SEC);
+        ticket.Priority.Should().Be(PriorityMatrix.Calculate(Impact.High, Urgency.Medium));
+    }
+
+    [Theory]
+    [InlineData("UNKNOWN")]
+    [InlineData("net")]
+    [InlineData("")]
+    public void SetTriage_WithInvalidCategory_RejectsWithoutChangingTicket(string categoryId)
+    {
+        var ticket = CreateValidTicket(categoryId: TicketCategories.VPN);
+
+        var act = () => ticket.SetTriage(Impact.High, Urgency.High, DateTime.UtcNow, categoryId);
+
+        act.Should().Throw<ArgumentException>();
+        ticket.CategoryId.Should().Be(TicketCategories.VPN);
+        ticket.Impact.Should().Be(Impact.Medium);
+        ticket.Priority.Should().Be(Priority.P3);
+    }
+
     [Theory]
     [InlineData(TicketStatus.Resolved)]
     [InlineData(TicketStatus.Closed)]

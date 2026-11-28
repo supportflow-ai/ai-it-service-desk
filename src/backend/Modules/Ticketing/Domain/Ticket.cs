@@ -155,11 +155,14 @@ public class Ticket
     /// <summary>
     /// Thiết lập phân loại Impact và Urgency, tự động tính Priority theo ma trận ITIL.
     /// </summary>
-    public void SetTriage(Impact impact, Urgency urgency, DateTime now)
+    public void SetTriage(Impact impact, Urgency urgency, DateTime now, string? categoryId = null)
     {
         if (Status is TicketStatus.Resolved or TicketStatus.Closed or TicketStatus.Cancelled)
             throw new InvalidOperationException($"Không thể phân loại vé đã ở trạng thái {Status}.");
+        if (categoryId is not null && !TicketCategories.All.Contains(categoryId, StringComparer.Ordinal))
+            throw new ArgumentException("Invalid category");
 
+        if (categoryId is not null) CategoryId = categoryId;
         Impact = impact;
         Urgency = urgency;
         var newPriority = PriorityMatrix.Calculate(impact, urgency);

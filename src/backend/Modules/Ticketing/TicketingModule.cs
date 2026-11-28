@@ -74,6 +74,7 @@ public static class TicketingModule
         services.AddScoped<IAddTeamMember, AddTeamMemberUseCase>();
         services.AddScoped<IRemoveTeamMember, RemoveTeamMemberUseCase>();
         services.AddScoped<ITriageTicket, TriageTicketUseCase>();
+        services.AddScoped<ITicketTriageBridge, TicketTriageBridge>();
         services.AddScoped<ITransferTicket, TransferTicketUseCase>();
         services.AddScoped<ICreateSupportTeam, CreateSupportTeamUseCase>();
         services.AddScoped<IUpdateSupportTeam, UpdateSupportTeamUseCase>();
@@ -95,7 +96,6 @@ public static class TicketingModule
         services.AddScoped<ISupportTeamMembershipReader, PostgresSupportTeamMembershipReader>();
         services.AddScoped<ISupportTeamStore, PostgresSupportTeamStore>();
         services.AddScoped<ITicketReportQueries, PostgresTicketReportQueries>();
-        services.AddScoped<ITicketTriageBridge, PostgresTicketTriageBridge>();
         return services;
     }
 }

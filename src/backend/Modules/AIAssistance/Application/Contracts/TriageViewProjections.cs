@@ -32,6 +32,18 @@ public sealed record RequesterTriageView
             FailureReason = result.FailureReason
         };
     }
+
+    public static RequesterTriageView FromAgentView(AgentTriageView view)
+    {
+        return new RequesterTriageView
+        {
+            Outcome = view.Outcome,
+            SuggestedCategory = view.SuggestedCategory,
+            CategoryConfidence = view.CategoryConfidence,
+            RequiresManualTriage = view.RequiresManualTriage,
+            FailureReason = view.FailureReason
+        };
+    }
 }
 
 /// <summary>

@@ -5,267 +5,341 @@ using ServiceDesk.Modules.AIAssistance.Application.Triage;
 using ServiceDesk.Modules.AIAssistance.Domain;
 using ServiceDesk.Modules.Ticketing.Application.Contracts;
 using ServiceDesk.Modules.Ticketing.Domain;
+using ServiceDesk.SharedKernel.Application;
 using ServiceDesk.SharedKernel.Application.Abstractions;
-using ServiceDesk.SharedKernel.Authorization;
 using Xunit;
 
 namespace ServiceDesk.Application.Tests.AIAssistance;
 
+/// <summary>G1-01 (quyền qua Ticketing), G1-02 (GET chỉ đọc), G1-03 (không fallback), G1-04 (Category).</summary>
 public class AiTriageUseCaseTests
 {
+    private const string Title = "VPN down";
+    private const string Description = "Cannot connect from home";
+
     private readonly Mock<ITicketTriageBridge> _ticketBridge = new();
     private readonly Mock<ITicketClassificationService> _classificationService = new();
     private readonly Mock<IAiAnalysisStore> _analysisStore = new();
-    private readonly Mock<IRequestAiTriage> _requestAiTriage = new();
     private readonly Mock<ICurrentUser> _currentUser = new();
     private readonly Mock<IClock> _clock = new();
+    private readonly Guid _ticketId = Guid.NewGuid();
+    private readonly Guid _actorId = Guid.NewGuid();
 
     public AiTriageUseCaseTests()
     {
         _clock.SetupGet(c => c.UtcNow).Returns(new DateTimeOffset(2026, 11, 24, 12, 0, 0, TimeSpan.Zero));
+        _currentUser.SetupGet(u => u.IsAuthenticated).Returns(true);
+        _currentUser.SetupGet(u => u.UserId).Returns(_actorId.ToString("D"));
+    }
+
+    private RequestAiTriageUseCase Request() => new(_ticketBridge.Object, _classificationService.Object, _analysisStore.Object, _clock.Object);
+    private GetTicketTriageUseCase Get() => new(_analysisStore.Object, _ticketBridge.Object);
+    private DecideAiTriageUseCase Decide() => new(_ticketBridge.Object, _analysisStore.Object, _currentUser.Object, _clock.Object);
+
+    private void SetupSnapshot(bool canTriage, string title = Title, string category = TicketCategories.VPN) =>
+        _ticketBridge.Setup(b => b.GetSnapshotAsync(_ticketId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new TicketTriageSnapshotDto(_ticketId, 1, title, Description, category, Guid.NewGuid(), canTriage));
+
+    private AIAnalysis SetupAnalysis(params (SuggestionType Type, string Value)[] suggestions)
+    {
+        var analysis = AIAnalysis.CreateSucceeded(_ticketId, 1, InputHashComputer.Compute(Title, Description), _clock.Object.UtcNow);
+        foreach (var (type, value) in suggestions) analysis.AddSuggestion(AISuggestion.Create(analysis.Id, type, value, 0.9));
+        _analysisStore.Setup(s => s.GetLatestAnalysisAsync(_ticketId, It.IsAny<CancellationToken>())).ReturnsAsync(analysis);
+        return analysis;
+    }
+
+    private AIAnalysis SetupFullAnalysis() =>
+        SetupAnalysis((SuggestionType.Category, "NET"), (SuggestionType.Impact, "High"), (SuggestionType.Urgency, "Medium"));
+
+    private void VerifyTicketNotWritten() =>
+        _ticketBridge.Verify(b => b.ApplyTriageDecisionAsync(It.IsAny<Guid>(), It.IsAny<Impact>(), It.IsAny<Urgency>(),
+            It.IsAny<string?>(), It.IsAny<string>(), It.IsAny<uint?>(), It.IsAny<CancellationToken>()), Times.Never);
+
+    private void VerifyAnalysisNotSaved() =>
+        _analysisStore.Verify(s => s.SaveAnalysisAsync(It.IsAny<AIAnalysis>(), It.IsAny<CancellationToken>()), Times.Never);
+
+    // ---------- POST ai-analyze ----------
+
+    [Fact]
+    public async Task Request_WhenTicketNotVisible_ThrowsNotFound()
+    {
+        _ticketBridge.Setup(b => b.GetSnapshotAsync(_ticketId, It.IsAny<CancellationToken>())).ReturnsAsync((TicketTriageSnapshotDto?)null);
+
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => Request().ExecuteAsync(_ticketId));
     }
 
     [Fact]
-    public async Task RequestAiTriage_WhenTicketNotFound_ThrowsKeyNotFoundException()
+    public async Task Request_WhenActorCannotTriage_ThrowsForbiddenWithoutCallingAi()
     {
-        var ticketId = Guid.NewGuid();
-        _ticketBridge.Setup(b => b.GetSnapshotAsync(ticketId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((TicketTriageSnapshotDto?)null);
+        SetupSnapshot(canTriage: false);
 
-        var useCase = new RequestAiTriageUseCase(_ticketBridge.Object, _classificationService.Object, _analysisStore.Object, _clock.Object);
-
-        await Assert.ThrowsAsync<KeyNotFoundException>(() => useCase.ExecuteAsync(ticketId));
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => Request().ExecuteAsync(_ticketId));
+        _classificationService.Verify(s => s.ClassifyAsync(It.IsAny<TriageRequest>(), It.IsAny<CancellationToken>()), Times.Never);
+        VerifyAnalysisNotSaved();
     }
 
     [Fact]
-    public async Task RequestAiTriage_WhenClassificationSucceeds_SavesAnalysisAndReturnsView()
+    public async Task Request_WhenClassificationSucceeds_SavesAnalysisAndReturnsView()
     {
-        var ticketId = Guid.NewGuid();
-        var snapshot = new TicketTriageSnapshotDto(
-            ticketId,
-            1,
-            "Cannot connect to VPN",
-            "I am working remotely and VPN fails with timeout error 800.",
-            "NET",
-            null,
-            null,
-            null,
-            TicketStatus.Submitted,
-            Guid.NewGuid()
-        );
-
-        _ticketBridge.Setup(b => b.GetSnapshotAsync(ticketId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(snapshot);
-
-        var triageResult = TriageResult.Success(
-            TicketCategory.NET,
-            Impact.Medium,
-            Urgency.High,
-            0.95,
-            0.85,
-            0.90);
-
+        SetupSnapshot(canTriage: true);
         _classificationService.Setup(s => s.ClassifyAsync(It.IsAny<TriageRequest>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(triageResult);
-
-        AIAnalysis? savedAnalysis = null;
+            .ReturnsAsync(TriageResult.Success(TicketCategory.NET, Impact.Medium, Urgency.High, 0.95, 0.85, 0.90));
+        AIAnalysis? saved = null;
         _analysisStore.Setup(s => s.SaveAnalysisAsync(It.IsAny<AIAnalysis>(), It.IsAny<CancellationToken>()))
-            .Callback<AIAnalysis, CancellationToken>((a, _) => savedAnalysis = a)
-            .Returns(Task.CompletedTask);
+            .Callback<AIAnalysis, CancellationToken>((a, _) => saved = a).Returns(Task.CompletedTask);
 
-        var useCase = new RequestAiTriageUseCase(_ticketBridge.Object, _classificationService.Object, _analysisStore.Object, _clock.Object);
-
-        var view = await useCase.ExecuteAsync(ticketId);
+        var view = await Request().ExecuteAsync(_ticketId);
 
         Assert.Equal(TriageOutcome.Success, view.Outcome);
         Assert.Equal(TicketCategory.NET, view.SuggestedCategory);
-        Assert.Equal(Impact.Medium, view.SuggestedImpact);
-        Assert.Equal(Urgency.High, view.SuggestedUrgency);
+        Assert.NotNull(saved);
+        Assert.Equal(_ticketId, saved.TicketId);
+        Assert.Equal(3, saved.Suggestions.Count);
+    }
 
-        Assert.NotNull(savedAnalysis);
-        Assert.True(savedAnalysis.Succeeded);
-        Assert.Equal(ticketId, savedAnalysis.TicketId);
-        Assert.Equal(3, savedAnalysis.Suggestions.Count);
+    // ---------- GET triage ----------
+
+    [Fact]
+    public async Task Get_WhenTicketNotVisible_ThrowsNotFoundWithoutReadingAnalysis()
+    {
+        _ticketBridge.Setup(b => b.GetSnapshotAsync(_ticketId, It.IsAny<CancellationToken>())).ReturnsAsync((TicketTriageSnapshotDto?)null);
+
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => Get().ExecuteAsync(_ticketId));
+        _analysisStore.VerifyNoOtherCalls();
     }
 
     [Fact]
-    public async Task DecideAiTriage_WhenAccept_AppliesSuggestedValuesToTicket()
+    public async Task Get_StaffWithoutAnalysis_ReturnsUnavailableAndNeverWrites()
     {
-        var ticketId = Guid.NewGuid();
-        var reviewerId = Guid.NewGuid();
-        var validHash = InputHashComputer.Compute("Cannot connect to VPN", "Description");
+        SetupSnapshot(canTriage: true);
+        _analysisStore.Setup(s => s.GetLatestAnalysisAsync(_ticketId, It.IsAny<CancellationToken>())).ReturnsAsync((AIAnalysis?)null);
 
-        var analysis = AIAnalysis.CreateSucceeded(ticketId, 1, validHash, _clock.Object.UtcNow);
-        analysis.AddSuggestion(AISuggestion.Create(analysis.Id, SuggestionType.Category, "NET", 0.95));
-        analysis.AddSuggestion(AISuggestion.Create(analysis.Id, SuggestionType.Impact, "High", 0.90));
-        analysis.AddSuggestion(AISuggestion.Create(analysis.Id, SuggestionType.Urgency, "High", 0.88));
+        var first = await Get().ExecuteAsync(_ticketId);
+        var second = await Get().ExecuteAsync(_ticketId);
 
-        _analysisStore.Setup(s => s.GetLatestAnalysisAsync(ticketId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(analysis);
+        Assert.Equal(TriageOutcome.Unavailable, first.StaffView!.Outcome);
+        Assert.Equal(TriageOutcome.Unavailable, second.StaffView!.Outcome);
+        VerifyAnalysisNotSaved();
+        VerifyTicketNotWritten();
+    }
 
-        _ticketBridge.Setup(b => b.ApplyTriageDecisionAsync(
-                ticketId,
-                Impact.High,
-                Urgency.High,
-                "NET",
-                It.IsAny<string>(),
-                reviewerId,
-                1u,
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(true);
+    [Fact]
+    public async Task Get_StaffWithStoredAnalysis_ReturnsSuggestionsWithConfidence()
+    {
+        SetupSnapshot(canTriage: true);
+        SetupFullAnalysis();
 
-        var useCase = new DecideAiTriageUseCase(_ticketBridge.Object, _analysisStore.Object, _clock.Object);
+        var result = await Get().ExecuteAsync(_ticketId);
 
-        var command = new TriageDecisionCommand(ticketId, TriageDecisionType.Accept, ExpectedRevision: 1u);
-        var result = await useCase.ExecuteAsync(command, reviewerId);
+        Assert.Null(result.RequesterView);
+        Assert.Equal(TriageOutcome.Success, result.StaffView!.Outcome);
+        Assert.Equal(TicketCategory.NET, result.StaffView.SuggestedCategory);
+        Assert.Equal(Impact.High, result.StaffView.SuggestedImpact);
+        Assert.Equal(Urgency.Medium, result.StaffView.SuggestedUrgency);
+        Assert.NotNull(result.StaffView.CategoryConfidence);
+    }
+
+    [Fact]
+    public async Task Get_WithoutTriageRight_ReturnsRequesterProjectionOnly()
+    {
+        SetupSnapshot(canTriage: false);
+        SetupFullAnalysis();
+
+        var result = await Get().ExecuteAsync(_ticketId);
+
+        Assert.Null(result.StaffView);
+        Assert.Equal(TicketCategory.NET, result.RequesterView!.SuggestedCategory);
+    }
+
+    // ---------- POST triage/decision ----------
+
+    [Fact]
+    public async Task Decide_Anonymous_IsRejectedBeforeAnyRead()
+    {
+        _currentUser.SetupGet(u => u.IsAuthenticated).Returns(false);
+
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+            Decide().ExecuteAsync(new TriageDecisionCommand(_ticketId, TriageDecisionType.Accept, ExpectedRevision: 1u)));
+        _ticketBridge.VerifyNoOtherCalls();
+    }
+
+    [Theory]
+    [InlineData(TriageDecisionType.Accept)]
+    [InlineData(TriageDecisionType.Override)]
+    [InlineData(TriageDecisionType.Reject)]
+    public async Task Decide_WhenActorCannotTriage_IsForbiddenAndChangesNothing(TriageDecisionType decision)
+    {
+        SetupSnapshot(canTriage: false);
+        var analysis = SetupFullAnalysis();
+
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => Decide().ExecuteAsync(
+            new TriageDecisionCommand(_ticketId, decision, Impact.Low, Urgency.Low, null, "lý do", 1u)));
+        VerifyTicketNotWritten();
+        VerifyAnalysisNotSaved();
+        Assert.All(analysis.Suggestions, s => Assert.Equal(SuggestionDecision.Pending, s.Decision));
+    }
+
+    [Fact]
+    public async Task Accept_AppliesSuggestedCategoryImpactUrgencyThenMarksSuggestions()
+    {
+        SetupSnapshot(canTriage: true);
+        var analysis = SetupFullAnalysis();
+
+        var result = await Decide().ExecuteAsync(new TriageDecisionCommand(_ticketId, TriageDecisionType.Accept, ExpectedRevision: 1u));
 
         Assert.True(result.AppliedToTicket);
-        Assert.Equal(TriageDecisionType.Accept, result.Decision);
+        _ticketBridge.Verify(b => b.ApplyTriageDecisionAsync(_ticketId, Impact.High, Urgency.Medium, "NET",
+            It.IsAny<string>(), 1u, It.IsAny<CancellationToken>()), Times.Once);
+        Assert.All(analysis.Suggestions, s => Assert.Equal(SuggestionDecision.Accepted, s.Decision));
+        Assert.All(analysis.Suggestions, s => Assert.Equal(_actorId.ToString(), s.ReviewedBy));
+        _analysisStore.Verify(s => s.SaveAnalysisAsync(analysis, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
-    public async Task DecideAiTriage_WhenOverrideWithoutReason_ThrowsArgumentException()
+    public async Task Accept_WithoutCategorySuggestion_KeepsTicketCategory()
     {
-        var ticketId = Guid.NewGuid();
-        var reviewerId = Guid.NewGuid();
+        SetupSnapshot(canTriage: true);
+        SetupAnalysis((SuggestionType.Impact, "Low"), (SuggestionType.Urgency, "Low"));
 
-        var useCase = new DecideAiTriageUseCase(_ticketBridge.Object, _analysisStore.Object, _clock.Object);
+        await Decide().ExecuteAsync(new TriageDecisionCommand(_ticketId, TriageDecisionType.Accept, ExpectedRevision: 1u));
 
-        var command = new TriageDecisionCommand(
-            ticketId,
-            TriageDecisionType.Override,
-            Impact: Impact.Low,
-            Urgency: Urgency.Low,
-            Reason: null);
+        _ticketBridge.Verify(b => b.ApplyTriageDecisionAsync(_ticketId, Impact.Low, Urgency.Low, null,
+            It.IsAny<string>(), 1u, It.IsAny<CancellationToken>()), Times.Once);
+    }
 
-        await Assert.ThrowsAsync<ArgumentException>(() => useCase.ExecuteAsync(command, reviewerId));
+    public static TheoryData<string> InvalidAcceptStates => new()
+    {
+        "none", "failed", "empty", "partial", "stale", "decided"
+    };
+
+    [Theory]
+    [MemberData(nameof(InvalidAcceptStates))]
+    public async Task Accept_WithoutValidPendingAnalysis_IsConflictWithoutDefaultValues(string state)
+    {
+        SetupSnapshot(canTriage: true, title: state == "stale" ? "Tiêu đề đã sửa" : Title);
+        switch (state)
+        {
+            case "none":
+                _analysisStore.Setup(s => s.GetLatestAnalysisAsync(_ticketId, It.IsAny<CancellationToken>())).ReturnsAsync((AIAnalysis?)null);
+                break;
+            case "failed":
+                _analysisStore.Setup(s => s.GetLatestAnalysisAsync(_ticketId, It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(AIAnalysis.CreateFailed(_ticketId, 1, InputHashComputer.Compute(Title, Description), _clock.Object.UtcNow, "timeout"));
+                break;
+            case "empty": SetupAnalysis(); break;
+            case "partial": SetupAnalysis((SuggestionType.Category, "NET"), (SuggestionType.Impact, "High")); break;
+            case "stale": SetupFullAnalysis(); break;
+            case "decided": SetupFullAnalysis().Suggestions[0].Reject("someone", _clock.Object.UtcNow); break;
+        }
+
+        await Assert.ThrowsAsync<TriageDecisionConflictException>(() =>
+            Decide().ExecuteAsync(new TriageDecisionCommand(_ticketId, TriageDecisionType.Accept, ExpectedRevision: 1u)));
+        VerifyTicketNotWritten();
+        VerifyAnalysisNotSaved();
     }
 
     [Fact]
-    public async Task DecideAiTriage_WhenOverrideValid_AppliesOverriddenValues()
+    public async Task Accept_WhenTicketWriteFails_LeavesSuggestionsPending()
     {
-        var ticketId = Guid.NewGuid();
-        var reviewerId = Guid.NewGuid();
-        var validHash = InputHashComputer.Compute("Cannot connect to VPN", "Description");
+        SetupSnapshot(canTriage: true);
+        var analysis = SetupFullAnalysis();
+        _ticketBridge.Setup(b => b.ApplyTriageDecisionAsync(It.IsAny<Guid>(), It.IsAny<Impact>(), It.IsAny<Urgency>(),
+                It.IsAny<string?>(), It.IsAny<string>(), It.IsAny<uint?>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new ConcurrencyConflictException());
 
-        var analysis = AIAnalysis.CreateSucceeded(ticketId, 1, validHash, _clock.Object.UtcNow);
-        analysis.AddSuggestion(AISuggestion.Create(analysis.Id, SuggestionType.Category, "NET", 0.95));
-        analysis.AddSuggestion(AISuggestion.Create(analysis.Id, SuggestionType.Impact, "High", 0.90));
-        analysis.AddSuggestion(AISuggestion.Create(analysis.Id, SuggestionType.Urgency, "High", 0.88));
+        await Assert.ThrowsAsync<ConcurrencyConflictException>(() =>
+            Decide().ExecuteAsync(new TriageDecisionCommand(_ticketId, TriageDecisionType.Accept, ExpectedRevision: 1u)));
+        Assert.All(analysis.Suggestions, s => Assert.Equal(SuggestionDecision.Pending, s.Decision));
+        VerifyAnalysisNotSaved();
+    }
 
-        _analysisStore.Setup(s => s.GetLatestAnalysisAsync(ticketId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(analysis);
+    [Fact]
+    public async Task Override_WithoutReason_IsBadRequest()
+    {
+        SetupSnapshot(canTriage: true);
 
-        _ticketBridge.Setup(b => b.ApplyTriageDecisionAsync(
-                ticketId,
-                Impact.Low,
-                Urgency.Low,
-                "SEC",
-                It.IsAny<string>(),
-                reviewerId,
-                1u,
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(true);
+        await Assert.ThrowsAsync<ArgumentException>(() => Decide().ExecuteAsync(
+            new TriageDecisionCommand(_ticketId, TriageDecisionType.Override, Impact.Low, Urgency.Low, Reason: null, ExpectedRevision: 1u)));
+        VerifyTicketNotWritten();
+    }
 
-        var useCase = new DecideAiTriageUseCase(_ticketBridge.Object, _analysisStore.Object, _clock.Object);
+    [Fact]
+    public async Task Override_AppliesReviewerValuesAndRecordsFinalValues()
+    {
+        SetupSnapshot(canTriage: true);
+        var analysis = SetupFullAnalysis();
 
-        var command = new TriageDecisionCommand(
-            ticketId,
-            TriageDecisionType.Override,
-            Impact: Impact.Low,
-            Urgency: Urgency.Low,
-            CategoryId: "SEC",
-            Reason: "Sự cố an ninh mạng cần xử lý theo quy trình bảo mật",
-            ExpectedRevision: 1u);
-
-        var result = await useCase.ExecuteAsync(command, reviewerId);
+        var result = await Decide().ExecuteAsync(new TriageDecisionCommand(
+            _ticketId, TriageDecisionType.Override, Impact.Low, Urgency.Low, "SEC", "Sự cố an ninh", 1u));
 
         Assert.True(result.AppliedToTicket);
-        Assert.Equal(TriageDecisionType.Override, result.Decision);
+        _ticketBridge.Verify(b => b.ApplyTriageDecisionAsync(_ticketId, Impact.Low, Urgency.Low, "SEC",
+            It.Is<string>(r => r.Contains("Sự cố an ninh")), 1u, It.IsAny<CancellationToken>()), Times.Once);
+        Assert.Equal("SEC", analysis.Suggestions.Single(s => s.Type == SuggestionType.Category).FinalValue);
+        Assert.Equal("Low", analysis.Suggestions.Single(s => s.Type == SuggestionType.Impact).FinalValue);
     }
 
     [Fact]
-    public async Task GetTicketTriage_WhenTicketNotFound_ThrowsKeyNotFoundException()
+    public async Task Override_WithoutCategory_RecordsUnchangedTicketCategory()
     {
-        var ticketId = Guid.NewGuid();
-        var actorId = Guid.NewGuid();
-        SetupCurrentUser(actorId, RoleNames.Requester);
-        _ticketBridge.Setup(b => b.GetSnapshotAsync(ticketId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((TicketTriageSnapshotDto?)null);
+        SetupSnapshot(canTriage: true);
+        var analysis = SetupFullAnalysis();
 
-        var useCase = new GetTicketTriageUseCase(_analysisStore.Object, _requestAiTriage.Object, _ticketBridge.Object, _currentUser.Object);
+        await Decide().ExecuteAsync(new TriageDecisionCommand(
+            _ticketId, TriageDecisionType.Override, Impact.Low, Urgency.Low, null, "Giữ danh mục", 1u));
 
-        await Assert.ThrowsAsync<KeyNotFoundException>(() => useCase.ExecuteAsync(ticketId));
+        Assert.Equal(TicketCategories.VPN, analysis.Suggestions.Single(s => s.Type == SuggestionType.Category).FinalValue);
     }
 
     [Fact]
-    public async Task GetTicketTriage_WhenRequesterDoesNotOwnTicket_ThrowsUnauthorizedAccessException()
+    public async Task Override_WithoutCategoryOnUnknownStoredCategory_DoesNotFailAfterTicketWrite()
     {
-        var ticketId = Guid.NewGuid();
-        var actorId = Guid.NewGuid();
-        var ownerId = Guid.NewGuid();
-        SetupCurrentUser(actorId, RoleNames.Requester);
-        _ticketBridge.Setup(b => b.GetSnapshotAsync(ticketId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(CreateSnapshot(ticketId, ownerId));
+        SetupSnapshot(canTriage: true, category: "LEGACY");
+        var analysis = SetupFullAnalysis();
 
-        var useCase = new GetTicketTriageUseCase(_analysisStore.Object, _requestAiTriage.Object, _ticketBridge.Object, _currentUser.Object);
+        var result = await Decide().ExecuteAsync(new TriageDecisionCommand(
+            _ticketId, TriageDecisionType.Override, Impact.Low, Urgency.Low, null, "Giữ danh mục", 1u));
 
-        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => useCase.ExecuteAsync(ticketId));
-        _analysisStore.Verify(s => s.GetLatestAnalysisAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
-        _requestAiTriage.Verify(r => r.ExecuteAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+        Assert.True(result.AppliedToTicket);
+        Assert.Equal(SuggestionDecision.Rejected, analysis.Suggestions.Single(s => s.Type == SuggestionType.Category).Decision);
+        _analysisStore.Verify(s => s.SaveAnalysisAsync(analysis, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
-    public async Task GetTicketTriage_WhenRequesterOwnsTicketAndNoAnalysis_ReturnsUnavailableWithoutTriggeringAi()
+    public async Task Override_WithoutAnalysis_StillAppliesAsManualFallback()
     {
-        var ticketId = Guid.NewGuid();
-        var ownerId = Guid.NewGuid();
-        SetupCurrentUser(ownerId, RoleNames.Requester);
-        _ticketBridge.Setup(b => b.GetSnapshotAsync(ticketId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(CreateSnapshot(ticketId, ownerId));
-        _analysisStore.Setup(s => s.GetLatestAnalysisAsync(ticketId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((AIAnalysis?)null);
+        SetupSnapshot(canTriage: true);
+        _analysisStore.Setup(s => s.GetLatestAnalysisAsync(_ticketId, It.IsAny<CancellationToken>())).ReturnsAsync((AIAnalysis?)null);
 
-        var useCase = new GetTicketTriageUseCase(_analysisStore.Object, _requestAiTriage.Object, _ticketBridge.Object, _currentUser.Object);
+        await Decide().ExecuteAsync(new TriageDecisionCommand(
+            _ticketId, TriageDecisionType.Override, Impact.Low, Urgency.Low, null, "AI không khả dụng", 1u));
 
-        var result = await useCase.ExecuteAsync(ticketId);
-
-        Assert.Equal(TriageOutcome.Unavailable, result.Outcome);
-        _requestAiTriage.Verify(r => r.ExecuteAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+        _ticketBridge.Verify(b => b.ApplyTriageDecisionAsync(_ticketId, Impact.Low, Urgency.Low, null,
+            It.IsAny<string>(), 1u, It.IsAny<CancellationToken>()), Times.Once);
+        VerifyAnalysisNotSaved();
     }
 
     [Fact]
-    public async Task GetTicketTriage_WhenAgentAndNoAnalysis_TriggersAiAnalysis()
+    public async Task Reject_RecordsDecisionWithoutTouchingTicket()
     {
-        var ticketId = Guid.NewGuid();
-        var agentId = Guid.NewGuid();
-        var ownerId = Guid.NewGuid();
-        SetupCurrentUser(agentId, RoleNames.Agent);
-        _ticketBridge.Setup(b => b.GetSnapshotAsync(ticketId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(CreateSnapshot(ticketId, ownerId));
-        _analysisStore.Setup(s => s.GetLatestAnalysisAsync(ticketId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((AIAnalysis?)null);
-        var expected = new AgentTriageView { Outcome = TriageOutcome.Success, SuggestedCategory = TicketCategory.NET };
-        _requestAiTriage.Setup(r => r.ExecuteAsync(ticketId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(expected);
+        SetupSnapshot(canTriage: true);
+        var analysis = SetupFullAnalysis();
 
-        var useCase = new GetTicketTriageUseCase(_analysisStore.Object, _requestAiTriage.Object, _ticketBridge.Object, _currentUser.Object);
+        var result = await Decide().ExecuteAsync(new TriageDecisionCommand(_ticketId, TriageDecisionType.Reject, Reason: "Sai danh mục"));
 
-        var result = await useCase.ExecuteAsync(ticketId);
-
-        Assert.Same(expected, result);
-        _requestAiTriage.Verify(r => r.ExecuteAsync(ticketId, It.IsAny<CancellationToken>()), Times.Once);
+        Assert.False(result.AppliedToTicket);
+        Assert.All(analysis.Suggestions, s => Assert.Equal(SuggestionDecision.Rejected, s.Decision));
+        VerifyTicketNotWritten();
     }
 
-    private void SetupCurrentUser(Guid userId, string role)
+    [Fact]
+    public async Task Reject_WithoutAnalysis_IsConflictNotFalseSuccess()
     {
-        _currentUser.SetupGet(u => u.IsAuthenticated).Returns(true);
-        _currentUser.SetupGet(u => u.UserId).Returns(userId.ToString("D"));
-        _currentUser.SetupGet(u => u.Roles).Returns([role]);
-        _currentUser.Setup(u => u.IsInRole(It.IsAny<string>()))
-            .Returns((string r) => string.Equals(r, role, StringComparison.OrdinalIgnoreCase));
-    }
+        SetupSnapshot(canTriage: true);
+        _analysisStore.Setup(s => s.GetLatestAnalysisAsync(_ticketId, It.IsAny<CancellationToken>())).ReturnsAsync((AIAnalysis?)null);
 
-    private static TicketTriageSnapshotDto CreateSnapshot(Guid ticketId, Guid requesterId) =>
-        new(ticketId, 1, "VPN down", "Cannot connect", "NET", null, null, null, TicketStatus.Submitted, requesterId);
+        await Assert.ThrowsAsync<TriageDecisionConflictException>(() =>
+            Decide().ExecuteAsync(new TriageDecisionCommand(_ticketId, TriageDecisionType.Reject, Reason: "Sai")));
+        VerifyAnalysisNotSaved();
+    }
 }

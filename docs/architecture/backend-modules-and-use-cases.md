@@ -88,4 +88,4 @@ Application sở hữu `TriageRequest`, `TriageResult` và các cổng. Infrastr
 
 Domain kiểm tra định danh ảnh chụp dữ liệu, phiên bản, mã băm, quan hệ sở hữu đề xuất, giá trị enum và quyết định kết thúc. Thuật toán mã băm v2 có giá trị kiểm chứng trong [hợp đồng AI](../../contracts/ai/v1/README.md). Dịch vụ AI phải phản hồi mã băm và các định danh liên kết nguyên trạng.
 
-Chưa có nhà cung cấp AI thật, API AI, dữ liệu AI được lưu, SLA hoặc dữ liệu hồ sơ đầy đủ. Việc bổ sung các phần đó thuộc quyết định và thay đổi riêng.
+Ba API triage đã có. AIAssistance đọc và ghi phiếu chỉ qua `ITicketTriageBridge`; Ticketing cài đặt cổng này ở tầng Application và tự kiểm quyền theo người dùng hiện tại. Kết quả phân tích mới lưu trong bộ nhớ; chưa có lưu bền dữ liệu AI. Xem [quy tắc triage AI](current-backend-contract.md#triage-ai).
