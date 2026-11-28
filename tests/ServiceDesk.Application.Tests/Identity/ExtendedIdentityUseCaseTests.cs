@@ -1,4 +1,7 @@
 using System.Security.Claims;
+using Microsoft.Extensions.Options;
+using ServiceDesk.Modules.Identity.Infrastructure;
+using ServiceDesk.Modules.Identity.Infrastructure.Options;
 using Moq;
 using ServiceDesk.SharedKernel.Application.Abstractions;
 using ServiceDesk.Modules.Identity.Application.AssignUserRoles;
@@ -27,6 +30,10 @@ public sealed class ExtendedIdentityUseCaseTests
     private readonly Mock<IClock> _clock = new();
     private readonly Mock<IPasswordResetGateway> _passwordReset = new();
     private readonly Mock<IOtpSender> _otpSender = new();
+    private readonly IOtpCodeProtector _protector = new OtpCodeProtector(Options.Create(new OtpProtectionOptions
+    {
+        Key = Convert.ToBase64String(Enumerable.Range(1, 32).Select(i => (byte)i).ToArray())
+    }));
     private readonly DateTimeOffset _now = new(2026, 11, 6, 12, 0, 0, TimeSpan.Zero);
 
     public ExtendedIdentityUseCaseTests()
@@ -182,7 +189,7 @@ public sealed class ExtendedIdentityUseCaseTests
 
     private ForgotPasswordUseCase ForgotPassword() => new(_resetQueue.Object);
 
-    private PasswordResetCodeIssuer Issuer() => new(_accounts.Object, _otpStore.Object, _otpSender.Object, _clock.Object);
+    private PasswordResetCodeIssuer Issuer() => new(_accounts.Object, _otpStore.Object, _otpSender.Object, _clock.Object, _protector);
 
     [Theory]
     [InlineData(" User@Test.com ")]
@@ -221,7 +228,7 @@ public sealed class ExtendedIdentityUseCaseTests
         Assert.NotNull(sentCode);
         Assert.Matches("^[0-9]{6}$", sentCode);
         _otpStore.Verify(s => s.TryIssueAsync(It.Is<OtpCode>(o => o.Target == "user@test.com" && o.Purpose == OtpCode.ResetPasswordPurpose &&
-            o.CodeHash != sentCode && o.ExpiresAt == _now.UtcDateTime.AddMinutes(15) && o.FailedAttempts == 0),
+            o.CodeHash.StartsWith("v1:") && o.CodeHash != sentCode && o.ExpiresAt == _now.UtcDateTime.AddMinutes(15) && o.FailedAttempts == 0),
             OtpCode.MaxIssuedPerHour, _now.UtcDateTime.AddHours(-1), It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -254,18 +261,18 @@ public sealed class ExtendedIdentityUseCaseTests
         _passwordReset.Setup(g => g.ResetWithOtpAsync("user@test.com", It.IsAny<string>(), "NewPass123", _now.UtcDateTime, It.IsAny<CancellationToken>()))
             .ReturnsAsync(IdentityOperationResult.Success());
 
-        var useCase = new ResetPasswordUseCase(_passwordReset.Object, _clock.Object);
+        var useCase = new ResetPasswordUseCase(_passwordReset.Object, _clock.Object, _protector);
         var result = await useCase.ExecuteAsync(new ResetPasswordRequest(" User@Test.com ", " 123456 ", "NewPass123"));
 
         Assert.True(result.Succeeded);
-        _passwordReset.Verify(g => g.ResetWithOtpAsync("user@test.com", It.Is<string>(h => h != "123456" && h.Length == 64), "NewPass123",
+        _passwordReset.Verify(g => g.ResetWithOtpAsync("user@test.com", It.Is<string>(h => h != "123456" && h.StartsWith("v1:") && h.Length == 67), "NewPass123",
             _now.UtcDateTime, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
     public async Task ResetPassword_WithMissingFields_DoesNotCallGateway()
     {
-        var useCase = new ResetPasswordUseCase(_passwordReset.Object, _clock.Object);
+        var useCase = new ResetPasswordUseCase(_passwordReset.Object, _clock.Object, _protector);
         var result = await useCase.ExecuteAsync(new ResetPasswordRequest("user@test.com", "", "NewPass123"));
 
         Assert.False(result.Succeeded);

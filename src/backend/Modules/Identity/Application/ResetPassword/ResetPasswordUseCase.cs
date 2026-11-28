@@ -1,5 +1,5 @@
 using ServiceDesk.SharedKernel.Application.Abstractions;
-using ServiceDesk.Modules.Identity.Application.Common;
+using ServiceDesk.Modules.Identity.Domain;
 using ServiceDesk.Modules.Identity.Application.Contracts;
 using ServiceDesk.Modules.Identity.Application.Ports;
 
@@ -16,7 +16,8 @@ public interface IResetPassword
 /// </summary>
 internal sealed class ResetPasswordUseCase(
     IPasswordResetGateway passwordReset,
-    IClock clock) : IResetPassword
+    IClock clock,
+    IOtpCodeProtector protector) : IResetPassword
 {
     public Task<IdentityOperationResult> ExecuteAsync(ResetPasswordRequest request, CancellationToken cancellationToken = default)
     {
@@ -29,7 +30,7 @@ internal sealed class ResetPasswordUseCase(
         }
 
         var normalizedEmail = request.Email.Trim().ToLowerInvariant();
-        var codeHash = TokenHasher.Hash(request.OtpCode.Trim());
+        var codeHash = protector.Hash(normalizedEmail, OtpCode.ResetPasswordPurpose, request.OtpCode.Trim());
         return passwordReset.ResetWithOtpAsync(normalizedEmail, codeHash, request.NewPassword, clock.UtcNow.UtcDateTime, cancellationToken);
     }
 }

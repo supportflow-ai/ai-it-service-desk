@@ -86,6 +86,7 @@ public async Task<string> CreateTokenAsync(Guid userId, string role = "Requester
                 }));
             builder.ConfigureServices(services =>
             {
+                services.AddTestOtpKey();
 
                 // Program captures JwtOptions before WebApplicationFactory's configuration callback.
                 // Override only fixture issuer/audience/key, retaining the real JWT handler and all validation flags.

@@ -52,7 +52,8 @@ Hệ quả: chưa task nào có thể chuyển `Verified` trên máy này cho t�
 | G3-01 | Implemented | Bắt buộc persistence, user/stamp hiện hành; RED đúng hai đường bypass, GREEN JWT/Identity/idempotency và PostgreSQL hai host. Chờ CI/duyệt đúng SHA; bằng chứng cuối tệp. |
 | G3-02 | Implemented | Kiểm định rotation/replay, family, expiry và hai host; bổ sung 3 test, nhóm session/Identity/JWT 42/42. TTL đã được chủ dự án chốt access 60 phút, refresh 7 ngày; đồng bộ infra trong đợt này. Chờ CI/duyệt. |
 | G3-03 | Pending — lỗi đã xác minh | `PasswordResetQueue.cs` dùng `Channel<string>` trong RAM, mất khi tiến trình dừng |
-| G3-04, G3-06 | Pending | Chưa rà |
+| G3-04 | Implemented | OTP HMAC v1 gắn email/mục đích với khóa riêng bắt buộc. HTTP negative, concurrent reset, rollback password/stamp/OTP/session và log redaction đã kiểm PostgreSQL. Chờ CI/duyệt. |
+| G3-06 | Pending | Chưa rà |
 | G3-05 | Implemented | Admission/expiry/counter cùng khóa, tối đa 4096 partition email và 320 ký tự sau trim; đầy trả 429, giữ ngân sách cũ. RED/GREEN, proxy, toàn suite và image đạt local; chờ CI/duyệt đúng SHA. |
 | G4-01 … G4-09 | Pending | Chưa rà |
 | G5-01 … G5-08 | Pending | Chưa rà |
@@ -175,3 +176,13 @@ Lệnh chạy trong SDK Linux riêng từ bản sao nguồn đã đồng bộ xo
 - G3-04: thêm cổng bảo vệ OTP và cấu hình khóa OTP riêng, HMAC gắn email/mục đích, giữ CSPRNG, constant-time, TTL/attempts/issuance và transaction hiện có. Không thay SHA-256 của refresh token entropy cao. OTP digest cũ bị từ chối, người dùng yêu cầu mã mới; không thêm fallback digest không khóa. Tests/fixture dựng khóa thử hợp lệ, không giảm assertion nghiệp vụ. Kiểm thiếu/sai khóa, khác email/mục đích/khóa, rollback và thu hồi phiên trên PostgreSQL.
 - G3-03: lưu yêu cầu trước khi xác nhận tiếp nhận; PostgreSQL claim/lease, outbox payload mã hóa cùng transaction phát OTP, gửi SMTP ngoài transaction, bounded retry và expiry. Giữ cùng mã khi retry, không lưu OTP plaintext. Worker gửi chạy trong API như thiết kế hiện hành và phối hợp qua PostgreSQL; không thêm Redis hay scheduler framework. Kiểm không cấu hình SMTP, timeout/permanent failure, quá tải, retry sau restart/lease và không gửi mã cũ/hết hạn.
 - Gate mỗi task: RED phù hợp → sửa nhỏ → target/Architecture/PostgreSQL → review độc lập, tài liệu canonical/state, commit cục bộ; cuối đợt locked restore/build/toàn suite/ba image và migration/model check nếu có schema mới. Không push/PR/publish, không gửi email thật, không dùng DB ngoài fixture dùng một lần. G3-04/G3-03 đang triển khai; CI/người duyệt PR còn là gate riêng.
+
+
+### G3-04 — bảo vệ OTP (28/11/2026)
+
+- G3-02 đã commit `86f2e06`. G3-04 dùng `IOtpCodeProtector`/`OtpCodeProtector`, HMAC-SHA-256 trên tuple có namespace/version, mục đích, email và mã được serialize không nhập nhằng. Khóa `Otp:Key` riêng 32 byte Base64 bắt buộc ở startup, không dùng lại JWT; cột hiện tại đủ chứa digest `v1:` + 64 hex nên không đổi schema/migration. Không đổi hashing refresh.
+- Giữ CSPRNG, constant-time, TTL/attempts/issuance và transaction hiện hành; token/digest OTP cũ không được fallback. Người dùng yêu cầu lại mã khi rollout hoặc xoay khóa. Đã bổ sung `.env.example`, README, contract và fixtures với khóa thử riêng; không có khóa thật trong Git/chat/log.
+- RED `otp-hash-red.log`: 1 test thất bại vì issuer cũ không lưu digest có phiên bản/bảo vệ. GREEN: Identity Application 58/58; nhóm HTTP/Identity/JWT/contract/startup/OTP 126/126; Architecture 57/57, Failed/Skipped 0. Release build 0 warning/error. Artifact `.cache/hardening-linux/otp-hash-{build,application,integration,architecture}.log` và thư mục TRX cùng tên. Có lỗi dựng test ban đầu (thiếu import, EF1002 khi DDL inline), đã sửa bằng Npgsql DDL chỉ cho fixture dùng một lần, không hạ cảnh báo.
+- Reviewer độc lập không thấy bug HMAC/config; chỉ ra ba gap bắt buộc, đã bổ sung: hai HTTP reset qua hai host cùng OTP chỉ một thắng; trigger PostgreSQL từ chối đánh dấu OTP sau khi ghi password chứng minh rollback password/stamp/OTP/session rồi retry thành công; capture logger của HTTP chứng minh không có OTP/email/khóa/password. Ba test bổ sung GREEN trong nhóm 126.
+- Infra đã đồng bộ default access 60 phút ở hai Compose và cả hai mẫu env triển khai, giữ refresh 7 ngày trong backend; truyền `OTP_KEY` vào hai API ở Compose triển khai và CI/local. Không đổi env thật hoặc release lock. Ba lệnh Compose `config --quiet` theo AGENTS infra và 22 unit test infra đạt (`otp-infra-unit.log`), không chạy stack/smoke phát hành. Commit infra riêng ở bước cấu hình của đợt này.
+- G3-04 giữ Implemented, chờ CI và duyệt đúng SHA; G3-03 tiếp theo. Chưa gọi local pass là Verified. Gate toàn suite/image nguồn cuối sẽ chạy sau thay đổi durable delivery.

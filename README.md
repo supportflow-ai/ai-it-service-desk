@@ -144,6 +144,8 @@ Frontend và AI Service kiểm thử và build ở kho riêng. Infra dùng SHA B
 
 ## Database và triển khai
 
+API bắt buộc `Otp__Key`: khóa OTP riêng gồm 32 byte ngẫu nhiên, mã hóa Base64, dùng chung giữa các replica và giữ ổn định qua restart. Không dùng lại khóa JWT. Có thể tạo riêng bằng `python -c "import base64,secrets; print(base64.b64encode(secrets.token_bytes(32)).decode())"` trong terminal cá nhân; không gửi khóa vào chat hoặc đưa vào Git. Đổi khóa OTP làm các mã cũ mất hiệu lực; người dùng yêu cầu mã mới.
+
 Production bắt buộc khóa JWT riêng ít nhất 32 byte UTF-8; khóa mẫu/thiếu bị từ chối. Giữ khóa mạnh, issuer và audience đang dùng để duy trì token hợp lệ. Tài khoản demo chỉ được tạo bằng lệnh riêng `seed-demo` trong Development/Test khi được bật rõ ràng, không được seed lúc API/Worker khởi động.
 
 Công cụ `ServiceDesk.Migrator` hỗ trợ `migrate`, `seed-roles`, `seed-demo`, `bootstrap-admin`, `check-production`. Bootstrap Admin chỉ tạo tài khoản mới, nhận credential qua biến môi trường trên tiến trình một lần. Mã lỗi an toàn gồm `demo_seed_forbidden`, `bootstrap_existing_account`, `demo_default_password_present`.

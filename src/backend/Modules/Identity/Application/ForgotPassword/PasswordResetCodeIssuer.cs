@@ -1,6 +1,5 @@
 using System.Security.Cryptography;
 using ServiceDesk.SharedKernel.Application.Abstractions;
-using ServiceDesk.Modules.Identity.Application.Common;
 using ServiceDesk.Modules.Identity.Application.Ports;
 using ServiceDesk.Modules.Identity.Domain;
 
@@ -15,7 +14,8 @@ internal sealed class PasswordResetCodeIssuer(
     IUserAccountGateway accounts,
     IOtpCodeStore otpStore,
     IOtpSender sender,
-    IClock clock)
+    IClock clock,
+    IOtpCodeProtector protector)
 {
     public async Task IssueAsync(string normalizedEmail, CancellationToken cancellationToken = default)
     {
@@ -27,7 +27,7 @@ internal sealed class PasswordResetCodeIssuer(
 
         var now = clock.UtcNow.UtcDateTime;
         var rawOtp = RandomNumberGenerator.GetInt32(100000, 1000000).ToString(System.Globalization.CultureInfo.InvariantCulture);
-        var otp = OtpCode.Issue(normalizedEmail, OtpCode.ResetPasswordPurpose, TokenHasher.Hash(rawOtp), now);
+        var otp = OtpCode.Issue(normalizedEmail, OtpCode.ResetPasswordPurpose, protector.Hash(normalizedEmail, OtpCode.ResetPasswordPurpose, rawOtp), now);
         if (!await otpStore.TryIssueAsync(otp, OtpCode.MaxIssuedPerHour, now.AddHours(-1), cancellationToken))
         {
             return;

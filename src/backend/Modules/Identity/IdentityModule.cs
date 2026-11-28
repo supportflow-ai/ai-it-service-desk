@@ -126,6 +126,9 @@ public static class IdentityModule
     public static IServiceCollection AddIdentityInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddSingleton<IAccessTokenIssuer, JwtTokenGenerator>();
+        services.AddOptions<OtpProtectionOptions>().Bind(configuration.GetSection(OtpProtectionOptions.SectionName))
+            .Validate(o => o.HasValidKey(), "Otp:Key cần khóa riêng 32 byte được mã hóa Base64.").ValidateOnStart();
+        services.AddSingleton<IOtpCodeProtector, OtpCodeProtector>();
         // Quên mật khẩu: endpoint chỉ xếp hàng, phát và gửi mã chạy nền để phản hồi không lộ email nào tồn tại.
         services.AddSingleton<PasswordResetQueue>();
         services.AddSingleton<IPasswordResetQueue>(sp => sp.GetRequiredService<PasswordResetQueue>());

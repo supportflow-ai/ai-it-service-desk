@@ -68,6 +68,7 @@ public sealed class ApiContractTests
             builder.UseEnvironment("Development");
             builder.ConfigureTestServices(services =>
             {
+                services.AddTestOtpKey();
                 services.AddDataProtection().UseEphemeralDataProtectionProvider();
                 foreach (var service in services.Where(d => d.ServiceType == typeof(IHostedService) &&
                              d.ImplementationType?.Name == "IdentityDataSeeder").ToArray())

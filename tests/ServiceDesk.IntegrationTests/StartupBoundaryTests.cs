@@ -40,7 +40,16 @@ public sealed class StartupBoundaryTests
         Assert.ThrowsAny<OptionsValidationException>(() => factory.CreateClient());
     }
 
-    private sealed class Factory(string secret) : WebApplicationFactory<ServiceDesk.Api.Program>
+[Theory]
+    [InlineData("")]
+    [InlineData("invalid")]
+    public void ApiStartupFailsWhenOtpKeyIsMissingOrInvalid(string key)
+    {
+        using var factory = new Factory("valid_production_signing_key_0123456789abcdef", key);
+        Assert.ThrowsAny<OptionsValidationException>(() => factory.CreateClient());
+    }
+
+    private sealed class Factory(string secret, string? otpKey = null) : WebApplicationFactory<ServiceDesk.Api.Program>
     {
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
@@ -48,6 +57,7 @@ public sealed class StartupBoundaryTests
             builder.ConfigureAppConfiguration((_, configuration) => configuration.AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["Jwt:SecretKey"] = secret,
+                ["Otp:Key"] = otpKey ?? OtpTestSettings.Key,
                 ["Database:ConnectionString"] = "Host=127.0.0.1;Port=1;Database=unavailable;Username=test;Password=test;Timeout=1"
             }));
         }

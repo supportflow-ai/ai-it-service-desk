@@ -40,6 +40,7 @@ public class ServiceDeskWebApplicationFactory : WebApplicationFactory<ServiceDes
 
         builder.ConfigureServices(services =>
         {
+                services.AddTestOtpKey();
             // Remove the existing DbContext registration
             services.RemoveAll<DbContextOptions<ApplicationDbContext>>();
             services.RemoveAll<IDbContextOptionsConfiguration<ApplicationDbContext>>();
