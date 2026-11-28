@@ -50,7 +50,7 @@ Hệ quả: chưa task nào có thể chuyển `Verified` trên máy này cho t�
 | G2-04 | In Progress | Đã bảo toàn outcome và validation errors sau lưu/đọc; chưa đánh giá toàn bộ checklist lifecycle riêng |
 | G2-06 | In Progress | Snapshot OpenAPI, nguồn/checksum và kiểu sinh của web đã đồng bộ; sửa bộ sinh để giữ nullable trên `$ref`. Luồng UI cũ chưa nối hợp đồng toàn analysis; panel tiếp tục tắt. AI v1 chưa có metadata model/version, không giả lập provenance |
 | G3-01 | Implemented | Bắt buộc persistence, user/stamp hiện hành; RED đúng hai đường bypass, GREEN JWT/Identity/idempotency và PostgreSQL hai host. Chờ CI/duyệt đúng SHA; bằng chứng cuối tệp. |
-| G3-02 | Pending | Chưa rà |
+| G3-02 | Implemented | Kiểm định rotation/replay, family, expiry và hai host; bổ sung 3 test, nhóm session/Identity/JWT 42/42. TTL đã được chủ dự án chốt access 60 phút, refresh 7 ngày; đồng bộ infra trong đợt này. Chờ CI/duyệt. |
 | G3-03 | Pending — lỗi đã xác minh | `PasswordResetQueue.cs` dùng `Channel<string>` trong RAM, mất khi tiến trình dừng |
 | G3-04, G3-06 | Pending | Chưa rà |
 | G3-05 | Implemented | Admission/expiry/counter cùng khóa, tối đa 4096 partition email và 320 ký tự sau trim; đầy trả 429, giữ ngân sách cũ. RED/GREEN, proxy, toàn suite và image đạt local; chờ CI/duyệt đúng SHA. |
@@ -165,3 +165,13 @@ Lệnh chạy trong SDK Linux riêng từ bản sao nguồn đã đồng bộ xo
 - G3-01/G3-05 giữ **Implemented**. Chưa push, chưa PR, chưa CI trên SHA mới, chưa duyệt PR của thành viên khác; không gọi đây là Verified hoặc production-ready. Web chỉ cần biết 401 với token thiếu/stamp cũ và body 429 thống nhất; không có snapshot OpenAPI cần đồng bộ. G2-04, G2-06/G7-02 và dependency web vẫn là các đợt riêng.
 
 - Cleanup: đã đối chiếu SHA-256 hai tệp production giữa workspace và bản sao Linux đã kiểm thử, khớp hoàn toàn. Không còn container Testcontainers đang chạy. Đã kiểm nhãn sở hữu và dừng riêng `sd-hardening-g3-sdk`; giữ nguyên container/volume cũ, dịch vụ và dữ liệu của người dùng. Không sửa `.serena/`.
+
+
+## Đợt session và OTP — kế hoạch thực thi (28/11/2026)
+
+- Người dùng giao toàn bộ phạm vi G3-02 → G3-04 → G3-03, commit riêng. Mốc bắt đầu `Refactor-2@e40c0a14d68e1490867afcaa2a7796b8a9df5a21`, tracked/index sạch, giữ `.serena/`. Không mở rộng AI/UI, nâng dependency hay triển khai.
+- G3-02: giữ khóa dòng người dùng và rotation có điều kiện; kiểm refresh/revoke/reset, replay, TTL, host mới và hai host cùng PostgreSQL. Bổ sung `IdentitySessionPostgresTests`: host tái tạo + replay/family độc lập, concurrent refresh/logout qua hai host, expired refresh không ảnh hưởng thiết bị khác. Nhóm kiểm định 42/42, Failed/Skipped 0 (`.cache/hardening-linux/otp-session.log`, TRX `otp-session/`); build Release đạt. Host tái tạo là bằng chứng host/context mới, chưa gọi là restart process thật.
+- Quyết định TTL của chủ dự án trong phiên: access **60 phút**, refresh **7 ngày**. Infra đang override 1440 phút tại hai Compose triển khai; sửa default và mẫu env theo quyết định, không thao tác môi trường thật. Infra baseline `docs/dong-bo-tai-lieu-2026-11-21@fae1d98b7732b71b70db38b477158d713f57e046`, working tree sạch. Giữ nguyên release lock/digest.
+- G3-04: thêm cổng bảo vệ OTP và cấu hình khóa OTP riêng, HMAC gắn email/mục đích, giữ CSPRNG, constant-time, TTL/attempts/issuance và transaction hiện có. Không thay SHA-256 của refresh token entropy cao. OTP digest cũ bị từ chối, người dùng yêu cầu mã mới; không thêm fallback digest không khóa. Tests/fixture dựng khóa thử hợp lệ, không giảm assertion nghiệp vụ. Kiểm thiếu/sai khóa, khác email/mục đích/khóa, rollback và thu hồi phiên trên PostgreSQL.
+- G3-03: lưu yêu cầu trước khi xác nhận tiếp nhận; PostgreSQL claim/lease, outbox payload mã hóa cùng transaction phát OTP, gửi SMTP ngoài transaction, bounded retry và expiry. Giữ cùng mã khi retry, không lưu OTP plaintext. Worker gửi chạy trong API như thiết kế hiện hành và phối hợp qua PostgreSQL; không thêm Redis hay scheduler framework. Kiểm không cấu hình SMTP, timeout/permanent failure, quá tải, retry sau restart/lease và không gửi mã cũ/hết hạn.
+- Gate mỗi task: RED phù hợp → sửa nhỏ → target/Architecture/PostgreSQL → review độc lập, tài liệu canonical/state, commit cục bộ; cuối đợt locked restore/build/toàn suite/ba image và migration/model check nếu có schema mới. Không push/PR/publish, không gửi email thật, không dùng DB ngoài fixture dùng một lần. G3-04/G3-03 đang triển khai; CI/người duyệt PR còn là gate riêng.
