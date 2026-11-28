@@ -174,6 +174,8 @@ Nguồn: [TicketStatus](../../src/backend/Modules/Ticketing/Domain/TicketStatus.
 - Replay trả response đã lưu sau kiểm tra quyền sở hữu, không dựng lại từ ticket có thể thay đổi. Không dùng cache trong tiến trình thay cơ chế này.
 - Dấu vân tay tạo phiếu giữ thuật toán riêng; không thay bằng mã băm AI `ai-input-v2`.
 
+Kiểm định G4-02 trên hai host và cùng PostgreSQL: normal mutation giữ `xmin`, ticket và timeline commit hoặc rollback cùng nhau, cả khi lỗi audit phát sinh tại commit. [Các ca race command](../../tests/ServiceDesk.IntegrationTests/TicketCommandConcurrencyTests.cs) chặn hai lượt ngay trước SaveChanges để cùng dùng revision cũ: chỉ một mutation/audit thắng. Retry cùng revision sau khi mất response trả 409, không ghi thêm; cơ chế phát lại nguyên response vẫn chỉ dành cho Create có Idempotency-Key. Không mở rộng idempotency hoặc tăng isolation toàn hệ thống.
+
 ## Kiểm chứng và giới hạn
 
 [OpenAPI baseline](../../contracts/backend/openapi-baseline.json) cùng [ApiContractTests](../../tests/ServiceDesk.IntegrationTests/ApiContractTests.cs), [TicketAccessScopeTests](../../tests/ServiceDesk.IntegrationTests/TicketAccessScopeTests.cs), [TicketIdempotencyPostgresTests](../../tests/ServiceDesk.IntegrationTests/TicketIdempotencyPostgresTests.cs) bảo vệ các phần tương ứng. Baseline OpenAPI không thay kiểm thử hành vi, dữ liệu và quyền.

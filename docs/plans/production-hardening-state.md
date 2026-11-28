@@ -56,7 +56,8 @@ Hệ quả: chưa task nào có thể chuyển `Verified` trên máy này cho t�
 | G3-06 | Implemented | Actor bắt buộc ở Application, profile nguyên tử/kiểm IdentityResult, phòng ban kiểm input và conflict đồng thời, trả tên đã lưu và sửa status OpenAPI. RED/GREEN, ma trận role HTTP và hồi quy PostgreSQL đạt; chờ đồng bộ web, review toàn đợt, CI/duyệt đúng SHA. |
 | G3-05 | Implemented | Admission/expiry/counter cùng khóa, tối đa 4096 partition email và 320 ký tự sau trim; đầy trả 429, giữ ngân sách cũ. RED/GREEN, proxy, toàn suite và image đạt local; chờ CI/duyệt đúng SHA. |
 | G4-01 | Implemented | Ma trận canonical và 96 ca source/target cho 12 lệnh, giữ DEC-09; sửa triage enum sai gây mutation một phần sau RED 4 ca. Domain 331/331, Application Ticketing và HTTP lifecycle/quyền/revision/audit đạt; chờ gate cuối đợt/CI/duyệt. |
-| G4-02, G4-03 | In Progress | Đang kiểm concurrency hai host và policy team/attachment; không thay cơ chế idempotency đã có. |
+| G4-02 | Implemented | 6 ca race mutation hai host dùng chung PostgreSQL, rendezvous trước SaveChanges; một winner/một audit, stale retry không ghi lần hai. Hồi quy idempotency/commit failure/cancellation đạt; chờ review/gate cuối/CI/duyệt. |
+| G4-03 | In Progress | Kiểm policy team/attachment; không thay cơ chế quyền đã chốt. |
 | G4-04 … G4-09 | Pending | Đã đọc requirement; tiếp tục đối chiếu mã/kiểm thử và blocker chính sách/R2 theo phạm vi người dùng giao. |
 | G5-01 … G5-08 | Pending | Chưa rà |
 | G6-01 … G6-06 | Pending | Chưa rà |
@@ -267,3 +268,9 @@ Lệnh chạy trong SDK Linux riêng từ bản sao nguồn đã đồng bộ xo
 - Bổ sung ma trận Domain 12 lệnh × 8 trạng thái reachable = **96 characterization cases**, đã đạt trước sửa. Tìm thấy `SetTriage` ghi category/Impact/Urgency trước khi kiểm enum; 4 hồi quy mới RED vì aggregate bị mutation sau khi ném lỗi (`g401-red/`: 96 đạt, 4 lỗi). Chỉ chuyển tính/kiểm priority trước mutation, không thay luật vòng đời hoặc SLA.
 - GREEN sau sửa: Domain **331/331**, Application Ticketing **209/209**, HTTP/PostgreSQL lifecycle, team/role/resource scope, revision và audit **54/54** (`g401-{domain,application,http}`), Failed/Skipped 0; Release build 0 warning/error. Ma trận canonical bổ sung hàng Transfer, link test và ghi rõ không tự triển khai Draft/Triaged khi DEC-09 chưa chốt. Không đổi API/schema/migration hay audit semantics.
 - G4-02/03 tiếp tục bù ca race và biên policy theo phần còn thiếu của checklist; các ca idempotency/rollback/lock-timeout/thu hồi quyền đã có được giữ nguyên, không viết lại implementation vì nhãn Pending.
+
+### G4-02 — đồng thời và idempotency
+
+- Đọc command guard, scope query, writer và các use case mutation. Không thiếu cơ chế persistence: normal mutation dùng `xmin`, ticket và timeline cùng một SaveChanges/transaction EF; HITL giữ ordering analysis → ticket → team/membership; create dùng advisory lock theo requester/key và receipt cùng transaction. Không tăng isolation hoặc thêm idempotency cho mọi route.
+- Bổ sung **6 ca** PostgreSQL qua hai host: Claim/Claim, Assign/Transfer, Assign/Unassign, Transfer/Resolve, Close/Reopen và Update/Resolve. 5 cặp cùng hợp lệ được rendezvous ngay trước SaveChanges để chắc chắn đọc cùng revision trước ghi; một 200, một 409 và đúng một audit. Update ở InProgress không hợp lệ nên bị 400 hoặc 409, Resolve thắng; không đổi luật Update chỉ Submitted. Retry sau giả lập mất response bằng revision cũ trả 409 và giữ một audit (`g402-races`: **6/6**).
+- Bộ chung với idempotency, audit deferred failure tại commit, cancellation, lock timeout, hai host, quyền nhóm và attachment: **72/72** (`g402-403-regression`), build Release 0 warning/error; Failed/Skipped 0. Các characterization mới đạt trên implementation hiện có, không chế RED bằng cách nới/bẻ invariant rồi viết lại code. Bằng chứng mất response cho Create là replay receipt; mutation khác là stale-revision rejection, không tuyên bố có response replay cho các lệnh đó.
