@@ -40,7 +40,7 @@ internal sealed class GetAttachmentDownloadUrlUseCase(
         if (!await attachmentStore.ExistsAsync(query.TicketId, query.StorageKey, cancellationToken))
             throw new KeyNotFoundException("Attachment not found.");
 
-        const int expirySeconds = 3600;
+        var expirySeconds = storageService.DownloadExpirySeconds;
         try
         {
             var downloadUrl = await storageService.GetPresignedDownloadUrlAsync(storageService.DefaultBucket, query.StorageKey, expirySeconds, cancellationToken);

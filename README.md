@@ -45,13 +45,13 @@ Mở terminal khác, từ gốc repo khởi chạy API:
 python scripts/run_backend.py --no-build api
 ```
 
-API chạy tại `http://localhost:5000`; mở `http://localhost:5000/swagger` để thử API trong Development. Kiểm tra `http://localhost:5000/health/live` cho tiến trình và `http://localhost:5000/health/ready` cho kết nối PostgreSQL. Readiness không xác nhận schema/role đã được khởi tạo hoặc MinIO sẵn sàng. Dừng API/tunnel bằng Ctrl+C tại terminal tương ứng.
+API chạy tại `http://localhost:5000`; mở `http://localhost:5000/swagger` để thử API trong Development. Kiểm tra `http://localhost:5000/health/live` cho tiến trình và `http://localhost:5000/health/ready` cho kết nối PostgreSQL. Readiness không xác nhận schema/role đã được khởi tạo hoặc object storage sẵn sàng. Dừng API/tunnel bằng Ctrl+C tại terminal tương ứng.
 
 **.NET không tự đọc `.env`.** Công cụ Python nạp file vào tiến trình con, rồi gọi `dotnet run` với `Release` và không dùng launch profile. Biến môi trường đã có ưu tiên hơn file; vì vậy biến cũ trong terminal có thể làm ứng dụng kết nối nhầm đích. Công cụ từ chối hai tên môi trường không khớp nhau. Xem [quy tắc nạp cấu hình](docs/runbooks/environment-runbook.md#nạp-cấu-hình-và-khởi-chạy).
 
 Database mới cần được người phụ trách chạy `migrate` và `seed-roles` bằng công cụ Migrator sau khi xác minh đích. API/Worker không tự thực hiện các bước này. Database dùng chung đã khởi tạo thì thành viên chỉ cần kết nối, không chạy migration lại theo nhánh cá nhân.
 
-Đăng ký, đăng nhập và thao tác ticket không cần MinIO; chỉ luồng tệp đính kèm cần MinIO. Chỉ điền cấu hình MinIO khi có dịch vụ thật; tên `minio:9000` chỉ dùng được trong mạng Docker có dịch vụ tên đó. Quên mật khẩu ghi yêu cầu vào PostgreSQL; worker nhúng trong API gửi qua `Email__Smtp__*`. Chưa cấu hình SMTP thì job thất bại, không gửi (xem [.env.example](.env.example)). API bắt buộc khóa OTP riêng; các replica dùng cùng khóa và migration `AddDurablePasswordResetJobs` trước khi khởi động. Phản hồi 200 chỉ xác nhận tiếp nhận, không xác nhận thư đã gửi; queue đầy trả 503. AI mặc định NoOp, không cần khóa hay dịch vụ AI. Nếu cần chạy host Worker cho các tác vụ khác, dùng `python scripts/run_backend.py --no-build worker` ở terminal riêng.
+Đăng ký, đăng nhập và thao tác ticket không cần object storage. Luồng tệp dùng `R2__Endpoint`, `R2__AccessKeyId`, `R2__SecretAccessKey`, `R2__Bucket`; bucket phải riêng tư và đích phải được xác nhận. URL upload mặc định 900 giây, download 300 giây, cấu hình bằng `R2__UploadExpirySeconds`/`R2__DownloadExpirySeconds`; TTL sai chặn startup. Các khóa `Minio__*` legacy không cấu hình adapter R2 hiện hành; profile infra cũ cần đối chiếu đúng source/image khi chuẩn bị R2 cutover. Quên mật khẩu ghi yêu cầu vào PostgreSQL; worker nhúng trong API gửi qua `Email__Smtp__*`. Chưa cấu hình SMTP thì job thất bại, không gửi (xem [.env.example](.env.example)). API bắt buộc khóa OTP riêng; các replica dùng cùng khóa và migration `AddDurablePasswordResetJobs` trước khi khởi động. Phản hồi 200 chỉ xác nhận tiếp nhận, không xác nhận thư đã gửi; queue đầy trả 503. AI mặc định NoOp, không cần khóa hay dịch vụ AI. Nếu cần chạy host Worker cho các tác vụ khác, dùng `python scripts/run_backend.py --no-build worker` ở terminal riêng.
 
 ## JWT là gì và lấy ở đâu?
 
@@ -94,7 +94,7 @@ src/backend/
     Api/                           # Host HTTP: ghép module, middleware, health
     Worker/                        # Chương trình xử lý nền
     Migrator/                      # Công cụ migration và khởi tạo có chủ đích
-  Platform/                        # Nền tảng dùng chung: ApplicationDbContext, migration, bảo trì DB, MinIO, đồng hồ
+  Platform/                        # Nền tảng dùng chung: ApplicationDbContext, migration, bảo trì DB, R2/S3, đồng hồ
   BuildingBlocks/
     SharedKernel/                  # Vai trò, actor hiện tại, đồng hồ, cổng lưu trữ, ngoại lệ nghiệp vụ dùng chung
     SharedKernel.Web/              # Thành phần HTTP dùng chung cho endpoint (bộ lọc lỗi)

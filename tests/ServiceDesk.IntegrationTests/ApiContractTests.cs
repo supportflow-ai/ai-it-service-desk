@@ -30,6 +30,25 @@ public sealed class ApiContractTests
         if (path is "/api/auth/register" or "/api/auth/revoke") Assert.False(responses.ContainsKey("200"));
     }
 
+    [Theory]
+    [InlineData(true, 0)]
+    [InlineData(true, -1)]
+    [InlineData(true, 604801)]
+    [InlineData(false, 0)]
+    [InlineData(false, -1)]
+    [InlineData(false, 604801)]
+    public void InvalidAttachmentTtlFailsAtStartup(bool upload, int seconds)
+    {
+        using var factory = new ContractFactory();
+        using var invalid = factory.WithWebHostBuilder(builder => builder.ConfigureServices(services =>
+            services.PostConfigure<ServiceDesk.Platform.Options.R2Options>(options =>
+            {
+                if (upload) options.UploadExpirySeconds = seconds;
+                else options.DownloadExpirySeconds = seconds;
+            })));
+        Assert.ThrowsAny<Microsoft.Extensions.Options.OptionsValidationException>(() => invalid.CreateClient());
+    }
+
     [Fact]
     public async Task NullableSlaReferenceIsDocumentedAsNullable()
     {

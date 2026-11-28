@@ -43,6 +43,7 @@ public sealed class AttachmentAccessScopeTests(TicketIdempotencyPostgresFixture 
         }
         var storage = new Mock<IObjectStorageService>(MockBehavior.Strict);
         storage.SetupGet(s => s.DefaultBucket).Returns("private-test");
+        storage.SetupGet(s => s.DownloadExpirySeconds).Returns(300);
         var calls = 0;
         storage.Setup(s => s.GetPresignedDownloadUrlAsync("private-test", key, It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .Callback(() => Interlocked.Increment(ref calls)).ReturnsAsync("https://storage.test/private-download");

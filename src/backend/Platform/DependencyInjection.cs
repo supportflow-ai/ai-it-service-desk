@@ -62,7 +62,10 @@ public static class DependencyInjection
     /// <summary>Đăng ký client Cloudflare R2 Object Storage (tương thích AWS S3, ADR-017).</summary>
     public static IServiceCollection AddStorage(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddOptions<R2Options>().Bind(configuration.GetSection(R2Options.SectionName));
+        services.AddOptions<R2Options>().Bind(configuration.GetSection(R2Options.SectionName))
+            .Validate(o => o.UploadExpirySeconds is >= 1 and <= 604800, "R2:UploadExpirySeconds must be between 1 and 604800.")
+            .Validate(o => o.DownloadExpirySeconds is >= 1 and <= 604800, "R2:DownloadExpirySeconds must be between 1 and 604800.")
+            .ValidateOnStart();
         services.AddSingleton<IObjectStorageService, R2ObjectStorageService>();
         return services;
     }

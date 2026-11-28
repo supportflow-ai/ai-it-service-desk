@@ -53,7 +53,7 @@ public sealed class AttachmentStorageContractTests
             Bucket = "configured-bucket"
         };
         using var adapter = new R2ObjectStorageService(Options.Create(options), NullLogger<R2ObjectStorageService>.Instance);
-        var upload = await adapter.CreateUploadAsync(adapter.DefaultBucket, "tickets/test/pending/object", "image/png", 1024, 3600);
+        var upload = await adapter.CreateUploadAsync(adapter.DefaultBucket, "tickets/test/pending/object", "image/png", 1024, DateTime.UtcNow.AddSeconds(900));
         Assert.Equal("https://example.r2.cloudflarestorage.com", new Uri(upload.Url).GetLeftPart(UriPartial.Authority));
         Assert.NotNull(upload.RequiredHeaders);
         Assert.True(upload.RequiredHeaders.ContainsKey("Content-Type"));

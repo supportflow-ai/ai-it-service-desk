@@ -19,6 +19,8 @@ internal sealed class R2ObjectStorageService : IObjectStorageService, IDisposabl
     private readonly R2Options _options;
 
     public string DefaultBucket => _options.Bucket;
+    public int UploadExpirySeconds => _options.UploadExpirySeconds;
+    public int DownloadExpirySeconds => _options.DownloadExpirySeconds;
 
     public R2ObjectStorageService(IOptions<R2Options> options, ILogger<R2ObjectStorageService> logger)
     {
@@ -45,11 +47,12 @@ internal sealed class R2ObjectStorageService : IObjectStorageService, IDisposabl
         string key,
         string contentType,
         long size,
-        int expirySeconds,
+        DateTime expiresAtUtc,
         CancellationToken cancellationToken = default)
     {
         var client = EnsureClient();
-        var effectiveExpiry = expirySeconds > 0 ? expirySeconds : _options.UploadExpirySeconds;
+        if (expiresAtUtc.Kind != DateTimeKind.Utc || expiresAtUtc <= DateTime.UtcNow)
+            throw new ArgumentException("Upload expiry must be a future UTC timestamp.", nameof(expiresAtUtc));
 
         var sizeValue = size.ToString(CultureInfo.InvariantCulture);
         var request = new GetPreSignedUrlRequest
@@ -57,7 +60,7 @@ internal sealed class R2ObjectStorageService : IObjectStorageService, IDisposabl
             BucketName = string.IsNullOrWhiteSpace(bucket) ? DefaultBucket : bucket,
             Key = key,
             Verb = HttpVerb.PUT,
-            Expires = DateTime.UtcNow.AddSeconds(effectiveExpiry),
+            Expires = expiresAtUtc,
             ContentType = contentType
         };
         request.Headers["Content-Length"] = sizeValue;
@@ -155,7 +158,7 @@ internal sealed class R2ObjectStorageService : IObjectStorageService, IDisposabl
     public async Task<string> GetPresignedDownloadUrlAsync(
         string bucketName,
         string objectName,
-        int expiryInSeconds = 3600,
+        int expiryInSeconds = 300,
         CancellationToken cancellationToken = default)
     {
         var client = EnsureClient();

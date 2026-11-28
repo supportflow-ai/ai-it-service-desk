@@ -39,6 +39,8 @@ public sealed class TicketAttachmentUseCaseTests
         _user.SetupGet(u => u.Roles).Returns([RoleNames.Requester]);
         _clock.SetupGet(c => c.UtcNow).Returns(_now);
         _storageService.SetupGet(s => s.DefaultBucket).Returns("servicedesk-test");
+        _storageService.SetupGet(s => s.UploadExpirySeconds).Returns(900);
+        _storageService.SetupGet(s => s.DownloadExpirySeconds).Returns(300);
 
         var ticketDto = new TicketDto(_ticketId, "IT-2026-0001", "Title", "Description", "VPN", 1, _now.UtcDateTime, RequesterId: _userId);
         _ticketQueries.Setup(q => q.GetByIdAsync(_ticketId, It.IsAny<TicketReadScope>(), It.IsAny<CancellationToken>()))
@@ -73,7 +75,7 @@ public sealed class TicketAttachmentUseCaseTests
     {
         var validKey = $"tickets/{_ticketId}/document.pdf";
         _attachmentStore.Setup(s => s.ExistsAsync(_ticketId, validKey, It.IsAny<CancellationToken>())).ReturnsAsync(true);
-        _storageService.Setup(s => s.GetPresignedDownloadUrlAsync("servicedesk-test", validKey, 3600, It.IsAny<CancellationToken>()))
+        _storageService.Setup(s => s.GetPresignedDownloadUrlAsync("servicedesk-test", validKey, 300, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("MinIO offline"));
 
         var useCase = new GetAttachmentDownloadUrlUseCase(_ticketQueries.Object, _storageService.Object, _attachmentStore.Object, _user.Object);
@@ -186,7 +188,7 @@ public sealed class TicketAttachmentUseCaseTests
     {
         AttachmentUploadGrant? issued = null;
         var headers = new Dictionary<string, string> { ["Content-Type"] = "text/plain" };
-        _storageService.Setup(s => s.CreateUploadAsync("servicedesk-test", It.IsAny<string>(), "text/plain", 5, 3600, It.IsAny<CancellationToken>()))
+        _storageService.Setup(s => s.CreateUploadAsync("servicedesk-test", It.IsAny<string>(), "text/plain", 5, It.Is<DateTime>(expires => expires == _now.UtcDateTime.AddSeconds(900)), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PresignedUpload("https://storage.example.invalid/bucket", FormData: null, RequiredHeaders: headers));
         _attachmentStore.Setup(s => s.CreateUploadGrantAsync(It.IsAny<AttachmentUploadGrant>(), It.IsAny<CancellationToken>()))
             .Callback<AttachmentUploadGrant, CancellationToken>((grant, _) => issued = grant)
@@ -198,7 +200,7 @@ public sealed class TicketAttachmentUseCaseTests
         Assert.Equal(_userId, issued.ActorId);
         Assert.StartsWith($"uploads/pending/{_ticketId}/", issued.StorageKey);
         Assert.Equal(issued.StorageKey, result.StorageKey);
-        Assert.Equal(_now.UtcDateTime.AddHours(1), issued.ExpiresAt);
+        Assert.Equal(_now.UtcDateTime.AddSeconds(900), issued.ExpiresAt);
         Assert.Same(headers, result.RequiredHeaders);
         _attachmentStore.Verify(s => s.CreateUploadGrantAsync(It.IsAny<AttachmentUploadGrant>(), It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -224,7 +226,7 @@ public sealed class TicketAttachmentUseCaseTests
     public async Task GenerateUpload_ContentTypeWithCharsetParameter_NormalizesAndAllows()
     {
         var headers = new Dictionary<string, string> { ["Content-Type"] = "text/plain", ["Content-Length"] = "10" };
-        _storageService.Setup(s => s.CreateUploadAsync("servicedesk-test", It.IsAny<string>(), "text/plain", 10, 3600, It.IsAny<CancellationToken>()))
+        _storageService.Setup(s => s.CreateUploadAsync("servicedesk-test", It.IsAny<string>(), "text/plain", 10, It.Is<DateTime>(expires => expires == _now.UtcDateTime.AddSeconds(900)), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PresignedUpload("https://storage.example.invalid/bucket", FormData: null, RequiredHeaders: headers));
 
         var useCase = new GenerateAttachmentUploadUrlUseCase(_ticketQueries.Object, _storageService.Object,
@@ -233,6 +235,6 @@ public sealed class TicketAttachmentUseCaseTests
         var result = await useCase.ExecuteAsync(new(_ticketId, new("note.txt", 10, "text/plain; charset=utf-8")));
 
         Assert.NotNull(result);
-        _storageService.Verify(s => s.CreateUploadAsync("servicedesk-test", It.IsAny<string>(), "text/plain", 10, 3600, It.IsAny<CancellationToken>()), Times.Once);
+        _storageService.Verify(s => s.CreateUploadAsync("servicedesk-test", It.IsAny<string>(), "text/plain", 10, It.Is<DateTime>(expires => expires == _now.UtcDateTime.AddSeconds(900)), It.IsAny<CancellationToken>()), Times.Once);
     }
 }

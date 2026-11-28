@@ -19,7 +19,7 @@ internal sealed class PostgresTicketAttachmentStore(DbContext context) : ITicket
         var scope = "attachment-upload:" + upload.ActorId;
         await context.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock(hashtextextended({scope}, 0))", cancellationToken);
         var now = await context.Database.SqlQuery<DateTime>($"SELECT clock_timestamp() AS \"Value\"").SingleAsync(cancellationToken);
-        if (await context.Set<AttachmentUploadGrant>().CountAsync(value => value.ActorId == upload.ActorId && value.ConsumedAt == null && value.ExpiresAt > now, cancellationToken) >= 20)
+        if (await context.Set<AttachmentUploadGrant>().CountAsync(value => value.ActorId == upload.ActorId && value.ConsumedAt == null && value.ExpiresAt > now, cancellationToken) >= AttachmentPolicy.MaxPendingGrantsPerActor)
             throw new ArgumentException("Đang có quá nhiều tệp chờ xác nhận. Vui lòng xác nhận hoặc chờ yêu cầu cũ hết hạn.");
         context.Set<AttachmentUploadGrant>().Add(upload);
         await context.SaveChangesAsync(cancellationToken);
@@ -103,7 +103,7 @@ internal sealed class PostgresTicketAttachmentStore(DbContext context) : ITicket
         var sizes = await context.Set<TicketAttachment>().AsNoTracking()
             .Where(file => file.TicketId == attachment.TicketId)
             .Select(file => file.FileSizeBytes)
-            .Take(TicketAttachment.MaxFilesPerTicket)
+            .Take(AttachmentPolicy.MaxFilesPerTicket)
             .ToListAsync(cancellationToken);
         attachment.RequireTicketCapacity(sizes);
     }

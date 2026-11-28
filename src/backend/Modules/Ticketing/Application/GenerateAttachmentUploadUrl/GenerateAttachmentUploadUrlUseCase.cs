@@ -34,7 +34,6 @@ internal sealed class GenerateAttachmentUploadUrlUseCase(
             [".zip"] = new(["application/zip", "application/x-zip-compressed"], StringComparer.OrdinalIgnoreCase)
         };
 
-    private const long MaxSizeBytes = 10 * 1024 * 1024; // 10MB
 
     public async Task<UploadUrlResult> ExecuteAsync(GenerateAttachmentUploadUrlCommand command, CancellationToken cancellationToken = default)
     {
@@ -53,7 +52,7 @@ internal sealed class GenerateAttachmentUploadUrlUseCase(
         if (string.IsNullOrEmpty(normalizedContentType) || !allowedMimeTypes.Contains(normalizedContentType))
             throw new ArgumentException($"Content-Type '{req.ContentType}' is not allowed for file type '{ext}'.");
 
-        if (req.FileSizeBytes <= 0 || req.FileSizeBytes > MaxSizeBytes)
+        if (req.FileSizeBytes <= 0 || req.FileSizeBytes > AttachmentPolicy.MaxFileSizeBytes)
             throw new ArgumentException("File size must be between 1 byte and 10MB.");
 
         var scope = TicketPermissions.ReadScopeFor(currentUser, actorId, includeOwner: true);
@@ -63,13 +62,13 @@ internal sealed class GenerateAttachmentUploadUrlUseCase(
         if (ticket.Status is (int)TicketStatus.Closed or (int)TicketStatus.Cancelled)
             throw new ArgumentException("Không thể tải tệp lên vé đã kết thúc.");
 
-        const int expirySeconds = 3600;
+        var expirySeconds = storageService.UploadExpirySeconds;
         var upload = AttachmentUploadGrant.CreatePending(command.TicketId, actorId, Path.GetFileName(req.FileName),
             req.FileSizeBytes, normalizedContentType, clock.UtcNow.UtcDateTime.AddSeconds(expirySeconds));
 
         try
         {
-            var signed = await storageService.CreateUploadAsync(storageService.DefaultBucket, upload.StorageKey, upload.ContentType, upload.FileSizeBytes, expirySeconds, cancellationToken);
+            var signed = await storageService.CreateUploadAsync(storageService.DefaultBucket, upload.StorageKey, upload.ContentType, upload.FileSizeBytes, upload.ExpiresAt, cancellationToken);
             await attachmentStore.CreateUploadGrantAsync(upload, cancellationToken);
             return new UploadUrlResult(signed.Url, upload.StorageKey, expirySeconds, signed.FormData, signed.RequiredHeaders);
         }

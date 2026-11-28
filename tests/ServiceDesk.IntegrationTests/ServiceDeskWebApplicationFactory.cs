@@ -81,7 +81,9 @@ public class ServiceDeskWebApplicationFactory : WebApplicationFactory<ServiceDes
     private sealed class TestObjectStorageService : IObjectStorageService
     {
         public string DefaultBucket => "servicedesk-test";
-        public Task<PresignedUpload> CreateUploadAsync(string bucket, string key, string contentType, long size, int expirySeconds, CancellationToken cancellationToken = default)
+        public int UploadExpirySeconds => 900;
+        public int DownloadExpirySeconds => 300;
+        public Task<PresignedUpload> CreateUploadAsync(string bucket, string key, string contentType, long size, DateTime expiresAtUtc, CancellationToken cancellationToken = default)
             => Task.FromResult(new PresignedUpload($"https://test-storage/{bucket}", new Dictionary<string, string> { ["Content-Type"] = contentType }, new Dictionary<string, string> { ["key"] = key }));
         public Task<StoredObject?> StatAsync(string bucket, string key, CancellationToken cancellationToken = default)
             => Task.FromResult<StoredObject?>(null);
@@ -89,7 +91,7 @@ public class ServiceDeskWebApplicationFactory : WebApplicationFactory<ServiceDes
         public Task DeleteAsync(string bucket, string key, CancellationToken cancellationToken = default) => Task.CompletedTask;
 
         public Task<string> GetPresignedDownloadUrlAsync(
-            string bucketName, string objectName, int expiryInSeconds = 3600,
+            string bucketName, string objectName, int expiryInSeconds = 300,
             CancellationToken cancellationToken = default)
             => Task.FromResult($"https://test-storage/{bucketName}/{objectName}");
     }

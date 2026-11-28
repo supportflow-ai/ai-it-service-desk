@@ -13,13 +13,15 @@ public sealed record PresignedUpload(
 public interface IObjectStorageService
 {
     string DefaultBucket { get; }
+    int UploadExpirySeconds { get; }
+    int DownloadExpirySeconds { get; }
 
     Task<PresignedUpload> CreateUploadAsync(
         string bucket,
         string key,
         string contentType,
         long size,
-        int expirySeconds,
+        DateTime expiresAtUtc,
         CancellationToken cancellationToken = default);
 
     Task<StoredObject?> StatAsync(
@@ -42,6 +44,6 @@ public interface IObjectStorageService
     Task<string> GetPresignedDownloadUrlAsync(
         string bucketName,
         string objectName,
-        int expiryInSeconds = 3600,
+        int expiryInSeconds = 300,
         CancellationToken cancellationToken = default);
 }

@@ -6,8 +6,6 @@ namespace ServiceDesk.Modules.Ticketing.Domain;
 /// </summary>
 public sealed class TicketAttachment
 {
-    internal const int MaxFilesPerTicket = 10;
-    private const long MaxBytesPerTicket = 50L * 1024 * 1024;
 
     private TicketAttachment() { }
 
@@ -22,9 +20,9 @@ public sealed class TicketAttachment
 
     public void RequireTicketCapacity(IReadOnlyCollection<long> confirmedFileSizes)
     {
-        if (confirmedFileSizes.Count >= MaxFilesPerTicket)
+        if (confirmedFileSizes.Count >= AttachmentPolicy.MaxFilesPerTicket)
             throw new ArgumentException("Mỗi phiếu chỉ được đính kèm tối đa 10 tệp.");
-        if (confirmedFileSizes.Sum(size => (decimal)size) + FileSizeBytes > MaxBytesPerTicket)
+        if (confirmedFileSizes.Sum(size => (decimal)size) + FileSizeBytes > AttachmentPolicy.MaxBytesPerTicket)
             throw new ArgumentException("Tổng dung lượng tệp đính kèm của mỗi phiếu không được vượt quá 50 MiB.");
     }
 
@@ -39,7 +37,8 @@ public sealed class TicketAttachment
     {
         if (ticketId == Guid.Empty) throw new ArgumentException("Ticket ID is required.");
         if (string.IsNullOrWhiteSpace(fileName)) throw new ArgumentException("File name is required.");
-        if (fileSizeBytes <= 0) throw new ArgumentException("File size must be positive.");
+        if (fileSizeBytes <= 0 || fileSizeBytes > AttachmentPolicy.MaxFileSizeBytes)
+            throw new ArgumentException("File size must be between 1 byte and 10 MiB.");
         if (string.IsNullOrWhiteSpace(storageKey)) throw new ArgumentException("Storage key is required.");
         if (uploadedBy == Guid.Empty) throw new ArgumentException("Uploader ID is required.");
 
