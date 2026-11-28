@@ -61,55 +61,69 @@ internal sealed class ConfirmAttachmentUploadUseCase(
         if (upload.ExpiresAt <= clock.UtcNow.UtcDateTime)
             throw new ArgumentException("Yêu cầu upload đã hết hạn. Vui lòng tải lại tệp.");
 
-        var bucket = storageService.DefaultBucket;
-        var finalKey = $"tickets/{command.TicketId}/attachments/{Guid.NewGuid()}";
+        var attemptId = Guid.NewGuid();
+        upload = await attachmentStore.ReserveConfirmationAsync(upload.Id, attemptId, cancellationToken);
+        if (upload.AttachmentId is { } confirmedId)
+            return await attachmentStore.GetByIdAsync(confirmedId, cancellationToken)
+                ?? throw new KeyNotFoundException("Attachment not found.");
         try
         {
-            var source = await storageService.StatAsync(bucket, upload.StorageKey, cancellationToken);
-            if (source is null || source.Size != upload.FileSizeBytes || source.Size <= 0 || source.Size > AttachmentPolicy.MaxFileSizeBytes ||
-                string.IsNullOrWhiteSpace(source.ContentType) ||
-                !string.Equals(source.ContentType.Split(';')[0].Trim(), upload.ContentType.Split(';')[0].Trim(), StringComparison.OrdinalIgnoreCase))
+            var bucket = storageService.DefaultBucket;
+            var finalKey = upload.ConfirmationStorageKey();
+            try
             {
-                await TryCleanupAsync(bucket, upload.StorageKey);
-                VerifyObject(source, upload);
+                var source = await storageService.StatAsync(bucket, upload.StorageKey, cancellationToken);
+                if (source is null || source.Size != upload.FileSizeBytes || source.Size <= 0 || source.Size > AttachmentPolicy.MaxFileSizeBytes ||
+                    string.IsNullOrWhiteSpace(source.ETag) || string.IsNullOrWhiteSpace(source.ContentType) ||
+                    !string.Equals(source.ContentType.Split(';')[0].Trim(), upload.ContentType.Split(';')[0].Trim(), StringComparison.OrdinalIgnoreCase))
+                {
+                    await TryCleanupAsync(bucket, upload.StorageKey);
+                    VerifyObject(source, upload);
+                }
+
+                await storageService.CopyAsync(bucket, upload.StorageKey, finalKey, source!.ETag, cancellationToken);
+                VerifyObject(await storageService.StatAsync(bucket, finalKey, cancellationToken), upload);
+            }
+            catch (Exception ex) when (ex is not ArgumentException and not OperationCanceledException)
+            {
+                throw new ServiceUnavailableException("Không thể xác minh tệp đã tải lên. Vui lòng thử xác nhận lại.");
             }
 
-            await storageService.CopyAsync(bucket, upload.StorageKey, finalKey, source!.ETag, cancellationToken);
-            VerifyObject(await storageService.StatAsync(bucket, finalKey, cancellationToken), upload);
-        }
-        catch (Exception ex) when (ex is not ArgumentException and not OperationCanceledException)
-        {
-            throw new ServiceUnavailableException("Không thể xác minh tệp đã tải lên. Vui lòng thử xác nhận lại.");
-        }
+            AttachmentPolicy.ValidateMetadata(upload.FileName, upload.FileSizeBytes, upload.ContentType);
+            await scanner.ScanAsync(finalKey, upload.FileSizeBytes, upload.ContentType, cancellationToken);
 
-        AttachmentPolicy.ValidateMetadata(upload.FileName, upload.FileSizeBytes, upload.ContentType);
-        await scanner.ScanAsync(finalKey, upload.FileSizeBytes, upload.ContentType, cancellationToken);
-
-        var attachment = TicketAttachment.Create(command.TicketId, upload.FileName, upload.FileSizeBytes,
-            upload.ContentType, finalKey, actorId, clock.UtcNow.UtcDateTime);
-        // Không xóa finalKey khi commit báo lỗi: kết quả commit có thể chưa xác định do mất kết nối.
-        // Tác vụ dọn object mồ côi phải kiểm tra metadata và thời hạn trước khi xóa.
-        TicketAttachmentDto result;
-        try
-        {
-            result = await attachmentStore.ConfirmAsync(upload.Id, attachment, clock.UtcNow.UtcDateTime, cancellationToken);
+            var attachment = TicketAttachment.Create(command.TicketId, upload.FileName, upload.FileSizeBytes,
+                upload.ContentType, finalKey, actorId, clock.UtcNow.UtcDateTime);
+            // Không xóa finalKey khi commit báo lỗi: kết quả commit có thể chưa xác định do mất kết nối.
+            // Tác vụ dọn object mồ côi phải kiểm tra metadata và thời hạn trước khi xóa.
+            TicketAttachmentDto result;
+            try
+            {
+                result = await attachmentStore.ConfirmAsync(upload.Id, attachment, clock.UtcNow.UtcDateTime, cancellationToken);
+            }
+            catch (Exception error) when (error is ArgumentException or AttachmentConfirmationBusyException)
+            {
+                // Giao dịch bị từ chối chắc chắn nên có thể dọn bản sao đích và giữ lại nguồn để thử lại.
+                await TryCleanupAsync(bucket, finalKey);
+                throw;
+            }
+            await TryCleanupAsync(bucket, upload.StorageKey);
+            if (result.StorageKey != finalKey) await TryCleanupAsync(bucket, finalKey);
+            return result;
         }
-        catch (Exception error) when (error is ArgumentException or AttachmentConfirmationBusyException)
+        finally
         {
-            // Giao dịch bị từ chối chắc chắn nên có thể dọn bản sao đích và giữ lại nguồn để thử lại.
-            await TryCleanupAsync(bucket, finalKey);
-            throw;
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+            try { await attachmentStore.ReleaseConfirmationAsync(upload.Id, attemptId, timeout.Token); }
+            catch (Exception) { /* Lease tự hết hạn nếu không thể release; không che kết quả commit. */ }
         }
-        await TryCleanupAsync(bucket, upload.StorageKey);
-        if (result.StorageKey != finalKey) await TryCleanupAsync(bucket, finalKey);
-        return result;
     }
 
     private static void VerifyObject(StoredObject? value, AttachmentUploadGrant upload)
     {
         if (value is null) throw new ArgumentException("Chưa tìm thấy tệp đã tải lên.");
         if (value.Size != upload.FileSizeBytes || value.Size <= 0 || value.Size > AttachmentPolicy.MaxFileSizeBytes ||
-            string.IsNullOrWhiteSpace(value.ContentType) ||
+            string.IsNullOrWhiteSpace(value.ETag) || string.IsNullOrWhiteSpace(value.ContentType) ||
             !string.Equals(value.ContentType.Split(';')[0].Trim(), upload.ContentType.Split(';')[0].Trim(), StringComparison.OrdinalIgnoreCase))
             throw new ArgumentException("Kích thước hoặc loại tệp thực tế không khớp yêu cầu upload.");
     }

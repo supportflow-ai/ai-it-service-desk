@@ -20,6 +20,8 @@ internal sealed class AttachmentUploadGrantConfiguration : IEntityTypeConfigurat
         entity.Property(g => g.ExpiresAt).HasColumnName("expires_at").IsRequired();
         entity.Property(g => g.ConsumedAt).HasColumnName("consumed_at");
         entity.Property(g => g.AttachmentId).HasColumnName("attachment_id");
+        entity.Property(g => g.ConfirmationAttemptId).HasColumnName("confirmation_attempt_id");
+        entity.Property(g => g.ConfirmationLeaseUntil).HasColumnName("confirmation_lease_until");
 
         entity.HasIndex(g => g.StorageKey).IsUnique();
         entity.HasIndex(g => new { g.ActorId, g.ExpiresAt });

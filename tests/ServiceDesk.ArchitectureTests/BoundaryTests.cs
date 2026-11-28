@@ -82,7 +82,8 @@ public sealed class BoundaryTests
     [Fact]
     public void OnlyApprovedBackgroundServicesExist()
     {
-        string[] approved = ["PasswordResetQueueProcessor", "SlaEvaluationWorker"];
+        // G4-07 bổ sung worker đối soát; danh sách vẫn đóng với mọi hosted service khác.
+        string[] approved = ["AttachmentReconciliationWorker", "PasswordResetQueueProcessor", "SlaEvaluationWorker"];
         var hosted = ModuleRules.Modules.Select(module => Assembly.Load($"ServiceDesk.Modules.{module}"))
             .Append(Assembly.Load("ServiceDesk.Worker"))
             .Append(typeof(ServiceDesk.Api.Program).Assembly)

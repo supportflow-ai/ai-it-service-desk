@@ -20,6 +20,7 @@ using ServiceDesk.Modules.Ticketing.Application.GetTicketTimeline;
 using ServiceDesk.Modules.Ticketing.Application.PendingTicket;
 using ServiceDesk.Modules.Ticketing.Application.Ports;
 using ServiceDesk.Modules.Ticketing.Application.ReopenTicket;
+using ServiceDesk.Modules.Ticketing.Application.ReconcileAttachments;
 using ServiceDesk.Modules.Ticketing.Application.Reports;
 using ServiceDesk.Modules.Ticketing.Application.ResolveTicket;
 using ServiceDesk.Modules.Ticketing.Application.ResumeTicket;
@@ -59,6 +60,7 @@ public static class TicketingModule
         services.AddScoped<ICloseTicket, CloseTicketUseCase>();
         services.AddScoped<ICancelTicket, CancelTicketUseCase>();
         services.AddScoped<IEvaluateSla, EvaluateSlaUseCase>();
+        services.AddScoped<IReconcileAttachments, ReconcileAttachmentsUseCase>();
         services.AddScoped<IGetAgentQueue, GetAgentQueueUseCase>();
         services.AddScoped<IAssignTicket, AssignTicketUseCase>();
         services.AddScoped<IUnassignTicket, UnassignTicketUseCase>();
@@ -95,6 +97,7 @@ public static class TicketingModule
         services.AddScoped<ITicketQueries, PostgresTicketQueries>();
         services.AddScoped<ITicketTimelineStore, PostgresTicketTimelineStore>();
         services.AddScoped<ITicketAttachmentStore, PostgresTicketAttachmentStore>();
+        services.AddScoped<IAttachmentReconciliationStore, PostgresAttachmentReconciliationStore>();
         services.AddScoped<ISlaEvaluationGateway, PostgresSlaEvaluationAdapter>();
         services.AddScoped<IAgentDirectory, AgentDirectory>();
         services.AddScoped<ISupportTeamMembershipReader, PostgresSupportTeamMembershipReader>();

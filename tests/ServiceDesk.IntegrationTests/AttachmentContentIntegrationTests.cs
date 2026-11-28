@@ -14,6 +14,13 @@ using ServiceDesk.Modules.Ticketing.Infrastructure;
 using ServiceDesk.Platform.Options;
 using ServiceDesk.Platform.Storage;
 using ServiceDesk.SharedKernel.Application.Abstractions;
+using Moq;
+using ServiceDesk.Modules.Ticketing.Application.ConfirmAttachmentUpload;
+using ServiceDesk.Modules.Ticketing.Application.Ports;
+using ServiceDesk.Modules.Ticketing.Application.ReconcileAttachments;
+using ServiceDesk.Platform.Clock;
+using ServiceDesk.Platform.Persistence;
+using ServiceDesk.SharedKernel.Application;
 using Xunit;
 
 namespace ServiceDesk.IntegrationTests;
@@ -90,6 +97,78 @@ public sealed class AttachmentContentIntegrationTests(AttachmentContentFixture c
         await Assert.ThrowsAsync<ArgumentException>(() => scanner.PrepareDownloadAsync(metadata));
     }
 
+[Theory]
+    [InlineData("after-head")]
+    [InlineData("after-copy")]
+    [InlineData("after-commit")]
+    [InlineData("before-cleanup")]
+    public async Task FailureInjectionAndFreshContextRecoverWithoutDeletingCommittedObjects(string phase)
+    {
+        var actor = Guid.NewGuid(); var now = DateTime.UtcNow;
+        var ticket = Ticket.Create(actor, "Failure recovery", "Storage calls stay outside database transactions", TicketCategories.NET, now);
+        var grant = AttachmentUploadGrant.CreatePending(ticket.Id, actor, "file.txt", 5, "text/plain", now.AddMinutes(15));
+        await using (var setup = database.CreateContext()) { setup.Tickets.Add(ticket); setup.AttachmentUploadGrants.Add(grant); await setup.SaveChangesAsync(); }
+        await PutAsync(grant.StorageKey, "clean"u8.ToArray());
+        using var real = Storage();
+        var injected = 0; var copies = 0;
+        var storage = new Mock<IObjectStorageService>();
+        storage.SetupGet(s => s.DefaultBucket).Returns(real.DefaultBucket);
+        storage.SetupGet(s => s.DownloadExpirySeconds).Returns(300);
+        storage.Setup(s => s.StatAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Returns(async (string bucket, string key, CancellationToken ct) =>
+            {
+                var value = await real.StatAsync(bucket, key, ct);
+                if (phase == "after-head" && Interlocked.Exchange(ref injected, 1) == 0) throw new IOException("injected HEAD failure");
+                return value;
+            });
+        storage.Setup(s => s.CopyAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Returns(async (string bucket, string source, string target, string etag, CancellationToken ct) =>
+            {
+                await real.CopyAsync(bucket, source, target, etag, ct); Interlocked.Increment(ref copies);
+                if (phase == "after-copy" && Interlocked.Exchange(ref injected, 1) == 0) throw new IOException("injected copy response loss");
+            });
+        storage.Setup(s => s.DeleteAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Returns(async (string bucket, string key, CancellationToken ct) =>
+            {
+                if (phase == "before-cleanup" && Interlocked.Exchange(ref injected, 1) == 0) throw new IOException("injected cleanup failure");
+                await real.DeleteAsync(bucket, key, ct);
+            });
+        var user = new Mock<ICurrentUser>(); user.SetupGet(u => u.IsAuthenticated).Returns(true); user.SetupGet(u => u.UserId).Returns(actor.ToString()); user.SetupGet(u => u.Roles).Returns(new[] { "Requester" });
+        using var scanner = new ClamAvAttachmentScanner(real, Options.Create(new AttachmentScanningOptions { Host = content.ScannerHost, Port = content.ScannerPort }));
+        async Task<TicketAttachmentDto> Confirm(bool loseCommitResponse)
+        {
+            var builder = new DbContextOptionsBuilder<ApplicationDbContext>().UseNpgsql(database.ConnectionString);
+            if (loseCommitResponse) builder.AddInterceptors(new LostAttachmentCommitInterceptor());
+            await using var context = new ApplicationDbContext(builder.Options);
+            var useCase = new ConfirmAttachmentUploadUseCase(new PostgresTicketQueries(context), new PostgresTicketAttachmentStore(context), storage.Object, user.Object, new SystemClock(), scanner);
+            return await useCase.ExecuteAsync(new(ticket.Id, new(grant.FileName, grant.FileSizeBytes, grant.ContentType, grant.StorageKey)));
+        }
+        if (phase == "after-commit") await Assert.ThrowsAsync<IOException>(() => Confirm(true));
+        else if (phase == "before-cleanup") await Confirm(false);
+        else await Assert.ThrowsAsync<ServiceUnavailableException>(() => Confirm(false));
+        var recovered = await Confirm(false);
+        await using var verify = database.CreateContext();
+        Assert.Equal(recovered.Id, (await verify.TicketAttachments.SingleAsync(value => value.TicketId == ticket.Id)).Id);
+        Assert.Equal(phase == "after-copy" ? 2 : 1, copies);
+        var objects = await real.ListAsync(real.DefaultBucket, $"tickets/{ticket.Id}/", null);
+        Assert.Contains(objects.Objects, value => value.Key == recovered.StorageKey);
+        var cleanupStore = new PostgresAttachmentReconciliationStore(verify);
+        Assert.False(await cleanupStore.MayDeleteObjectAsync(recovered.StorageKey));
+        // Chỉ giả lập tuổi object, giữ storage/DB/delete thật và không ngủ chờ retention.
+        storage.Setup(s => s.ListAsync(real.DefaultBucket, "tickets/", null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new StorageObjectPage(objects.Objects.Select(value => value with { LastModifiedUtc = DateTime.UtcNow.AddDays(-2) }).ToArray(), null));
+        var reconciler = new ReconcileAttachmentsUseCase(cleanupStore, storage.Object);
+        var cleaned = await reconciler.ExecuteAsync(new("tickets/", null, TimeSpan.FromDays(1)));
+        Assert.Equal(phase == "after-copy" ? 1 : 0, cleaned.Deleted);
+        Assert.NotNull(await real.StatAsync(real.DefaultBucket, recovered.StorageKey));
+        Assert.Equal(0, (await reconciler.ExecuteAsync(new("tickets/", null, TimeSpan.FromDays(1)))).Failed);
+        if (phase == "before-cleanup")
+        {
+            Assert.NotNull(await real.StatAsync(real.DefaultBucket, grant.StorageKey));
+            Assert.True(await cleanupStore.MayDeleteObjectAsync(grant.StorageKey));
+        }
+    }
+
     [Fact]
     public async Task ConditionalCopyAndReadRejectAChangedSource()
     {
@@ -122,5 +201,5 @@ public sealed class AttachmentContentIntegrationTests(AttachmentContentFixture c
         await content.Client.PutObjectAsync(new PutObjectRequest { BucketName = AttachmentContentFixture.Bucket, Key = key, InputStream = data, ContentType = "text/plain" });
     }
     // Chuỗi fixture được ghép trong RAM, không ghi mẫu antivirus ra filesystem của máy chủ.
-    private static byte[] Eicar() => Encoding.ASCII.GetBytes("X5O!P%@AP[4" + "\\PZX54(P^)7CC)7}$" + "EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*");
+    private static byte[] Eicar() => Encoding.ASCII.GetBytes(string.Concat(new[] { "X5O!P%@AP[4", "\\PZX54(P^)7CC)7}$", "EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*" }));
 }

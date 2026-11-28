@@ -135,6 +135,8 @@ public sealed class TicketAttachmentUseCaseTests
     public async Task ConfirmUpload_ValidRequest_SavesMetadata()
     {
         var upload = AttachmentUploadGrant.CreatePending(_ticketId, _userId, "evidence.png", 1024, "image/png", _now.UtcDateTime.AddHours(1));
+        _attachmentStore.Setup(s => s.ReserveConfirmationAsync(upload.Id, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Guid _, Guid attempt, CancellationToken _) => { upload.TryReserveConfirmation(attempt, _now.UtcDateTime); return upload; });
         var validKey = upload.StorageKey;
         _attachmentStore.Setup(s => s.GetUploadGrantAsync(_ticketId, validKey, _userId, It.IsAny<CancellationToken>())).ReturnsAsync(upload);
         _storageService.Setup(s => s.StatAsync("servicedesk-test", It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(new StoredObject(1024, "image/png", "etag"));
@@ -166,6 +168,8 @@ public sealed class TicketAttachmentUseCaseTests
     {
         var grant = AttachmentUploadGrant.CreatePending(_ticketId, _userId, "evidence.png", 1024, "image/png", _now.UtcDateTime.AddHours(1));
         _attachmentStore.Setup(s => s.GetUploadGrantAsync(_ticketId, grant.StorageKey, _userId, It.IsAny<CancellationToken>())).ReturnsAsync(grant);
+        _attachmentStore.Setup(s => s.ReserveConfirmationAsync(grant.Id, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Guid _, Guid attempt, CancellationToken _) => { grant.TryReserveConfirmation(attempt, _now.UtcDateTime); return grant; });
         _storageService.Setup(s => s.StatAsync("servicedesk-test", grant.StorageKey, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new StoredObject(2048, "image/png", "etag"));
         var useCase = new ConfirmAttachmentUploadUseCase(_ticketQueries.Object, _attachmentStore.Object, _storageService.Object, _user.Object, _clock.Object, _scanner.Object);
@@ -178,6 +182,8 @@ public sealed class TicketAttachmentUseCaseTests
     {
         var grant = AttachmentUploadGrant.CreatePending(_ticketId, _userId, "evidence.png", 1024, "image/png", _now.UtcDateTime.AddHours(1));
         _attachmentStore.Setup(s => s.GetUploadGrantAsync(_ticketId, grant.StorageKey, _userId, It.IsAny<CancellationToken>())).ReturnsAsync(grant);
+        _attachmentStore.Setup(s => s.ReserveConfirmationAsync(grant.Id, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Guid _, Guid attempt, CancellationToken _) => { grant.TryReserveConfirmation(attempt, _now.UtcDateTime); return grant; });
         _storageService.Setup(s => s.StatAsync("servicedesk-test", grant.StorageKey, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new IOException("Sensitive storage details"));
         var useCase = new ConfirmAttachmentUploadUseCase(_ticketQueries.Object, _attachmentStore.Object, _storageService.Object, _user.Object, _clock.Object, _scanner.Object);

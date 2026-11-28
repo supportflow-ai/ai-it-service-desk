@@ -692,6 +692,14 @@ namespace ServiceDesk.Platform.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("attachment_id");
 
+                    b.Property<Guid?>("ConfirmationAttemptId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("confirmation_attempt_id");
+
+                    b.Property<DateTime?>("ConfirmationLeaseUntil")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("confirmation_lease_until");
+
                     b.Property<DateTime?>("ConsumedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("consumed_at");

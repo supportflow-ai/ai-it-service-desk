@@ -55,6 +55,8 @@ Database mới cần được người phụ trách chạy `migrate` và `seed-r
 
 Luồng xác nhận và tải tệp bắt buộc dùng ClamAV qua `Attachments__MalwareScanning__Host`/`Port` trên mạng riêng. Thiếu scanner hoặc scanner lỗi trả 503; tệp không qua kiểm tra không có URL tải. Dùng [cấu hình ClamAV](config/clamav/clamd.conf) để các giới hạn archive/encrypted không bị bỏ qua; vận hành phải cập nhật cơ sở dữ liệu chữ ký. Tệp legacy cũng được quét, download cấp URL cho bản sao riêng đã quét; mỗi URL phát sinh thêm một lần copy và scan. Object quarantine và bản sao chưa dọn vẫn riêng tư, thời hạn dọn chờ chính sách G4-07; không tự triển khai dịch vụ hoặc dùng bucket thật.
 
+Worker đối soát attachment mặc định `Disabled` khi chưa có `Attachments__OrphanRetentionHours` được duyệt. Khi bật, phải dùng migration `20261128152942_AddAttachmentConfirmationLease`, drain host confirm cũ và cấu hình retention lớn hơn TTL download cộng thời gian xử lý; đối soát kiểm DB reference/lease trước xóa object. Không tự bật trên bucket thật; xem [kế hoạch R2](docs/architecture/r2-storage-plan.md).
+
 ## JWT là gì và lấy ở đâu?
 
 JWT là chuỗi thông tin xác thực có chữ ký do backend cấp sau khi đăng nhập hoặc đăng ký thành công. Nó chứa danh tính, vai trò và thời hạn; nội dung không được mã hóa để giữ bí mật. Frontend gửi token trong header `Authorization: Bearer <token>` ở các yêu cầu cần đăng nhập.

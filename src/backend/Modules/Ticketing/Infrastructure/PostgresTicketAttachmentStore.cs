@@ -36,6 +36,42 @@ internal sealed class PostgresTicketAttachmentStore(DbContext context) : ITicket
         return attachment is null ? null : ToDto(attachment);
     }
 
+public async Task<AttachmentUploadGrant> ReserveConfirmationAsync(Guid uploadId, Guid attemptId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await using var transaction = await context.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
+            await context.Database.ExecuteSqlRawAsync("SET LOCAL lock_timeout = '5s'", cancellationToken);
+            await context.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock(hashtextextended({uploadId.ToString()}, 0))", cancellationToken);
+            var upload = await context.Set<AttachmentUploadGrant>().SingleOrDefaultAsync(value => value.Id == uploadId, cancellationToken)
+                ?? throw new KeyNotFoundException("Upload grant not found.");
+            await context.Entry(upload).ReloadAsync(cancellationToken);
+            if (upload.AttachmentId is null)
+            {
+                var now = await context.Database.SqlQuery<DateTime>($"SELECT clock_timestamp() AS \"Value\"").SingleAsync(cancellationToken);
+                if (!upload.TryReserveConfirmation(attemptId, now))
+                    throw new AttachmentConfirmationBusyException(new InvalidOperationException("Confirmation lease is active."));
+                await context.SaveChangesAsync(cancellationToken);
+            }
+            await transaction.CommitAsync(cancellationToken);
+            return upload;
+        }
+        catch (Exception error) when (FindLockTimeout(error) is not null)
+        {
+            throw new AttachmentConfirmationBusyException(FindLockTimeout(error)!);
+        }
+    }
+
+    public async Task ReleaseConfirmationAsync(Guid uploadId, Guid attemptId, CancellationToken cancellationToken = default)
+    {
+        await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+        await context.Database.ExecuteSqlRawAsync("SET LOCAL lock_timeout = '1s'", cancellationToken);
+        await context.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock(hashtextextended({uploadId.ToString()}, 0))", cancellationToken);
+        await context.Set<AttachmentUploadGrant>().Where(value => value.Id == uploadId && value.AttachmentId == null && value.ConfirmationAttemptId == attemptId)
+            .ExecuteUpdateAsync(update => update.SetProperty(value => value.ConfirmationAttemptId, (Guid?)null).SetProperty(value => value.ConfirmationLeaseUntil, (DateTime?)null), cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+    }
+
     public async Task<TicketAttachmentDto> ConfirmAsync(Guid uploadId, TicketAttachment attachment, DateTime now, CancellationToken cancellationToken = default)
     {
         try
@@ -55,6 +91,7 @@ internal sealed class PostgresTicketAttachmentStore(DbContext context) : ITicket
             }
             await RequireCapacityAsync(attachment, cancellationToken);
             var databaseNow = await context.Database.SqlQuery<DateTime>($"SELECT clock_timestamp() AS \"Value\"").SingleAsync(cancellationToken);
+            upload.RequireActiveConfirmation(attachment.StorageKey, databaseNow);
             upload.Confirm(attachment, now > databaseNow ? now : databaseNow);
             context.Set<TicketAttachment>().Add(attachment);
             await context.SaveChangesAsync(cancellationToken);
@@ -84,17 +121,6 @@ internal sealed class PostgresTicketAttachmentStore(DbContext context) : ITicket
 
     private static TicketAttachmentDto ToDto(TicketAttachment value) => new(value.Id, value.TicketId,
         value.FileName, value.FileSizeBytes, value.ContentType, value.StorageKey, value.UploadedBy, value.CreatedAt);
-
-    public async Task<TicketAttachmentDto> AddAsync(TicketAttachment attachment, CancellationToken cancellationToken = default)
-    {
-        await using var transaction = await context.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
-        await context.Database.ExecuteSqlRawAsync("SET LOCAL lock_timeout = '5s'", cancellationToken);
-        await RequireCapacityAsync(attachment, cancellationToken);
-        context.Set<TicketAttachment>().Add(attachment);
-        await context.SaveChangesAsync(cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
-        return ToDto(attachment);
-    }
 
     private async Task RequireCapacityAsync(TicketAttachment attachment, CancellationToken cancellationToken)
     {

@@ -35,6 +35,9 @@ public sealed class AttachmentConfirmationSecurityTests
         _upload = AttachmentUploadGrant.CreatePending(_ticket, _user, "image.png", 1024, "image/png", _now.AddHours(1));
         _tickets.Setup(value => value.GetByIdAsync(_ticket, It.Is<TicketReadScope>(scope => scope is TicketReadScope.OwnTickets), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new TicketDto(_ticket, "IT-2026-0001", "VPN", "Description", "VPN", 1, _now));
+        _store.Setup(value => value.ReserveConfirmationAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Guid _, Guid attempt, CancellationToken _) => { _upload.TryReserveConfirmation(attempt, _now); return _upload; });
+        _store.Setup(value => value.ReleaseConfirmationAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
         _store.Setup(value => value.GetUploadGrantAsync(_ticket, _upload.StorageKey, _user, It.IsAny<CancellationToken>())).ReturnsAsync(_upload);
     }
 
@@ -163,6 +166,8 @@ public sealed class AttachmentConfirmationSecurityTests
         var legacy = AttachmentUploadGrant.Create(_ticket, _user, "image.png", 1024, "image/png",
             $"tickets/{_ticket}/{Guid.NewGuid()}_image.png", _now.AddHours(1));
         _store.Setup(value => value.GetUploadGrantAsync(_ticket, legacy.StorageKey, _user, It.IsAny<CancellationToken>())).ReturnsAsync(legacy);
+        _store.Setup(value => value.ReserveConfirmationAsync(legacy.Id, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Guid _, Guid attempt, CancellationToken _) => { legacy.TryReserveConfirmation(attempt, _now); return legacy; });
         _storage.Setup(value => value.StatAsync("configured-bucket", It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(new StoredObject(1024, "image/png", "legacy-etag"));
         _storage.Setup(value => value.CopyAsync("configured-bucket", legacy.StorageKey, It.IsAny<string>(), "legacy-etag", It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
         _storage.Setup(value => value.DeleteAsync("configured-bucket", legacy.StorageKey, It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);

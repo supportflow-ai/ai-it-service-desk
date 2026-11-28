@@ -4,9 +4,9 @@ Trạng thái: **Đã chốt · chờ triển khai**. [ADR-017](../adr/ADR-017-c
 
 ## 1. Phạm vi
 
-Thay bộ cài đặt lưu trữ tệp từ MinIO sang Cloudflare R2, đổi cơ chế tải lên từ presigned POST sang presigned PUT, giữ nguyên nghiệp vụ tệp đính kèm (quyền, hạn mức, vòng đời phiếu, xác nhận hai bước). Không chuyển dữ liệu cũ. Không thêm tính năng mới (quét mã độc, lưu giữ, xóa tệp đã xác nhận vẫn thuộc DEC-07 còn mở).
+Thay bộ cài đặt lưu trữ tệp từ MinIO sang Cloudflare R2, đổi cơ chế tải lên từ presigned POST sang presigned PUT, giữ quyền, hạn mức, vòng đời phiếu và xác nhận hai bước. Không chuyển dữ liệu cũ. Ngày 28/11/2026 chủ dự án chốt bắt buộc quét mã độc và quarantine trước khi cho tải (G4-08), áp dụng cả tệp legacy; retention object không được tham chiếu và chính sách xóa tệp đã xác nhận vẫn chưa chốt trong DEC-07.
 
-Hiện tại grant, URL tải lên và URL tải xuống đều dùng hạn 3.600 giây. Cấp grant kiểm quyền, trạng thái phiếu, giới hạn 10 MiB/tệp và tối đa 20 grant chưa tiêu thụ, còn hạn trên mỗi người gọi. Giới hạn 10 tệp và 50 MiB theo phiếu áp dụng với metadata đã xác nhận trong giao dịch. [Hợp đồng Backend hiện hành](current-backend-contract.md)
+Ứng viên hardening ngày 28/11/2026 dùng TTL upload/grant 900 giây và download 300 giây theo quyết định chủ dự án; deadline ký upload làm tròn xuống giây để không vượt grant. Cấp grant kiểm quyền, trạng thái phiếu, giới hạn 10 MiB/tệp và tối đa 20 grant chưa tiêu thụ, còn hạn trên mỗi người gọi (giới hạn kỹ thuật hiện hành). Giới hạn 10 tệp và 50 MiB theo phiếu áp dụng với metadata đã xác nhận trong giao dịch. [Hợp đồng Backend hiện hành](current-backend-contract.md)
 
 Nguyên tắc: cổng `IObjectStorageService` vẫn do tầng Application sở hữu; chỉ `Platform` biết AWSSDK; không nới kiểm thử kiến trúc; không sửa migration đã phát hành.
 
@@ -49,7 +49,7 @@ Giữ: `DefaultBucket`, `CreateUploadAsync`, `StatAsync`, `CopyAsync`, `DeleteAs
 
 ### 3.3 Cấu hình `R2Options`
 
-`Endpoint`, `AccessKeyId`, `SecretAccessKey`, `Bucket`, `UploadExpirySeconds` (đề xuất 900), `DownloadExpirySeconds` (đề xuất 300). Khi có cấu hình, kiểm tra endpoint HTTPS thuộc miền S3 của tài khoản R2, với host hợp lệ và không chứa path bổ sung, query hay thông tin đăng nhập. Bucket và cả hai khóa phải có giá trị. Khoảng 60–3.600 giây là giới hạn dự kiến của ứng dụng. Ghi tên trường lỗi, tránh ghi giá trị. Giai đoạn 0 chốt thời hạn URL và grant sau khi đo thời gian tải, xác nhận và thử lại.
+`Endpoint`, `AccessKeyId`, `SecretAccessKey`, `Bucket`, `UploadExpirySeconds` mặc định 900, `DownloadExpirySeconds` mặc định 300. Runtime chặn TTL ngoài 1–604800 giây (giới hạn kỹ thuật S3, không thay chính sách mặc định đã chốt). Thiếu cấu hình storage/scanner thì luồng tệp fail-closed. Gate R2 trước cutover phải xác nhận endpoint HTTPS S3 của đúng tài khoản, host/path không bất thường, bucket riêng tư và token giới hạn bucket; không ghi giá trị credential vào log. Adapter cho phép endpoint HTTP được cấu hình rõ ràng để kiểm thử S3 dùng một lần; kết quả đó không chứng nhận R2 production.
 
 ### 3.4 Chưa cấu hình
 
@@ -58,8 +58,9 @@ Thiết kế cho phép phát triển tính năng chính khi `R2:*` hoàn toàn t
 ### 3.5 Use case
 
 - **Cấp URL:** kiểm đuôi tệp, dung lượng khai báo ≤ 10 MiB, quyền, trạng thái phiếu và hạn mức grant chờ. Tạo grant gắn phiếu, người gọi và metadata, ký đúng key tạm và chỉ trả URL sau khi lưu grant thành công. `RequiredHeaders` cung cấp đúng `Content-Type` đã ký. Giới hạn tổng tệp của phiếu tiếp tục được quyết định khi xác nhận dưới khóa.
-- **Xác nhận:** kiểm quyền, grant và metadata, `HEAD` vùng tạm, `CopyObject` theo ETag nguồn, `HEAD` đích rồi ghi metadata. Giao dịch dùng khóa theo grant và khóa ghi theo phiếu để chống xác nhận trùng và vượt hạn mức đồng thời. Lần xác nhận hợp lệ sau commit trả metadata đã liên kết. Khi copy hoặc commit chưa rõ kết quả, đối soát metadata và object trước khi dọn đích. Với mismatch đã xác định trên object tạm, thiết kế xóa best-effort trong ngân sách ngắn. Kiểm rằng cleanup an toàn với confirm song song và thất bại không biến thành ghi nhận thành công.
-- **Tải xuống:** chỉ đổi hạn URL. Không thêm `HEAD` để tránh một thao tác tính phí cho mỗi lượt tải; object thiếu (ví dụ bản ghi cũ trỏ vào khóa MinIO) làm R2 trả `404` khi mở liên kết.
+- **Xác nhận:** kiểm quyền/grant/metadata, reserve attempt và lease 2 phút trong transaction ngắn trước remote I/O. Key đích chứa grant/attempt để truy vết; `HEAD` nguồn, `CopyObject` theo ETag, `HEAD` đích rồi đọc/quét ClamAV trước commit metadata. Khóa theo grant và phiếu kiểm lại lease/quota; lượt cũ hết hạn hoặc đã bị thay thế không thể commit. Lần xác nhận hợp lệ sau commit trả metadata đã liên kết. Không xóa đích khi commit outcome chưa rõ. Failure/cancellation release có điều kiện; crash không release thì lease tự hết hạn. Không giữ transaction DB trong storage/scanner calls.
+- **Tải xuống:** kiểm quyền và metadata, copy sang key riêng không có upload URL rồi đọc/quét bản sao theo ETag trước khi ký GET. Áp dụng cả legacy; scanner thiếu/lỗi trả 503, nội dung sai trả 400 chung và không cấp URL. Mỗi lần cấp URL phát sinh copy/HEAD/read/scan, cần đo chi phí ở giai đoạn 0. File trỏ vào storage cũ không được tự coi là sạch hay tự cấp URL.
+- **Đối soát:** Worker xử lý từng trang tối đa 100 object cho mỗi prefix pending/final/download. Kiểm reference toàn cục từ DB, dùng cùng khóa grant và fence attempt hết lease trước remote delete; không xóa key legacy không truy vết. Thời gian lấy từ PostgreSQL; retention phải vượt TTL download và thời gian xử lý. Không cấu hình retention thì trạng thái Disabled, không truy cập DB/storage cho GC; không tự chọn 24 giờ hoặc 7 ngày. Grant đã liên kết metadata được giữ để replay. Drain host confirm cũ trước khi bật GC vì chúng chưa thực hiện fencing.
 
 ### 3.6 Hợp đồng HTTP
 
@@ -130,8 +131,10 @@ Mỗi kết quả ghi môi trường, thời điểm, SHA/digest ứng viên, ph
 
 ## 9. Quyết định còn mở cho chủ dự án
 
-1. Hạn URL tải lên và tải xuống (đề xuất 900 và 300 giây).
-2. Thời gian giữ `uploads/pending/` (đề xuất 1 ngày; thấp nhất theo ngày).
-3. Chính sách lưu giữ, xóa và sao lưu tệp đã xác nhận, quét mã độc (phần còn mở của DEC-07).
+Đã chốt ngày 28/11/2026: upload 900 giây, download 300 giây; bắt buộc scanning/quarantine trước download. Không hỏi lại hai quyết định này.
+
+1. Retention object pending hết hạn, quarantine và bản sao download không được tham chiếu (đang hỏi 24 giờ hoặc 7 ngày); GC chưa bật mặc định.
+2. Hạn mức grant đang chờ theo sản phẩm (runtime hiện giữ giới hạn kỹ thuật 20).
+3. Chính sách lưu giữ, xóa và sao lưu tệp đã xác nhận (phần còn mở của DEC-07).
 4. Loại token cho cả nhóm: token thuộc tài khoản hay thuộc người tạo (token người dùng mất hiệu lực khi người tạo rời tài khoản, theo tài liệu R2).
 5. Có chấp nhận rủi ro "dung lượng không bị ép lúc PUT" nếu giai đoạn 0 xác nhận hay yêu cầu Worker.

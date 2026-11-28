@@ -17,6 +17,37 @@ public sealed class AttachmentUploadGrant
     public DateTime ExpiresAt { get; private set; }
     public DateTime? ConsumedAt { get; private set; }
     public Guid? AttachmentId { get; private set; }
+    public Guid? ConfirmationAttemptId { get; private set; }
+    public DateTime? ConfirmationLeaseUntil { get; private set; }
+
+    public bool TryReserveConfirmation(Guid attemptId, DateTime now)
+    {
+        if (attemptId == Guid.Empty) throw new ArgumentException("Confirmation attempt is required.");
+        if (ConsumedAt.HasValue || ExpiresAt <= now) throw new ArgumentException("Quyền tải tệp đã được sử dụng hoặc hết hạn.");
+        if (ConfirmationLeaseUntil > now) return false;
+        ConfirmationAttemptId = attemptId;
+        ConfirmationLeaseUntil = now.AddMinutes(2);
+        return true;
+    }
+
+    public string ConfirmationStorageKey() => ConfirmationAttemptId is { } attempt
+        ? $"tickets/{TicketId}/attachments/v2/{Id:N}/{attempt:N}"
+        : throw new InvalidOperationException("Confirmation has not been reserved.");
+
+    public void RequireActiveConfirmation(string key, DateTime now)
+    {
+        if (ConfirmationAttemptId is null || ConfirmationLeaseUntil <= now || ConfirmationLeaseUntil is null || key != ConfirmationStorageKey())
+            throw new ArgumentException("Lượt xác nhận đã hết hạn hoặc bị thay thế. Vui lòng thử lại.");
+    }
+
+    public void ReleaseConfirmation(Guid attemptId)
+    {
+        if (AttachmentId is null && ConfirmationAttemptId == attemptId)
+        {
+            ConfirmationAttemptId = null;
+            ConfirmationLeaseUntil = null;
+        }
+    }
 
     // Giữ để biểu diễn các grant cũ đã consume nhưng chưa có liên kết attachment.
     public void Consume(DateTime now)
@@ -38,6 +69,7 @@ public sealed class AttachmentUploadGrant
             throw new ArgumentException("Metadata không khớp quyền tải tệp đã cấp.");
         ConsumedAt = now;
         AttachmentId = attachment.Id;
+        ConfirmationLeaseUntil = null;
     }
 
     public static AttachmentUploadGrant CreatePending(Guid ticketId, Guid actorId, string fileName,

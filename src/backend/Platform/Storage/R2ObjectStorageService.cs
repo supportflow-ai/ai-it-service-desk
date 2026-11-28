@@ -100,6 +100,17 @@ internal sealed class R2ObjectStorageService : IObjectStorageService, IDisposabl
         }
     }
 
+public async Task<StorageObjectPage> ListAsync(string bucket, string prefix, string? continuationToken, CancellationToken cancellationToken = default)
+    {
+        var result = await EnsureClient().ListObjectsV2Async(new ListObjectsV2Request
+        {
+            BucketName = string.IsNullOrWhiteSpace(bucket) ? DefaultBucket : bucket,
+            Prefix = prefix, ContinuationToken = continuationToken, MaxKeys = 100
+        }, cancellationToken);
+        return new StorageObjectPage((result.S3Objects ?? []).Select(value =>
+            new StorageObjectEntry(value.Key, value.LastModified.ToUniversalTime())).ToArray(), result.NextContinuationToken);
+    }
+
 public async Task<byte[]> ReadAsync(string bucket, string key, string expectedETag, int maxBytes, CancellationToken cancellationToken = default)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxBytes);

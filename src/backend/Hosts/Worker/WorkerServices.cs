@@ -27,6 +27,10 @@ public static class WorkerServices
         services.AddAIAssistanceModule(configuration);
         services.AddScoped<ICurrentUser, AnonymousCurrentUser>();
         services.AddHostedService<SlaEvaluationWorker>();
+        services.AddOptions<AttachmentReconciliationOptions>().Bind(configuration.GetSection("Attachments"))
+            .Validate(options => options.OrphanRetentionHours is null or >= 1 and <= 8760, "Invalid attachment retention.")
+            .ValidateOnStart();
+        services.AddHostedService<AttachmentReconciliationWorker>();
         return services;
     }
 }

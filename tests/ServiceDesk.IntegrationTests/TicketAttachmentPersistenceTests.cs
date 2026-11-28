@@ -21,7 +21,7 @@ public sealed class TicketAttachmentPersistenceTests(TicketIdempotencyPostgresFi
         {
             await using var context = fixture.CreateContext();
             var attachment = TicketAttachment.Create(upload.TicketId, upload.FileName, upload.FileSizeBytes,
-                upload.ContentType, $"tickets/{upload.TicketId}/attachments/{Guid.NewGuid()}", upload.ActorId, DateTime.UtcNow);
+                upload.ContentType, upload.ConfirmationStorageKey(), upload.ActorId, DateTime.UtcNow);
             return (await new PostgresTicketAttachmentStore(context).ConfirmAsync(upload.Id, attachment, DateTime.UtcNow)).Id;
         }
         var ids = await Task.WhenAll(Confirm(), Confirm());
@@ -46,7 +46,9 @@ public sealed class TicketAttachmentPersistenceTests(TicketIdempotencyPostgresFi
                 first.TicketId, "existing.txt", existingSize, "text/plain", $"tickets/{first.TicketId}/attachments/{Guid.NewGuid()}",
                 first.ActorId, DateTime.UtcNow)));
             await setup.SaveChangesAsync();
-            await new PostgresTicketAttachmentStore(setup).CreateUploadGrantAsync(second);
+            var store = new PostgresTicketAttachmentStore(setup);
+            await store.CreateUploadGrantAsync(second);
+            await store.ReserveConfirmationAsync(second.Id, Guid.NewGuid());
         }
 
         var start = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -121,7 +123,7 @@ public sealed class TicketAttachmentPersistenceTests(TicketIdempotencyPostgresFi
         var upload = await CreateUploadAsync();
         await using var context = fixture.CreateContext();
         var attachment = TicketAttachment.Create(upload.TicketId, upload.FileName, upload.FileSizeBytes,
-            upload.ContentType, $"tickets/{upload.TicketId}/attachments/{Guid.NewGuid()}", upload.ActorId, DateTime.UtcNow);
+            upload.ContentType, upload.ConfirmationStorageKey(), upload.ActorId, DateTime.UtcNow);
         await Assert.ThrowsAsync<ArgumentException>(() => new PostgresTicketAttachmentStore(context)
             .ConfirmAsync(upload.Id, attachment, upload.ExpiresAt));
         await using var verification = fixture.CreateContext();
@@ -147,7 +149,7 @@ public sealed class TicketAttachmentPersistenceTests(TicketIdempotencyPostgresFi
 
     private static TicketAttachment CreateAttachment(AttachmentUploadGrant upload) => TicketAttachment.Create(
         upload.TicketId, upload.FileName, upload.FileSizeBytes, upload.ContentType,
-        $"tickets/{upload.TicketId}/attachments/{Guid.NewGuid()}", upload.ActorId, DateTime.UtcNow);
+        upload.ConfirmationStorageKey(), upload.ActorId, DateTime.UtcNow);
 
     private async Task<AttachmentUploadGrant> CreateUploadAsync(long size = 10)
     {
@@ -156,7 +158,9 @@ public sealed class TicketAttachmentPersistenceTests(TicketIdempotencyPostgresFi
         var ticket = Ticket.Create(actor, "Lỗi VPN", "Mô tả đủ độ dài", TicketCategories.VPN, DateTime.UtcNow);
         await new PostgresTicketWriter(context).CreateAsync(ticket, null, default);
         var upload = AttachmentUploadGrant.CreatePending(ticket.Id, actor, "file.txt", size, "text/plain", DateTime.UtcNow.AddHours(1));
-        await new PostgresTicketAttachmentStore(context).CreateUploadGrantAsync(upload);
+        var store = new PostgresTicketAttachmentStore(context);
+        await store.CreateUploadGrantAsync(upload);
+        await store.ReserveConfirmationAsync(upload.Id, Guid.NewGuid());
         return upload;
     }
 }

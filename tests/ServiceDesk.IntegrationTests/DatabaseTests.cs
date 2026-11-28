@@ -122,14 +122,28 @@ public class DatabaseTests : IClassFixture<ServiceDeskWebApplicationFactory>
         }
 
         var start = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        async Task<Guid> ConfirmAsync()
+        var completed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        async Task<Guid> AttemptAsync()
         {
             using var scope = _factory.Services.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            await start.Task;
             return (await ConfirmThroughUseCaseAsync(context, ticketId, actorId,
                 new ConfirmAttachmentUploadRequest("evidence.png", 1024, "image/png", key),
                 new ObjectStorageObjectInfo(1024, "image/png"), now)).Id;
+        }
+        async Task<Guid> ConfirmAsync()
+        {
+            await start.Task;
+            try
+            {
+                var id = await AttemptAsync(); completed.TrySetResult(); return id;
+            }
+            catch (AttachmentConfirmationBusyException)
+            {
+                await completed.Task.WaitAsync(TimeSpan.FromSeconds(10));
+                return await AttemptAsync();
+            }
+            catch (Exception error) { completed.TrySetException(error); throw; }
         }
 
         var first = ConfirmAsync();
@@ -193,6 +207,7 @@ public class DatabaseTests : IClassFixture<ServiceDeskWebApplicationFactory>
         services.AddSingleton<ITicketQueries>(new PostgresTicketQueries(context));
         services.AddSingleton<ITicketAttachmentStore>(new PostgresTicketAttachmentStore(context));
         services.AddSingleton<IObjectStorageService>(storage.Object);
+        services.AddSingleton<IAttachmentScanner, CleanAttachmentScannerStub>();
         services.AddSingleton<ICurrentUser>(actor.Object);
         services.AddSingleton<IClock>(clock.Object);
         using var provider = services.BuildServiceProvider();

@@ -21,8 +21,9 @@ public sealed class PasswordResetJobMigrationTests
         await using var context = new ApplicationDbContext(new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseNpgsql(postgres.GetConnectionString()).Options);
         var migrations = context.Database.GetMigrations().ToArray();
-        Assert.EndsWith("_AddDurablePasswordResetJobs", migrations[^1]);
-        await context.GetService<IMigrator>().MigrateAsync(migrations[^2]);
+        var queueIndex = Array.FindIndex(migrations, name => name.EndsWith("_AddDurablePasswordResetJobs", StringComparison.Ordinal));
+        Assert.True(queueIndex > 0);
+        await context.GetService<IMigrator>().MigrateAsync(migrations[queueIndex - 1]);
         var user = new IdentityUser { Id = Guid.NewGuid().ToString(), UserName = "upgrade@test.invalid", SecurityStamp = "original-stamp" };
         var otp = OtpCode.Issue(user.UserName, OtpCode.ResetPasswordPurpose, "legacy-digest", DateTime.UtcNow);
         var refresh = RefreshToken.Issue(user.Id, "refresh-digest", DateTime.UtcNow);
