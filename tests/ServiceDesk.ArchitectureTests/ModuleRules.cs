@@ -25,6 +25,8 @@ internal static class ModuleRules
         "ServiceDesk.Modules.Ticketing.Domain.TicketCategory", "ServiceDesk.Modules.Ticketing.Domain.Impact",
         "ServiceDesk.Modules.Ticketing.Domain.Urgency",
         "ServiceDesk.Modules.Ticketing.Application.Contracts.TicketTriageSnapshotDto",
+        "ServiceDesk.Modules.Ticketing.Application.Contracts.TicketTriageValues",
+        "ServiceDesk.Modules.Ticketing.Application.Contracts.TicketTriageChange",
         "ServiceDesk.Modules.Ticketing.Application.Contracts.ITicketTriageBridge"
     };
 

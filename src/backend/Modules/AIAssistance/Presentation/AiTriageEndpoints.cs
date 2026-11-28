@@ -61,7 +61,8 @@ public static class AiTriageEndpoints
                 request.Urgency,
                 request.CategoryId,
                 request.Reason,
-                request.ExpectedRevision);
+                request.ExpectedRevision,
+                request.AnalysisId);
 
             var decisionResult = await decideAiTriage.ExecuteAsync(command, ct);
             return Results.Ok(decisionResult);
@@ -73,7 +74,8 @@ public static class AiTriageEndpoints
         .Produces(StatusCodes.Status401Unauthorized)
         .Produces(StatusCodes.Status403Forbidden)
         .Produces(StatusCodes.Status404NotFound)
-        .Produces(StatusCodes.Status409Conflict);
+        .Produces(StatusCodes.Status409Conflict)
+        .Produces(StatusCodes.Status503ServiceUnavailable);
 
         return app;
     }
@@ -85,5 +87,6 @@ public record TriageDecisionRequest(
     Urgency? Urgency = null,
     string? CategoryId = null,
     string? Reason = null,
-    uint? ExpectedRevision = null
+    uint? ExpectedRevision = null,
+    Guid? AnalysisId = null
 );

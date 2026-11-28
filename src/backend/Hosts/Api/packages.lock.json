@@ -351,6 +351,8 @@
       "servicedesk.modules.aiassistance": {
         "type": "Project",
         "dependencies": {
+          "Microsoft.EntityFrameworkCore.Relational": "[10.0.13, )",
+          "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.3, )",
           "ServiceDesk.Modules.Ticketing": "[1.0.0, )",
           "ServiceDesk.SharedKernel": "[1.0.0, )"
         }
@@ -389,6 +391,7 @@
           "AspNetCore.HealthChecks.NpgSql": "[9.0.0, )",
           "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "[10.0.13, )",
           "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.3, )",
+          "ServiceDesk.Modules.AIAssistance": "[1.0.0, )",
           "ServiceDesk.Modules.Identity": "[1.0.0, )",
           "ServiceDesk.Modules.Knowledge": "[1.0.0, )",
           "ServiceDesk.Modules.Ticketing": "[1.0.0, )",

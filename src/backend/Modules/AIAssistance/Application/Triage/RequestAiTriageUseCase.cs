@@ -75,10 +75,11 @@ internal sealed class RequestAiTriageUseCase(
                 snapshot.Revision,
                 inputHash,
                 now,
-                triageResult.FailureReason ?? "Phân loại AI thất bại hoặc dịch vụ AI chưa kích hoạt.");
+                triageResult.FailureReason ?? "Phân loại AI thất bại hoặc dịch vụ AI chưa kích hoạt.",
+                triageResult.Outcome, triageResult.ValidationErrors);
         }
 
-        await analysisStore.SaveAnalysisAsync(analysis, cancellationToken);
-        return AgentTriageView.FromTriageResult(triageResult);
+        await analysisStore.AddAsync(analysis, cancellationToken);
+        return AgentTriageView.FromTriageResult(triageResult).WithAnalysis(analysis, isStale: false);
     }
 }

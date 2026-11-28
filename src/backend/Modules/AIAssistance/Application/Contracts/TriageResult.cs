@@ -109,6 +109,13 @@ public sealed record TriageResult
         };
     }
 
+    public static TriageResult RestoreFailure(TriageOutcome outcome, string reason, IReadOnlyList<string> validationErrors)
+    {
+        if (!Enum.IsDefined(outcome) || outcome == TriageOutcome.Success) throw new ArgumentOutOfRangeException(nameof(outcome));
+        ArgumentException.ThrowIfNullOrWhiteSpace(reason);
+        return new TriageResult { Outcome = outcome, FailureReason = reason, ValidationErrors = Array.AsReadOnly(validationErrors.ToArray()) };
+    }
+
     private static void ValidateSuggestion<T>(T? value, double? score) where T : struct, Enum
     {
         if (value.HasValue && !Enum.IsDefined(value.Value))
@@ -116,23 +123,4 @@ public sealed record TriageResult
         if (score.HasValue && (!value.HasValue || !ConfidencePolicy.IsValidScore(score.Value)))
             throw new ArgumentException("A finite score in [0,1] requires its corresponding suggestion.", nameof(score));
     }
-}
-
-/// <summary>Trạng thái kết quả của một lần thực thi AI Triage.</summary>
-public enum TriageOutcome
-{
-    /// <summary>Phân loại thành công.</summary>
-    Success,
-
-    /// <summary>Dịch vụ AI không khả dụng.</summary>
-    Unavailable,
-
-    /// <summary>Quá thời gian chờ phản hồi từ AI.</summary>
-    Timeout,
-
-    /// <summary>Phản hồi từ AI không đúng cấu trúc hợp lệ.</summary>
-    InvalidResponse,
-
-    /// <summary>Dữ liệu đề xuất không vượt qua kiểm tra tính hợp lệ.</summary>
-    ValidationFailed
 }

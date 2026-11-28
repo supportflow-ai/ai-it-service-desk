@@ -219,6 +219,140 @@ namespace ServiceDesk.Platform.Persistence.Migrations
                     b.ToTable("AspNetUserTokens", "public");
                 });
 
+            modelBuilder.Entity("ServiceDesk.Modules.AIAssistance.Domain.AIAnalysis", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset?>("DecidedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("decided_at");
+
+                    b.Property<Guid?>("DecidedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("decided_by");
+
+                    b.Property<string>("Decision")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("decision");
+
+                    b.Property<string>("DecisionReason")
+                        .HasColumnType("text")
+                        .HasColumnName("decision_reason");
+
+                    b.Property<long?>("DecisionRevision")
+                        .HasColumnType("bigint")
+                        .HasColumnName("decision_revision");
+
+                    b.Property<string>("FailureReason")
+                        .HasColumnType("text")
+                        .HasColumnName("failure_reason");
+
+                    b.Property<string>("InputHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("input_hash");
+
+                    b.Property<string>("Outcome")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("outcome");
+
+                    b.Property<bool>("Succeeded")
+                        .HasColumnType("boolean")
+                        .HasColumnName("succeeded");
+
+                    b.Property<Guid>("TicketId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("ticket_id");
+
+                    b.Property<long>("TicketRevision")
+                        .HasColumnType("bigint")
+                        .HasColumnName("ticket_revision");
+
+                    b.PrimitiveCollection<string[]>("ValidationErrors")
+                        .IsRequired()
+                        .HasColumnType("text[]")
+                        .HasColumnName("validation_errors");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TicketId", "CreatedAt", "Id")
+                        .HasDatabaseName("ix_ai_analyses_ticket_id_created_at_id");
+
+                    b.ToTable("ai_analyses", "public", t =>
+                        {
+                            t.HasCheckConstraint("ck_ai_analyses_decision", "(decision = 'Pending') = (decided_by IS NULL) AND (decided_by IS NULL) = (decided_at IS NULL) AND (decision = 'Pending' OR succeeded)");
+                        });
+                });
+
+            modelBuilder.Entity("ServiceDesk.Modules.AIAssistance.Domain.AISuggestion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AnalysisId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("analysis_id");
+
+                    b.Property<string>("Decision")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("decision");
+
+                    b.Property<string>("FinalValue")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("final_value");
+
+                    b.Property<double?>("ModelScore")
+                        .HasColumnType("double precision")
+                        .HasColumnName("model_score");
+
+                    b.Property<DateTimeOffset?>("ReviewedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("reviewed_at");
+
+                    b.Property<string>("ReviewedBy")
+                        .HasMaxLength(36)
+                        .HasColumnType("character varying(36)")
+                        .HasColumnName("reviewed_by");
+
+                    b.Property<string>("SuggestedValue")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("suggested_value");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("type");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AnalysisId", "Type")
+                        .IsUnique()
+                        .HasDatabaseName("ux_ai_suggestions_analysis_id_type");
+
+                    b.ToTable("ai_suggestions", "public", t =>
+                        {
+                            t.HasCheckConstraint("ck_ai_suggestions_model_score", "model_score IS NULL OR (model_score >= 0 AND model_score <= 1)");
+                        });
+                });
+
             modelBuilder.Entity("ServiceDesk.Modules.Identity.Domain.Department", b =>
                 {
                     b.Property<Guid>("Id")
@@ -964,6 +1098,90 @@ namespace ServiceDesk.Platform.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("ServiceDesk.Modules.AIAssistance.Domain.AIAnalysis", b =>
+                {
+                    b.OwnsOne("ServiceDesk.Modules.AIAssistance.Domain.TriageValues", "Applied", b1 =>
+                        {
+                            b1.Property<Guid>("AIAnalysisId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("CategoryId")
+                                .IsRequired()
+                                .HasMaxLength(50)
+                                .HasColumnType("character varying(50)")
+                                .HasColumnName("applied_category_id");
+
+                            b1.Property<string>("Impact")
+                                .HasMaxLength(16)
+                                .HasColumnType("character varying(16)")
+                                .HasColumnName("applied_impact");
+
+                            b1.Property<string>("Priority")
+                                .HasMaxLength(16)
+                                .HasColumnType("character varying(16)")
+                                .HasColumnName("applied_priority");
+
+                            b1.Property<string>("Urgency")
+                                .HasMaxLength(16)
+                                .HasColumnType("character varying(16)")
+                                .HasColumnName("applied_urgency");
+
+                            b1.HasKey("AIAnalysisId");
+
+                            b1.ToTable("ai_analyses", "public");
+
+                            b1.WithOwner()
+                                .HasForeignKey("AIAnalysisId");
+                        });
+
+                    b.OwnsOne("ServiceDesk.Modules.AIAssistance.Domain.TriageValues", "Previous", b1 =>
+                        {
+                            b1.Property<Guid>("AIAnalysisId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("CategoryId")
+                                .IsRequired()
+                                .HasMaxLength(50)
+                                .HasColumnType("character varying(50)")
+                                .HasColumnName("previous_category_id");
+
+                            b1.Property<string>("Impact")
+                                .HasMaxLength(16)
+                                .HasColumnType("character varying(16)")
+                                .HasColumnName("previous_impact");
+
+                            b1.Property<string>("Priority")
+                                .HasMaxLength(16)
+                                .HasColumnType("character varying(16)")
+                                .HasColumnName("previous_priority");
+
+                            b1.Property<string>("Urgency")
+                                .HasMaxLength(16)
+                                .HasColumnType("character varying(16)")
+                                .HasColumnName("previous_urgency");
+
+                            b1.HasKey("AIAnalysisId");
+
+                            b1.ToTable("ai_analyses", "public");
+
+                            b1.WithOwner()
+                                .HasForeignKey("AIAnalysisId");
+                        });
+
+                    b.Navigation("Applied");
+
+                    b.Navigation("Previous");
+                });
+
+            modelBuilder.Entity("ServiceDesk.Modules.AIAssistance.Domain.AISuggestion", b =>
+                {
+                    b.HasOne("ServiceDesk.Modules.AIAssistance.Domain.AIAnalysis", null)
+                        .WithMany("Suggestions")
+                        .HasForeignKey("AnalysisId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("ServiceDesk.Modules.Knowledge.Domain.ArticleTag", b =>
                 {
                     b.HasOne("ServiceDesk.Modules.Knowledge.Domain.Article", null)
@@ -1014,6 +1232,11 @@ namespace ServiceDesk.Platform.Persistence.Migrations
                         .HasForeignKey("TicketId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("ServiceDesk.Modules.AIAssistance.Domain.AIAnalysis", b =>
+                {
+                    b.Navigation("Suggestions");
                 });
 
             modelBuilder.Entity("ServiceDesk.Modules.Knowledge.Domain.Article", b =>

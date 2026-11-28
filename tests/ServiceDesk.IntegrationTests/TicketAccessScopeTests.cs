@@ -9,6 +9,7 @@ using ServiceDesk.Modules.Ticketing.Application.Contracts;
 using ServiceDesk.Modules.Ticketing.Domain;
 using ServiceDesk.SharedKernel.Authorization;
 using Xunit;
+using ServiceDesk.Modules.AIAssistance.Domain;
 
 namespace ServiceDesk.IntegrationTests;
 
@@ -174,6 +175,91 @@ public sealed class TicketAccessScopeTests(TicketIdempotencyPostgresFixture fixt
     {
         var timeline = await client.GetFromJsonAsync<TimelineItemDto[]>($"/api/tickets/{ticketId}/timeline");
         Assert.Equal(expected, timeline!.Any(item => item.IsInternal));
+    }
+
+    [Fact]
+    public async Task StoredAnalysisIsReadableAfterNewHostAndOverrideReasonStaysInternal()
+    {
+        using var owner = fixture.First!.CreateClient();
+        SetToken(owner, (await RegisterAsync(owner)).Token);
+        using var admin = fixture.Second!.CreateClient();
+        await SignInAdminAsync(admin);
+        var ticket = await CreateTicketAsync(owner);
+        Guid analysisId;
+        await using (var context = fixture.CreateContext())
+        {
+            var row = await context.Tickets.SingleAsync(t => t.Id == ticket.Id);
+            var analysis = AIAnalysis.CreateSucceeded(ticket.Id, ticket.Revision,
+                InputHashComputer.Compute(row.Title, row.Description), DateTimeOffset.UtcNow);
+            analysis.AddSuggestion(AISuggestion.Create(analysis.Id, SuggestionType.Category, "VPN", 0.9));
+            context.AiAnalyses.Add(analysis);
+            await context.SaveChangesAsync();
+            analysisId = analysis.Id;
+        }
+        await using var restarted = new TicketIdempotencyPostgresFixture.Factory(fixture.ConnectionString);
+        using var replica = restarted.CreateClient();
+        replica.DefaultRequestHeaders.Authorization = admin.DefaultRequestHeaders.Authorization;
+        var view = await replica.GetFromJsonAsync<System.Text.Json.Nodes.JsonObject>($"/api/tickets/{ticket.Id}/triage");
+        Assert.Equal(analysisId, view!["analysisId"]!.GetValue<Guid>());
+        const string reason = "Dấu hiệu xâm nhập tài khoản - thông tin nội bộ";
+        using var decision = await replica.PostAsJsonAsync($"/api/tickets/{ticket.Id}/triage/decision",
+            new { analysisId, decision = 2, categoryId = "VPN", impact = Impact.High, urgency = Urgency.High, reason, expectedRevision = ticket.Revision });
+        Assert.Equal(HttpStatusCode.OK, decision.StatusCode);
+        var after = await admin.GetFromJsonAsync<System.Text.Json.Nodes.JsonObject>($"/api/tickets/{ticket.Id}/triage");
+        Assert.Equal("Overridden", after!["decisionStatus"]!.GetValue<string>());
+        var publicTimeline = await owner.GetFromJsonAsync<TimelineItemDto[]>($"/api/tickets/{ticket.Id}/timeline");
+        Assert.DoesNotContain(publicTimeline!, entry => entry.Content.Contains(reason));
+        var internalTimeline = await admin.GetFromJsonAsync<TimelineItemDto[]>($"/api/tickets/{ticket.Id}/timeline");
+        Assert.Contains(internalTimeline!, entry => entry.IsInternal && entry.Content.Contains(reason));
+    }
+
+    [Theory]
+    [InlineData("remove", false)]
+    [InlineData("deactivate", true)]
+    [InlineData("transfer", true)]
+    public async Task AiTriageChecksTeamScopeForReadsAndWritesAndRevokesImmediately(string revocation, bool lead)
+    {
+        using var owner = fixture.First!.CreateClient();
+        SetToken(owner, (await RegisterAsync(owner)).Token);
+        using var agent = fixture.Second!.CreateClient();
+        var agentId = await SignInAgentAsync(agent);
+        var teamId = await AddTeamAsync(agentId, active: true);
+        var ticket = await CreateTicketAsync(owner);
+        await using var context = fixture.CreateContext();
+        await context.SupportTeamMembers.Where(m => m.TeamId == teamId && m.UserId == agentId)
+            .ExecuteUpdateAsync(u => u.SetProperty(m => m.IsLead, lead));
+        await context.Tickets.Where(t => t.Id == ticket.Id)
+            .ExecuteUpdateAsync(u => u.SetProperty(t => t.SupportTeamId, teamId));
+
+        // GET không tạo analysis và không tự gọi AI, qua cả hai máy chủ.
+        var before = await context.AiAnalyses.CountAsync(a => a.TicketId == ticket.Id);
+        using var read = await agent.GetAsync($"/api/tickets/{ticket.Id}/triage");
+        Assert.Equal(HttpStatusCode.OK, read.StatusCode);
+        using var requesterRead = await owner.GetAsync($"/api/tickets/{ticket.Id}/triage");
+        Assert.Equal(HttpStatusCode.OK, requesterRead.StatusCode);
+        var requesterJson = await requesterRead.Content.ReadAsStringAsync();
+        Assert.DoesNotContain("categoryScore", requesterJson);
+        Assert.DoesNotContain("analysisId", requesterJson);
+        Assert.Equal(before, await context.AiAnalyses.CountAsync(a => a.TicketId == ticket.Id));
+        using var analyze = await agent.PostAsync($"/api/tickets/{ticket.Id}/ai-analyze", null);
+        Assert.Equal(HttpStatusCode.OK, analyze.StatusCode);
+
+        if (revocation == "remove")
+            await context.SupportTeamMembers.Where(m => m.TeamId == teamId && m.UserId == agentId).ExecuteDeleteAsync();
+        else if (revocation == "deactivate")
+            await context.SupportTeams.Where(t => t.Id == teamId).ExecuteUpdateAsync(u => u.SetProperty(t => t.IsActive, false));
+        else
+            await context.Tickets.Where(t => t.Id == ticket.Id)
+                .ExecuteUpdateAsync(u => u.SetProperty(t => t.SupportTeamId, SupportTeam.ManualTriageId));
+
+        using var deniedRead = await agent.GetAsync($"/api/tickets/{ticket.Id}/triage");
+        using var deniedAnalyze = await agent.PostAsync($"/api/tickets/{ticket.Id}/ai-analyze", null);
+        using var deniedDecision = await agent.PostAsJsonAsync($"/api/tickets/{ticket.Id}/triage/decision",
+            new { decision = 2, impact = Impact.High, urgency = Urgency.High, reason = "Phân loại thủ công", expectedRevision = ticket.Revision });
+        Assert.Equal(HttpStatusCode.NotFound, deniedRead.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, deniedAnalyze.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, deniedDecision.StatusCode);
+        Assert.False(await context.TicketComments.AnyAsync(c => c.TicketId == ticket.Id));
     }
 
     private async Task SignInAdminAsync(HttpClient client)

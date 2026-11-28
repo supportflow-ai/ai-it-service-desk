@@ -44,6 +44,8 @@ builder.Services.AddBackendHealthChecks();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
+    options.OperationFilter<TriageReadResponseFilter>();
+    options.UseAllOfToExtendReferenceSchemas();
     options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
     {
         Title = "AI IT Service Desk API",

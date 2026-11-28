@@ -51,11 +51,13 @@ internal static class TicketCommandGuard
         }
     }
 
-    /// <summary>Lưu ticket cùng một bình luận công khai do hệ thống ghi lại thao tác của <paramref name="actorId"/>.</summary>
+    /// <summary>Lưu ticket cùng audit hệ thống; nội dung nhạy cảm dùng <paramref name="isInternal"/>.</summary>
     public static Task<TicketDto> SaveWithSystemAuditAsync(
-        ITicketWriter writer, Ticket ticket, Guid actorId, string message, DateTime now, CancellationToken cancellationToken)
+        ITicketWriter writer, Ticket ticket, Guid actorId, string message, DateTime now, CancellationToken cancellationToken, bool isInternal = false)
     {
-        var audit = TicketComment.CreatePublic(ticket.Id, actorId, SystemAuthor.Name, SystemAuthor.Role, message, now);
+        var audit = isInternal
+            ? TicketComment.CreateInternalNote(ticket.Id, actorId, SystemAuthor.Name, SystemAuthor.Role, message, now)
+            : TicketComment.CreatePublic(ticket.Id, actorId, SystemAuthor.Name, SystemAuthor.Role, message, now);
         return writer.UpdateTicketWithAuditAsync(ticket, audit, cancellationToken);
     }
 }

@@ -16,6 +16,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Cùng phiên bản EF Core với các module khác. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.13" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="ServiceDesk.Application.Tests" />
     <InternalsVisibleTo Include="ServiceDesk.IntegrationTests" />
   </ItemGroup>

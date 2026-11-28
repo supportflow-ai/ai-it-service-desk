@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\BuildingBlocks\SharedKernel\ServiceDesk.SharedKernel.csproj" />
+    <ProjectReference Include="..\Modules\AIAssistance\ServiceDesk.Modules.AIAssistance.csproj" />
     <ProjectReference Include="..\Modules\Identity\ServiceDesk.Modules.Identity.csproj" />
     <ProjectReference Include="..\Modules\Knowledge\ServiceDesk.Modules.Knowledge.csproj" />
     <ProjectReference Include="..\Modules\Ticketing\ServiceDesk.Modules.Ticketing.csproj" />

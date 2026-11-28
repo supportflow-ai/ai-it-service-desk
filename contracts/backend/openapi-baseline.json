@@ -69,7 +69,14 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/RequesterTriageView"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/AgentTriageView"
+                    },
+                    {
+                      "$ref": "#/components/schemas/RequesterTriageView"
+                    }
+                  ]
                 }
               }
             }
@@ -102,7 +109,11 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/TriageTicketRequest"
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/TriageTicketRequest"
+                  }
+                ]
               }
             }
           },
@@ -155,7 +166,11 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/TriageDecisionRequest"
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/TriageDecisionRequest"
+                  }
+                ]
               }
             }
           },
@@ -186,6 +201,9 @@
           },
           "409": {
             "description": "Conflict"
+          },
+          "503": {
+            "description": "Service Unavailable"
           }
         }
       }
@@ -200,7 +218,11 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/RegisterRequest"
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/RegisterRequest"
+                  }
+                ]
               }
             }
           },
@@ -226,7 +248,11 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/LoginRequest"
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/LoginRequest"
+                  }
+                ]
               }
             }
           },
@@ -252,7 +278,11 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/RefreshAuthRequest"
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/RefreshAuthRequest"
+                  }
+                ]
               }
             }
           },
@@ -278,7 +308,11 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/RevokeTokenRequest"
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/RevokeTokenRequest"
+                  }
+                ]
               }
             }
           },
@@ -301,7 +335,11 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ChangePasswordRequest"
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/ChangePasswordRequest"
+                  }
+                ]
               }
             }
           },
@@ -324,7 +362,11 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ForgotPasswordRequest"
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/ForgotPasswordRequest"
+                  }
+                ]
               }
             }
           },
@@ -350,7 +392,11 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ResetPasswordRequest"
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/ResetPasswordRequest"
+                  }
+                ]
               }
             }
           },
@@ -387,7 +433,11 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateCurrentUserProfileRequest"
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/UpdateCurrentUserProfileRequest"
+                  }
+                ]
               }
             }
           },
@@ -476,7 +526,11 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateDepartmentRequest"
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/CreateDepartmentRequest"
+                  }
+                ]
               }
             }
           },
@@ -529,7 +583,11 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateDepartmentRequest"
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/UpdateDepartmentRequest"
+                  }
+                ]
               }
             }
           },
@@ -636,7 +694,11 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateDraftArticleRequest"
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/CreateDraftArticleRequest"
+                  }
+                ]
               }
             }
           },
@@ -688,7 +750,11 @@
             "name": "status",
             "in": "query",
             "schema": {
-              "$ref": "#/components/schemas/ArticleStatus"
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/ArticleStatus"
+                }
+              ]
             }
           },
           {
@@ -756,7 +822,11 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateDraftArticleRequest"
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/UpdateDraftArticleRequest"
+                  }
+                ]
               }
             }
           },
@@ -820,7 +890,11 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PublishArticleRequest"
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/PublishArticleRequest"
+                  }
+                ]
               }
             }
           }
@@ -883,7 +957,11 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/RepublishArticleRequest"
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/RepublishArticleRequest"
+                  }
+                ]
               }
             }
           },
@@ -947,7 +1025,11 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ArchiveArticleRequest"
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/ArchiveArticleRequest"
+                  }
+                ]
               }
             }
           }
@@ -1080,7 +1162,11 @@
             "name": "status",
             "in": "query",
             "schema": {
-              "$ref": "#/components/schemas/ArticleStatus"
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/ArticleStatus"
+                }
+              ]
             }
           },
           {
@@ -1280,7 +1366,11 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AssignRolesRequest"
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/AssignRolesRequest"
+                  }
+                ]
               }
             }
           },
@@ -1336,7 +1426,11 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateSupportTeamRequest"
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/CreateSupportTeamRequest"
+                  }
+                ]
               }
             }
           },
@@ -1424,7 +1518,11 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateSupportTeamRequest"
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/UpdateSupportTeamRequest"
+                  }
+                ]
               }
             }
           },
@@ -1477,7 +1575,11 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AddTeamMemberRequest"
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/AddTeamMemberRequest"
+                  }
+                ]
               }
             }
           },
@@ -1571,7 +1673,11 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateTicketCommand"
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/CreateTicketCommand"
+                  }
+                ]
               }
             }
           },
@@ -1800,7 +1906,11 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateTicketRequest"
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/UpdateTicketRequest"
+                  }
+                ]
               }
             }
           },
@@ -1904,7 +2014,11 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AssignTicketRequest"
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/AssignTicketRequest"
+                  }
+                ]
               }
             }
           },
@@ -2008,7 +2122,11 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/TransferTicketRequest"
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/TransferTicketRequest"
+                  }
+                ]
               }
             }
           },
@@ -2061,7 +2179,11 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PendingTicketRequest"
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/PendingTicketRequest"
+                  }
+                ]
               }
             }
           },
@@ -2179,7 +2301,11 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ResolveTicketRequest"
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/ResolveTicketRequest"
+                  }
+                ]
               }
             }
           }
@@ -2384,7 +2510,11 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AddCommentRequest"
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/AddCommentRequest"
+                  }
+                ]
               }
             }
           },
@@ -2434,7 +2564,11 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AddInternalNoteRequest"
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/AddInternalNoteRequest"
+                  }
+                ]
               }
             }
           },
@@ -2527,7 +2661,11 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/GenerateUploadUrlRequest"
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/GenerateUploadUrlRequest"
+                  }
+                ]
               }
             }
           },
@@ -2625,7 +2763,11 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ConfirmAttachmentUploadRequest"
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/ConfirmAttachmentUploadRequest"
+                  }
+                ]
               }
             }
           },
@@ -2740,16 +2882,35 @@
         "type": "object",
         "properties": {
           "outcome": {
-            "$ref": "#/components/schemas/TriageOutcome"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TriageOutcome"
+              }
+            ]
           },
           "suggestedCategory": {
-            "$ref": "#/components/schemas/TicketCategory"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TicketCategory"
+              }
+            ],
+            "nullable": true
           },
           "suggestedImpact": {
-            "$ref": "#/components/schemas/Impact"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Impact"
+              }
+            ],
+            "nullable": true
           },
           "suggestedUrgency": {
-            "$ref": "#/components/schemas/Urgency"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Urgency"
+              }
+            ],
+            "nullable": true
           },
           "categoryScore": {
             "type": "number",
@@ -2767,13 +2928,28 @@
             "nullable": true
           },
           "categoryConfidence": {
-            "$ref": "#/components/schemas/ConfidenceBand"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ConfidenceBand"
+              }
+            ],
+            "nullable": true
           },
           "impactConfidence": {
-            "$ref": "#/components/schemas/ConfidenceBand"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ConfidenceBand"
+              }
+            ],
+            "nullable": true
           },
           "urgencyConfidence": {
-            "$ref": "#/components/schemas/ConfidenceBand"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ConfidenceBand"
+              }
+            ],
+            "nullable": true
           },
           "requiresManualTriage": {
             "type": "boolean"
@@ -2787,6 +2963,23 @@
             "items": {
               "type": "string"
             },
+            "nullable": true
+          },
+          "analysisId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "analyzedTicketRevision": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          },
+          "isStale": {
+            "type": "boolean"
+          },
+          "decisionStatus": {
+            "type": "string",
             "nullable": true
           }
         },
@@ -2841,7 +3034,11 @@
             "nullable": true
           },
           "status": {
-            "$ref": "#/components/schemas/ArticleStatus"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ArticleStatus"
+              }
+            ]
           },
           "authorId": {
             "type": "string",
@@ -3215,7 +3412,11 @@
         "type": "object",
         "properties": {
           "status": {
-            "$ref": "#/components/schemas/TicketStatus"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TicketStatus"
+              }
+            ]
           },
           "expectedRevision": {
             "type": "integer",
@@ -3305,13 +3506,27 @@
         "type": "object",
         "properties": {
           "outcome": {
-            "$ref": "#/components/schemas/TriageOutcome"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TriageOutcome"
+              }
+            ]
           },
           "suggestedCategory": {
-            "$ref": "#/components/schemas/TicketCategory"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TicketCategory"
+              }
+            ],
+            "nullable": true
           },
           "categoryConfidence": {
-            "$ref": "#/components/schemas/ConfidenceBand"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ConfidenceBand"
+              }
+            ],
+            "nullable": true
           },
           "requiresManualTriage": {
             "type": "boolean"
@@ -3452,10 +3667,20 @@
             "nullable": true
           },
           "firstResponse": {
-            "$ref": "#/components/schemas/SlaClockSummaryDto"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SlaClockSummaryDto"
+              }
+            ],
+            "nullable": true
           },
           "resolution": {
-            "$ref": "#/components/schemas/SlaClockSummaryDto"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SlaClockSummaryDto"
+              }
+            ],
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -3708,7 +3933,12 @@
             "nullable": true
           },
           "sla": {
-            "$ref": "#/components/schemas/SlaSummaryDto"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SlaSummaryDto"
+              }
+            ],
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -3789,13 +4019,27 @@
         "type": "object",
         "properties": {
           "decision": {
-            "$ref": "#/components/schemas/TriageDecisionType"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TriageDecisionType"
+              }
+            ]
           },
           "impact": {
-            "$ref": "#/components/schemas/Impact"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Impact"
+              }
+            ],
+            "nullable": true
           },
           "urgency": {
-            "$ref": "#/components/schemas/Urgency"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Urgency"
+              }
+            ],
+            "nullable": true
           },
           "categoryId": {
             "type": "string",
@@ -3809,6 +4053,11 @@
             "type": "integer",
             "format": "int32",
             "nullable": true
+          },
+          "analysisId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -3821,7 +4070,11 @@
             "format": "uuid"
           },
           "decision": {
-            "$ref": "#/components/schemas/TriageDecisionType"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TriageDecisionType"
+              }
+            ]
           },
           "appliedToTicket": {
             "type": "boolean"
@@ -3857,10 +4110,18 @@
         "type": "object",
         "properties": {
           "impact": {
-            "$ref": "#/components/schemas/Impact"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Impact"
+              }
+            ]
           },
           "urgency": {
-            "$ref": "#/components/schemas/Urgency"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Urgency"
+              }
+            ]
           },
           "expectedRevision": {
             "type": "integer",

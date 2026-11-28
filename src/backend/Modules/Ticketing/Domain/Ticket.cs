@@ -157,8 +157,7 @@ public class Ticket
     /// </summary>
     public void SetTriage(Impact impact, Urgency urgency, DateTime now, string? categoryId = null)
     {
-        if (Status is TicketStatus.Resolved or TicketStatus.Closed or TicketStatus.Cancelled)
-            throw new InvalidOperationException($"Không thể phân loại vé đã ở trạng thái {Status}.");
+        EnsureCanTriage();
         if (categoryId is not null && !TicketCategories.All.Contains(categoryId, StringComparer.Ordinal))
             throw new ArgumentException("Invalid category");
 
@@ -175,6 +174,12 @@ public class Ticket
             Priority = newPriority;
             UpdatedAt = now;
         }
+    }
+
+    public void EnsureCanTriage()
+    {
+        if (Status is TicketStatus.Resolved or TicketStatus.Closed or TicketStatus.Cancelled)
+            throw new InvalidOperationException($"Không thể phân loại vé đã ở trạng thái {Status}.");
     }
 
     /// <summary>Kiểm tra quyền sở hữu của người gửi đối với ticket này.</summary>

@@ -107,12 +107,42 @@ internal sealed class PostgresTicketWriter(DbContext context) : ITicketWriter
 
     public async Task<Ticket?> GetForUpdateAsync(Guid id, TicketReadScope scope, CancellationToken cancellationToken)
     {
+        if (_context.Database.CurrentTransaction is not null)
+            return await GetLockedForUpdateAsync(id, scope, cancellationToken);
+
         // Kiểm phạm vi bằng truy vấn không theo dõi, rồi tải thực thể bằng truy vấn thường để EF nạp đúng
         // concurrency token xmin. (CI: truy vấn có subquery thành viên nhóm trả xmin = 0 cho thực thể được theo dõi.)
         var inScope = await TicketScopeQuery.Apply(_context.Set<Ticket>().AsNoTracking(), _context, scope)
             .AnyAsync(t => t.Id == id, cancellationToken);
         if (!inScope) return null;
         return await _context.Set<Ticket>().SingleOrDefaultAsync(t => t.Id == id, cancellationToken);
+    }
+
+    private async Task<Ticket?> GetLockedForUpdateAsync(Guid id, TicketReadScope scope, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(scope);
+        // HITL: analysis → phiếu → nhóm/thành viên. Giữ phạm vi quyền ổn định tới lúc commit;
+        // truy vấn thường bên dưới vẫn nạp xmin, không lấy thực thể từ SELECT * thiếu cột hệ thống.
+        var locked = await _context.Database.SqlQuery<Guid>(
+            $"SELECT \"Id\" AS \"Value\" FROM public.tickets WHERE \"Id\" = {id} FOR UPDATE")
+            .ToListAsync(cancellationToken);
+        if (locked.Count == 0) return null;
+        var ticket = await _context.Set<Ticket>().SingleAsync(t => t.Id == id, cancellationToken);
+        if (scope is TicketReadScope.AllTickets) return ticket;
+        if (scope is TicketReadScope.OwnTickets own) return ticket.RequesterId == own.ActorId ? ticket : null;
+        if (scope is not TicketReadScope.AgentTickets agent)
+            throw new ArgumentException("Yêu cầu phạm vi quyền đọc hợp lệ.", nameof(scope));
+        if (ticket.AssignedToId == agent.ActorId || (agent.IncludeOwnTickets && ticket.RequesterId == agent.ActorId))
+            return ticket;
+
+        var membership = await _context.Database.SqlQuery<Guid>($"""
+            SELECT member.user_id AS "Value"
+            FROM public.support_team_members member
+            JOIN public.support_teams team ON team."Id" = member.team_id
+            WHERE member.team_id = {ticket.SupportTeamId} AND member.user_id = {agent.ActorId} AND team.is_active
+            FOR SHARE OF member, team
+            """).ToListAsync(cancellationToken);
+        return membership.Count == 0 ? null : ticket;
     }
 
     public uint GetRevision(Ticket ticket)

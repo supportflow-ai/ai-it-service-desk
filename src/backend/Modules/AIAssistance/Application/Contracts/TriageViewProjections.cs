@@ -65,6 +65,21 @@ public sealed record AgentTriageView
     public bool RequiresManualTriage { get; init; }
     public string? FailureReason { get; init; }
     public IReadOnlyList<string> ValidationErrors { get; init; } = [];
+    /// <summary>Định danh analysis đang hiển thị; gửi lại ở quyết định HITL. Null khi chưa có analysis.</summary>
+    public Guid? AnalysisId { get; init; }
+    public long? AnalyzedTicketRevision { get; init; }
+    /// <summary>Tiêu đề hoặc mô tả phiếu đã đổi sau lần phân tích.</summary>
+    public bool IsStale { get; init; }
+    /// <summary>Pending, Accepted, Overridden hoặc Rejected. Null khi chưa có analysis.</summary>
+    public string? DecisionStatus { get; init; }
+
+    public AgentTriageView WithAnalysis(AIAnalysis analysis, bool isStale) => this with
+    {
+        AnalysisId = analysis.Id,
+        AnalyzedTicketRevision = analysis.TicketRevision,
+        IsStale = isStale,
+        DecisionStatus = analysis.Decision.ToString()
+    };
 
     public static AgentTriageView FromTriageResult(TriageResult result)
     {

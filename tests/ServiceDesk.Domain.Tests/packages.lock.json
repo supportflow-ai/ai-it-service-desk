@@ -225,6 +225,8 @@
       "servicedesk.modules.aiassistance": {
         "type": "Project",
         "dependencies": {
+          "Microsoft.EntityFrameworkCore.Relational": "[10.0.13, )",
+          "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.3, )",
           "ServiceDesk.Modules.Ticketing": "[1.0.0, )",
           "ServiceDesk.SharedKernel": "[1.0.0, )"
         }

@@ -13,6 +13,30 @@ namespace ServiceDesk.IntegrationTests;
 public sealed class ApiContractTests
 {
     [Fact]
+    public async Task NullableSlaReferenceIsDocumentedAsNullable()
+    {
+        await using var factory = new ContractFactory();
+        using var client = factory.CreateClient();
+        var document = JsonNode.Parse(await client.GetStringAsync("/swagger/v1/swagger.json"))!;
+        var sla = document["components"]!["schemas"]!["TicketDto"]!["properties"]!["sla"]!;
+        Assert.True(sla["nullable"]?.GetValue<bool>() == true);
+        Assert.Equal("#/components/schemas/SlaSummaryDto", sla["allOf"]![0]!["$ref"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public async Task TriageReadDocumentsBothRequesterAndStaffShapes()
+    {
+        await using var factory = new ContractFactory();
+        using var client = factory.CreateClient();
+        var document = JsonNode.Parse(await client.GetStringAsync("/swagger/v1/swagger.json"))!;
+        var schema = document["paths"]!["/api/tickets/{id}/triage"]!["get"]!["responses"]!["200"]!["content"]!["application/json"]!["schema"]!;
+        // Requester là tập con trường của Agent: oneOf sẽ loại phản hồi hợp lệ khớp cả hai schema.
+        Assert.NotNull(schema["anyOf"]);
+        var variants = schema["anyOf"]!.AsArray().Select(s => s!["$ref"]!.GetValue<string>()).Order().ToArray();
+        Assert.Equal(new[] { "#/components/schemas/AgentTriageView", "#/components/schemas/RequesterTriageView" }, variants);
+    }
+
+    [Fact]
     public async Task PublishedApiMatchesBaseline()
     {
         await using var factory = new ContractFactory();

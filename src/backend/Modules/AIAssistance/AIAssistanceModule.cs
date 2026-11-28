@@ -27,7 +27,7 @@ public static class AIAssistanceModule
         return services;
     }
 
-    /// <summary>Đăng ký adapter phân loại (HTTP hoặc NoOp theo <c>Ai:Enabled</c>), embedding và bộ lưu trữ gợi ý.</summary>
+    /// <summary>Đăng ký adapter phân loại (HTTP hoặc NoOp theo <c>Ai:Enabled</c>), embedding và kho PostgreSQL (host phải gọi <c>AddPersistence</c>).</summary>
     public static IServiceCollection AddAIAssistanceInfrastructure(this IServiceCollection services, IConfiguration? configuration = null)
     {
         var section = configuration?.GetSection(AiOptions.SectionName);
@@ -41,7 +41,7 @@ public static class AIAssistanceModule
         services.AddScoped<ITicketClassificationService>(sp => sp.GetRequiredService<IOptions<AiOptions>>().Value.Enabled
             ? sp.GetRequiredService<HttpTicketClassificationService>() : sp.GetRequiredService<NoOpTicketClassificationService>());
         services.AddSingleton<IEmbeddingService, NoOpEmbeddingService>();
-        services.AddSingleton<IAiAnalysisStore, InMemoryAiAnalysisStore>();
+        services.AddScoped<IAiAnalysisStore, PostgresAiAnalysisStore>();
         return services;
     }
 }

@@ -23,8 +23,10 @@ internal sealed class GetTicketTriageUseCase(
         var snapshot = await ticketBridge.GetSnapshotAsync(ticketId, cancellationToken)
             ?? throw new KeyNotFoundException($"Không tìm thấy vé hỗ trợ có mã {ticketId}.");
 
-        var analysis = await analysisStore.GetLatestAnalysisAsync(ticketId, cancellationToken);
+        var analysis = await analysisStore.GetLatestAsync(ticketId, cancellationToken);
         var view = AgentTriageView.FromTriageResult(StoredTriage.ToResult(analysis));
+        if (analysis is not null)
+            view = view.WithAnalysis(analysis, analysis.InputHash != InputHashComputer.Compute(snapshot.Title, snapshot.Description));
         return snapshot.CanTriage
             ? new TicketTriageReadResult(view, null)
             : new TicketTriageReadResult(null, RequesterTriageView.FromAgentView(view));
@@ -37,7 +39,7 @@ internal static class StoredTriage
     public static TriageResult ToResult(AIAnalysis? analysis)
     {
         if (analysis is null) return TriageResult.Unavailable("Chưa có kết quả phân loại AI cho vé hỗ trợ này.");
-        if (!analysis.Succeeded) return TriageResult.Unavailable(analysis.FailureReason ?? "Phân loại AI thất bại.");
+        if (!analysis.Succeeded) return TriageResult.RestoreFailure(analysis.Outcome, analysis.FailureReason ?? "Phân loại AI thất bại.", analysis.ValidationErrors);
 
         var category = Find(analysis, SuggestionType.Category, TriagePolicy.ParseCategory);
         var impact = Find(analysis, SuggestionType.Impact, TriagePolicy.ParseImpact);

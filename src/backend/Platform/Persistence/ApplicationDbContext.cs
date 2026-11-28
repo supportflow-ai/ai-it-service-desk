@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using ServiceDesk.Modules.AIAssistance;
+using ServiceDesk.Modules.AIAssistance.Domain;
 using ServiceDesk.Modules.Identity;
 using ServiceDesk.Modules.Identity.Domain;
 using ServiceDesk.Modules.Knowledge;
@@ -38,9 +40,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<RefreshToken> RefreshTokens { get; set; }
     public DbSet<OtpCode> OtpCodes { get; set; }
 
+    public DbSet<AIAnalysis> AiAnalyses { get; set; }
+
     /// <summary>Assembly của các module có bảng trong database dùng chung.</summary>
     private static readonly System.Reflection.Assembly[] ModuleModelAssemblies =
-        [typeof(IdentityModule).Assembly, typeof(TicketingModule).Assembly, typeof(KnowledgeModule).Assembly];
+        [typeof(IdentityModule).Assembly, typeof(TicketingModule).Assembly, typeof(KnowledgeModule).Assembly,
+         typeof(AIAssistanceModule).Assembly];
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

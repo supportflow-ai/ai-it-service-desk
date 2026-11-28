@@ -16,7 +16,8 @@ public sealed record TriageDecisionCommand(
     Urgency? Urgency = null,
     string? CategoryId = null,
     string? Reason = null,
-    uint? ExpectedRevision = null
+    uint? ExpectedRevision = null,
+    Guid? AnalysisId = null
 );
 
 public sealed record TriageDecisionResultDto(
