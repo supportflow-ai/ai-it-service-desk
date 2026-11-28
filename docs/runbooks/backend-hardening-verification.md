@@ -42,6 +42,12 @@ Bản chuẩn OpenAPI hiện có 16 đường dẫn, gồm sáu thao tác mới 
 
 Có test trong mã không chứng minh test đã chạy. Các test offline cũng không chứng minh transaction/lock hoạt động trên PostgreSQL.
 
+## Kiểm tra R2 và scanner trước rollout
+
+Dùng bucket thử riêng đã được xác nhận và chỉ xóa object do lần thử tạo. Kiểm chứng PUT/GET từ browser với đúng origin, header và TTL; CORS đạt không chứng minh bucket riêng tư. Xác nhận cả Public Development URL và public custom domains đã tắt trước khi thử quarantine/malware trên R2. Không gửi credential hoặc presigned URL vào log.
+
+Scanner dùng [cấu hình giới hạn](../../config/clamav/clamd.conf) trên mạng riêng, không publish cổng 3310. Đối chiếu chữ ký đã tải với phiên bản daemon đang dùng; kiểm file sạch và EICAR qua INSTREAM. Với cấu hình IPv4 hiện hành, health check phải kiểm đúng `127.0.0.1:3310`, ví dụ `test "$(echo PING | nc -w 2 127.0.0.1 3310)" = PONG` trong container scanner. Image `clamav/clamav` đã ghim có probe `localhost` từng thất bại khi INSTREAM qua IPv4 vẫn hoạt động; không bỏ health check để né lỗi. Kết quả scanner riêng không thay kiểm thử confirm/download và failure recovery qua API với R2 thật.
+
 ## Tương thích, bàn giao và rollback
 
 [Hợp đồng hiện hành](../architecture/current-backend-contract.md) xác định hành vi được giữ: JSON/status số, tạo Submitted, đăng ký Requester, FullName chỉ phản hồi, receipt và lỗi/header. Không sửa migration đã phát hành hoặc xuất lại baseline HTTP để che khác biệt. Refactor không chủ đích đổi schema phải kiểm tra model drift; cách làm ở [runbook môi trường](environment-runbook.md#phát-hiện-lệch-mapping-khi-refactor).
