@@ -1,10 +1,48 @@
 # Kế hoạch củng cố production (Master Prompt)
 
-> **Loại tài liệu:** đề xuất kế hoạch, chưa phải đặc tả đã duyệt. Nội dung dưới đây được lưu nguyên văn theo yêu cầu ngày 28/11/2026. Hợp đồng hiện hành vẫn là [current-backend-contract.md](../architecture/current-backend-contract.md); trạng thái thực thi từng task nằm ở [production-hardening-state.md](production-hardening-state.md).
+> **Loại tài liệu:** đề xuất kế hoạch, chưa phải đặc tả đã duyệt. Bản làm việc được hiệu chỉnh ngày 28/11/2026 theo yêu cầu hoàn thiện master prompt; bản gốc còn trong lịch sử Git. Giữ nguyên 50 mã task G0–G7 để truy vết. Hành vi hiện hành theo [current-backend-contract.md](../architecture/current-backend-contract.md); tiến độ, SHA, kết quả và blocker chỉ ghi tại [production-hardening-state.md](production-hardening-state.md).
 
 ---
 
 # MASTER PROMPT — SUPPORTFLOW AI BACKEND ARCHITECTURE REFACTORING, PRODUCTION HARDENING & CONTINUOUS VERIFICATION
+
+# PHẦN 0. CÁCH ÁP DỤNG VÀ GIỚI HẠN ỦY QUYỀN
+
+## 0.1. Nguồn yêu cầu và phạm vi phiên
+
+Đọc yêu cầu mới nhất của người giao việc trước khi chọn task. Master prompt là danh mục công việc và điều kiện kiểm chứng; việc mở tệp này không tự giao thực hiện toàn bộ 50 task.
+
+| Yêu cầu trong phiên | Phạm vi thực hiện |
+| --- | --- |
+| Phân tích, review hoặc chọn việc tiếp theo | Đọc nguồn, kiểm tra Git, xác minh vấn đề và đề xuất phạm vi; không tự sửa mã hoặc commit |
+| Hoàn thiện kế hoạch/master prompt | Sửa tài liệu được giao và kiểm tra tài liệu; không bắt đầu sửa chức năng hay vận hành môi trường |
+| Triển khai task/nhóm task đã giao | Thực hiện đến hết phạm vi đó, gồm kiểm thử, review và cập nhật trạng thái; tiếp tục phần độc lập khi gặp blocker |
+| Giao thực hiện toàn bộ kế hoạch | Tiến theo dependency và mức ảnh hưởng; các chốt quyền thao tác bên ngoài dưới đây vẫn áp dụng |
+
+Trong kho backend, áp dụng [AGENTS.md](../../AGENTS.md), [cẩm nang chung](../team-handbook.md), hợp đồng hiện hành và các quyết định đã duyệt đúng phạm vi. Khi làm ở kho khác, đọc hướng dẫn của kho đó. Đề xuất trong master prompt không tự thay đổi quyền, vòng đời phiếu, phạm vi MVP hoặc hợp đồng đã công bố.
+
+Khi nguồn mâu thuẫn, ghi nguồn, ngày/SHA, trạng thái phê duyệt và tác động; hỏi đúng quyết định còn thiếu, rồi tiếp tục phần độc lập. Tự xử lý lựa chọn kỹ thuật thông thường trong phạm vi đã giao; không hỏi lại quyền đã được cấp cho cùng hành động và đích.
+
+## 0.2. Chốt quyền và dữ liệu
+
+- Kiểm tra nhánh, HEAD, index và working tree trước sửa. Giữ nhánh đã được chỉ định và thay đổi của người dùng; đã có worktree riêng thì không tạo thêm một worktree chỉ để lặp quy trình.
+- Không tự push, tạo PR, hợp nhất, phát hành image hoặc triển khai nếu chưa được giao hành động tương ứng. Soạn thay đổi và bằng chứng có thể review trước khi cần quyết định cuối cùng về thao tác bên ngoài.
+- Database dùng chung, staging, production, reset dữ liệu, migration Down và thao tác storage có thể mất dữ liệu cần ủy quyền rõ hành động, đích và tác động. Không suy ra quyền từ chữ “hardening”, `Development` hoặc địa chỉ `localhost`.
+- Kiểm thử được tạo database/container dùng một lần thuộc phiên, sau khi xác minh Docker context local và quyền kiểm thử trong nhiệm vụ. Không tái sử dụng database, bucket/prefix hay container của dự án khác. Với database phát triển và EF có thể truy cập DB, làm phép kiểm host/cổng/tên database theo [hướng dẫn môi trường](../runbooks/environment-runbook.md), không in chuỗi kết nối hoặc lỗi EF thô.
+- Không sửa/xóa migration đã phát hành hoặc đã áp dụng trong môi trường dùng chung. Xem cả Up, Down và snapshot; có dữ liệu mới thì phương án khôi phục có thể là migration sửa bổ sung, không mặc định chạy Down.
+- Không yêu cầu gửi bí mật trong chat. Dùng môi trường/kho bí mật, không chép `.env` vào Git, artifact kiểm thử hoặc bản sao nguồn để build. Không tự kết nối AI thật ngoài task.
+- API/Worker chỉ khởi chạy khi cần kiểm chứng; lưu PID hoặc tên/ID container, dùng timeout hữu hạn và dừng đúng tiến trình đã tạo. Không dừng dịch vụ của người dùng hay dọn Docker bằng lệnh toàn cục.
+- Chỉ sửa `AGENTS.md` khi nhiệm vụ yêu cầu, hoặc đúng ngoại lệ cập nhật hướng dẫn cho cấu hình/lệnh được ghim trong hướng dẫn kho. Không thay instructions để né quality gate.
+
+## 0.3. Bắt đầu hoặc tiếp tục phiên
+
+1. Đọc tệp trạng thái duy nhất, xác định task được giao và các phần còn thiếu.
+2. Đối chiếu Git/SHA/diff và kiểm tra môi trường liên quan; tìm checkout trước khi kết luận thiếu repository.
+3. Phân biệt thiếu implementation, thiếu kiểm chứng và thiếu quyết định. `Implemented` chờ CI không có nghĩa là cần viết lại tính năng.
+4. Chọn phần việc có thể thực hiện theo phần 18; mở rộng kiểm kê khi dependency hoặc hợp đồng thay đổi, không đọc lại toàn bộ codebase ở mỗi phiên.
+5. Ghi phạm vi: tệp/module, caller, test/fixture, cấu hình, hợp đồng và kho bị ảnh hưởng; xác định kiểm tra phù hợp trước khi sửa.
+
+Các nhãn P0/P1/P2 là mức ưu tiên, không phải bằng chứng lỗi còn tồn tại. Đối chiếu mã và trạng thái trước khi sửa; số test và baseline trong kế hoạch chỉ là mốc lịch sử.
 
 # PHẦN 1. BỐI CẢNH VÀ MỤC TIÊU
 
@@ -35,7 +73,7 @@ Trước khi thực thi, phải kiểm tra lại tên repository, nhánh, commit
 
 ## 1.2. Mục tiêu tổng thể
 
-Thực hiện toàn bộ kế hoạch cải thiện dự án nhằm đạt được:
+Kế hoạch tổng thể hướng tới các kết quả sau; từng phiên thực hiện theo phạm vi đã giao ở phần 0:
 
 1. Kiến trúc đúng đắn, rõ ràng, nhất quán và có khả năng mở rộng lâu dài.
 2. Codebase sạch, đơn giản, dễ đọc, dễ kiểm thử và dễ bảo trì.
@@ -92,7 +130,7 @@ Chịu trách nhiệm:
 - Kiểm tra test có thực sự chứng minh hành vi yêu cầu hay không.
 - Yêu cầu sửa lại khi phát hiện thiếu sót.
 
-Nếu có khả năng sử dụng sub-agent, giao cho reviewer độc lập với context phù hợp. Nếu không, thực hiện một lượt review tách biệt và ghi rõ đây là self-review, không tuyên bố đã có kiểm định độc lập bên ngoài.
+Trong phạm vi được giao và khi công cụ cho phép, dùng reviewer độc lập cho nhóm thay đổi đáng kể. Reviewer nhận yêu cầu, mốc Git, toàn bộ diff liên quan và bằng chứng, làm việc chỉ đọc. Nếu không có reviewer độc lập, ghi rõ self-review và giới hạn; không tuyên bố đã có kiểm định bên ngoài. Review bằng sub-agent không thay phê duyệt PR của người khác theo quy trình nhóm.
 
 ### Vai trò D — QA, Reliability & Production Engineer
 
@@ -111,21 +149,23 @@ Chịu trách nhiệm:
 1. DISCOVER: Đọc requirement, tài liệu, code và tests hiện tại.
 2. DIAGNOSE: Xác định vấn đề bằng bằng chứng file, dòng code, class và method.
 3. DESIGN: Đề xuất phương án ít phức tạp nhất.
-4. TEST-FIRST: Viết regression test tái hiện lỗi hoặc characterization test khóa hành vi hợp lệ.
+4. TEST-FIRST: Với thay đổi chức năng, viết regression/characterization test phù hợp, quan sát lỗi đúng nguyên nhân rồi sửa; thiếu môi trường thì ghi phần chưa chứng minh, không dùng lỗi nạp DLL làm bằng chứng RED.
 5. IMPLEMENT: Chỉnh sửa implementation với diff nhỏ, đúng ownership.
-6. VERIFY: Chạy test mục tiêu, integration tests và regression suite liên quan.
+6. VERIFY: Chạy hợp các kiểm tra phù hợp với diff theo phần 12; kiểm exit code, discovery, Passed/Failed/Skipped và trạng thái lưu bền sau lỗi.
 7. REVIEW: Chuyển sang vai trò reviewer, kiểm tra lại toàn bộ diff.
 8. IMPROVE: Sửa các phát hiện mới và quay lại VERIFY.
-9. CLEANUP: Dọn dead code, configuration, test fixtures và file rác.
+9. CLEANUP: Dọn phần không còn dùng do task tạo ra và dừng tiến trình kiểm chứng của mình; không xóa fixture còn bảo vệ hành vi, artifact bằng chứng hay tệp của người dùng.
 10. DOCUMENT: Cập nhật tài liệu canonical và trạng thái thực thi.
-11. COMMIT: Commit tiếng Việt khi đạt quality gates tương ứng.
-12. RECHECK: Kiểm tra CI và bằng chứng trên đúng commit.
+11. COMMIT: Trong task triển khai, commit tiếng Việt khi đạt gate tương ứng; chỉ stage tệp đã kiểm tra thuộc nhiệm vụ. Task chỉ phân tích/lập kế hoạch không tự commit.
+12. RECHECK: Đối chiếu bằng chứng với commit và dirty diff. Kiểm tra CI khi có run trên đúng SHA; chưa có quyền push thì ghi thiếu CI, không tự push để tạo bằng chứng.
 
 Lặp lại đến khi không còn vấn đề chưa được giải quyết trong phạm vi task, hoặc xác định được blocker thực sự cần quyết định nghiệp vụ, môi trường hay quyền truy cập.
 
 Không được kết thúc vòng lặp chỉ vì implementation đã build thành công.
 
 Không tự đặt số vòng lặp rồi coi việc chạy đủ số vòng là hoàn thành.
+
+Với thay đổi chỉ tài liệu hoặc thay đổi hiển thị đơn giản, chạy kiểm tra tương ứng thay vì tạo test hình thức. Khi sửa tiếp làm thay đổi hành vi, phải kiểm chứng lại phần chịu ảnh hưởng; không chạy lặp một suite đã đạt nếu không có thay đổi, lỗi hoặc nghi vấn mới.
 
 ---
 
@@ -182,23 +222,22 @@ Rule of Three không ngăn việc tạo abstraction cần thiết để bảo v�
 ### Công việc
 
 - Kiểm tra Git status của cả bốn repository.
-- Fetch remote và xác định nhánh mới nhất có liên quan.
+- Fetch remote nếu có quyền đọc và kết nối; xác định nhánh liên quan thay vì mặc định nhánh mới nhất là baseline. Chưa fetch được thì ghi độ mới của refs local, không tự pull/merge.
 - Đối chiếu `main`, `dev`, release branch và feature branches.
 - Kiểm tra commit SHA, divergence, untracked files và local modifications.
-- Đọc toàn bộ `AGENTS.md`, ADR, README, architecture docs, CI workflows, Dockerfiles và contracts.
+- Đọc `AGENTS.md`, README, nguồn canonical và ADR/workflow/Dockerfile/contract liên quan. Kiểm kê tổng thể ở lần đầu; các phiên tiếp theo đọc phần thay đổi và dependency của task.
 - Xác định canonical requirements và tài liệu đã lỗi thời.
 - Chạy baseline build và test trước khi chỉnh sửa.
 - Ghi nhận các test đang fail từ trước.
 
-Tạo hoặc sử dụng tài liệu tương đương:
+Trong repository này chỉ dùng hai tệp, không tạo thêm sổ tiến độ thay thế:
 
 ```text
 docs/plans/production-hardening-plan.md
-docs/reviews/production-readiness-register.md
-.audit/REFACTOR_LOOP_STATE.md
+docs/plans/production-hardening-state.md
 ```
 
-Không tạo nhiều file theo dõi cùng một nội dung nếu repository đã có cơ chế tương đương.
+Tệp plan chứa yêu cầu và phương pháp; tệp state chứa tiến độ, SHA, review, bằng chứng và blocker. Artifact log/TRX/JSON có thể tách riêng và được dẫn từ state; không chép kết quả vào nhiều nguồn canonical.
 
 ### Kiểm thử và nghiệm thu
 
@@ -294,7 +333,7 @@ Phân loại mỗi quyết định thành Approved, Pending, Superseded hoặc U
 - `GetTicketTriageUseCase`.
 - `DecideAiTriageUseCase`.
 - `ITicketTriageBridge`.
-- `PostgresTicketTriageBridge`.
+- Cài đặt `ITicketTriageBridge` đang được DI đăng ký (hiện là `TicketTriageBridge`); không tạo lại adapter cũ chỉ vì tên có trong kế hoạch.
 - `TicketPermissions`.
 - `TicketReadScope`.
 - Các Ticketing commands có authorization hiện hành.
@@ -309,6 +348,7 @@ Phân loại mỗi quyết định thành Approved, Pending, Superseded hoặc U
 - Không tin tưởng reviewer ID do request truyền lên.
 - Kiểm tra quyền tại Application boundary, kể cả khi use case được gọi ngoài HTTP.
 - Kiểm tra lại authorization tại thời điểm thực hiện mutation.
+- Với quyết định HITL mới, giữ phạm vi phiếu/nhóm/thành viên ổn định tới commit, kể cả Reject chỉ ghi decision. Ghi rõ cách tuần tự hóa với thu hồi thành viên, vô hiệu hóa nhóm và chuyển nhóm.
 - Bảo vệ public/private projection của AI data.
 
 ### Củng cố kiến trúc
@@ -424,7 +464,7 @@ Nếu quyết định mới đã cho phép auto-close, không xóa tính năng m
 ### Kiểm tra
 
 - `IAiAnalysisStore`.
-- `InMemoryAiAnalysisStore`.
+- Adapter đang được `AIAssistanceModule` đăng ký; `InMemoryAiAnalysisStore` nếu còn trong mã. Đã lưu PostgreSQL thì kiểm định phần hiện có, không triển khai lại từ đầu.
 - `AIAnalysis`, `AISuggestion` và các domain types liên quan.
 - `AIAssistanceModule`.
 - Shared DbContext, EF mappings và migrations.
@@ -433,7 +473,7 @@ Nếu quyết định mới đã cho phép auto-close, không xóa tính năng m
 
 - Thiết kế PostgreSQL persistence thuộc ownership AIAssistance.
 - Tạo analysis ID độc lập với Ticket ID.
-- Lưu ticket revision, input hash, outcome, suggestions, timestamp và model provenance.
+- Lưu ticket revision, input hash, execution outcome, validation errors, suggestions và timestamp. Lưu model/provider provenance nếu nguồn trả về; thiếu metadata phải ghi là chưa có, không tự gán version giả. Mở rộng hợp đồng nguồn thuộc G2-06 và cần đồng bộ consumer.
 - Bảo toàn history khi phân tích lại.
 - Lưu HITL decision, reviewer và reason.
 - Bổ sung constraints và indexes cần thiết.
@@ -467,13 +507,16 @@ Không mất analysis hoặc decision khi process restart, không phụ thuộc 
 
 - Quyết định HITL phải tham chiếu chính xác `analysisId`.
 - Xác minh analysis thuộc đúng Ticket.
-- Sử dụng `expectedRevision` hoặc concurrency contract hiện hành.
+- Giữ concurrency contract hiện hành: Accept/Override bắt buộc `expectedRevision` khác 0; Reject giữ revision tùy chọn nhưng phải kiểm nếu được gửi. Chỉ đổi chính sách này trong thay đổi hợp đồng được giao rõ.
 - Kiểm tra input hash của nội dung đã phân tích.
+- Phân biệt revision của snapshot phân tích với revision mong đợi của lệnh ghi. Không coi mọi thay đổi revision là đổi nội dung AI nếu hợp đồng hiện hành dùng hash cho validity; vẫn phải bảo vệ xung đột khi ghi phiếu.
 - Chặn stale analysis khi dữ liệu liên quan đã thay đổi.
 - Không âm thầm thay analysis người dùng đã xem bằng latest analysis.
 - Xác định chính sách khi cùng một analysis nhận nhiều quyết định.
 - Bảo vệ replay bằng durable uniqueness hoặc idempotency mechanism phù hợp.
 - Quyết định thành công không được áp dụng hai lần.
+- Replay phải so người duyệt từ actor, decision, revision gốc và các giá trị/lý do chuẩn hóa đã chốt. Replay đúng sau commit không ghi lần hai; đổi payload phải bị từ chối. Không dùng revision mới của phiếu thay revision gốc đã lưu trong receipt/decision.
+- Phân biệt Override có `analysisId` với phân loại thủ công không có analysis. Không tự gắn fallback thủ công vào latest analysis hoặc tạo lịch sử AI giả.
 
 ### Kiểm thử bắt buộc
 
@@ -502,10 +545,12 @@ Validate actor and request
 - AIAssistance sở hữu analysis và decision.
 - Sử dụng shared PostgreSQL transaction nếu kiến trúc hiện tại hỗ trợ.
 - Bảo đảm các adapter tham gia cùng transaction.
+- Kiểm chứng bằng DI thực rằng các adapter dùng đúng một DbContext scoped và cùng giao dịch; không chỉ suy ra từ tên interface hoặc lifetime khai báo.
 - Loại bỏ transaction nesting sai.
 - Không để `SaveChanges` trước đó làm commit riêng ngoài boundary.
 - Không gọi AI Service hoặc external HTTP trong transaction.
 - Xác định lock ordering và concurrency strategy.
+- Đối chiếu thứ tự khóa đang có (analysis → phiếu → phạm vi nhóm/thành viên) với lệnh khác; không tăng isolation toàn hệ thống để che race. Khóa quá hạn phải theo error contract, gồm trường hợp provider bọc lỗi PostgreSQL trong ngoại lệ khác.
 
 Chỉ tạo specialized transaction port nếu thực sự cần bảo vệ DIP hoặc coordination boundary.
 
@@ -543,6 +588,10 @@ Phân biệt:
 
 Xử lý timeout, malformed response, empty suggestions, partial suggestions, cancellation và unavailable dependency.
 
+- Outcome đã lưu/đọc lại phải giữ đúng ý nghĩa; không đổi Timeout/InvalidResponse thành Unavailable sau restart. Giữ validation errors có kiểm soát, không lưu raw response hoặc thông tin nhạy cảm ngoài phạm vi.
+- Khi nội dung đổi trong lúc chờ AI, giữ snapshot/hash/revision đã phân tích và xác định stale state tại điểm đọc trả kết quả. Không trả `isStale = false` cố định; không đồng nhất “AI chạy thành công” với “gợi ý còn hiệu lực”.
+- Kiểm tra quyền khi trả dữ liệu theo hợp đồng; không mở transaction DB trong suốt cuộc gọi AI. Timeout/concurrency có giới hạn và manual fallback phải kiểm được độc lập.
+
 Nếu synchronous analysis với bounded timeout/concurrency đủ đáp ứng, giữ thiết kế đó. Không bổ sung distributed job orchestration chỉ vì AI có thể chạy nền.
 
 ### Kiểm thử bắt buộc
@@ -571,6 +620,8 @@ Reject phải lưu lịch sử nhưng không thay đổi Ticket business fields.
 
 Không giả lập audit hệ thống thành bình luận của người dùng.
 
+Áp dụng visibility theo hợp đồng hiện hành: audit triage/lý do Override là nội bộ, kể cả phân loại thủ công không có analysis. Kiểm tra cả timeline và projection, không chỉ DTO triage. Nếu cần thông báo công khai thì dùng nội dung trung tính theo chính sách đã duyệt, không làm mất audit chi tiết hoặc lộ lý do nội bộ.
+
 ### Kiểm thử bắt buộc
 
 Accept audit; Override audit; Reject audit; failed decision; immutable history; requester projection; authorization đối với audit; không lộ token, secret hoặc dữ liệu nội bộ không được phép.
@@ -584,14 +635,17 @@ Accept audit; Override audit; Reject audit; failed decision; immutable history; 
 - Đọc contract AI hiện tại và OpenAPI baseline.
 - Xác định canonical owner của từng contract.
 - Đồng bộ enum mapping, optional fields, analysis ID và revision.
-- Bổ sung model metadata nếu contract chưa biểu diễn đủ.
+- Khi cần model metadata, đối chiếu producer/consumer và thống nhất mở rộng v1 hay version mới; không tự thêm trường vào closed contract hoặc giả định AI Service đã trả dữ liệu đó.
 - Không ngầm default unknown enum.
 - Cập nhật generated Frontend types.
 - Giữ backward compatibility khi khả thi; nếu breaking change, lập coordinated release plan.
+- Rà nullable, kiểu số/chuỗi của enum và các schema tham chiếu, kể cả `$ref`/`allOf`. Khi hai hình chiếu có tập trường giao nhau, dùng biểu diễn hợp lệ như `anyOf`, không dùng `oneOf` làm phản hồi khớp cả hai bị coi là sai.
+- Xuất baseline OpenAPI chỉ sau khi review thay đổi có chủ đích; tắt chế độ xuất và chạy lại kiểm tra. Web cập nhật snapshot, checksum, SHA/trạng thái nguồn và kiểu sinh trên đúng nguồn backend. Commit local chưa push phải được ghi rõ.
+- Đồng bộ snapshot/kiểu chưa hoàn thành tích hợp UI. Kiểm tra caller thực tế dùng `/triage`, `/ai-analyze`, `/triage/decision`, quyết định theo `analysisId` toàn analysis và revision đúng; loại route dự kiến/quyết định từng suggestion trước khi bật capability. API 403/404 phải làm mất dữ liệu cũ khỏi giao diện; 409/503 không tự retry mutation.
 
 ### Kiểm thử bắt buộc
 
-JSON fixtures hai chiều; contract validation; enum mapping; partial/empty suggestions; incompatible version; Frontend conflict handling; OpenAPI diff; checksum của contract được đồng bộ.
+JSON fixtures hai chiều; contract validation; enum mapping; nullable reference; cả hai hình chiếu GET; partial/empty suggestions; incompatible version; Frontend conflict handling; OpenAPI diff; checksum của contract được đồng bộ. Bằng chứng UI dùng mock không thay E2E với backend thật của G7-02; không bật panel chỉ vì codegen đạt.
 
 ---
 
@@ -606,13 +660,18 @@ JSON fixtures hai chiều; contract validation; enum mapping; partial/empty sugg
 - Kiểm tra JWT validation và security stamp validation trong Identity.
 - Loại bỏ đường bypass khi thiếu DbContext hoặc validator.
 - Từ chối user không tồn tại, token sai hoặc security stamp không hợp lệ.
+- Kiểm tra cả token đã qua xác minh chữ ký nhưng thiếu stamp và user không tồn tại. Giữ các kiểm tra signature, issuer, audience, lifetime của nền tảng; không coi đây là lý do thay toàn bộ JWT handler.
 - Tách validator khỏi DI registration nếu có lợi cho SRP và kiểm thử.
-- Xác định chính sách chuyển đổi token cũ.
+- Đối chiếu đường cấp token của Login/Refresh/Register và fixture. Không thêm ngoại lệ thiếu stamp để giữ test hoạt động. Fixture cho ca nghiệp vụ thành công phải dựng danh tính hợp lệ; ca token/subject không hợp lệ phải kiểm từ chối. Giữ các assertion về nghiệp vụ và thêm hồi quy cho đường bypass.
+- Thiếu dịch vụ bắt buộc là lỗi cấu hình/DI; database lỗi là lỗi dependency khi chạy. Cả hai đều không được xác thực thành công. Đối chiếu HTTP error contract của middleware và endpoint, không mặc định biến lỗi hạ tầng thành token sai hoặc lộ exception.
+- Nếu có token cũ thực tế cần chuyển đổi, xác minh nguồn, TTL, ảnh hưởng phiên và quyết định rollout. Không mặc định có grace period bỏ kiểm stamp; không trì hoãn bản vá độc lập chỉ để thiết kế cơ chế tương thích chưa có nhu cầu.
 - Không tự triển khai JWT framework riêng.
 
 ### Kiểm thử bắt buộc
 
 Invalid signature, issuer, audience, expiry; missing stamp; stale stamp; deleted user; role change; password change; database failure; missing service; cross-replica validation.
+
+Các ca kiểm dữ liệu Identity/thu hồi thực chạy PostgreSQL; test transport cô lập không thay bằng chứng đó. Khi đổi setup của test liên quan, giải thích vì sao setup cũ không còn đại diện cho caller hợp lệ, không giảm số ca hoặc nới kỳ vọng để đạt CI.
 
 ## G3-02. Kiểm định refresh token và session lifecycle
 
@@ -639,6 +698,8 @@ Concurrent refresh; refresh/revoke race; replay; expired token; revoked session;
 
 Nếu password reset thuộc production scope:
 
+Đối chiếu G3-02/G3-04 và chính sách phát mã trước khi chọn mô hình job; durable delivery không được làm suy yếu single-use, expiry hoặc session revocation.
+
 - Thay hàng đợi OTP chỉ tồn tại trong RAM bằng durable job phù hợp.
 - Ưu tiên PostgreSQL-backed job hoặc outbox chuyên biệt.
 - Ghi công việc bền vững trước khi xác nhận đã tiếp nhận.
@@ -647,9 +708,11 @@ Nếu password reset thuộc production scope:
 - Không gửi OTP đã hết hạn.
 - Không lưu OTP plaintext.
 - Thiết kế cách bảo vệ payload hoặc phát OTP nhất quán khi retry.
+- Xác định rõ transaction giữa phát mã, bản ghi xác minh và công việc gửi. Bản băm một chiều không dùng để khôi phục OTP gửi lại; payload có thể phục hồi phải được bảo vệ, giới hạn lưu giữ và quản lý khóa phù hợp. Không tạo mã mới ở mỗi lần retry nếu làm mất hiệu lực mã người dùng vừa nhận trái policy.
 - Giữ phản hồi chung để chống account enumeration.
 - Phân biệt lỗi SMTP tạm thời và vĩnh viễn.
 - Không tuyên bố exactly-once SMTP delivery.
+- Nêu hành vi khi SMTP thiếu hoặc không khả dụng theo scope/config đã duyệt. Phản hồi chống enumeration không phải bằng chứng thư đã gửi; không dùng NoOp để nghiệm thu delivery bắt buộc.
 
 ### Kiểm thử bắt buộc
 
@@ -682,15 +745,19 @@ Correct/incorrect OTP; expired/consumed OTP; wrong account; wrong purpose; old O
 
 - Loại bỏ hành vi reset toàn bộ active counters khi đạt partition limit.
 - Giữ giới hạn bộ nhớ có kiểm soát.
+- Làm admission, kiểm giới hạn và tạo partition nhất quán khi có request đồng thời; `Count` rồi `GetOrAdd` riêng lẻ không chứng minh được giới hạn cứng. Không xóa counter vừa được gia hạn giữa lúc kiểm expiry và eviction.
+- Khi đầy, giữ counter còn hiệu lực; chọn cơ chế từ chối/quá tải có giới hạn theo contract và ghi đánh đổi khả dụng. Không thay `Clear()` bằng eviction active counter hoặc cho qua không giới hạn.
+- Kiểm độ dài khóa và dữ liệu đầu vào trước khi giữ trong bộ nhớ; chỉ giới hạn số khóa chưa chứng minh được giới hạn RAM. Tận dụng clock hiện có để kiểm expiry không cần sleep dài.
 - Chuẩn hóa email partition key.
 - Kiểm định forwarded headers và trusted proxy configuration.
 - Phân biệt gateway rate limiting với authoritative security controls.
 - Dùng PostgreSQL/shared state nếu cần giới hạn chính xác giữa replica.
+- Phân biệt ngân sách per-instance hiện hành với yêu cầu giới hạn toàn cụm. Hai instance phải được kiểm theo phạm vi đã chốt; không tự công bố limiter trong RAM là authoritative global limit. Nếu cần shared state, ưu tiên nền tảng PostgreSQL đã có và phân tích transaction/chi phí trước khi thêm hạ tầng.
 - Chỉ bổ sung Redis nếu có bằng chứng cần thiết.
 
 ### Kiểm thử bắt buộc
 
-429; Retry-After; partition expiry; full partition capacity; concurrent acquisition; case-insensitive email; two replicas; proxy spoofing; memory growth.
+429; Retry-After; partition expiry; full partition capacity; giữ ngân sách email đã bị chặn sau khi nhiều email mới xuất hiện; concurrent admission/expiry; case-insensitive email; independent operation budgets; khóa quá dài; two replicas; proxy spoofing; memory growth.
 
 ## G3-06. Kiểm định toàn bộ Identity APIs
 
@@ -767,6 +834,8 @@ Ticketing phải sở hữu policy thống nhất cho:
 
 Không sao chép policy sang từng adapter hoặc module.
 
+Team Lead được xác định theo membership/policy của ADR-016 và hợp đồng hiện hành; không tự thêm role JWT hay đổi các vai trò đã lưu để khớp tên trong checklist.
+
 ### Kiểm thử bắt buộc
 
 Hai Support Team, nhiều Agent, Requester, Team Lead và Admin; chuyển nhóm; thu hồi membership; vô hiệu hóa team; assignment khác nhóm; Agent đồng thời là owner; internal note visibility; attachment visibility.
@@ -819,7 +888,7 @@ Worker restart; database outage; partial batch failure; concurrent workers; grac
 - Bảo đảm Application không phụ thuộc concrete Platform options.
 - Đồng bộ grant expiry với presigned URL expiry.
 - Kiểm định baseline 10 MiB/file, 10 files/Ticket, 50 MiB/Ticket và pending grant limit.
-- Kiểm định upload TTL 900 giây và download TTL 300 giây theo quyết định hiện hành.
+- Đối chiếu TTL với cấu hình và quyết định đã duyệt. Các giá trị mặc định 900 giây upload/300 giây download không tự là chính sách sản phẩm; TTL và thu hồi URL còn mở phải theo DEC-06, không tự chốt trong refactor.
 - Validate configuration tại startup.
 
 ### Kiểm thử bắt buộc
@@ -925,7 +994,7 @@ src/backend/
 │   │   ├── Application/
 │   │   │   ├── Contracts/
 │   │   │   ├── Ports/
-│   │   │   └── FeatureFolders/
+│   │   │   └── <TênTínhNăng>/
 │   │   ├── Infrastructure/
 │   │   │   └── Configurations/
 │   │   ├── Presentation/
@@ -945,6 +1014,8 @@ src/backend/
 ```
 
 Đây là cấu trúc định hướng, không bắt buộc đổi tên những thư mục đang có semantics chính xác.
+
+Nếu mã đã tổ chức module-first đúng hướng dẫn kho, kiểm chứng các ranh giới và ghi nhận phần còn lệch; không di chuyển lại project/file chỉ để đánh dấu task đã thực hiện. Không tạo thư mục `FeatureFolders` hay module rỗng từ sơ đồ minh họa; feature nằm ở thư mục có tên use case thực tế.
 
 ### Quy tắc ownership
 
@@ -1152,6 +1223,8 @@ Kiểm kê và xử lý:
 
 Không xóa file chỉ vì static search không tìm thấy caller; phải kiểm tra reflection, DI, serialization, migrations và external consumers.
 
+Áp dụng ADR-017 cho R2; không thêm runtime, cấu hình hay test mới dựa vào MinIO để thay bằng chứng R2. Phân loại test/artifact cũ trước khi gỡ; giữ bằng chứng lịch sử và cập nhật liên kết theo hướng dẫn kho. Thiếu tài nguyên R2 được phép kiểm thử thì ghi phần integration chưa chạy, không sửa assertion hay bật dịch vụ thay thế để coi là đạt.
+
 Không xóa migration, audit history hoặc dữ liệu của người dùng.
 
 ### Kiểm thử bắt buộc
@@ -1303,6 +1376,11 @@ Load, spike, soak, competing writes, slow dependency, DB saturation, memory/conn
 
 Ưu tiên tận dụng CI hiện có, tránh tạo nhiều pipeline trùng lặp.
 
+- Gắn kết quả scan với lockfile, phiên bản công cụ, ngày và advisory; phân biệt dependency production, dev/test và đường ảnh hưởng. Dev/test dependency có thể ảnh hưởng máy phát triển hoặc CI, không tự loại khỏi đánh giá chỉ vì không vào bundle production.
+- Xử lý bản vá có thể xác minh trước; thay đổi major cần phân tích API, peer dependency, cấu hình và test bị ảnh hưởng. Không chạy nâng cấp toàn bộ hoặc `audit fix --force` như một bước mặc định, không sửa lockfile bằng tay để giấu cảnh báo.
+- Với web, dùng Node theo `.nvmrc`/CI, locked install và chạy contract check, typecheck, lint, test, build; đổi luồng người dùng thì thêm E2E. Với backend, giữ SDK/EF CLI theo nguồn được ghim và build image thực sự chịu ảnh hưởng.
+- Critical chưa xử lý không đạt gate phát hành. Ngoại lệ ở advisory gate phải có người chịu trách nhiệm, phạm vi, lý do, hạn xem xét và bằng chứng; không dùng ngoại lệ đó để công bố đạt điều kiện security của phần 19.
+
 ### Kiểm thử bắt buộc
 
 CI phát hiện architecture violation, contract mismatch, migration mismatch, failed integration test, zero tests executed, vulnerable dependency và image build failure.
@@ -1329,6 +1407,7 @@ Không được bỏ qua test thất bại bằng `continue-on-error` ngoài tr�
 - Ghim model artifact, preprocessing, dependencies và checksum.
 - Sử dụng local inference nếu thuộc requirement.
 - Không dùng smoke test nhỏ thay model evaluation đầy đủ.
+- Provider `rule`/`noop`, fake classifier và fixture chỉ chứng minh tích hợp tương ứng; không thay mô hình học máy cục bộ hoặc bằng chứng AI-07/DEC-08. Chưa có artifact/metric được duyệt thì ghi thiếu, không tự đặt ngưỡng sau khi đã xem final test set.
 
 ### Kiểm thử bắt buộc
 
@@ -1371,6 +1450,8 @@ Ngưỡng nghiệm thu phải được xác định theo AI-07 trước final te
 
 Nghiệm thu tích hợp phải dùng Backend và PostgreSQL thật. Mock API chỉ là UI/component testing, không thay thế E2E.
 
+Nối và kiểm chứng luồng Agent theo hợp đồng hiện hành có thể thực hiện độc lập với chính sách Requester/vòng đời còn mở. Giữ hành vi đã có trong phần độc lập; không tự quyết AI-01 hoặc tạo chuyển trạng thái `Triaged` để hoàn thiện giao diện. Chỉ bật capability sau khi caller, runtime validation, permission, stale/revision handling và bằng chứng backend thật tương ứng đã đạt.
+
 ## G7-03. Hoàn thiện immutable release manifest
 
 **Ưu tiên: P0**
@@ -1381,6 +1462,7 @@ Nghiệm thu tích hợp phải dùng Backend và PostgreSQL thật. Mock API ch
 - Đối chiếu source SHA với published image digest.
 - Không chỉ sửa source SHA mà giữ digest cũ.
 - Publish Backend API, Worker, Migrator, Frontend và AI Service qua workflow hợp lệ.
+- Chuẩn bị manifest và kế hoạch publish trước; chỉ thực sự publish/đổi `sources.lock.json` hoặc digest khi có ủy quyền phát hành. Build local thành công không phải image đã được phát hành hay candidate đã được ghim.
 - Ghim application images theo digest.
 - Không dùng `latest` làm production release reference.
 - Xác định model artifact version.
@@ -1457,7 +1539,7 @@ Xác định RPO/RTO được phê duyệt.
 
 ### Kiểm thử bắt buộc
 
-Backup và restore PostgreSQL; attachment metadata reconciliation; pending AI analysis sau restart; OTP jobs sau Worker restart; mất API replica; deploy/rollback candidate; monitoring và recovery timing.
+Backup và restore PostgreSQL; attachment metadata reconciliation; analysis/decision đã lưu còn đọc và xử lý đúng sau restart; OTP jobs sau Worker restart; mất API replica; deploy/rollback candidate; monitoring và recovery timing. Nếu AI-03 duyệt xử lý nền, kiểm thêm resume/retry pending AI jobs; không tạo job framework chỉ để thỏa câu kiểm thử của luồng đồng bộ.
 
 Backup chưa restore thử không được coi là disaster recovery đã được kiểm chứng.
 
@@ -1526,6 +1608,7 @@ Sử dụng test projects hiện tại và mở rộng theo module/feature, hạ
 
 - Regression test phải fail trên implementation lỗi và pass sau sửa nếu có thể tái hiện.
 - Không dùng mock hoặc EF InMemory để chứng minh transaction atomicity.
+- Không dùng SQLite, mock persistence hoặc EF InMemory thay PostgreSQL để kết luận về persistence, transaction hay concurrency.
 - Dùng PostgreSQL thật cho locking, concurrency và persistence.
 - Dùng deterministic clock cho SLA và OTP expiry.
 - Concurrency test phải có synchronization phù hợp, không chỉ chạy song song ngẫu nhiên.
@@ -1537,6 +1620,10 @@ Sử dụng test projects hiện tại và mở rộng theo module/feature, hạ
 - Không bỏ qua flaky tests; phải xác định nguyên nhân.
 - Không làm suy yếu assertion để CI pass.
 - Coverage là tín hiệu hỗ trợ, không thay thế invariant testing.
+
+Không đổi expectation, fixture hoặc baseline để che implementation sai hay hạ gate. Khi một thay đổi hợp đồng được giao hoặc bản vá bảo mật làm setup cũ không còn hợp lệ, nêu nguyên nhân, giữ kỳ vọng nghiệp vụ đúng, dựng actor/dữ liệu hợp lệ và thêm ca từ chối. Thay đổi setup phải phục vụ hợp đồng đúng; nếu làm mất coverage cũ thì phải bổ sung, không chỉ làm CI xanh.
+
+Phân biệt test transport dùng mock, host/context mới và restart process thật. Ghi đúng mức bằng chứng đã chạy; host mới không tự chứng minh crash recovery hoặc toàn bộ deployment. Các test đã biết chập chờn xử lý đúng quy trình chạy lại trong `AGENTS.md`, không tăng timeout hoặc bỏ test ngoài phạm vi chỉ để đạt.
 
 ## 12.3. Kiểm thử đặc biệt cho critical flows
 
@@ -1581,7 +1668,7 @@ dotnet test src/backend/ServiceDesk.sln `
 git diff --check
 ```
 
-Ngoài ra:
+Chọn thêm theo phạm vi, không mặc định chạy mọi kho cho một thay đổi chỉ tài liệu:
 
 - Chạy architecture tests riêng khi thay đổi boundaries.
 - Chạy OpenAPI validator.
@@ -1589,7 +1676,7 @@ Ngoài ra:
 - Chạy documentation/script tests.
 - Kiểm tra pending EF model changes.
 - Dependency vulnerability scan.
-- Build cả ba Backend Docker images.
+- Build image API/Worker/Migrator chịu ảnh hưởng; dependency/composition chung thường ảnh hưởng cả ba, phải đối chiếu Dockerfile và workflow.
 - Chạy Frontend test/build/E2E theo cấu hình thực tế.
 - Chạy AI Service tests, model evaluation và Docker smoke.
 - Chạy Infra Compose validation và integration tests.
@@ -1597,6 +1684,23 @@ Ngoài ra:
 Không tự giả định script path hoặc command tồn tại. Phải kiểm tra repository trước khi chạy.
 
 Nếu thiếu SDK, Docker, credentials hoặc dependency thật, ghi rõ Blocked hoặc Not Run, không suy diễn kết quả.
+
+| Phạm vi thay đổi | Gate tối thiểu cần đối chiếu |
+| --- | --- |
+| Chỉ tài liệu | `python scripts/validate_project_docs.py`, `python -m unittest discover -s scripts/tests -p "test_project_docs.py"`, đọc diff/liên kết/lệnh; không cần build toàn bộ ứng dụng |
+| Validator/script/workflow | Test hồi quy của công cụ và lệnh/cấu trúc workflow bị ảnh hưởng |
+| Nghiệp vụ, authentication/authorization | Unit/use case và HTTP positive/negative liên quan; PostgreSQL khi đọc Identity, lưu state hoặc kiểm thu hồi/concurrency |
+| `using`, project reference, module boundary | `ServiceDesk.ArchitectureTests`, cộng gate chức năng tương ứng |
+| Persistence, migration, transaction, concurrency | PostgreSQL thật; rollback/commit ambiguity khi liên quan; snapshot/model và upgrade từ schema trước thay đổi |
+| HTTP/OpenAPI/AI contract | JSON/status/header, baseline diff có chủ đích, validator/adapter liên quan và consumer; AI validator dùng Python venv |
+| Dependency/build/composition/Docker | Locked restore, Release build, test và image chịu ảnh hưởng; scan theo G6-06 |
+| UI hoặc caller web | Node được ghim, contract check/typecheck/lint/test/build; E2E khi đổi luồng, không thay E2E thật bằng mock |
+
+Kiểm exit code và discovery, không chỉ tìm dòng “Passed”. Tổng test đúng phạm vi phải lớn hơn 0, không bỏ qua assembly/lớp do lỗi nạp DLL. Filter integration có thể không khớp ở project không chứa integration test; phải xác nhận project đích thực sự chạy test. Số test lịch sử không phải chỉ tiêu cố định để hợp thức hóa thiếu discovery.
+
+Build cùng source và cấu hình Release trước `--no-build`. Phát hiện đúng SDK/Node/Python/EF CLI từ `global.json`, `.nvmrc`, CI và hướng dẫn môi trường; không cài/cập nhật tool global hoặc sửa chính sách bảo vệ máy để né lỗi. Có thể dùng SDK Linux/Node được ghim trong container local khi Windows chặn, với bản sao nguồn không chứa bí mật và artifact riêng; ghi môi trường thực chạy và dừng container khi xong.
+
+Không dùng số test của commit cũ thay bằng chứng cho source mới. Kết quả phải kèm SHA, dirty diff và môi trường; test trên working tree có thay đổi của người dùng không chứng nhận một checkout sạch chỉ chứa commit của nhiệm vụ.
 
 ---
 
@@ -1636,7 +1740,7 @@ Không sử dụng LOC, số class hoặc số interface làm mục tiêu độc
 
 ## 13.3. Cập nhật AGENTS.md
 
-Sau khi kiểm định kiến trúc, cập nhật hướng dẫn repository để các coding agents sau này phải tuân thủ:
+Sau khi kiểm định kiến trúc, đối chiếu hướng dẫn repository với các nội dung sau. Chỉ sửa `AGENTS.md` khi được giao, hoặc thuộc đúng ngoại lệ cấu hình/lệnh được ghim mà `AGENTS.md` cho phép; còn lại cập nhật nguồn canonical phù hợp hoặc ghi đề xuất cần duyệt:
 
 - Canonical folder structure.
 - Module ownership.
@@ -1662,7 +1766,7 @@ Không nhân bản toàn bộ Master Prompt vào nhiều file instructions.
 ## 14.1. Quy tắc Git
 
 - Kiểm tra working tree trước chỉnh sửa.
-- Fetch remote trước khi quyết định baseline.
+- Fetch remote khi có quyền đọc/kết nối; nếu dùng refs local thì ghi rõ chưa xác minh remote mới nhất. Không tự pull/merge để làm sạch hoặc cập nhật nhánh.
 - Tuân thủ branch strategy hiện hành.
 - Không force push.
 - Không reset hard hoặc xóa untracked files của người dùng.
@@ -1670,6 +1774,8 @@ Không nhân bản toàn bộ Master Prompt vào nhiều file instructions.
 - Không merge trực tiếp vào protected branch trái quy định.
 - Không deploy production chỉ vì CI pass.
 - Chỉ push và tạo PR trong phạm vi quyền đã được cấp.
+- Trong phiên chỉ phân tích hoặc hoàn thiện kế hoạch, để diff review được, không tự commit. Phiên triển khai có commit cục bộ phải giữ nhánh được chỉ định; không tự đổi tên nhánh để khớp mẫu.
+- Chỉ stage phần đã xác minh thuộc nhiệm vụ; không dùng `git add -A` khi chưa xác minh toàn bộ diff. Không dùng restore/checkout/reset/clean để ghi đè hay loại thay đổi của người dùng; quy tắc này không cấm tạo nhánh khi nhiệm vụ cần và đã có phạm vi phù hợp.
 
 ## 14.2. Chia nhỏ Pull Request
 
@@ -1750,86 +1856,42 @@ Reviewer findings
 
 # PHẦN 15. QUẢN LÝ TRẠNG THÁI XUYÊN SUỐT NHIỀU PHIÊN
 
-Duy trì `.audit/REFACTOR_LOOP_STATE.md` hoặc file canonical tương đương.
+Chỉ duy trì [production-hardening-state.md](production-hardening-state.md) làm sổ trạng thái. Không tạo thêm sổ thay thế hoặc chép tiến độ/SHA/kết quả mới vào master prompt.
 
-Cấu trúc:
+Mỗi task/nhóm task có các trường cần thiết sau, không lặp template rỗng khi không áp dụng:
 
-```markdown
-# Refactor Loop State
+| Nhóm thông tin | Nội dung |
+| --- | --- |
+| Mốc và phạm vi | Repo, đường dẫn checkout, nhánh, SHA, dirty diff, task được giao, requirement/nguồn chính |
+| Vấn đề | File/class/method, mức ảnh hưởng, nguyên nhân, bằng chứng trước sửa hoặc phần mới chỉ nghi vấn |
+| Thực hiện | Tệp/caller/test/contract/config bị ảnh hưởng, phương án nhỏ nhất, quyết định kỹ thuật và thay đổi cần phối hợp |
+| Kiểm chứng | Lệnh, môi trường/phiên bản từ nguồn ghim, exit code, Passed/Failed/Skipped, discovery, artifact và mức bằng chứng thực sự |
+| Review | Self-review/sub-agent/người duyệt PR, findings đã xử lý/còn mở và giới hạn kết luận |
+| Git và gate còn thiếu | Commit local/remote, PR, CI run đúng SHA hoặc ghi chưa có, đồng bộ liên kho |
+| Tiếp tục | Phần việc có thể làm ngay; blocker cụ thể, ai/điều kiện gỡ và tác động lên task khác |
 
-## Current baseline
-- Repository:
-- Branch:
-- Commit SHA:
+### Ý nghĩa trạng thái task
 
-## Current iteration
-- Task:
-- Execution role:
-- Status:
+| Trạng thái | Điều kiện |
+| --- | --- |
+| Pending | Chưa bắt đầu; nhận định lỗi trong kế hoạch vẫn cần đối chiếu mã |
+| In Progress | Đang phân tích/triển khai/kiểm chứng, còn phần chức năng hoặc kiểm tra đang thực hiện |
+| Implemented | Phần triển khai của task đã có; ghi rõ kiểm tra đã đạt và gate còn thiếu, kể cả CI hoặc duyệt PR |
+| Verified | Requirement và mọi gate bắt buộc của task theo hướng dẫn kho đã có bằng chứng phù hợp trên đúng source; không còn blocker trong phạm vi |
+| Blocked | Phần cần thiết không thể tiếp tục vì quyết định, quyền, nguồn hoặc môi trường cụ thể; không dùng để che phần độc lập vẫn làm được |
+| Not Applicable | Có căn cứ task không thuộc scope đã duyệt hoặc đã bị thay thế; ghi nguồn và quyết định, không dùng thay cho “chưa làm/chưa có môi trường” |
 
-## Verified findings
-- Finding ID:
-- Severity:
-- File and line:
-- Root cause:
-- Evidence:
+Task `Implemented` chỉ chờ CI/duyệt PR vẫn giữ `Implemented`, liệt kê gate bị chặn; không sửa lại mã để có hoạt động mới hoặc tự push để đổi nhãn. Khi chọn việc tiếp theo, ưu tiên phần có thể thực hiện theo dependency/mức ảnh hưởng, không quay lại task đầu danh sách chỉ vì chưa có nhãn `Verified`.
 
-## Implementation
-- Changed files:
-- Design decision:
-- Alternatives rejected:
-- Architecture impact:
+`Verified` ở task không tự là production-ready, cũng không thay biên bản G7-07. Phân biệt kết quả local, CI, integration liên kho và nghiệm thu release candidate. Thiếu gate bắt buộc thì giữ trạng thái phù hợp và ghi việc còn thiếu; không gắn `Verified` bằng báo cáo của commit khác hoặc nâng nhãn chỉ vì đã có code.
 
-## Verification
-- Command:
-- Exit code:
-- Passed:
-- Failed:
-- Skipped:
-- Evidence artifact:
-
-## Review
-- Findings:
-- Fixes:
-- Remaining concerns:
-
-## Git
-- Commit:
-- Pull request:
-- CI run:
-
-## Blockers
-- Description:
-- Required decision/resource:
-
-## Next task
-- Task ID:
-- Required files:
-- Dependencies:
-```
-
-Các trạng thái được phép:
-
-- Pending.
-- In Progress.
-- Implemented.
-- Verified.
-- Blocked.
-- Not Applicable.
-
-`Implemented` không đồng nghĩa `Verified`.
-
-Task chỉ được chuyển `Verified` khi có evidence phù hợp.
-
-Trước mỗi phiên tiếp theo, đọc lại file trạng thái, đối chiếu commit và working tree, xác minh các task đã hoàn thành rồi tiếp tục task chưa hoàn thành.
-
-Không thực hiện lại toàn bộ kế hoạch một cách máy móc nếu code đã thay đổi.
+Mỗi phiên kiểm lại mốc nguồn và diff liên quan; chỉ chạy lại kiểm tra khi mã/môi trường thay đổi hoặc bằng chứng không đủ. Không kiểm kê lại toàn bộ 50 task hay dựng lại phần đã có một cách máy móc.
 
 ---
 
 # PHẦN 16. INDEPENDENT REVIEW VÀ ĐÁNH GIÁ KIẾN TRÚC
 
-Sau mỗi nhóm task, review độc lập theo các tiêu chí:
+Sau mỗi nhóm task triển khai đáng kể, review độc lập theo các tiêu chí liên quan dưới đây. Với thay đổi nhỏ/chỉ tài liệu, đọc diff và kiểm chứng đúng phạm vi; không biến mỗi dòng sửa thành một cuộc kiểm toán toàn hệ thống:
 
 1. Business correctness.
 2. Domain invariants.
@@ -1866,7 +1928,7 @@ Fail Fast
 POLA
 ```
 
-Đối với mỗi nguyên tắc, báo cáo:
+Đối với nguyên tắc chịu ảnh hưởng, báo cáo; đánh giá đầy đủ cả hệ thống tại mốc kiểm định kiến trúc/phát hành:
 
 - Mức độ tuân thủ.
 - Bằng chứng cụ thể.
@@ -1886,7 +1948,7 @@ Không tuyên bố hoàn hảo tuyệt đối.
 
 # PHẦN 17. DEFINITION OF DONE
 
-Một task chỉ được hoàn thành khi:
+Một task chỉ chuyển `Verified` khi đạt các điều kiện áp dụng dưới đây và gate của kho. Đánh dấu mục không áp dụng kèm lý do; thiếu môi trường/quyền/bằng chứng không phải lý do bỏ gate:
 
 - [ ] Requirement rõ ràng hoặc đã được xác nhận.
 - [ ] Có bằng chứng vấn đề trước khi sửa.
@@ -1909,15 +1971,17 @@ Một task chỉ được hoàn thành khi:
 - [ ] Tài liệu được cập nhật.
 - [ ] Build và test gates liên quan thành công.
 - [ ] Review không còn blocker trong phạm vi task.
-- [ ] Có commit tiếng Việt phù hợp.
-- [ ] Có CI evidence trên đúng commit khi CI khả dụng.
+- [ ] Với task triển khai, có commit tiếng Việt đúng phạm vi; task chỉ phân tích/lập kế hoạch giữ diff để review, không tự commit.
+- [ ] Có CI trên đúng SHA và duyệt PR khi quy trình kho yêu cầu; chưa được push/PR thì ghi thiếu gate và giữ `Implemented`, không gọi local pass là CI pass.
 - [ ] Trạng thái và remaining risks được ghi lại.
+
+Không bắt một task nhỏ phải hoàn thành toàn bộ G7 để kiểm chứng phần việc của nó, nhưng không được bỏ kiểm tra bắt buộc thực sự thuộc task. Tiêu chí phát hành toàn hệ thống nằm ở phần 19.
 
 ---
 
 # PHẦN 18. THỨ TỰ THỰC THI VÀ CÁC LUỒNG SONG SONG
 
-Thứ tự ưu tiên:
+Thứ tự dưới đây là hướng dependency chính, không phải hàng đợi cứng bắt mọi task nhóm trước phải `Verified` rồi mới được làm nhóm sau:
 
 ```text
 G0 — Baseline và requirement governance
@@ -1937,7 +2001,19 @@ G7 — Integrated release acceptance
 
 Không trì hoãn toàn bộ architecture refactor đến cuối. Trong từng task phải sửa đúng ownership và dependency boundaries ngay khi chỉnh sửa.
 
-Có thể thực hiện song song:
+### Quy tắc chọn việc tiếp theo
+
+1. Bắt đầu từ phạm vi được giao, đối chiếu tệp state và mã hiện tại; ưu tiên lỗi gây sai nghiệp vụ, truy cập trái phép, mất dữ liệu hoặc lỗi bảo mật đang có đường ảnh hưởng thực tế.
+2. P0 còn tác động trực tiếp trong scope được ưu tiên. Task P0 chờ quyết định/candidate hoặc capability đang tắt phải có blocker và điều kiện mở lại rõ ràng; không lấy đó làm lý do ngừng sửa lỗi độc lập đã xác minh.
+3. Một task đã có implementation/local evidence nhưng chờ CI/duyệt không buộc các task khác chờ. Có thể làm G3-01/G3-05 trong khi theo dõi gate G1/G2, nếu không phá hợp đồng và bằng chứng đang có.
+4. Không dồn mọi kiểm tra dependency/CI tới cuối G6. Finding nghiêm trọng của G6-06 có thể cần xử lý sớm, nhất là khi ảnh hưởng môi trường chạy test/publish; tách thay đổi dependency khỏi bản vá nghiệp vụ để review được.
+5. G2-04 hoàn thiện validity/outcome và G2-06 nối caller là dependency của việc bật AI UI tại G7-02; snapshot/codegen đạt không mở khóa capability một mình. Phần Agent giữ hợp đồng hiện hành có thể làm độc lập với chính sách Requester/vòng đời chưa chốt.
+6. Trước G3-03, đối chiếu invariant phát/tiêu thụ OTP và thu hồi phiên ở G3-02/G3-04; triển khai delivery và security nhất quán, không giữ OTP plaintext để giải quyết retry.
+7. G5 chỉ refactor phần có vấn đề/nhu cầu đã chứng minh; G7 yêu cầu đúng bộ source/image/model/schema và quyền nghiệm thu. Không đổi manifest hoặc publish chỉ để task sau có vẻ chạy được.
+
+Thứ tự cụ thể và lý do đổi thứ tự ghi ở tệp state, không chép thành tiến độ cố định trong master prompt. Vấn đề mới nghiêm trọng ngoài phạm vi phải báo bằng chứng/ảnh hưởng, không âm thầm mở rộng task.
+
+Có thể chia các luồng công việc sau khi phạm vi, công cụ và quyền cho phép; chúng không tự yêu cầu mở nhiều agent hoặc sửa nhiều kho trong mọi phiên:
 
 ### Workstream A — Critical AI
 
@@ -1972,7 +2048,7 @@ Có thể thực hiện song song:
 - ML evaluation.
 - Infra release preparation.
 
-Điều phối các thay đổi chạm cùng DbContext, migration, published contracts và authorization policy. Không để nhiều workstream tạo các implementation cạnh tranh hoặc migration xung đột.
+Điều phối các thay đổi chạm cùng DbContext, migration, published contracts và authorization policy. Không để nhiều workstream tạo các implementation cạnh tranh hoặc migration xung đột. Chạy test, build và export theo dependency: chờ copy nguồn/restore/build thành công trước bước phụ thuộc; không sửa hoặc build đồng thời trên cùng bản sao nguồn đang được ghi.
 
 Các lỗi nhỏ, rõ ràng, ít rủi ro có thể xử lý sớm song song, nhưng không làm lệch ưu tiên P0.
 
@@ -2004,7 +2080,7 @@ Chỉ công nhận production-ready khi:
 | Recovery | Crash recovery, restore và rollback đã kiểm chứng |
 | Acceptance | DEC-08 được phê duyệt trên đúng candidate |
 
-Nếu thiếu môi trường, credentials, model artifact, approval hoặc integration evidence, báo cáo Conditional/Blocked/NO-GO phù hợp, không tự chuyển thành GO.
+Nếu thiếu môi trường, credentials, model artifact, approval hoặc integration evidence bắt buộc, kết luận release là NO-GO. Có thể báo tiến độ có điều kiện hoặc task Blocked/Implemented theo phần 15, nhưng không gọi đó là GO hay production-ready. Không ghi phê duyệt thay người có trách nhiệm.
 
 ---
 
@@ -2055,7 +2131,7 @@ Báo cáo ngắn gọn nhưng có bằng chứng:
 - Commit.
 - PR.
 - CI status.
-- Task Verified/Blocked.
+- Trạng thái task theo phần 15 và gate còn thiếu.
 - Task tiếp theo.
 
 Không dùng mô tả chung chung như “đã tối ưu”, “đã hoàn thiện”, “đã bảo mật” nếu không có bằng chứng cụ thể.
@@ -2064,22 +2140,16 @@ Không dùng mô tả chung chung như “đã tối ưu”, “đã hoàn thi�
 
 # PHẦN 21. CHỈ THỊ THỰC THI CUỐI CÙNG
 
-Bắt đầu thực thi ngay.
+Áp dụng phạm vi phiên ở phần 0. Nếu người giao việc yêu cầu phân tích hoặc sửa master prompt, hoàn thành đúng phần đó; không suy ra yêu cầu sửa ứng dụng, commit, push hoặc vận hành. Nếu đã giao triển khai, thực hiện tới hết phạm vi được giao thay vì dừng ở bản đề xuất, trừ phần thật sự cần quyết định/quyền/nguồn bên ngoài.
 
-Không chỉ phân tích hoặc viết lại kế hoạch.
+Trước task triển khai:
 
-Trước tiên:
-
-1. Đọc toàn bộ hướng dẫn và mã nguồn hiện tại.
-2. Kiểm tra trạng thái cả bốn repository.
-3. Xác định baseline mới nhất và các thay đổi sau đợt kiểm định trước.
-4. Đối chiếu toàn bộ 50 task với code thực tế.
-5. Phân loại task đã hoàn thành, còn thiếu, sai lệch và bị chặn.
-6. Khởi tạo hoặc cập nhật execution state.
-7. Chạy baseline quality gates.
-8. Bắt đầu từ các lỗi P0 đã được xác minh.
-9. Viết tests, chỉnh sửa, kiểm thử, review và lặp lại.
-10. Tiếp tục các giai đoạn theo dependency và priority.
+1. Đọc hướng dẫn kho, tệp state và requirement của task; đối chiếu Git/dirty diff và kiểm chứng nguồn chính liên quan.
+2. Kiểm tra repository/môi trường cần dùng. Chỉ mở rộng sang kho khác khi có dependency/hợp đồng bị ảnh hưởng; không tự kết luận thiếu checkout từ một thư mục tìm kiếm duy nhất.
+3. Phân biệt lỗi còn tồn tại, phần đã triển khai chờ gate và phần chưa có quyết định. Cập nhật state nếu có bằng chứng mới; không biến việc đọc lại thành tái triển khai 50 task.
+4. Ghi tệp/caller/test/fixture/config/contract sẽ chạm và gate tương ứng. Kiểm tra phiên bản/câu lệnh từ nguồn được ghim, dùng baseline còn phù hợp hoặc chạy lại khi source/môi trường đã đổi.
+5. Theo vòng lặp phần 2: tái hiện → sửa nhỏ nhất → kiểm chứng → review → xử lý finding → cập nhật nguồn canonical/state. Với lỗi ngoài scope, báo bằng chứng và tác động.
+6. Bàn giao kết quả cùng SHA, dirty diff, số test thực chạy, artifact, gate chưa đạt và bước tiếp theo có thể làm. Chỉ commit/push/PR/publish/deploy theo đúng phạm vi quyền; thiếu quyền bước ngoài không xóa giá trị công việc local đã hoàn tất.
 
 Trong mọi quyết định, ưu tiên theo thứ tự:
 

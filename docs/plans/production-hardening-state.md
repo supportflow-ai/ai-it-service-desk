@@ -1,6 +1,6 @@
 # Trạng thái thực thi kế hoạch củng cố production
 
-Tệp trạng thái duy nhất của [kế hoạch củng cố production](production-hardening-plan.md) (thay cho `.audit/REFACTOR_LOOP_STATE.md` và `docs/reviews/production-readiness-register.md` để không có hai nơi theo dõi cùng nội dung). Đầu mỗi phiên: đọc tệp này, đối chiếu `git log` và working tree, rồi tiếp tục task đầu tiên chưa `Verified`.
+Tệp trạng thái duy nhất của [kế hoạch củng cố production](production-hardening-plan.md) (thay cho `.audit/REFACTOR_LOOP_STATE.md` và `docs/reviews/production-readiness-register.md` để không có hai nơi theo dõi cùng nội dung). Đầu mỗi phiên: đọc tệp này, đối chiếu `git log` và working tree, rồi chọn phần việc có thể thực hiện theo phạm vi được giao, dependency và mức ảnh hưởng. Task `Implemented` chỉ chờ CI/duyệt được theo dõi gate còn thiếu, không viết lại mã chỉ vì chưa có nhãn `Verified`.
 
 Trạng thái hợp lệ: Pending, In Progress, Implemented, Verified, Blocked, Not Applicable. `Implemented` không đồng nghĩa `Verified`.
 
