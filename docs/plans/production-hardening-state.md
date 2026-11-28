@@ -105,7 +105,7 @@ OpenAPI baseline không đổi.
 
 ## Task tiếp theo
 
-G3-01/G3-05 và đợt G3-02/G3-04/G3-03 đã triển khai; hoàn tất đồng bộ caller/cấu hình, bằng chứng và commit cục bộ theo mục tiếp tục cuối tệp. Gate tiếp theo là CI/duyệt đúng SHA khi có ủy quyền push/PR. Task triển khai đề xuất kế tiếp là G3-06 (kiểm định toàn bộ Identity APIs), cần một đợt riêng; không tự bắt đầu trong phiên này. G2-04, G2-06/G7-02 và nâng dependency web vẫn là các đợt riêng. Trước khi gắn Verified: CI và duyệt đúng SHA bàn giao; không tự push để lấy bằng chứng này.
+G3-01/G3-05 và đợt G3-02/G3-04/G3-03 đã triển khai, đồng bộ caller/cấu hình và commit cục bộ; bằng chứng ở cuối tệp. Gate tiếp theo là CI/duyệt đúng SHA khi có ủy quyền push/PR. Task triển khai đề xuất kế tiếp là G3-06 (kiểm định toàn bộ Identity APIs), cần một đợt riêng; không tự bắt đầu trong phiên này. G2-04, G2-06/G7-02 và nâng dependency web vẫn là các đợt riêng. Trước khi gắn Verified: CI và duyệt đúng SHA bàn giao; không tự push để lấy bằng chứng này.
 
 ## Bằng chứng sau G2 và review ngày 28/11/2026
 
@@ -226,5 +226,17 @@ Lệnh chạy trong SDK Linux riêng từ bản sao nguồn đã đồng bộ xo
 
 - Tổng .NET nguồn cuối **994 Passed, 0 Failed, 0 Skipped**; ba project không có Category=Integration discovery 0 được phân biệt với project IntegrationTests thực chạy 248. Không cộng lượt cũ vào tổng. Các lượt 991 trước review không dùng xác nhận mã cuối. Đã đối chiếu SHA-256 **489 tệp nguồn/test** với bản Linux đã kiểm thử, **360 tệp nguồn** của ba image khớp workspace (`otp-tested-source.sha256`, `otp-source-compare.log`). Lượt build image đầu bị helper PowerShell dừng nhầm vì progress stderr của Docker; sửa helper, ba lệnh build sau exit 0, không sửa Dockerfile để né lỗi.
 - Infra giữ nhánh `docs/dong-bo-tai-lieu-2026-11-21`, commit cục bộ `fd4847bd21eefe1a8b65ab1196aa84005fde396c`: access 60 phút, refresh 7 ngày; OTP_KEY riêng dùng chung hai API, CI tạo khóa test ngẫu nhiên không in giá trị; docs rollout/at-least-once. Ba Compose `config --quiet` và **22 unit test** đạt (`otp-resume-infra-unit.log`). Không đổi env thật, sources lock/digest hay triển khai.
-- Web: test adapter mới kiểm 503 bị từ chối và chỉ gửi một request, **12/12** test lớp auth đạt (`otp-web-auth-green.log`). Lượt toàn suite đầu 481 đạt/1 lỗi do test mới kỳ vọng raw server message, trái chính sách thông báo lỗi chung hiện có; đã sửa assertion, không sửa lớp HTTP/UI để hiển thị lỗi thô. Contract generate/check, typecheck/lint đạt; lượt toàn suite/build và commit caller cuối được ghi bổ sung khi hoàn tất. `npm ci` giữ lockfile, báo 16 mục dependency đã biết (8 moderate, 3 high, 5 critical); xử lý riêng tại G6-06, không chạy audit fix.
-- G3-02/G3-04/G3-03 giữ **Implemented**, chưa Verified. Còn CI, duyệt PR đúng SHA và smoke toàn hệ thống với bộ image/source đã duyệt; không có ủy quyền push/PR/publish/deploy. Không chạy AI contract validator riêng vì không đổi hợp đồng/fixture/mapper AI. Không chạy browser E2E; không thay luồng UI. Cleanup và SHA bàn giao liên kho cuối ghi bổ sung bên dưới.
+- Web: test adapter mới kiểm 503 bị từ chối và chỉ gửi một request, **12/12** test lớp auth đạt (`otp-web-auth-green.log`). Lượt toàn suite đầu 481 đạt/1 lỗi do test mới kỳ vọng raw server message, trái chính sách thông báo lỗi chung hiện có; đã sửa assertion, không sửa lớp HTTP/UI để hiển thị lỗi thô. Node 22: `npm ci`, `contract:generate`, `contract:check -- --backend-file ...`, typecheck, lint, **482/482 test trong 65 tệp**, build đạt (`otp-web-final-{contract,typecheck,lint,tests,build}.log`). Kiểu TypeScript sinh có SHA-256 giống hệt file hiện hành nên không sửa file sinh. Lượt cuối chạy trên working tree có cả thay đổi UI/test setup của người dùng được bảo toàn, không xác nhận checkout sạch chỉ chứa commit hợp đồng. Build còn cảnh báo chunk trên 500 kB; `npm ci` giữ lockfile, báo 16 mục dependency đã biết (8 moderate, 3 high, 5 critical), xử lý riêng tại G6-06; không chạy audit fix.
+- G3-02/G3-04/G3-03 giữ **Implemented**, chưa Verified. Còn CI, duyệt PR đúng SHA và smoke toàn hệ thống với bộ image/source đã duyệt; không có ủy quyền push/PR/publish/deploy. Không chạy AI contract validator riêng vì không đổi hợp đồng/fixture/mapper AI. Không chạy browser E2E; không thay luồng UI.
+
+### Commit và cleanup cuối đợt
+
+| Kho/nhánh giữ nguyên | Commit cục bộ | Nội dung |
+| --- | --- | --- |
+| Backend `Refactor-2` | `86f2e06`, `9f6f3bb`, `7bafb643652c9e8455b3b35a6e1a5ea113b09893` | G3-02, G3-04 và G3-03 riêng; commit docs bàn giao sau G3-03 chỉ sửa tệp state này |
+| Infra `docs/dong-bo-tai-lieu-2026-11-21` | `fd4847bd21eefe1a8b65ab1196aa84005fde396c` | 8 tệp cấu hình/CI/docs, access 60 phút và khóa OTP |
+| Web `feature/phan-tich-nghiep-vu-va-man-hinh` | `e2ae873dc705df545621621b43c6eee0752c42ac` | Chỉ 3 tệp snapshot/nguồn/test auth; metadata ghim backend `7bafb64` và checksum tương ứng |
+
+- Đã kiểm nhãn `supportflow.hardening=otp-20261128`, dừng riêng `sd-hardening-otp-sdk` và `sd-hardening-otp-web`; không còn Testcontainers hoặc container mang nhãn phiên đang chạy. Giữ volume/cache/image local, không dừng dịch vụ hay đụng dữ liệu người dùng. Các process API/SMTP con trong test đã được fixture dọn.
+- Backend tracked/index sạch sau commit, chỉ còn `.serena/` có sẵn không theo dõi; infra sạch. Web còn nguyên các thay đổi riêng `.gitignore`, LandingPage, styles, test setup, Vitest và tài liệu MUJI/audit, không stage vào commit nhiệm vụ. Không push, tạo PR, publish image hay triển khai.
+- Artifact tổng hợp sau commit docs: `.cache/hardening-linux/otp-evidence.json`, cùng log/TRX/hash đã nêu; không đưa cache vào Git. SHA docs cuối không đổi mã đã kiểm thử hoặc baseline. Phiên sau đọc mục này và Git trước khi sửa; ưu tiên gate CI/duyệt, hoặc nhận phạm vi G3-06 riêng.
