@@ -21,6 +21,8 @@ public sealed class ArchiveArticleUseCaseTests
     public ArchiveArticleUseCaseTests()
     {
         _clock.SetupGet(c => c.UtcNow).Returns(_now);
+        _user.SetupGet(u => u.IsAuthenticated).Returns(true);
+        _user.SetupGet(u => u.UserId).Returns(_authorId.ToString());
     }
 
     [Fact]

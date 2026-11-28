@@ -24,8 +24,9 @@ internal static class KnowledgePermissions
     /// </summary>
     public static KnowledgeReadScope ReadScope(ICurrentUser currentUser)
     {
+        var actorId = AuthenticatedActor.RequireId(currentUser);
         if (currentUser.IsInRole(RoleNames.Admin)) return new KnowledgeReadScope.Staff();
-        if (currentUser.IsInRole(RoleNames.Agent)) return new KnowledgeReadScope.Author(AuthenticatedActor.RequireId(currentUser));
+        if (currentUser.IsInRole(RoleNames.Agent)) return new KnowledgeReadScope.Author(actorId);
         return new KnowledgeReadScope.Public();
     }
 }

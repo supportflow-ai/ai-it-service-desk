@@ -155,9 +155,9 @@ internal sealed class PostgresKnowledgeQueries(DbContext context) : IKnowledgeQu
         return await _context.Set<ArticleTag>().AsNoTracking()
             .Where(t => _context.Set<Article>().Any(a => a.Id == t.ArticleId && a.Status == ArticleStatus.Published))
             .GroupBy(t => t.Name)
+            .OrderByDescending(g => g.Count())
+            .ThenBy(g => g.Key)
             .Select(g => new TagSummaryDto(g.Key, g.Count()))
-            .OrderByDescending(t => t.ArticleCount)
-            .ThenBy(t => t.Name)
             .ToListAsync(cancellationToken);
     }
 

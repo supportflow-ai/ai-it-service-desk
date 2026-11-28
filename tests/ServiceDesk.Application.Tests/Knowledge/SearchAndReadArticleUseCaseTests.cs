@@ -18,6 +18,12 @@ public sealed class SearchAndReadArticleUseCaseTests
     private readonly Guid _agentId = Guid.NewGuid();
     private readonly Guid _articleId = Guid.NewGuid();
 
+    public SearchAndReadArticleUseCaseTests()
+    {
+        _user.SetupGet(u => u.IsAuthenticated).Returns(true);
+        _user.SetupGet(u => u.UserId).Returns(_agentId.ToString());
+    }
+
     private static ArticleDto CreateSampleDto(Guid id, ArticleStatus status, Guid authorId) =>
         new(
             id,

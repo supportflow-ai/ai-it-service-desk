@@ -21,7 +21,10 @@ public sealed class GetKnowledgeTagsUseCaseTests
 
         _queries.Setup(q => q.GetTagsAsync(It.IsAny<CancellationToken>())).ReturnsAsync(tags);
 
-        var useCase = new GetKnowledgeTagsUseCase(_queries.Object);
+        var user = new Mock<ServiceDesk.SharedKernel.Application.Abstractions.ICurrentUser>();
+        user.SetupGet(u => u.IsAuthenticated).Returns(true);
+        user.SetupGet(u => u.UserId).Returns(Guid.NewGuid().ToString());
+        var useCase = new GetKnowledgeTagsUseCase(_queries.Object, user.Object);
         var result = await useCase.ExecuteAsync(new GetKnowledgeTagsQuery());
 
         Assert.Equal(2, result.Count);

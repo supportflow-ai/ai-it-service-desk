@@ -1,3 +1,5 @@
+using System.Data;
+using System.Data.Common;
 using Microsoft.EntityFrameworkCore;
 using ServiceDesk.SharedKernel.Application;
 using ServiceDesk.Modules.Knowledge.Application.Ports;
@@ -40,24 +42,33 @@ internal sealed class PostgresKnowledgeWriter(DbContext context) : IKnowledgeWri
 
     public async Task<Article> UpdateArticleAsync(Article article, uint? expectedRevision = null, CancellationToken cancellationToken = default)
     {
-        foreach (var version in article.Versions)
-        {
-            var entry = _context.Entry(version);
-            if (entry.State is EntityState.Modified or EntityState.Detached)
-            {
-                entry.State = EntityState.Added;
-            }
-        }
-
+        await using var transaction = _context.Database.CurrentTransaction is null
+            ? await _context.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken) : null;
         try
         {
+            await _context.Database.ExecuteSqlRawAsync("SET LOCAL lock_timeout = '5s'", cancellationToken);
+            var current = await _context.Database.SqlQuery<long>($"SELECT xmin::text::bigint AS \"Value\" FROM public.articles WHERE \"Id\" = {article.Id} FOR UPDATE")
+                .SingleOrDefaultAsync(cancellationToken);
+            var loaded = GetRevision(article);
+            if (current == 0 || current != loaded || expectedRevision.HasValue && current != expectedRevision.Value)
+                throw new ConcurrencyConflictException("Phiên bản bài viết đã thay đổi. Vui lòng tải lại.");
+            foreach (var version in article.Versions)
+            {
+                var entry = _context.Entry(version);
+                if (entry.State is EntityState.Modified or EntityState.Detached) entry.State = EntityState.Added;
+            }
             await _context.SaveChangesAsync(cancellationToken);
             await _context.Entry(article).ReloadAsync(cancellationToken);
+            if (transaction is not null) await transaction.CommitAsync(cancellationToken);
             return article;
         }
         catch (DbUpdateConcurrencyException ex)
         {
             throw new ConcurrencyConflictException("Xung đột phiên bản bài viết. Dữ liệu đã bị sửa đổi bởi người khác.", ex);
+        }
+        catch (Exception ex) when (ex.GetBaseException() is DbException { SqlState: "55P03" })
+        {
+            throw new KnowledgeWriteBusyException(ex);
         }
     }
 }

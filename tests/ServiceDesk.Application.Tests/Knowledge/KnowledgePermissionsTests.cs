@@ -47,6 +47,6 @@ public sealed class KnowledgePermissionsTests
         Assert.IsType<KnowledgeReadScope.Staff>(KnowledgePermissions.ReadScope(UserInRoles(Guid.NewGuid(), RoleNames.Admin)));
         Assert.Equal(new KnowledgeReadScope.Author(agent), KnowledgePermissions.ReadScope(UserInRoles(agent, RoleNames.Agent)));
         Assert.IsType<KnowledgeReadScope.Public>(KnowledgePermissions.ReadScope(UserInRoles(Guid.NewGuid(), RoleNames.Requester)));
-        Assert.IsType<KnowledgeReadScope.Public>(KnowledgePermissions.ReadScope(UserInRoles(null)));
+        Assert.Throws<UnauthorizedAccessException>(() => KnowledgePermissions.ReadScope(UserInRoles(null)));
     }
 }

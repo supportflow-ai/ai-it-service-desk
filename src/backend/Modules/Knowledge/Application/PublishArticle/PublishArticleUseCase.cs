@@ -15,6 +15,7 @@ internal sealed class PublishArticleUseCase(
     public async Task<ArticleDto> ExecuteAsync(PublishArticleCommand command, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);
+        var callerId = AuthenticatedActor.RequireId(currentUser);
 
         if (!KnowledgePermissions.IsStaff(currentUser))
         {
@@ -27,7 +28,6 @@ internal sealed class PublishArticleUseCase(
             throw new KeyNotFoundException("Không tìm thấy bài viết.");
         }
 
-        var callerId = AuthenticatedActor.RequireId(currentUser);
         if (!KnowledgePermissions.CanManage(article, callerId, currentUser))
         {
             throw new UnauthorizedAccessException("Chỉ tác giả hoặc quản trị viên mới có quyền xuất bản bài viết.");

@@ -890,6 +890,9 @@
           },
           "409": {
             "description": "Conflict"
+          },
+          "503": {
+            "description": "Service Unavailable"
           }
         }
       }
@@ -957,6 +960,9 @@
           },
           "409": {
             "description": "Conflict"
+          },
+          "503": {
+            "description": "Service Unavailable"
           }
         }
       }
@@ -1025,6 +1031,9 @@
           },
           "409": {
             "description": "Conflict"
+          },
+          "503": {
+            "description": "Service Unavailable"
           }
         }
       }
@@ -1092,6 +1101,9 @@
           },
           "409": {
             "description": "Conflict"
+          },
+          "503": {
+            "description": "Service Unavailable"
           }
         }
       }

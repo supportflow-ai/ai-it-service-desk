@@ -4,6 +4,8 @@ Trạng thái: mô tả hiện hành tại `dev@b3cc19a` sau PR #82 và các tí
 
 ## HTTP và danh tính
 
+Knowledge kiểm tra actor hợp lệ trước truy cập persistence, kể cả caller trực tiếp tại Application. Các lệnh sửa draft, publish, republish và archive khóa hàng bài viết rồi kiểm revision trước khi ghi tag/version trong cùng transaction; bản sửa thua trả 409, chờ khóa quá 5 giây trả 503 kèm `Retry-After: 1`. Version đã publish được giữ nguyên; search áp dụng visibility trước phân trang, danh sách tag chỉ tổng hợp bài Published. Nội dung trả về là dữ liệu, caller chịu trách nhiệm render an toàn.
+
 [Bảng mốc mã nguồn](source-baseline.md) ghi cách xác định mốc đối chiếu. Liên kết mã tương đối bên dưới mở checkout của người đọc; đối chiếu HEAD trước khi áp dụng. Cột "Chính sách" là chính sách HTTP của endpoint; Application kiểm tra thêm quyền theo phiếu (chủ sở hữu, người phụ trách, Admin).
 
 | Nhóm | Thao tác | Đường dẫn | Chính sách | Ghi chú |

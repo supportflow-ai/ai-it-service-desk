@@ -101,7 +101,8 @@ public static class KnowledgeEndpoints
         .Produces(StatusCodes.Status401Unauthorized)
         .Produces(StatusCodes.Status403Forbidden)
         .Produces(StatusCodes.Status404NotFound)
-        .Produces(StatusCodes.Status409Conflict);
+        .Produces(StatusCodes.Status409Conflict)
+        .Produces(StatusCodes.Status503ServiceUnavailable);
 
         // POST /api/knowledge/articles/{id}/publish: Xuất bản bài viết từ bản nháp (Agent/Admin)
         group.MapPost("/{id:guid}/publish", async (
@@ -122,7 +123,8 @@ public static class KnowledgeEndpoints
         .Produces(StatusCodes.Status401Unauthorized)
         .Produces(StatusCodes.Status403Forbidden)
         .Produces(StatusCodes.Status404NotFound)
-        .Produces(StatusCodes.Status409Conflict);
+        .Produces(StatusCodes.Status409Conflict)
+        .Produces(StatusCodes.Status503ServiceUnavailable);
 
         // POST /api/knowledge/articles/{id}/republish: Tái xuất bản bài viết đã xuất bản (Agent/Admin)
         group.MapPost("/{id:guid}/republish", async (
@@ -143,7 +145,8 @@ public static class KnowledgeEndpoints
         .Produces(StatusCodes.Status401Unauthorized)
         .Produces(StatusCodes.Status403Forbidden)
         .Produces(StatusCodes.Status404NotFound)
-        .Produces(StatusCodes.Status409Conflict);
+        .Produces(StatusCodes.Status409Conflict)
+        .Produces(StatusCodes.Status503ServiceUnavailable);
 
         // POST /api/knowledge/articles/{id}/archive: Lưu trữ bài viết (Agent/Admin)
         group.MapPost("/{id:guid}/archive", async (
@@ -164,7 +167,8 @@ public static class KnowledgeEndpoints
         .Produces(StatusCodes.Status401Unauthorized)
         .Produces(StatusCodes.Status403Forbidden)
         .Produces(StatusCodes.Status404NotFound)
-        .Produces(StatusCodes.Status409Conflict);
+        .Produces(StatusCodes.Status409Conflict)
+        .Produces(StatusCodes.Status503ServiceUnavailable);
 
         // GET /api/knowledge/articles/{id}: Chi tiết bài viết tri thức (Requester/Agent/Admin)
         group.MapGet("/{id:guid}", async (
