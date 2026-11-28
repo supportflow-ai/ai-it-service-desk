@@ -18,7 +18,8 @@ internal sealed class GetAttachmentDownloadUrlUseCase(
     ITicketQueries ticketQueries,
     IObjectStorageService storageService,
     ITicketAttachmentStore attachmentStore,
-    ICurrentUser currentUser) : IGetAttachmentDownloadUrl
+    ICurrentUser currentUser,
+    IAttachmentScanner scanner) : IGetAttachmentDownloadUrl
 {
     public async Task<DownloadUrlResult> ExecuteAsync(GetAttachmentDownloadUrlQuery query, CancellationToken cancellationToken = default)
     {
@@ -37,13 +38,14 @@ internal sealed class GetAttachmentDownloadUrlUseCase(
         if (!query.StorageKey.StartsWith(expectedPrefix, StringComparison.OrdinalIgnoreCase))
             throw new UnauthorizedAccessException("Tệp đính kèm không thuộc về yêu cầu này.");
 
-        if (!await attachmentStore.ExistsAsync(query.TicketId, query.StorageKey, cancellationToken))
-            throw new KeyNotFoundException("Attachment not found.");
+        var attachment = await attachmentStore.GetByStorageKeyAsync(query.TicketId, query.StorageKey, cancellationToken)
+            ?? throw new KeyNotFoundException("Attachment not found.");
+        var scannedKey = await scanner.PrepareDownloadAsync(attachment, cancellationToken);
 
         var expirySeconds = storageService.DownloadExpirySeconds;
         try
         {
-            var downloadUrl = await storageService.GetPresignedDownloadUrlAsync(storageService.DefaultBucket, query.StorageKey, expirySeconds, cancellationToken);
+            var downloadUrl = await storageService.GetPresignedDownloadUrlAsync(storageService.DefaultBucket, scannedKey, expirySeconds, cancellationToken);
             return new DownloadUrlResult(downloadUrl);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)

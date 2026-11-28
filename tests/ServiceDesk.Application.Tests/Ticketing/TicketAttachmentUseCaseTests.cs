@@ -21,6 +21,7 @@ public sealed class TicketAttachmentUseCaseTests
     private readonly Mock<IObjectStorageService> _storageService = new();
     private readonly Mock<ICurrentUser> _user = new();
     private readonly Mock<IClock> _clock = new();
+    private readonly Mock<IAttachmentScanner> _scanner = new();
     private readonly Guid _ticketId = Guid.NewGuid();
     private readonly Guid _userId = Guid.NewGuid();
     private readonly DateTimeOffset _now = new(2026, 10, 20, 10, 0, 0, TimeSpan.Zero);
@@ -52,7 +53,7 @@ public sealed class TicketAttachmentUseCaseTests
     {
         _ticketQueries.Setup(q => q.GetByIdAsync(_ticketId, It.IsAny<TicketReadScope>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((TicketDto?)null);
-        var useCase = new GetAttachmentDownloadUrlUseCase(_ticketQueries.Object, _storageService.Object, _attachmentStore.Object, _user.Object);
+        var useCase = new GetAttachmentDownloadUrlUseCase(_ticketQueries.Object, _storageService.Object, _attachmentStore.Object, _user.Object, _scanner.Object);
 
         await Assert.ThrowsAsync<KeyNotFoundException>(() => useCase.ExecuteAsync(new(_ticketId, "tickets/other/secret.pdf")));
 
@@ -64,7 +65,7 @@ public sealed class TicketAttachmentUseCaseTests
     public async Task DownloadUrl_WrongTicketPrefix_ThrowsForbidden()
     {
         var otherTicketId = Guid.NewGuid();
-        var useCase = new GetAttachmentDownloadUrlUseCase(_ticketQueries.Object, _storageService.Object, _attachmentStore.Object, _user.Object);
+        var useCase = new GetAttachmentDownloadUrlUseCase(_ticketQueries.Object, _storageService.Object, _attachmentStore.Object, _user.Object, _scanner.Object);
 
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
             useCase.ExecuteAsync(new(_ticketId, $"tickets/{otherTicketId}/malicious.pdf")));
@@ -74,11 +75,13 @@ public sealed class TicketAttachmentUseCaseTests
     public async Task DownloadUrl_MinIOThrows_ThrowsServiceUnavailable()
     {
         var validKey = $"tickets/{_ticketId}/document.pdf";
-        _attachmentStore.Setup(s => s.ExistsAsync(_ticketId, validKey, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        var attachment = new TicketAttachmentDto(Guid.NewGuid(), _ticketId, "document.pdf", 5, "application/pdf", validKey, _userId, _now.UtcDateTime);
+        _attachmentStore.Setup(s => s.GetByStorageKeyAsync(_ticketId, validKey, It.IsAny<CancellationToken>())).ReturnsAsync(attachment);
+        _scanner.Setup(s => s.PrepareDownloadAsync(attachment, It.IsAny<CancellationToken>())).ReturnsAsync(validKey);
         _storageService.Setup(s => s.GetPresignedDownloadUrlAsync("servicedesk-test", validKey, 300, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("MinIO offline"));
 
-        var useCase = new GetAttachmentDownloadUrlUseCase(_ticketQueries.Object, _storageService.Object, _attachmentStore.Object, _user.Object);
+        var useCase = new GetAttachmentDownloadUrlUseCase(_ticketQueries.Object, _storageService.Object, _attachmentStore.Object, _user.Object, _scanner.Object);
 
         await Assert.ThrowsAsync<ServiceUnavailableException>(() =>
             useCase.ExecuteAsync(new(_ticketId, validKey)));
@@ -106,7 +109,7 @@ public sealed class TicketAttachmentUseCaseTests
     {
         SetupTicketStatus(status);
         var useCase = new ConfirmAttachmentUploadUseCase(_ticketQueries.Object, _attachmentStore.Object,
-            _storageService.Object, _user.Object, _clock.Object);
+            _storageService.Object, _user.Object, _clock.Object, _scanner.Object);
 
         await Assert.ThrowsAsync<ArgumentException>(() => useCase.ExecuteAsync(new(_ticketId,
             new ConfirmAttachmentUploadRequest("evidence.png", 1024, "image/png", $"tickets/{_ticketId}/attachments/existing"))));
@@ -120,7 +123,7 @@ public sealed class TicketAttachmentUseCaseTests
     {
         SetupTicketStatus(TicketStatus.Closed);
         var useCase = new ConfirmAttachmentUploadUseCase(_ticketQueries.Object, _attachmentStore.Object,
-            _storageService.Object, _user.Object, _clock.Object);
+            _storageService.Object, _user.Object, _clock.Object, _scanner.Object);
 
         await Assert.ThrowsAsync<ArgumentException>(() => useCase.ExecuteAsync(new(_ticketId,
             new ConfirmAttachmentUploadRequest("evidence.png", 1024, "image/png", $"tickets/{_ticketId}/attachments/existing"))));
@@ -141,7 +144,7 @@ public sealed class TicketAttachmentUseCaseTests
             .ReturnsAsync((Guid _, TicketAttachment attachment, DateTime _, CancellationToken _) =>
                 new TicketAttachmentDto(attachment.Id, _ticketId, "evidence.png", 1024, "image/png", attachment.StorageKey, _userId, _now.UtcDateTime));
 
-        var useCase = new ConfirmAttachmentUploadUseCase(_ticketQueries.Object, _attachmentStore.Object, _storageService.Object, _user.Object, _clock.Object);
+        var useCase = new ConfirmAttachmentUploadUseCase(_ticketQueries.Object, _attachmentStore.Object, _storageService.Object, _user.Object, _clock.Object, _scanner.Object);
         var result = await useCase.ExecuteAsync(new(_ticketId, request));
 
         Assert.Equal("evidence.png", result.FileName);
@@ -153,7 +156,7 @@ public sealed class TicketAttachmentUseCaseTests
     public async Task ConfirmUpload_UnissuedStorageKey_Throws()
     {
         var key = $"tickets/{_ticketId}/unissued.png";
-        var useCase = new ConfirmAttachmentUploadUseCase(_ticketQueries.Object, _attachmentStore.Object, _storageService.Object, _user.Object, _clock.Object);
+        var useCase = new ConfirmAttachmentUploadUseCase(_ticketQueries.Object, _attachmentStore.Object, _storageService.Object, _user.Object, _clock.Object, _scanner.Object);
         await Assert.ThrowsAsync<KeyNotFoundException>(() => useCase.ExecuteAsync(new(_ticketId, new("evidence.png", 1024, "image/png", key))));
         _storageService.Verify(s => s.StatAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -165,7 +168,7 @@ public sealed class TicketAttachmentUseCaseTests
         _attachmentStore.Setup(s => s.GetUploadGrantAsync(_ticketId, grant.StorageKey, _userId, It.IsAny<CancellationToken>())).ReturnsAsync(grant);
         _storageService.Setup(s => s.StatAsync("servicedesk-test", grant.StorageKey, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new StoredObject(2048, "image/png", "etag"));
-        var useCase = new ConfirmAttachmentUploadUseCase(_ticketQueries.Object, _attachmentStore.Object, _storageService.Object, _user.Object, _clock.Object);
+        var useCase = new ConfirmAttachmentUploadUseCase(_ticketQueries.Object, _attachmentStore.Object, _storageService.Object, _user.Object, _clock.Object, _scanner.Object);
         await Assert.ThrowsAsync<ArgumentException>(() => useCase.ExecuteAsync(new(_ticketId, new("evidence.png", 1024, "image/png", grant.StorageKey))));
         _attachmentStore.Verify(s => s.ConfirmAsync(It.IsAny<Guid>(), It.IsAny<TicketAttachment>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -177,7 +180,7 @@ public sealed class TicketAttachmentUseCaseTests
         _attachmentStore.Setup(s => s.GetUploadGrantAsync(_ticketId, grant.StorageKey, _userId, It.IsAny<CancellationToken>())).ReturnsAsync(grant);
         _storageService.Setup(s => s.StatAsync("servicedesk-test", grant.StorageKey, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new IOException("Sensitive storage details"));
-        var useCase = new ConfirmAttachmentUploadUseCase(_ticketQueries.Object, _attachmentStore.Object, _storageService.Object, _user.Object, _clock.Object);
+        var useCase = new ConfirmAttachmentUploadUseCase(_ticketQueries.Object, _attachmentStore.Object, _storageService.Object, _user.Object, _clock.Object, _scanner.Object);
         var error = await Assert.ThrowsAsync<ServiceUnavailableException>(() => useCase.ExecuteAsync(new(_ticketId, new("evidence.png", 1024, "image/png", grant.StorageKey))));
         Assert.DoesNotContain("Sensitive storage details", error.Message);
         _attachmentStore.Verify(s => s.ConfirmAsync(It.IsAny<Guid>(), It.IsAny<TicketAttachment>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Never);

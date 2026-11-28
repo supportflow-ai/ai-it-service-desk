@@ -87,6 +87,7 @@ public class ServiceDeskWebApplicationFactory : WebApplicationFactory<ServiceDes
             => Task.FromResult(new PresignedUpload($"https://test-storage/{bucket}", new Dictionary<string, string> { ["Content-Type"] = contentType }, new Dictionary<string, string> { ["key"] = key }));
         public Task<StoredObject?> StatAsync(string bucket, string key, CancellationToken cancellationToken = default)
             => Task.FromResult<StoredObject?>(null);
+        public Task<byte[]> ReadAsync(string bucket, string key, string expectedETag, int maxBytes, CancellationToken cancellationToken = default) => throw new NotSupportedException("Use the storage/scanner fixture for content tests.");
         public Task CopyAsync(string bucket, string source, string destination, string expectedETag, CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task DeleteAsync(string bucket, string key, CancellationToken cancellationToken = default) => Task.CompletedTask;
 

@@ -29,6 +29,8 @@ public interface IObjectStorageService
         string key,
         CancellationToken cancellationToken = default);
 
+Task<byte[]> ReadAsync(string bucket, string key, string expectedETag, int maxBytes, CancellationToken cancellationToken = default);
+
     Task CopyAsync(
         string bucket,
         string source,

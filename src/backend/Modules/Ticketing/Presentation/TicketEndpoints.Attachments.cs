@@ -29,6 +29,7 @@ public static partial class TicketEndpoints
         .WithName("GenerateAttachmentUploadUrl")
         .RequireAuthorization(PolicyNames.RequireRequester)
         .Produces<UploadUrlResult>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status503ServiceUnavailable)
         .Produces(StatusCodes.Status400BadRequest)
         .Produces(StatusCodes.Status401Unauthorized)
         .Produces(StatusCodes.Status404NotFound);
@@ -46,6 +47,8 @@ public static partial class TicketEndpoints
         .WithName("GetAttachmentDownloadUrl")
         .RequireAuthorization(PolicyNames.RequireRequester)
         .Produces<DownloadUrlResult>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status403Forbidden)
+        .Produces(StatusCodes.Status503ServiceUnavailable)
         .Produces(StatusCodes.Status400BadRequest)
         .Produces(StatusCodes.Status401Unauthorized)
         .Produces(StatusCodes.Status404NotFound);

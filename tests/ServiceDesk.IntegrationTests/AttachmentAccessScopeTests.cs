@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Moq;
 using ServiceDesk.Modules.Ticketing.Domain;
 using ServiceDesk.SharedKernel.Application.Abstractions;
+using ServiceDesk.Modules.Ticketing.Application.Ports;
 using Xunit;
 
 namespace ServiceDesk.IntegrationTests;
@@ -51,6 +52,7 @@ public sealed class AttachmentAccessScopeTests(TicketIdempotencyPostgresFixture 
         {
             services.RemoveAll<IObjectStorageService>();
             services.AddSingleton(storage.Object);
+            services.AddSingleton<IAttachmentScanner, CleanAttachmentScannerStub>();
         }));
         async Task CheckAsync(Guid actor, HttpStatusCode expected)
         {

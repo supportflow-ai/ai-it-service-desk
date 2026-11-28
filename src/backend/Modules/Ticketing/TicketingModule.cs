@@ -87,6 +87,10 @@ public static class TicketingModule
     /// <summary>Đăng ký adapter PostgreSQL cho các cổng dữ liệu của Ticketing.</summary>
     public static IServiceCollection AddTicketingInfrastructure(this IServiceCollection services)
     {
+        services.AddOptions<AttachmentScanningOptions>().BindConfiguration("Attachments:MalwareScanning")
+            .Validate(options => options.Port is >= 1 and <= 65535 && options.Host.Length <= 253, "Invalid attachment scanner endpoint.")
+            .ValidateOnStart();
+        services.AddSingleton<IAttachmentScanner, ClamAvAttachmentScanner>();
         services.AddScoped<ITicketWriter, PostgresTicketWriter>();
         services.AddScoped<ITicketQueries, PostgresTicketQueries>();
         services.AddScoped<ITicketTimelineStore, PostgresTicketTimelineStore>();

@@ -9,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using ServiceDesk.Modules.Ticketing.Application.Contracts;
 using ServiceDesk.Modules.Ticketing.Domain;
 using ServiceDesk.Platform.Options;
+using ServiceDesk.Modules.Ticketing.Application.Ports;
 using Xunit;
 
 namespace ServiceDesk.IntegrationTests;
@@ -32,6 +33,8 @@ public sealed class AttachmentPolicyConfigurationTests(TicketIdempotencyPostgres
             await db.SaveChangesAsync();
         }
         await using var host = fixture.First!.WithWebHostBuilder(builder => builder.ConfigureServices(services =>
+        {
+            services.AddSingleton<IAttachmentScanner, CleanAttachmentScannerStub>();
             services.PostConfigure<R2Options>(options =>
             {
                 options.Endpoint = "https://example.r2.cloudflarestorage.com";
@@ -40,7 +43,8 @@ public sealed class AttachmentPolicyConfigurationTests(TicketIdempotencyPostgres
                 options.SecretAccessKey = "test-secret-only-for-local-signatures";
                 options.UploadExpirySeconds = uploadSeconds;
                 options.DownloadExpirySeconds = downloadSeconds;
-            })));
+            });
+        }));
         using var client = host.CreateClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         var before = DateTime.UtcNow;

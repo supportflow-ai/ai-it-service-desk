@@ -4,6 +4,10 @@ Trạng thái: mô tả hiện hành tại `dev@b3cc19a` sau PR #82 và các tí
 
 ## HTTP và danh tính
 
+Tệp đính kèm bắt buộc được quét bằng ClamAV trước confirm/cấp URL. Cấu hình `Attachments:MalwareScanning:Host`/`Port` trỏ dịch vụ trên mạng riêng; thiếu, lỗi, timeout, phản hồi không xác định hoặc hết slot trả 503 chung, không cấp URL. Giới hạn mỗi API instance hai lượt xử lý, 30 giây/lượt, 10 MiB/tệp; đây không phải ngân sách toàn cụm. Adapter kiểm đuôi/MIME, kích thước HEAD và nội dung đọc có điều kiện ETag, dấu hiệu định dạng thực tế; ZIP/DOCX giới hạn số entry và kích thước giải nén khai báo, ClamAV dùng [cấu hình bắt buộc](../../config/clamav/clamd.conf) để phát hiện vượt giới hạn/encrypted. Scanner từ chối trả 400 chung; object chưa có metadata/URL vẫn quarantine trong bucket riêng tư.
+
+Download kiểm quyền và metadata trước khi copy sang key riêng không có upload URL, rồi đọc/quét bản sao theo ETag và chỉ ký GET cho bản sao đó. Cách này áp dụng cả tệp legacy có PUT URL cũ; metadata không tự được coi là bằng chứng đã quét sạch. Mỗi lần cấp URL có thêm copy và scan; object tạm cần reconciliation G4-07, chưa tự chốt retention. URL đã cấp có hiệu lực tới TTL và không được tuyên bố thu hồi ngay. Kiểm thử local S3 không thay gate private bucket/CORS/browser và TTL trên đích R2 được xác nhận; vận hành phải cập nhật chữ ký ClamAV trước rollout.
+
 Knowledge kiểm tra actor hợp lệ trước truy cập persistence, kể cả caller trực tiếp tại Application. Các lệnh sửa draft, publish, republish và archive khóa hàng bài viết rồi kiểm revision trước khi ghi tag/version trong cùng transaction; bản sửa thua trả 409, chờ khóa quá 5 giây trả 503 kèm `Retry-After: 1`. Version đã publish được giữ nguyên; search áp dụng visibility trước phân trang, danh sách tag chỉ tổng hợp bài Published. Nội dung trả về là dữ liệu, caller chịu trách nhiệm render an toàn.
 
 [Bảng mốc mã nguồn](source-baseline.md) ghi cách xác định mốc đối chiếu. Liên kết mã tương đối bên dưới mở checkout của người đọc; đối chiếu HEAD trước khi áp dụng. Cột "Chính sách" là chính sách HTTP của endpoint; Application kiểm tra thêm quyền theo phiếu (chủ sở hữu, người phụ trách, Admin).

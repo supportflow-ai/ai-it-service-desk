@@ -23,7 +23,8 @@ internal sealed class ConfirmAttachmentUploadUseCase(
     ITicketAttachmentStore attachmentStore,
     IObjectStorageService storageService,
     ICurrentUser currentUser,
-    IClock clock) : IConfirmAttachmentUpload
+    IClock clock,
+    IAttachmentScanner scanner) : IConfirmAttachmentUpload
 {
     public async Task<TicketAttachmentDto> ExecuteAsync(ConfirmAttachmentUploadCommand command, CancellationToken cancellationToken = default)
     {
@@ -80,6 +81,9 @@ internal sealed class ConfirmAttachmentUploadUseCase(
         {
             throw new ServiceUnavailableException("Không thể xác minh tệp đã tải lên. Vui lòng thử xác nhận lại.");
         }
+
+        AttachmentPolicy.ValidateMetadata(upload.FileName, upload.FileSizeBytes, upload.ContentType);
+        await scanner.ScanAsync(finalKey, upload.FileSizeBytes, upload.ContentType, cancellationToken);
 
         var attachment = TicketAttachment.Create(command.TicketId, upload.FileName, upload.FileSizeBytes,
             upload.ContentType, finalKey, actorId, clock.UtcNow.UtcDateTime);

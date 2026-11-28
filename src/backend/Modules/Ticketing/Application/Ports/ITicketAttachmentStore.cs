@@ -14,5 +14,5 @@ public interface ITicketAttachmentStore
     Task<TicketAttachmentDto> ConfirmAsync(Guid uploadId, TicketAttachment attachment, DateTime now, CancellationToken cancellationToken = default);
     Task<TicketAttachmentDto> AddAsync(TicketAttachment attachment, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<TicketAttachmentDto>> GetForTicketAsync(Guid ticketId, CancellationToken cancellationToken = default);
-    Task<bool> ExistsAsync(Guid ticketId, string storageKey, CancellationToken cancellationToken = default);
+    Task<TicketAttachmentDto?> GetByStorageKeyAsync(Guid ticketId, string storageKey, CancellationToken cancellationToken = default);
 }

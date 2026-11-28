@@ -19,6 +19,7 @@ public sealed class AttachmentConfirmationSecurityTests
     private readonly Mock<IObjectStorageService> _storage = new(MockBehavior.Strict);
     private readonly Mock<ICurrentUser> _actor = new();
     private readonly Mock<IClock> _clock = new();
+    private readonly Mock<IAttachmentScanner> _scanner = new();
     private readonly DateTime _now = new(2026, 11, 3, 0, 0, 0, DateTimeKind.Utc);
     private readonly Guid _user = Guid.NewGuid();
     private readonly Guid _ticket = Guid.NewGuid();
@@ -178,12 +179,12 @@ public sealed class AttachmentConfirmationSecurityTests
     public async Task DownloadRequiresConfirmedMetadata()
     {
         var key = $"tickets/{_ticket}/unconfirmed";
-        _store.Setup(value => value.ExistsAsync(_ticket, key, It.IsAny<CancellationToken>())).ReturnsAsync(false);
-        var useCase = new GetAttachmentDownloadUrlUseCase(_tickets.Object, _storage.Object, _store.Object, _actor.Object);
+        _store.Setup(value => value.GetByStorageKeyAsync(_ticket, key, It.IsAny<CancellationToken>())).ReturnsAsync((TicketAttachmentDto?)null);
+        var useCase = new GetAttachmentDownloadUrlUseCase(_tickets.Object, _storage.Object, _store.Object, _actor.Object, _scanner.Object);
         await Assert.ThrowsAsync<KeyNotFoundException>(() => useCase.ExecuteAsync(new(_ticket, key)));
         _storage.Verify(value => value.GetPresignedDownloadUrlAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     private ConfirmAttachmentUploadRequest Request() => new("image.png", 1024, "image/png", _upload.StorageKey);
-    private ConfirmAttachmentUploadUseCase Confirm() => new(_tickets.Object, _store.Object, _storage.Object, _actor.Object, _clock.Object);
+    private ConfirmAttachmentUploadUseCase Confirm() => new(_tickets.Object, _store.Object, _storage.Object, _actor.Object, _clock.Object, _scanner.Object);
 }

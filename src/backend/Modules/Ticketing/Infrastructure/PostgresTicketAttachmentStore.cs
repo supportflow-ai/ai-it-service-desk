@@ -125,9 +125,10 @@ internal sealed class PostgresTicketAttachmentStore(DbContext context) : ITicket
             .ToListAsync(cancellationToken);
     }
 
-    public Task<bool> ExistsAsync(Guid ticketId, string storageKey, CancellationToken cancellationToken = default)
+    public async Task<TicketAttachmentDto?> GetByStorageKeyAsync(Guid ticketId, string storageKey, CancellationToken cancellationToken = default)
     {
-        return context.Set<TicketAttachment>().AsNoTracking()
-            .AnyAsync(a => a.TicketId == ticketId && a.StorageKey == storageKey, cancellationToken);
+        var value = await context.Set<TicketAttachment>().AsNoTracking()
+            .SingleOrDefaultAsync(a => a.TicketId == ticketId && a.StorageKey == storageKey, cancellationToken);
+        return value is null ? null : ToDto(value);
     }
 }

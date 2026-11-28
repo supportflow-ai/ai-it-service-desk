@@ -60,7 +60,8 @@ internal sealed class R2ObjectStorageService : IObjectStorageService, IDisposabl
             BucketName = string.IsNullOrWhiteSpace(bucket) ? DefaultBucket : bucket,
             Key = key,
             Verb = HttpVerb.PUT,
-            Expires = expiresAtUtc,
+            Expires = new DateTime(expiresAtUtc.Ticks - expiresAtUtc.Ticks % TimeSpan.TicksPerSecond, DateTimeKind.Utc),
+            Protocol = _options.Endpoint.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ? Protocol.HTTP : Protocol.HTTPS,
             ContentType = contentType
         };
         request.Headers["Content-Length"] = sizeValue;
@@ -97,6 +98,29 @@ internal sealed class R2ObjectStorageService : IObjectStorageService, IDisposabl
         {
             return null;
         }
+    }
+
+public async Task<byte[]> ReadAsync(string bucket, string key, string expectedETag, int maxBytes, CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxBytes);
+        if (string.IsNullOrWhiteSpace(expectedETag)) throw new ArgumentException("ETag is required.", nameof(expectedETag));
+        using var response = await EnsureClient().GetObjectAsync(new GetObjectRequest
+        {
+            BucketName = string.IsNullOrWhiteSpace(bucket) ? DefaultBucket : bucket,
+            Key = key,
+            EtagToMatch = expectedETag
+        }, cancellationToken);
+        if (response.ContentLength <= 0 || response.ContentLength > maxBytes)
+            throw new ArgumentException("Kích thước tệp thực tế không hợp lệ.");
+        using var data = new MemoryStream();
+        var buffer = new byte[32768];
+        int read;
+        while ((read = await response.ResponseStream.ReadAsync(buffer, cancellationToken)) != 0)
+        {
+            if (data.Length + read > maxBytes) throw new ArgumentException("Kích thước tệp thực tế không hợp lệ.");
+            await data.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
+        }
+        return data.ToArray();
     }
 
     public async Task CopyAsync(
@@ -170,6 +194,7 @@ internal sealed class R2ObjectStorageService : IObjectStorageService, IDisposabl
             Key = objectName,
             Verb = HttpVerb.GET,
             Expires = DateTime.UtcNow.AddSeconds(effectiveExpiry),
+            Protocol = _options.Endpoint.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ? Protocol.HTTP : Protocol.HTTPS,
             ResponseHeaderOverrides = new ResponseHeaderOverrides
             {
                 ContentDisposition = "attachment"
